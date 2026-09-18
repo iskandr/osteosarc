@@ -1,0 +1,42 @@
+{
+  "accessed": "2026-09-18",
+  "selection": "Five named variants, three reprocessed bulk RNA products; parsed excerpts, not byte-identical source files",
+  "files": {
+    "variants.html": {
+      "source_sha256": "e9707c90020ce84f0bb5424f8247140879b295d85858602506b47fa33ddc4925",
+      "fixture_sha256": "8d29454e024f479ce57572a34b7f8a31af50a5a76e429eef61c12c6a1328435d"
+    },
+    "source-variants.json": {
+      "source_sha256": "815e3052a5b4c3a9611a0e7ed3f6ccccde7bf95faaf4519ebffcae6633ef3db0",
+      "fixture_sha256": "46cc381ddbeb156235f3ffaeeb9a80c088bb0f5b3752d640029bfde97336a564"
+    },
+    "vaccine_overlap.json": {
+      "source_sha256": "3572f7ded10bc10e4dae92805210e858a024449e037e7f47320a05c93991053f",
+      "fixture_sha256": "e51d0e260817d38d8f452dc09bf1f673ca31a58c24e2a8e0566dbb1535c76485"
+    },
+    "bams.json": {
+      "source_sha256": "88518bc3f9b0e9a7e6fffe13f6c5506e8f781a7287962eee20e412259313360e",
+      "fixture_sha256": "65e21d57053763c6b23ea3481ad76b9f9a9b176a57d4b616676e8a99ebb5c683"
+    },
+    "bucket_listing.json": {
+      "source_sha256": "05266e83e44334bf20bc3f50ed45ffa243d7296b66f80b0de657d57096e07dc5",
+      "fixture_sha256": "3f4c3a195382705c183c481992a48745d9307f964c1daa1b251bb6933314a493"
+    },
+    "vafs.tsv": {
+      "source_sha256": "265224cae8bb7c43c85a65a7d4512195edbd7bbd9741d1cbe935f6027acbe93c",
+      "fixture_sha256": "dc24d99b82057c720a4c8a205ff779b58bd160e50b18c3e6964cb6c537d6a045"
+    },
+    "bam-metadata.tsv": {
+      "source_sha256": "2b79a84faf01c977abfb31324ef34736f033a909e9b22a5ca92b24680d628a9b",
+      "fixture_sha256": "a6bd42de00132b8227df433e6b612b16618f6d3fa4de6d9cdc1e778c2afb017c"
+    },
+    "vafs-columns.tsv": {
+      "source_sha256": "935507a2cf33688243b92285e5107c6e814aee635c5ce5f8963f2b8f3ec0535f",
+      "fixture_sha256": "935507a2cf33688243b92285e5107c6e814aee635c5ce5f8963f2b8f3ec0535f"
+    },
+    "data.html": {
+      "source_sha256": "9d1ae0a55938f7c419ef0d5a509052fe0927878c506cb858205cce0366500a9e",
+      "fixture_sha256": "31b4b230f536ae3a84c2bb4d0312dbcafdba9c0c955cadcd5103da4ccdb63c5c"
+    }
+  }
+}

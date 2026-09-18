@@ -1,0 +1,29 @@
+{
+  "genome": "hg38",
+  "baseUrl": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/",
+  "categories": [
+    {
+      "name": "RNA",
+      "bams": [
+        {
+          "name": "T0 BostonGene Tumor RNA 2022-12 (BG003082 reprocessed)",
+          "url": "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam",
+          "size": "6.30 GiB",
+          "tissue": "tumor"
+        },
+        {
+          "name": "T0 BostonGene Tumor RNA 2022-12 (BG009368 reprocessed)",
+          "url": "rna-seq/reprocessed/BG009368/BG009368.Aligned.sortedByCoord.out.md.bam",
+          "size": "8.19 GiB",
+          "tissue": "tumor"
+        },
+        {
+          "name": "T0 BostonGene Tumor RNA 2022-12 (SARC0277 reprocessed)",
+          "url": "rna-seq/reprocessed/SARC0277/SARC0277.Aligned.sortedByCoord.out.md.bam",
+          "size": "8.13 GiB",
+          "tissue": "tumor"
+        }
+      ]
+    }
+  ]
+}
