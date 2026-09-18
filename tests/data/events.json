@@ -1,0 +1,383 @@
+{
+  "date_range": {
+    "start": "2022-11-10",
+    "end": "2026-09-16"
+  },
+  "timelines": [
+    {
+      "id": "osteosarcoma",
+      "name": "Osteosarcoma"
+    },
+    {
+      "id": "avascular_necrosis_of_the_hip",
+      "name": "Avascular necrosis of the hip"
+    },
+    {
+      "id": "endocrine",
+      "name": "Endocrine"
+    },
+    {
+      "id": "infection",
+      "name": "Infection"
+    }
+  ],
+  "events": [
+    {
+      "date": "2024-06-11",
+      "title": "Travera",
+      "timeline": "osteosarcoma",
+      "category": "Omics",
+      "subcategory": "Functional testing",
+      "group": "Mass response drug testing"
+    },
+    {
+      "date": "2024-06-06",
+      "title": "UCLA",
+      "timeline": "osteosarcoma",
+      "category": "Omics",
+      "subcategory": "Functional testing",
+      "group": "Organoid drug testing"
+    },
+    {
+      "date": "2022-12-16",
+      "title": "Tempus xT",
+      "timeline": "osteosarcoma",
+      "category": "Omics",
+      "subcategory": "Genomics",
+      "group": "Gene panel"
+    },
+    {
+      "date": "2022-12-16",
+      "title": "Tempus xE",
+      "timeline": "osteosarcoma",
+      "category": "Omics",
+      "subcategory": "Genomics",
+      "group": "WES"
+    },
+    {
+      "date": "2024-06-11",
+      "title": "Boston Gene",
+      "timeline": "osteosarcoma",
+      "category": "Omics",
+      "subcategory": "Genomics",
+      "group": "WES"
+    },
+    {
+      "date": "2024-06-06",
+      "title": "UCLA",
+      "timeline": "osteosarcoma",
+      "category": "Omics",
+      "subcategory": "Genomics",
+      "group": "WGS"
+    },
+    {
+      "date": "2025-01-28",
+      "title": "UCLA",
+      "timeline": "osteosarcoma",
+      "category": "Omics",
+      "subcategory": "Genomics",
+      "group": "WGS"
+    },
+    {
+      "date": "2022-12-16",
+      "title": "Tempus xR",
+      "timeline": "osteosarcoma",
+      "category": "Omics",
+      "subcategory": "Transcriptomics",
+      "group": "RNAseq"
+    },
+    {
+      "date": "2024-06-06",
+      "title": "UCLA",
+      "timeline": "osteosarcoma",
+      "category": "Omics",
+      "subcategory": "Transcriptomics",
+      "group": "RNAseq"
+    },
+    {
+      "date": "2024-06-11",
+      "title": "Boston Gene",
+      "timeline": "osteosarcoma",
+      "category": "Omics",
+      "subcategory": "Transcriptomics",
+      "group": "RNAseq"
+    },
+    {
+      "date": "2025-01-28",
+      "title": "UCLA",
+      "timeline": "osteosarcoma",
+      "category": "Omics",
+      "subcategory": "Transcriptomics",
+      "group": "RNAseq"
+    },
+    {
+      "date": "2024-06-06",
+      "title": "UCLA",
+      "timeline": "osteosarcoma",
+      "category": "Pathology",
+      "subcategory": "Tissue",
+      "group": "Tissue"
+    },
+    {
+      "date": "2024-06-11",
+      "title": "UCLA",
+      "timeline": "osteosarcoma",
+      "category": "Pathology",
+      "subcategory": "Tissue",
+      "group": "Tissue"
+    },
+    {
+      "date": "2025-01-28",
+      "title": "UCLA",
+      "timeline": "osteosarcoma",
+      "category": "Pathology",
+      "subcategory": "Tissue",
+      "group": "Tissue"
+    },
+    {
+      "date": "2025-04-17",
+      "title": "MSKCC",
+      "timeline": "osteosarcoma",
+      "category": "Pathology",
+      "subcategory": "Tissue",
+      "group": "Tissue"
+    },
+    {
+      "date": "2024-05-14",
+      "title": "Apheresis",
+      "timeline": "osteosarcoma",
+      "category": "Procedures",
+      "subcategory": "",
+      "group": ""
+    },
+    {
+      "date": "2025-12-03",
+      "title": "Apheresis",
+      "timeline": "osteosarcoma",
+      "category": "Procedures",
+      "subcategory": "",
+      "group": ""
+    },
+    {
+      "date": "2024-06-06",
+      "title": "T4",
+      "timeline": "osteosarcoma",
+      "category": "Procedures",
+      "subcategory": "Biopsy",
+      "group": "Biopsy"
+    },
+    {
+      "date": "2024-06-11",
+      "title": "T4/5",
+      "timeline": "osteosarcoma",
+      "category": "Procedures",
+      "subcategory": "Biopsy",
+      "group": "Biopsy"
+    },
+    {
+      "date": "2025-01-28",
+      "title": "T4/5",
+      "timeline": "osteosarcoma",
+      "category": "Procedures",
+      "subcategory": "Biopsy",
+      "group": "Biopsy"
+    },
+    {
+      "date": "2025-04-17",
+      "title": "T4/5",
+      "timeline": "osteosarcoma",
+      "category": "Procedures",
+      "subcategory": "Surgery",
+      "group": "Surgery"
+    },
+    {
+      "date": "2023-07-17",
+      "title": "SQ3370 (Doxorubicin Biogel click)",
+      "timeline": "osteosarcoma",
+      "category": "Treatments",
+      "subcategory": "Chemotherapy",
+      "group": "DNA damaging agents",
+      "end_date": "2024-01-26"
+    },
+    {
+      "date": "2023-07-17",
+      "title": "SQ3370 (Doxorubicin Biogel click)",
+      "timeline": "osteosarcoma",
+      "category": "Treatments",
+      "subcategory": "Chemotherapy",
+      "group": "DNA damaging agents",
+      "end_date": "2024-01-26"
+    },
+    {
+      "date": "2024-05-22",
+      "title": "Trabectedin",
+      "timeline": "osteosarcoma",
+      "category": "Treatments",
+      "subcategory": "Chemotherapy",
+      "group": "DNA damaging agents"
+    },
+    {
+      "date": "2024-05-22",
+      "title": "Trabectedin",
+      "timeline": "osteosarcoma",
+      "category": "Treatments",
+      "subcategory": "Chemotherapy",
+      "group": "DNA damaging agents"
+    },
+    {
+      "date": "2025-12-29",
+      "title": "mRNA neoantigen vaccine",
+      "timeline": "osteosarcoma",
+      "category": "Treatments",
+      "subcategory": "Immunotherapy",
+      "group": "Cancer vaccines"
+    },
+    {
+      "date": "2026-02-13",
+      "title": "mRNA neoantigen vaccine",
+      "timeline": "osteosarcoma",
+      "category": "Treatments",
+      "subcategory": "Immunotherapy",
+      "group": "Cancer vaccines"
+    },
+    {
+      "date": "2026-03-09",
+      "title": "mRNA neoantigen vaccine",
+      "timeline": "osteosarcoma",
+      "category": "Treatments",
+      "subcategory": "Immunotherapy",
+      "group": "Cancer vaccines"
+    },
+    {
+      "date": "2026-04-20",
+      "title": "mRNA neoantigen vaccine",
+      "timeline": "osteosarcoma",
+      "category": "Treatments",
+      "subcategory": "Immunotherapy",
+      "group": "Cancer vaccines"
+    },
+    {
+      "date": "2026-05-11",
+      "title": "mRNA neoantigen vaccine",
+      "timeline": "osteosarcoma",
+      "category": "Treatments",
+      "subcategory": "Immunotherapy",
+      "group": "Cancer vaccines"
+    },
+    {
+      "date": "2026-06-01",
+      "title": "mRNA neoantigen vaccine",
+      "timeline": "osteosarcoma",
+      "category": "Treatments",
+      "subcategory": "Immunotherapy",
+      "group": "Cancer vaccines"
+    },
+    {
+      "date": "2026-06-22",
+      "title": "mRNA neoantigen vaccine",
+      "timeline": "osteosarcoma",
+      "category": "Treatments",
+      "subcategory": "Immunotherapy",
+      "group": "Cancer vaccines"
+    },
+    {
+      "date": "2024-06-12",
+      "title": "Proton therapy",
+      "timeline": "osteosarcoma",
+      "category": "Treatments",
+      "subcategory": "Radiation",
+      "group": "Proton",
+      "end_date": "2024-08-02"
+    },
+    {
+      "date": "2025-04-17",
+      "title": "UCSF ONT",
+      "timeline": "osteosarcoma",
+      "category": "Omics",
+      "subcategory": "Transcriptomics",
+      "group": "scRNAseq"
+    },
+    {
+      "date": "2025-01-28",
+      "title": "UCSF ONT",
+      "timeline": "osteosarcoma",
+      "category": "Omics",
+      "subcategory": "Transcriptomics",
+      "group": "scRNAseq"
+    },
+    {
+      "date": "2024-06-06",
+      "title": "UCSF ONT",
+      "timeline": "osteosarcoma",
+      "category": "Omics",
+      "subcategory": "Transcriptomics",
+      "group": "scRNAseq"
+    },
+    {
+      "date": "2022-12-16",
+      "title": "T0",
+      "timeline": "osteosarcoma",
+      "category": "Omics",
+      "subcategory": "Genomics",
+      "group": "Time point"
+    },
+    {
+      "date": "2024-06-06",
+      "title": "T1",
+      "timeline": "osteosarcoma",
+      "category": "Omics",
+      "subcategory": "Genomics",
+      "group": "Time point"
+    },
+    {
+      "date": "2025-01-28",
+      "title": "T2",
+      "timeline": "osteosarcoma",
+      "category": "Omics",
+      "subcategory": "Genomics",
+      "group": "Time point"
+    },
+    {
+      "date": "2025-04-17",
+      "title": "T3",
+      "timeline": "osteosarcoma",
+      "category": "Omics",
+      "subcategory": "Genomics",
+      "group": "Time point"
+    },
+    {
+      "date": "2026-07-01",
+      "title": "Methimazole",
+      "timeline": "endocrine",
+      "category": "Treatments",
+      "subcategory": "Targeted therapy",
+      "group": "Small molecule inhibitors",
+      "end_date": "2026-09-16"
+    },
+    {
+      "date": "2026-03-13",
+      "title": "Wegovy",
+      "timeline": "endocrine",
+      "category": "Treatments",
+      "subcategory": "Targeted therapy",
+      "group": "Small molecule inhibitors",
+      "end_date": "2026-09-16"
+    },
+    {
+      "date": "2025-04-17",
+      "title": "T4/5 resection",
+      "timeline": "infection",
+      "category": "Procedures",
+      "subcategory": "Surgery",
+      "group": "Surgery"
+    },
+    {
+      "date": "2026-06-15",
+      "title": "ReyaGel",
+      "timeline": "infection",
+      "category": "Treatments",
+      "subcategory": "Other",
+      "group": "Other"
+    }
+  ]
+}

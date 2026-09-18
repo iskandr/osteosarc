@@ -1,0 +1,53 @@
+{
+  "groups": [
+    {
+      "id": "2022-resection",
+      "title": "December 2022 \u2014 Primary Resection",
+      "desc": "Hematoxylin & eosin sections across 11 tissue blocks from the 2022 primary resection, scanned at UCSF (Zeiss CZI).",
+      "specimen": "2022-12-16_Resection",
+      "ids": [
+        "2022-resection-b9",
+        "2022-resection-b10",
+        "2022-resection-b12",
+        "2022-resection-b14",
+        "2022-resection-b15",
+        "2022-resection-b16",
+        "2022-resection-c1",
+        "2022-resection-c3",
+        "2022-resection-d1",
+        "2022-resection-d2",
+        "2022-resection-d3"
+      ]
+    },
+    {
+      "id": "2024-biopsy",
+      "title": "June 2024 \u2014 Biopsy",
+      "desc": "Hematoxylin & eosin of the June 2024 diagnostic biopsy (UCLA).",
+      "specimen": "2024-06-11_Biopsy",
+      "ids": [
+        "2024-biopsy-he"
+      ]
+    },
+    {
+      "id": "2025-01-biopsy",
+      "title": "January 2025 \u2014 Biopsy",
+      "desc": "Hematoxylin & eosin of the January 2025 biopsy.",
+      "specimen": "2025-01-28_Biopsy",
+      "ids": [
+        "2025-01-biopsy-he"
+      ]
+    },
+    {
+      "id": "2025-resection",
+      "title": "April 2025 \u2014 Resection",
+      "desc": "Tumor-antigen immunohistochemistry (B7-H3, EphA2) with an H&E companion section from the April 2025 resection.",
+      "specimen": "2025-04-17_Resection",
+      "ids": [
+        "2025-resection-he",
+        "2025-resection-b7h3",
+        "2025-resection-epha2"
+      ]
+    }
+  ],
+  "slides": []
+}

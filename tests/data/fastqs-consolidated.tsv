@@ -1,0 +1,22 @@
+display_name	tissue	timepoint	sample_date	sample_id	provider	analyst	assay	b2_folder	s3_folder	file_count	total_size_bytes	total_size_human	is_primary	is_superseded_by	notes
+T1 BostonGene Tumor RNA 2024-06 (rna-seq/fastq mirror)	Tumor	T1	2024-06	T1_tumor	BostonGene		RNA		rna-seq/fastq/bostongene_2024	2	8244946583	7.68 GiB			File lives under rna-seq/fastq/; may duplicate a genomics-bulk path
+T1 Tempus Tumor RNA 2024-06 (TL-24-ALMY2X4KMV)	Tumor	T1	2024-06	T1_tumor	Tempus		RNA		rna-seq/tempus/TL-24-ALMY2X4KMV/RNA	2	1238829178	1.15 GiB			Tempus ID: TL-24-ALMY2X4KMV
+T1 BostonGene Tumor RNA 2024-06 (BG009368 vendor)	Tumor	T1	2024-06	T1_tumor	BostonGene		RNA		vendor/bostongene/BG009368/RNASeq-tumor-A01231	8	9240081148	8.61 GiB			As-delivered vendor FASTQ (untrimmed); the older catalog copy was adapter-trimmed before archiving.
+T1 Tempus Tumor RNA 2024-06 (TL-24-ALMY2X4KMV vendor)	Tumor	T1	2024-06	T1_tumor	Tempus		RNA		vendor/tempus/TL-24-ALMY2X4KMV/RNA/FastQ	2	1377960976	1.28 GiB			RNA mates are _1/_3 (_2 was the index read). Byte-identical to the catalog copy under rna-seq/tempus/TL-24-ALMY2X4KMV/RNA/.
+T1 Tempus Tumor RNA 2024-06 (TL-24-KCVBE1UI1P vendor)	Tumor	T1	2024-06	T1_tumor	Tempus		RNA		vendor/tempus/TL-24-KCVBE1UI1P/RNA/FastQ	2	1377960976	1.28 GiB			Duplicate delivery of TL-24-ALMY2X4KMV RNA -- identical content, different md5 sidecars because they were hashed after renaming. Do not count as an independent library.
+T1 BostonGene Tumor WES 2024-06	Tumor	T1	2024-06	T1_tumor	BostonGene		WES		genomics/genomics-bulk/2024.06.06/DNA/2024.06.06.dna.bostongene.WES/raw/tumor	2	16907199063	15.75 GiB			
+T1 BostonGene Tumor WES 2024-06 (BG009368 vendor)	Tumor	T1	2024-06	T1_tumor	BostonGene		WES		vendor/bostongene/BG009368/WES-tumor-A01231	8	20080114801	18.70 GiB			As-delivered vendor FASTQ (untrimmed); the older catalog copy was adapter-trimmed before archiving.
+T1 Tempus Tumor WES 2024-06 (TL-24-5GQLV9WSXQ vendor)	Tumor	T1	2024-06	T1_tumor	Tempus		WES		vendor/tempus/TL-24-5GQLV9WSXQ/DNA/FastQ	2	7916872819	7.37 GiB			Byte-identical to the catalog copy under rna-seq/tempus/TL-24-5GQLV9WSXQ/wes/. The sibling .tar.gz repackages these same FASTQs and is not counted here.
+T1 Tempus Tumor WES 2024-06 (TL-24-ALMY2X4KMV vendor)	Tumor	T1	2024-06	T1_tumor	Tempus		WES		vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/T	2	15470759019	14.41 GiB			Byte-identical to the catalog copy under rna-seq/tempus/TL-24-ALMY2X4KMV/WES/. Tumor and normal share one FastQ/ directory, so the row key appends /T.
+T1 UCLA Tumor WGS 2024-06	Tumor	T1	2024-06	T1_tumor	UCLA		WGS		genomics/genomics-bulk/2024.06.06/DNA/2024.06.06.dna.WGS/raw/tumor	2	184092873973	171.45 GiB			
+T1 UCSF Tumor scRNA_BCR 2024-06	Tumor	T1	2024-06	T1_tumor	UCSF		scRNA_BCR		ucsf/T1/FASTQ/IPISRC044_T1_BCR	4	7748503985	7.22 GiB			
+T1 UCSF Tumor scRNA_GEX 2024-06	Tumor	T1	2024-06	T1_tumor	UCSF		scRNA_GEX		ucsf/T1/FASTQ/IPISRC044_T1_SCG1	4	36867288457	34.34 GiB			
+T1 UCSF Tumor scRNA_ONT 2024-06	Tumor	T1	2024-06	T1_tumor	UCSF		scRNA_ONT		ONT/IPISRC044_ONT_upload/IPISRC044_ONT/fastqs/IPISRC044_T1_ONT_fastqs/fastq_pass	97	223398075228	208.06 GiB			fastq_pass (basecaller-passing reads only)
+T1 UCSF Tumor scRNA_TCR 2024-06	Tumor	T1	2024-06	T1_tumor	UCSF		scRNA_TCR		ucsf/T1/FASTQ/IPISRC044_T1_TCR	4	7413145524	6.90 GiB			
+T2 UCSF Tumor CITE 2025-01	Tumor	T2	2025-01	T2_tumor	UCSF		CITE		ucsf/T2/FASTQ/IPISRC044_T2_ADT	4	8328124220	7.76 GiB			
+T2 UCLA Tumor RNA 2025-01 (rna-seq/fastq mirror)	Tumor	T2	2025-01	T2_tumor	UCLA		RNA		rna-seq/fastq/ucla_2025	2	10195778897	9.50 GiB			File lives under rna-seq/fastq/; may duplicate a genomics-bulk path
+T2 UCLA Tumor WGS 2025-01	Tumor	T2	2025-01	T2_tumor	UCLA		WGS		genomics/genomics-bulk/2025.01.06/DNA/2025.01.06.dna.WGS/fastqs/tumor	2	273883526194	255.07 GiB			
+T2 UCSF Tumor scRNA_BCR 2025-01	Tumor	T2	2025-01	T2_tumor	UCSF		scRNA_BCR		ucsf/T2/FASTQ/IPISRC044_T2_BCR	4	27483044748	25.60 GiB			
+T2 UCSF Tumor scRNA_GEX 2025-01	Tumor	T2	2025-01	T2_tumor	UCSF		scRNA_GEX		ucsf/T2/FASTQ/IPISRC044_T2_SCG1	4	38407017555	35.77 GiB			
+T2 UCSF Tumor scRNA_ONT 2025-01	Tumor	T2	2025-01	T2_tumor	UCSF		scRNA_ONT		ONT/IPISRC044_ONT_upload/IPISRC044_ONT/fastqs/IPISRC044_T2_ONT_fastqs/fastq_pass	97	226587432501	211.03 GiB			fastq_pass (basecaller-passing reads only)
+T2 UCSF Tumor scRNA_TCR 2025-01	Tumor	T2	2025-01	T2_tumor	UCSF		scRNA_TCR		ucsf/T2/FASTQ/IPISRC044_T2_TCR	4	21961800745	20.45 GiB			

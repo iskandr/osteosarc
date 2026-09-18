@@ -1,0 +1,110 @@
+{
+  "vaccine_names": [
+    "mRNA",
+    "JLF V3",
+    "JLF V2",
+    "JLF V1",
+    "CeGaT"
+  ],
+  "set_sizes": {
+    "mRNA": 19,
+    "JLF V3": 16,
+    "JLF V2": 15,
+    "JLF V1": 9,
+    "CeGaT": 14
+  },
+  "mutations": [
+    {
+      "gene": "SMC5",
+      "mutation": "p.R371K",
+      "mutation_short": "R/K",
+      "note": null,
+      "chrom": "chr9",
+      "pos": "70298024",
+      "consequence": "missense_variant",
+      "impact": "MODERATE",
+      "vaccines": {
+        "mRNA": true,
+        "JLF V3": true,
+        "JLF V2": false,
+        "JLF V1": false,
+        "CeGaT": false
+      },
+      "elispot_tested": false,
+      "elispot_status": "not_tested",
+      "elispot_response": null,
+      "vafs": [
+        {
+          "assay": "UCLA",
+          "year": 2024,
+          "label": "UCLA 2024",
+          "value": 0.039
+        },
+        {
+          "assay": "UCLA",
+          "year": 2025,
+          "label": "UCLA 2025",
+          "value": 0.049
+        },
+        {
+          "assay": "BG WES",
+          "year": 2024,
+          "label": "BG WES 2024",
+          "value": 0.067
+        }
+      ]
+    },
+    {
+      "gene": "DYNC1H1",
+      "mutation": "p.V314I",
+      "mutation_short": "V",
+      "note": null,
+      "chrom": "chr14",
+      "pos": "101980529",
+      "consequence": "missense_variant",
+      "impact": "MODERATE",
+      "vaccines": {
+        "mRNA": true,
+        "JLF V3": true,
+        "JLF V2": true,
+        "JLF V1": false,
+        "CeGaT": true
+      },
+      "elispot_tested": true,
+      "elispot_status": "positive",
+      "elispot_response": "very strong",
+      "vafs": [
+        {
+          "assay": "NP WGS",
+          "year": 2022,
+          "label": "NP WGS 2022",
+          "value": 0.432
+        },
+        {
+          "assay": "UCLA",
+          "year": 2024,
+          "label": "UCLA 2024",
+          "value": 0.342
+        },
+        {
+          "assay": "UCLA",
+          "year": 2025,
+          "label": "UCLA 2025",
+          "value": 0.094
+        },
+        {
+          "assay": "BG WES",
+          "year": 2022,
+          "label": "BG WES 2022",
+          "value": 0.336
+        },
+        {
+          "assay": "BG WES",
+          "year": 2024,
+          "label": "BG WES 2024",
+          "value": 0.362
+        }
+      ]
+    }
+  ]
+}

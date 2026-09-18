@@ -1,0 +1,89 @@
+date	category	measurement	test_name_original	panel_name	unit	value	reference_low	reference_high	source_reference_low	source_reference_high	flag	out_of_range
+2024-06-05	Complete Blood Count	WBC	WBC	CBC With Differential/Platelet	x10E9/L	6.7	3.4	10.0	3.4	10.8		FALSE
+2025-01-20	Complete Blood Count	WBC	White Blood Cell Count	CBC (Includes Diff/PLT)	x10E9/L	4.1	3.4	10.0	3.8	10.8		FALSE
+2024-06-05	Complete Blood Count	RBC	RBC	CBC With Differential/Platelet	x10E12/L	3.76	4.4	5.9	4.14	5.8	L	TRUE
+2025-01-20	Complete Blood Count	RBC	Red Blood Cell Count	CBC (Includes Diff/PLT)	x10E12/L	4.58	4.4	5.9	4.2	5.8		FALSE
+2024-06-05	Complete Blood Count	Hemoglobin	Hemoglobin	CBC With Differential/Platelet	g/dL	12.9	13.6	17.5	13.0	17.7	L	TRUE
+2025-01-20	Complete Blood Count	Hemoglobin	Hemoglobin	CBC (Includes Diff/PLT)	g/dL	15.1	13.6	17.5	13.2	17.1		FALSE
+2024-06-05	Complete Blood Count	Hematocrit	Hematocrit	CBC With Differential/Platelet	%	38.8	41.0	53.0	37.5	51.0		FALSE
+2025-01-20	Complete Blood Count	Hematocrit	Hematocrit	CBC (Includes Diff/PLT)	%	44.1	41.0	53.0	38.5	50.0		FALSE
+2024-06-05	Complete Blood Count	Platelets	Platelets	CBC With Differential/Platelet	x10E9/L	192.0	140.0	450.0	150.0	450.0		FALSE
+2025-01-20	Complete Blood Count	Platelets	Platelet Count	CBC (Includes Diff/PLT)	x10E9/L	262.0	140.0	450.0	140.0	400.0		FALSE
+2024-06-05	Complete Blood Count	MCV	MCV	CBC With Differential/Platelet	fL	103.0	80.0	100.0	79.0	97.0	H	TRUE
+2025-01-20	Complete Blood Count	MCV	MCV	CBC (Includes Diff/PLT)	fL	96.3	80.0	100.0	80.0	100.0		FALSE
+2024-06-05	Complete Blood Count	MCH	MCH	CBC With Differential/Platelet	pg	34.3	26.0	34.0	26.6	33.0	H	TRUE
+2025-01-20	Complete Blood Count	MCH	MCH	CBC (Includes Diff/PLT)	pg	33.0	26.0	34.0	27.0	33.0		FALSE
+2024-06-05	Complete Blood Count	MCHC	MCHC	CBC With Differential/Platelet	g/dL	33.2	31.0	36.0	31.5	35.7		FALSE
+2025-01-20	Complete Blood Count	MCHC	MCHC	CBC (Includes Diff/PLT)	g/dL	34.2	31.0	36.0	32.0	36.0		FALSE
+2024-06-05	Complete Blood Count	RDW	RDW	CBC With Differential/Platelet	%	13.6	11.7	14.4	11.6	15.4		FALSE
+2025-01-20	Complete Blood Count	RDW	RDW	CBC (Includes Diff/PLT)	%	13.7	11.7	14.4	11.0	15.0		FALSE
+2025-01-20	Complete Blood Count	MPV	MPV	CBC (Includes Diff/PLT)	fL	9.7	9.1	12.6	7.5	12.5		FALSE
+2024-06-05	WBC Differential (absolute)	Abs Neutrophils	Neutrophils (Absolute)	CBC With Differential/Platelet	x10E9/L	5.7	1.8	6.8	1.4	7.0		FALSE
+2025-01-20	WBC Differential (absolute)	Abs Neutrophils	Absolute Neutrophils	CBC (Includes Diff/PLT)	x10E9/L	2.854	1.8	6.8	1.5	7.8		FALSE
+2024-06-05	WBC Differential (absolute)	Abs Lymphocytes	Lymphs (Absolute)	CBC With Differential/Platelet	x10E9/L	0.6	1.0	3.4	0.7	3.1	L	TRUE
+2025-01-20	WBC Differential (absolute)	Abs Lymphocytes	Absolute Lymphocytes	CBC (Includes Diff/PLT)	x10E9/L	0.603	1.0	3.4	0.85	3.9	L	TRUE
+2024-06-05	WBC Differential (absolute)	Abs Monocytes	Monocytes(absolute)	CBC With Differential/Platelet	x10E9/L	0.4	0.2	0.8	0.1	0.9		FALSE
+2025-01-20	WBC Differential (absolute)	Abs Monocytes	Absolute Monocytes	CBC (Includes Diff/PLT)	x10E9/L	0.422	0.2	0.8	0.2	0.95		FALSE
+2024-06-05	WBC Differential (absolute)	Abs Eosinophils	Eos (Absolute)	CBC With Differential/Platelet	x10E9/L	0.0	0.0	0.4	0.0	0.4		FALSE
+2025-01-20	WBC Differential (absolute)	Abs Eosinophils	Absolute Eosinophils	CBC (Includes Diff/PLT)	x10E9/L	0.193	0.0	0.4	0.015	0.5		FALSE
+2024-06-05	WBC Differential (absolute)	Abs Basophils	Baso (Absolute)	CBC With Differential/Platelet	x10E9/L	0.0	0.0	0.1	0.0	0.2		FALSE
+2025-01-20	WBC Differential (absolute)	Abs Basophils	Absolute Basophils	CBC (Includes Diff/PLT)	x10E9/L	0.029	0.0	0.1	0.0	0.2		FALSE
+2024-06-05	WBC Differential (absolute)	Abs Immature Granulocytes	Immature Grans (Abs)	CBC With Differential/Platelet	x10E9/L	0.0	0.0	0.1	0.0	0.1		FALSE
+2024-06-05	WBC Differential (%)	Neutrophils %	Neutrophils	CBC With Differential/Platelet	%	85.0	39.0	69.0				
+2025-01-20	WBC Differential (%)	Neutrophils %	Neutrophils	CBC (Includes Diff/PLT)	%	69.6	39.0	69.0				
+2024-06-05	WBC Differential (%)	Lymphocytes %	Lymphs	CBC With Differential/Platelet	%	9.0	25.0	45.0				
+2025-01-20	WBC Differential (%)	Lymphocytes %	Lymphocytes	CBC (Includes Diff/PLT)	%	14.7	25.0	45.0				
+2024-06-05	WBC Differential (%)	Monocytes %	Monocytes	CBC With Differential/Platelet	%	5.0	0.0	10.0				
+2025-01-20	WBC Differential (%)	Monocytes %	Monocytes	CBC (Includes Diff/PLT)	%	10.3	0.0	10.0				
+2024-06-05	WBC Differential (%)	Eosinophils %	Eos	CBC With Differential/Platelet	%	0.0	0.0	5.0				
+2025-01-20	WBC Differential (%)	Eosinophils %	Eosinophils	CBC (Includes Diff/PLT)	%	4.7	0.0	5.0				
+2024-06-05	WBC Differential (%)	Basophils %	Basos	CBC With Differential/Platelet	%	0.0	0.0	1.0				
+2025-01-20	WBC Differential (%)	Basophils %	Basophils	CBC (Includes Diff/PLT)	%	0.7	0.0	1.0				
+2024-06-05	WBC Differential (%)	Immature Granulocytes %	Immature Granulocytes	CBC With Differential/Platelet	%	1.0	0.0	1.0				
+2025-01-20	Metabolic Panel	Glucose	Glucose	Comprehensive Metabolic Panel	mg/dL	101.0	70.0	199.0	65.0	99.0	H	TRUE
+2024-06-05	Metabolic Panel	BUN	BUN	Comp. Metabolic Panel (14)	mg/dL	14.0	7.0	25.0	6.0	24.0		FALSE
+2025-01-20	Metabolic Panel	BUN	Urea Nitrogen (BUN)	Comprehensive Metabolic Panel	mg/dL	13.0	7.0	25.0	7.0	25.0		FALSE
+2024-06-05	Metabolic Panel	Creatinine	Creatinine	Comp. Metabolic Panel (14)	mg/dL	0.77	0.73	1.24	0.76	1.27		FALSE
+2025-01-20	Metabolic Panel	Creatinine	Creatinine	Comprehensive Metabolic Panel	mg/dL	1.01	0.73	1.24	0.6	1.29		FALSE
+2024-06-05	Metabolic Panel	eGFR	eGFR	Comp. Metabolic Panel (14)	mL/min/1.73m2	113.0	59.0		59.0			FALSE
+2025-01-20	Metabolic Panel	eGFR	eGFR	Comprehensive Metabolic Panel	mL/min/1.73m2	93.0	59.0		60.0			FALSE
+2024-06-05	Metabolic Panel	Sodium	Sodium	Comp. Metabolic Panel (14)	mmol/L	143.0	135.0	145.0	134.0	144.0		FALSE
+2025-01-20	Metabolic Panel	Sodium	Sodium	Comprehensive Metabolic Panel	mmol/L	139.0	135.0	145.0	135.0	146.0		FALSE
+2025-01-20	Metabolic Panel	Potassium	Potassium	Comprehensive Metabolic Panel	mmol/L	4.4	3.5	5.0	3.5	5.3		FALSE
+2024-06-05	Metabolic Panel	Chloride	Chloride	Comp. Metabolic Panel (14)	mmol/L	105.0	101.0	110.0	96.0	106.0		FALSE
+2025-01-20	Metabolic Panel	Chloride	Chloride	Comprehensive Metabolic Panel	mmol/L	104.0	101.0	110.0	98.0	110.0		FALSE
+2024-06-05	Metabolic Panel	CO2	Carbon Dioxide, Total	Comp. Metabolic Panel (14)	mmol/L	17.0	22.0	29.0	20.0	29.0	L	TRUE
+2025-01-20	Metabolic Panel	CO2	Carbon Dioxide	Comprehensive Metabolic Panel	mmol/L	24.0	22.0	29.0	20.0	32.0		FALSE
+2024-06-05	Metabolic Panel	Calcium	Calcium	Comp. Metabolic Panel (14)	mg/dL	7.7	8.4	10.5	8.7	10.2	L	TRUE
+2025-01-20	Metabolic Panel	Calcium	Calcium	Comprehensive Metabolic Panel	mg/dL	9.8	8.4	10.5	8.6	10.3		FALSE
+2024-06-05	Liver Panel	ALT	ALT (Sgpt)	Comp. Metabolic Panel (14)	U/L	33.0	10.0	61.0	0.0	44.0		FALSE
+2025-01-20	Liver Panel	ALT	ALT	Comprehensive Metabolic Panel	U/L	26.0	10.0	61.0	9.0	46.0		FALSE
+2024-06-05	Liver Panel	AST	AST (Sgot)	Comp. Metabolic Panel (14)	U/L	20.0	5.0	44.0	0.0	40.0		FALSE
+2025-01-20	Liver Panel	AST	AST	Comprehensive Metabolic Panel	U/L	29.0	5.0	44.0	10.0	40.0		FALSE
+2024-06-05	Liver Panel	Alk Phos	Alkaline Phosphatase	Comp. Metabolic Panel (14)	U/L	78.0	38.0	108.0	44.0	121.0		FALSE
+2025-01-20	Liver Panel	Alk Phos	Alkaline Phosphatase	Comprehensive Metabolic Panel	U/L	58.0	38.0	108.0	36.0	130.0		FALSE
+2024-06-05	Liver Panel	Total Bilirubin	Bilirubin, Total	Comp. Metabolic Panel (14)	mg/dL	0.3	0.2	1.2	0.0	1.2		FALSE
+2025-01-20	Liver Panel	Total Bilirubin	Bilirubin, Total	Comprehensive Metabolic Panel	mg/dL	0.6	0.2	1.2	0.2	1.2		FALSE
+2024-06-05	Liver Panel	Albumin	Albumin	Comp. Metabolic Panel (14)	g/dL	3.7	3.5	5.0	4.1	5.1	L	TRUE
+2025-01-20	Liver Panel	Albumin	Albumin	Comprehensive Metabolic Panel	g/dL	4.9	3.5	5.0	3.6	5.1		FALSE
+2024-06-05	Liver Panel	Total Protein	Protein, Total	Comp. Metabolic Panel (14)	g/dL	5.1	6.3	8.6	6.0	8.5	L	TRUE
+2025-01-20	Liver Panel	Total Protein	Protein, Total	Comprehensive Metabolic Panel	g/dL	7.2	6.3	8.6	6.1	8.1		FALSE
+2024-06-05	Liver Panel	Globulin	Globulin, Total	Comp. Metabolic Panel (14)	g/dL	1.4	1.9	3.7	1.5	4.5	L	TRUE
+2025-01-20	Liver Panel	Globulin	Globulin	Comprehensive Metabolic Panel	g/dL	2.3	1.9	3.7	1.9	3.7		FALSE
+2024-06-05	Liver Panel	A/G Ratio	A/G Ratio	Comp. Metabolic Panel (14)		2.6	1.0	2.5	1.2	2.2	H	TRUE
+2025-01-20	Liver Panel	A/G Ratio	Albumin/Globulin Ratio	Comprehensive Metabolic Panel		2.1	1.0	2.5	1.0	2.5		FALSE
+2025-01-20	Inflammatory Markers	IL-6	Interleukin 6 (Il 6), Serum	Interleukin 6 (IL-6), Serum	pg/mL	3.41		5.0		5.0		FALSE
+2025-01-20	Thyroid	TSH	TSH	TSH	mIU/L	0.37	0.4	4.5	0.4	4.5	L	TRUE
+2025-01-20	Thyroid	Free T3	T3, Free	T3, Free	pg/mL	4.1	1.6927	3.7109	2.3	4.2		FALSE
+2025-01-20	Endocrine	Insulin	Insulin	Insulin	uIU/mL	8.5		18.4		18.4		FALSE
+2025-01-20	Lipid Panel	HDL Cholesterol	HDL Cholesterol	Lipid Panel, Standard	mg/dL	55.0	39.0	60	40.0			FALSE
+2025-01-20	Lipid Panel	LDL Cholesterol	LDL-Cholesterol	Lipid Panel, Standard	mg/dL	172.0	0	100.0		100.0	H	TRUE
+2025-01-20	Lipid Panel	Triglycerides	Triglycerides	Lipid Panel, Standard	mg/dL	138.0	0	150.0		150.0		FALSE
+2025-01-20	Lipid Panel	Non-HDL Cholesterol	Non HDL Cholesterol	Lipid Panel, Standard	mg/dL	200.0		130.0		130.0	H	TRUE
+2025-01-20	Lipid Panel	Cholesterol/HDL Ratio	Chol/Hdlc Ratio	Lipid Panel, Standard		4.6		5.0		5.0		FALSE
+2024-06-05	Cardiac Markers	CK	Creatine Kinase, Total	Creatine Kinase,total	U/L	68.0	44.0	260.0	49.0	439.0		FALSE
+2025-01-20	Cardiac Markers	CK	Creatine Kinase, Total	Creatine Kinase, Total	U/L	201.0	44.0	260.0	26.0	366.0		FALSE
+2024-06-05	Other Chemistry	LDH	LDH	LDH	U/L	160.0	120.0	243.0	121.0	224.0		FALSE
+2024-06-05	Other	BUN/Creatinine Ratio	BUN/Creatinine Ratio	Comp. Metabolic Panel (14)		18.0	6.0	22.0	9.0	20.0		FALSE
+2025-01-20	Other	Specific Gravity	Specific Gravity	Urinalysis, Screen		1.022	1.002	1.03	1.001	1.035		FALSE
+2025-01-20	Other	Urine pH	pH	Urinalysis, Screen		8.5	5.0	8.0	5.0	8.0	H	TRUE

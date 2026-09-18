@@ -1,0 +1,699 @@
+[
+  {
+    "id": "COL3A1-Splice",
+    "gene": "COL3A1",
+    "chr": null,
+    "pos": null,
+    "ref": null,
+    "alt": null,
+    "genomic_location": null,
+    "genomic_change_on_cdna": "c.4254+1_4255-1del",
+    "genomic_ref_context": null,
+    "refseq_id": "NM_000090",
+    "refseq_strand": "fwd",
+    "consequence": "splice_variant",
+    "silent_or_nonsense": null,
+    "variant_type": null,
+    "protein_change": "Splice",
+    "uniprot_id": null,
+    "aa_sequence": null,
+    "aa_mut_start": null,
+    "aa_mut_end": null,
+    "aa_hi_start": null,
+    "aa_hi_end": null,
+    "note": null,
+    "detection": {
+      "LENS 2022": false,
+      "LENS 2024": false,
+      "Mutect2 2024": false,
+      "Mutect2 2025": false,
+      "pVACtools 2025": false,
+      "Natera 2022": true,
+      "Tempus 2022": false,
+      "BG 2024": false,
+      "oncoanalyser": false,
+      "DRAGEN": false
+    },
+    "vaccines": {
+      "JLF V1": false,
+      "JLF V2": false,
+      "JLF V3": false,
+      "CeGaT": false,
+      "Cure 2024": false
+    },
+    "validation": {
+      "DAkkS": false,
+      "Elispot": false,
+      "elispot_status": "not_tested",
+      "elispot_response": null
+    },
+    "peptides": {
+      "CeGaT_Class_I": null,
+      "CeGaT_Class_II": null,
+      "JLF": null,
+      "hlathena_best_peptide": null,
+      "hlathena_best_allele": null,
+      "pvac25_best_peptide": null,
+      "pvac25_best_allele": null,
+      "pvac25_ic50_mt": null,
+      "pvac25_ic50_wt": null
+    },
+    "vaccine_peptides": [],
+    "minimal_epitope": null,
+    "gnomad": null,
+    "bam_json_url": null,
+    "xenium": null
+  },
+  {
+    "id": "DYNC1H1-chr14-101980529",
+    "gene": "DYNC1H1",
+    "chr": "chr14",
+    "pos": 101980529,
+    "ref": "G",
+    "alt": "A",
+    "genomic_location": "chr14:101980529",
+    "genomic_change_on_cdna": "c.940G>A",
+    "genomic_ref_context": "TGCCACCGTCAGTTT",
+    "refseq_id": "NM_001376",
+    "refseq_strand": "fwd",
+    "consequence": "missense_variant",
+    "silent_or_nonsense": "no",
+    "variant_type": "snv",
+    "protein_change": "p.Val314Ile",
+    "uniprot_id": "Q14204",
+    "aa_sequence": "KRESPEVLLTLDILKHGKRFHATISFDTDTGLKQALETVNDYNPLMKDFP",
+    "aa_mut_start": 24,
+    "aa_mut_end": 24,
+    "aa_hi_start": 23,
+    "aa_hi_end": 24,
+    "note": null,
+    "detection": {
+      "LENS 2022": true,
+      "LENS 2024": false,
+      "Mutect2 2024": true,
+      "Mutect2 2025": true,
+      "pVACtools 2025": true,
+      "Natera 2022": true,
+      "Tempus 2022": true,
+      "BG 2024": false,
+      "oncoanalyser": true,
+      "DRAGEN": true
+    },
+    "vaccines": {
+      "JLF V1": true,
+      "JLF V2": true,
+      "JLF V3": true,
+      "CeGaT": true,
+      "Cure 2024": true
+    },
+    "validation": {
+      "DAkkS": false,
+      "Elispot": true,
+      "elispot_status": "positive",
+      "elispot_response": "very strong"
+    },
+    "peptides": {
+      "CeGaT_Class_I": "KRFHATISF",
+      "CeGaT_Class_II": "KHGKRFHATISFDTDTGL",
+      "JLF": "GKRFHATISFDTDTGLKQALETKK",
+      "hlathena_best_peptide": null,
+      "hlathena_best_allele": "B2705",
+      "pvac25_best_peptide": "KRFHATISF",
+      "pvac25_best_allele": "HLA-B*27:05",
+      "pvac25_ic50_mt": 54.914,
+      "pvac25_ic50_wt": 55.406
+    },
+    "vaccine_peptides": [
+      {
+        "sequence": "VLLTLDILKHGKRFHATISFDTDTGLKQAL",
+        "in_vaccines": [
+          "mRNA"
+        ],
+        "is_mrna_minimal_epitope": false,
+        "minimal_epitope_offset": 11,
+        "experiments": []
+      },
+      {
+        "sequence": "KRFHATISF",
+        "in_vaccines": [
+          "mRNA"
+        ],
+        "is_mrna_minimal_epitope": true,
+        "minimal_epitope_offset": null,
+        "experiments": [
+          {
+            "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+            "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)   Sample #2: apheresis (2024/05/15)",
+            "date": "2023-09-22",
+            "peptide_id": "P10-3.DYNC1H1",
+            "pool": "S3",
+            "result": "Negative",
+            "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing",
+            "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+            "additional_testing": ""
+          }
+        ]
+      },
+      {
+        "sequence": "GKRFHATISFDTDTGLKQALETKK",
+        "in_vaccines": [
+          "JLF V3",
+          "JLF V2"
+        ],
+        "is_mrna_minimal_epitope": false,
+        "minimal_epitope_offset": 1,
+        "experiments": [
+          {
+            "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+            "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)  Sample #2: apheresis (2024/05/15)  Sample #3: combined PBMCs (2024/07/16, 2024/08/03)  Sample #4: PBMCs (2024/08/20)  Sample #5: combined PBMCs (2024/10/10, 2024/11/21, 2024/12/13)",
+            "date": "2023-09-22",
+            "peptide_id": "JLF-100-038R.MT.52.DYNC1H1",
+            "pool": "L2",
+            "result": "Positive",
+            "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing",
+            "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+            "additional_testing": "Sent to Celldom"
+          },
+          {
+            "experiment": "PFO Lab ex vivo ELISPOT, PFO-S45 (Fall, 2025)",
+            "pbmcs_label": "Apheresis (2024/05/15)",
+            "date": "2024-05-15",
+            "peptide_id": "JLF-100-038R.MT.52.DYNC1H1.2",
+            "pool": "Pool 1",
+            "result": "Positive (Weak)",
+            "summary": "ex vivo ELISPOT optimizing detection of CD8 T cell responses",
+            "outcomes": "ex vivo responses observed in pooled and invididual peptides (MAP2, DYNC1H1); classII blockade supports CD8 resposes",
+            "additional_testing": ""
+          },
+          {
+            "experiment": "PFO Lab ex vivo ELISPOT, PFO-S45 (Fall, 2025)",
+            "pbmcs_label": "Apheresis (2024/05/15)",
+            "date": "2024-05-15",
+            "peptide_id": "JLF-100-038R.MT.52.DYNC1H1.2",
+            "pool": "",
+            "result": "Positive (Weak)",
+            "summary": "ex vivo ELISPOT optimizing detection of CD8 T cell responses",
+            "outcomes": "ex vivo responses observed in pooled and invididual peptides (MAP2, DYNC1H1); classII blockade supports CD8 resposes",
+            "additional_testing": ""
+          },
+          {
+            "experiment": "UNC Immune Monitoring (Summer, 2024)",
+            "pbmcs_label": "Apheresis (2024/05/15), Whole PBMCs",
+            "date": "2024-05-15",
+            "peptide_id": "JLF-100-038R.MT.52.DYNC1H1.2",
+            "pool": "NA",
+            "result": "Positive (Strong)",
+            "summary": "Whole PBMCs individually stimulated with 15 CSBio long peptides. ELISPOT and 10x single cell TCR sequencing",
+            "outcomes": "26 TCRs extracted; 4 reactive to CSBio peptides (1x DYNC1H1, 3x EXOC4) via Class-II stimulation",
+            "additional_testing": "Sent to MUSC for expansion"
+          }
+        ]
+      },
+      {
+        "sequence": "KHGKRFHATISFDTDTGL",
+        "in_vaccines": [
+          "CeGaT"
+        ],
+        "is_mrna_minimal_epitope": false,
+        "minimal_epitope_offset": 3,
+        "experiments": []
+      },
+      {
+        "sequence": "ISFDTDTGL",
+        "in_vaccines": [],
+        "is_mrna_minimal_epitope": false,
+        "minimal_epitope_offset": null,
+        "experiments": [
+          {
+            "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+            "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)   Sample #2: apheresis (2024/05/15)",
+            "date": "2023-09-22",
+            "peptide_id": "P10-1.DYNC1H1",
+            "pool": "S2",
+            "result": "Negative",
+            "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing",
+            "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+            "additional_testing": ""
+          }
+        ]
+      },
+      {
+        "sequence": "RFHATISF",
+        "in_vaccines": [],
+        "is_mrna_minimal_epitope": false,
+        "minimal_epitope_offset": null,
+        "experiments": [
+          {
+            "experiment": "PFO Lab 14-day stim, PFO-S18 (Spring, 2025)",
+            "pbmcs_label": "Sample #1: pre-vaccine PBMCs (2023/09/22)   Sample #2: apheresis (2024/05/15)",
+            "date": "2023-09-22",
+            "peptide_id": "P10-2.DYNC1H1",
+            "pool": "S2",
+            "result": "Negative",
+            "summary": "Various peptide pools; CD8 T cells co-cultured with irradiated EBV-LCLs. ELISPOT and 10x single cell TCR sequencing",
+            "outcomes": "Identification of 2x TECPR1 SCT-binding TCR-Ts via Celldom",
+            "additional_testing": ""
+          }
+        ]
+      }
+    ],
+    "minimal_epitope": "KRFHATISF",
+    "gnomad": null,
+    "bam_json_url": "/variants/bam_json/DYNC1H1_chr14_101980529_GA.json.gz",
+    "xenium": {
+      "alt_allele": "A",
+      "alt_sc": 27.0,
+      "classification": "somatic-specific",
+      "detected": true,
+      "diff_log2or": 1.797,
+      "gene": "DYNC1H1",
+      "loh": false,
+      "mut_type": "snv",
+      "n_datasets": 6,
+      "n_specific": 6,
+      "probe": true,
+      "timepoints": [
+        {
+          "alt": 5349,
+          "sample": "B3",
+          "timepoint": "T0",
+          "vaf": 0.83,
+          "vaf_rest": 0.716,
+          "vaf_tumor": 0.896,
+          "wt": 1097
+        },
+        {
+          "alt": 17636,
+          "sample": "C3",
+          "timepoint": "T0",
+          "vaf": 0.865,
+          "vaf_rest": 0.826,
+          "vaf_tumor": 0.898,
+          "wt": 2764
+        },
+        {
+          "alt": 2567,
+          "sample": "Region_1_0102917",
+          "timepoint": "T1",
+          "vaf": 0.818,
+          "vaf_rest": 0.788,
+          "vaf_tumor": 0.857,
+          "wt": 570
+        },
+        {
+          "alt": 4169,
+          "sample": "Region_1_0102913",
+          "timepoint": "T2",
+          "vaf": 0.793,
+          "vaf_rest": 0.699,
+          "vaf_tumor": 0.851,
+          "wt": 1086
+        },
+        {
+          "alt": 2586,
+          "sample": "Region_1_0103076",
+          "timepoint": "T3",
+          "vaf": 0.832,
+          "vaf_rest": 0.629,
+          "vaf_tumor": 0.939,
+          "wt": 522
+        },
+        {
+          "alt": 2451,
+          "sample": "Region_1_0103350",
+          "timepoint": "T3",
+          "vaf": 0.837,
+          "vaf_rest": 0.688,
+          "vaf_tumor": 0.936,
+          "wt": 478
+        }
+      ],
+      "vaf_rest": 0.724,
+      "vaf_tumor": 0.896
+    }
+  },
+  {
+    "id": "FAM157A-p_W70_Q71ins_14",
+    "gene": "FAM157A",
+    "chr": null,
+    "pos": null,
+    "ref": null,
+    "alt": null,
+    "genomic_location": null,
+    "genomic_change_on_cdna": "c.211_212ins(42)",
+    "genomic_ref_context": null,
+    "refseq_id": "NM_001145248",
+    "refseq_strand": "fwd",
+    "consequence": "inframe_insertion",
+    "silent_or_nonsense": null,
+    "variant_type": null,
+    "protein_change": "p.Trp70_Gln71ins(14)",
+    "uniprot_id": null,
+    "aa_sequence": null,
+    "aa_mut_start": null,
+    "aa_mut_end": null,
+    "aa_hi_start": null,
+    "aa_hi_end": null,
+    "note": null,
+    "detection": {
+      "LENS 2022": false,
+      "LENS 2024": false,
+      "Mutect2 2024": false,
+      "Mutect2 2025": false,
+      "pVACtools 2025": false,
+      "Natera 2022": false,
+      "Tempus 2022": true,
+      "BG 2024": false,
+      "oncoanalyser": false,
+      "DRAGEN": false
+    },
+    "vaccines": {
+      "JLF V1": false,
+      "JLF V2": false,
+      "JLF V3": false,
+      "CeGaT": false,
+      "Cure 2024": false
+    },
+    "validation": {
+      "DAkkS": false,
+      "Elispot": false,
+      "elispot_status": "not_tested",
+      "elispot_response": null
+    },
+    "peptides": {
+      "CeGaT_Class_I": null,
+      "CeGaT_Class_II": null,
+      "JLF": null,
+      "hlathena_best_peptide": null,
+      "hlathena_best_allele": null,
+      "pvac25_best_peptide": null,
+      "pvac25_best_allele": null,
+      "pvac25_ic50_mt": null,
+      "pvac25_ic50_wt": null
+    },
+    "vaccine_peptides": [],
+    "minimal_epitope": null,
+    "gnomad": null,
+    "bam_json_url": null,
+    "xenium": null
+  },
+  {
+    "id": "GTF3C5-chr9-133057893",
+    "gene": "GTF3C5",
+    "chr": "chr9",
+    "pos": 133057893,
+    "ref": "GGAGGAGGAGGAA",
+    "alt": "G",
+    "genomic_location": "chr9:133057893",
+    "genomic_change_on_cdna": "c.1506_1517del",
+    "genomic_ref_context": null,
+    "refseq_id": "NM_00112283",
+    "refseq_strand": "fwd",
+    "consequence": "inframe_deletion",
+    "silent_or_nonsense": "no",
+    "variant_type": "deletion",
+    "protein_change": "p.Glu503_Glu506del",
+    "uniprot_id": "Q9Y5Q8-1",
+    "aa_sequence": "SKRPALFSSSAKADGGKEQLTYESGEDEEDEEEEEEEEEDFKPSDGSENEMETEILDYV",
+    "aa_mut_start": 36,
+    "aa_mut_end": 36,
+    "aa_hi_start": 31,
+    "aa_hi_end": 35,
+    "note": null,
+    "detection": {
+      "LENS 2022": false,
+      "LENS 2024": false,
+      "Mutect2 2024": true,
+      "Mutect2 2025": true,
+      "pVACtools 2025": true,
+      "Natera 2022": true,
+      "Tempus 2022": true,
+      "BG 2024": false,
+      "oncoanalyser": true,
+      "DRAGEN": false
+    },
+    "vaccines": {
+      "JLF V1": false,
+      "JLF V2": false,
+      "JLF V3": false,
+      "CeGaT": false,
+      "Cure 2024": false
+    },
+    "validation": {
+      "DAkkS": false,
+      "Elispot": false,
+      "elispot_status": "not_tested",
+      "elispot_response": null
+    },
+    "peptides": {
+      "CeGaT_Class_I": null,
+      "CeGaT_Class_II": null,
+      "JLF": null,
+      "hlathena_best_peptide": null,
+      "hlathena_best_allele": null,
+      "pvac25_best_peptide": "LTYESGEDEEDEEEEED",
+      "pvac25_best_allele": "DQA1*05:01-DQB1*02:01",
+      "pvac25_ic50_mt": 724.325,
+      "pvac25_ic50_wt": 549.1
+    },
+    "vaccine_peptides": [],
+    "minimal_epitope": null,
+    "gnomad": {
+      "in_gnomad": true,
+      "variant_id": "9-133057893-GGAGGAGGAGGAA-G",
+      "rsids": [
+        "rs762898069"
+      ],
+      "flags": [
+        "lcr"
+      ],
+      "transcripts": [
+        {
+          "transcript_id": "ENST00000372097",
+          "gene_symbol": "GTF3C5",
+          "refseq_id": "NM_012087",
+          "hgvsp": "p.Glu496_Glu499del",
+          "hgvsc": "c.1485_1496del",
+          "is_canonical": true,
+          "is_mane_select": true,
+          "consequence": "inframe_deletion"
+        },
+        {
+          "transcript_id": "ENST00000342018",
+          "gene_symbol": "GTF3C5",
+          "refseq_id": null,
+          "hgvsp": "p.Glu434_Glu437del",
+          "hgvsc": "c.1299_1310del",
+          "is_canonical": false,
+          "is_mane_select": false,
+          "consequence": "inframe_deletion"
+        },
+        {
+          "transcript_id": "ENST00000372099",
+          "gene_symbol": "GTF3C5",
+          "refseq_id": null,
+          "hgvsp": "p.Glu322_Glu325del",
+          "hgvsc": "c.963_974del",
+          "is_canonical": false,
+          "is_mane_select": false,
+          "consequence": "inframe_deletion"
+        },
+        {
+          "transcript_id": "ENST00000372108",
+          "gene_symbol": "GTF3C5",
+          "refseq_id": null,
+          "hgvsp": "p.Glu503_Glu506del",
+          "hgvsc": "c.1506_1517del",
+          "is_canonical": false,
+          "is_mane_select": false,
+          "consequence": "inframe_deletion"
+        },
+        {
+          "transcript_id": "ENST00000489842",
+          "gene_symbol": "GTF3C5",
+          "refseq_id": null,
+          "hgvsp": null,
+          "hgvsc": "n.471_482del",
+          "is_canonical": false,
+          "is_mane_select": false,
+          "consequence": "non_coding_transcript_exon_variant"
+        }
+      ],
+      "exome": {
+        "ac": 27,
+        "an": 1452852,
+        "af": 1.8584136581014446e-05
+      },
+      "genome": {
+        "ac": 2,
+        "an": 152168,
+        "af": 1.314336785657957e-05
+      }
+    },
+    "bam_json_url": "/variants/bam_json/GTF3C5_chr9_133057893_GGAGGAGGAGGAAG.json.gz",
+    "xenium": null
+  },
+  {
+    "id": "SMC5-chr9-70298024",
+    "gene": "SMC5",
+    "chr": "chr9",
+    "pos": 70298024,
+    "ref": "G",
+    "alt": "A",
+    "genomic_location": "chr9:70298024",
+    "genomic_change_on_cdna": "c.***C>A",
+    "genomic_ref_context": "CGACAGAGGAGAATA",
+    "refseq_id": "NM_015110",
+    "refseq_strand": "fwd",
+    "consequence": "missense_variant",
+    "silent_or_nonsense": "no",
+    "variant_type": "snv",
+    "protein_change": "p.Arg371Lys",
+    "uniprot_id": "Q8IY18",
+    "aa_sequence": "KQDVIERKDKHIEELQQALIVKQNEELDRQKRIGNTRKMIEDLQNELKTTENCENLQPQI",
+    "aa_mut_start": 30,
+    "aa_mut_end": 30,
+    "aa_hi_start": 30,
+    "aa_hi_end": 31,
+    "note": null,
+    "detection": {
+      "LENS 2022": false,
+      "LENS 2024": false,
+      "Mutect2 2024": false,
+      "Mutect2 2025": true,
+      "pVACtools 2025": false,
+      "Natera 2022": false,
+      "Tempus 2022": false,
+      "BG 2024": false,
+      "oncoanalyser": true,
+      "DRAGEN": false
+    },
+    "vaccines": {
+      "JLF V1": false,
+      "JLF V2": false,
+      "JLF V3": true,
+      "CeGaT": false,
+      "Cure 2024": false
+    },
+    "validation": {
+      "DAkkS": false,
+      "Elispot": false,
+      "elispot_status": "not_tested",
+      "elispot_response": null
+    },
+    "peptides": {
+      "CeGaT_Class_I": null,
+      "CeGaT_Class_II": null,
+      "JLF": null,
+      "hlathena_best_peptide": null,
+      "hlathena_best_allele": null,
+      "pvac25_best_peptide": "KRIGNTRKM",
+      "pvac25_best_allele": "HLA-C*07:01",
+      "pvac25_ic50_mt": 82.28,
+      "pvac25_ic50_wt": 61.905
+    },
+    "vaccine_peptides": [
+      {
+        "sequence": "EELQQALIVKQNEELDRQKRIGNTRKMIEDL",
+        "in_vaccines": [
+          "mRNA"
+        ],
+        "is_mrna_minimal_epitope": false,
+        "minimal_epitope_offset": 16,
+        "experiments": []
+      },
+      {
+        "sequence": "RQKRIGNTR",
+        "in_vaccines": [
+          "mRNA"
+        ],
+        "is_mrna_minimal_epitope": true,
+        "minimal_epitope_offset": null,
+        "experiments": []
+      },
+      {
+        "sequence": "DRQKRIGNTRKMIEDLQNELK",
+        "in_vaccines": [
+          "JLF V3"
+        ],
+        "is_mrna_minimal_epitope": false,
+        "minimal_epitope_offset": 1,
+        "experiments": []
+      }
+    ],
+    "minimal_epitope": "RQKRIGNTR",
+    "gnomad": null,
+    "bam_json_url": "/variants/bam_json/SMC5_chr9_70298024_GA.json.gz",
+    "xenium": {
+      "alt_allele": "A",
+      "alt_sc": 11.43,
+      "classification": "sample-variable",
+      "detected": true,
+      "diff_log2or": 0.37,
+      "gene": "SMC5",
+      "loh": false,
+      "mut_type": "snv",
+      "n_datasets": 6,
+      "n_specific": 3,
+      "probe": true,
+      "timepoints": [
+        {
+          "alt": 2001,
+          "sample": "B3",
+          "timepoint": "T0",
+          "vaf": 0.093,
+          "vaf_rest": 0.093,
+          "vaf_tumor": 0.093,
+          "wt": 19538
+        },
+        {
+          "alt": 3617,
+          "sample": "C3",
+          "timepoint": "T0",
+          "vaf": 0.094,
+          "vaf_rest": 0.096,
+          "vaf_tumor": 0.091,
+          "wt": 35002
+        },
+        {
+          "alt": 1140,
+          "sample": "Region_1_0102917",
+          "timepoint": "T1",
+          "vaf": 0.152,
+          "vaf_rest": 0.155,
+          "vaf_tumor": 0.148,
+          "wt": 6359
+        },
+        {
+          "alt": 2302,
+          "sample": "Region_1_0102913",
+          "timepoint": "T2",
+          "vaf": 0.203,
+          "vaf_rest": 0.17,
+          "vaf_tumor": 0.238,
+          "wt": 9026
+        },
+        {
+          "alt": 1245,
+          "sample": "Region_1_0103076",
+          "timepoint": "T3",
+          "vaf": 0.151,
+          "vaf_rest": 0.115,
+          "vaf_tumor": 0.209,
+          "wt": 7008
+        },
+        {
+          "alt": 1176,
+          "sample": "Region_1_0103350",
+          "timepoint": "T3",
+          "vaf": 0.159,
+          "vaf_rest": 0.125,
+          "vaf_tumor": 0.213,
+          "wt": 6220
+        }
+      ],
+      "vaf_rest": 0.126,
+      "vaf_tumor": 0.165
+    }
+  }
+]

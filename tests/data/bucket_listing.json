@@ -1,0 +1,37 @@
+{
+  "generated_at": "2026-09-11T23:56:05Z",
+  "bucket": "sid-sijbrandij-osteosarc-dataset",
+  "download_base": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/",
+  "files": [
+    [
+      "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam",
+      6759940194,
+      1780488012
+    ],
+    [
+      "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam.bai",
+      4900480,
+      1780488011
+    ],
+    [
+      "rna-seq/reprocessed/BG009368/BG009368.Aligned.sortedByCoord.out.md.bam",
+      8797368647,
+      1780495573
+    ],
+    [
+      "rna-seq/reprocessed/BG009368/BG009368.Aligned.sortedByCoord.out.md.bam.bai",
+      6547696,
+      1780495572
+    ],
+    [
+      "rna-seq/reprocessed/SARC0277/SARC0277.Aligned.sortedByCoord.out.md.bam",
+      8728666214,
+      1780499533
+    ],
+    [
+      "rna-seq/reprocessed/SARC0277/SARC0277.Aligned.sortedByCoord.out.md.bam.bai",
+      6744032,
+      1780499533
+    ]
+  ]
+}
