@@ -119,8 +119,26 @@ class ReadSubset:
         return pysam.AlignmentFile(str(self.path), index_filename=str(self.index_path))
 
 
+@dataclass(frozen=True)
+class AlignmentInfo:
+    """Original header and acquisition evidence; assembly can be unresolved."""
+
+    path: Path
+    header: dict
+    receipt: dict
+
+    @property
+    def assembly(self):
+        return assembly_from_header(self.header)
+
+
 def _run(command, timeout):
     return subprocess.run(command, check=True, capture_output=True, timeout=timeout)
+
+
+def _samtools_version():
+    # Distribution build flags can contain non-UTF-8 bytes after the version.
+    return _run(["samtools", "--version"], 30).stdout.splitlines()[0].decode("utf-8", errors="replace")
 
 
 def _remote_identity(url, timeout):
@@ -132,18 +150,80 @@ def _remote_identity(url, timeout):
     return {k: fields.get(k) for k in ("etag", "last-modified", "content-length")}
 
 
-def _cached_subset(directory, request):
+def _verified_receipt(directory, request):
     path = directory / "receipt.json"
     if not path.exists():
         return None
     receipt = json.loads(path.read_text())
     if receipt["request"] != request:
-        raise IntegrityError("Read extraction request differs from its cached receipt")
+        raise IntegrityError("Request differs from its cached receipt")
     for filename, expected in receipt["files"].items():
         if (Path(filename).name != filename or not (directory / filename).is_file()
                 or digest(directory / filename) != expected):
-            raise IntegrityError(f"Read subset was modified: {filename}")
+            raise IntegrityError(f"Cached derivative was modified: {filename}")
+    return receipt
+
+
+def _cached_subset(directory, request):
+    receipt = _verified_receipt(directory, request)
+    if receipt is None:
+        return None
     return ReadSubset(directory / "reads.bam", directory / "reads.bam.bai", receipt)
+
+
+def _alignment_source(source):
+    asset = source if isinstance(source, Asset) else None
+    location = asset.url if asset else str(Path(source).resolve()) if not urlsplit(str(source)).scheme else str(source)
+    remote = urlsplit(location).scheme in ("https", "http")
+    if urlsplit(location).scheme and not remote:
+        raise ValueError("Source must be a local path or HTTP(S) URL")
+    if asset is not None and asset.format not in ("bam", "cram"):
+        raise ValueError("Alignment access requires a BAM or CRAM asset")
+    return asset, location, remote
+
+
+def inspect_alignment(source, *, cache=None, snapshot_id=None, timeout=600):
+    """Inspect and cache a BAM/CRAM header without requiring an index.
+
+    Accepts the same sources as extract_reads. Remote headers are pinned on
+    first inspection for a snapshot, checked against inventory size, and reused
+    offline. This establishes assembly from contig lengths, not viewer labels.
+    Extraction rejects a remote object that changed since header inspection.
+    """
+    import pysam
+    cache = cache if isinstance(cache, Cache) else Cache(cache)
+    asset, location, remote = _alignment_source(source)
+    request = dict(schema_version=1, operation="inspect_alignment", source=location,
+                   source_sha256=None if remote else digest(location),
+                   source_size=asset.size if asset else None,
+                   source_modified=asset.modified if asset else None, snapshot_id=snapshot_id)
+    directory = cache.root / "headers" / stable_id(request)
+    with file_lock(cache.root / "locks" / (directory.name + ".lock")):
+        receipt = _verified_receipt(directory, request)
+        if receipt is None:
+            if remote and cache.offline:
+                raise OfflineError("Alignment header is not cached")
+            before = _remote_identity(location, min(timeout, 60)) if remote else None
+            if before and asset and asset.size is not None and before["content-length"] is not None:
+                if int(before["content-length"]) != asset.size:
+                    raise IntegrityError("Remote alignment size differs from the pinned inventory")
+            command = ["samtools", "view", "--no-PG", "-H", location]
+            header_text = _run(command, timeout).stdout.decode()
+            pysam.AlignmentHeader.from_text(header_text)
+            after = _remote_identity(location, min(timeout, 60)) if remote else None
+            if before != after or (not remote and digest(location) != request["source_sha256"]):
+                raise IntegrityError("Alignment changed during header inspection")
+            directory.parent.mkdir(parents=True, exist_ok=True)
+            with tempfile.TemporaryDirectory(dir=directory.parent, prefix=".header-") as temporary:
+                work = Path(temporary)
+                (work / "header.sam").write_text(header_text)
+                receipt = dict(request=request, files={"header.sam": digest(work / "header.sam")},
+                               remote_identity=before, command=command,
+                               samtools_version=_samtools_version())
+                write_json(work / "receipt.json", receipt)
+                os.replace(work, directory)
+        path = directory / "header.sam"
+        return AlignmentInfo(path, pysam.AlignmentHeader.from_text(path.read_text()).to_dict(), receipt)
 
 
 def extract_reads(source, regions, *, cache=None, index=None, filters=None, reference=None,
@@ -168,13 +248,7 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
     regions = tuple(regions)
     if not regions or not all(isinstance(r, Region) for r in regions):
         raise CoordinateError("Provide a nonempty sequence of Region objects")
-    asset = source if isinstance(source, Asset) else None
-    location = asset.url if asset else str(Path(source).resolve()) if not urlsplit(str(source)).scheme else str(source)
-    remote = urlsplit(location).scheme in ("https", "http")
-    if urlsplit(location).scheme and not remote:
-        raise ValueError("Source must be a local path or HTTP(S) URL")
-    if asset is not None and asset.format not in ("bam", "cram"):
-        raise ValueError("Indexed read extraction requires a BAM or CRAM asset")
+    asset, location, remote = _alignment_source(source)
     if index is None:
         if asset and asset.index_urls:
             index = asset.index_urls[0]
@@ -220,10 +294,11 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
             if before and asset and asset.size is not None and before["content-length"] is not None:
                 if int(before["content-length"]) != asset.size:
                     raise IntegrityError("Remote alignment size differs from the pinned inventory")
-            header_command = ["samtools", "view", "--no-PG", "-H", location]
-            header_text = _run(header_command, timeout).stdout.decode()
-            header = pysam.AlignmentHeader.from_text(header_text).to_dict()
-            resolved = resolve_regions(regions, header)
+            info = inspect_alignment(source, cache=cache, snapshot_id=snapshot_id, timeout=timeout)
+            if remote and before != info.receipt["remote_identity"]:
+                raise IntegrityError("Remote alignment changed since header inspection; use a new snapshot")
+            header_text = info.path.read_text()
+            resolved = resolve_regions(regions, info.header)
             index_receipt = None
             if remote_index:
                 index_receipt = cache.fetch(index, refresh=not cache.offline)
@@ -261,8 +336,9 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
             receipt = dict(request=request, files=files, records=count,
                            resolved_regions=[asdict(r) for r in resolved],
                            remote_identity=before,
+                           header_receipt=info.receipt,
                            index_receipt=index_receipt.to_dict() if index_receipt else None,
-                           samtools_version=_run(["samtools", "--version"], 30).stdout.decode().splitlines()[0],
+                           samtools_version=_samtools_version(),
                            pysam_version=pysam.__version__, command=command,
                            scope="regional_records_and_paired_mates" if fetch_pairs else "regional_records")
             write_json(work / "receipt.json", receipt)

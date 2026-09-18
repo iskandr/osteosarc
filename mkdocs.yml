@@ -1,0 +1,28 @@
+site_name: Osteosarc
+site_description: Explore the public osteosarc dataset with one reproducible Python API.
+site_url: https://iskandr.github.io/osteosarc/
+repo_url: https://github.com/iskandr/osteosarc
+edit_uri: edit/main/docs/
+theme:
+  name: mkdocs
+  color_mode: light
+  user_color_mode_toggle: true
+  nav_style: light
+  highlightjs: true
+  hljs_languages: [python, bash]
+nav:
+  - Start here: index.md
+  - Explore files and samples: explore.md
+  - Variants and vaccines: variants.md
+  - Extract reads: reads.md
+  - Consumer recipes: consumers.md
+  - API reference: api.md
+  - Migration: migration.md
+  - Design: design.md
+  - Validation: validation.md
+markdown_extensions:
+  - admonition
+  - tables
+  - fenced_code
+  - toc:
+      permalink: true

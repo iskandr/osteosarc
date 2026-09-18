@@ -123,15 +123,16 @@ class Variant:
 class Collection(Sequence):
     """Immutable sequence with explicit, composable equality filters."""
 
-    def __init__(self, items=()):
+    def __init__(self, items=(), *, source=None):
         self._items = tuple(items)
+        self.source = dict(source or {})
 
     def __len__(self):
         return len(self._items)
 
     def __getitem__(self, key):
         if isinstance(key, slice):
-            return type(self)(self._items[key])
+            return type(self)(self._items[key], source=self.source)
         if isinstance(key, str):
             matches = [item for item in self if item.id == key]
             if len(matches) != 1:
@@ -140,7 +141,7 @@ class Collection(Sequence):
         return self._items[key]
 
     def where(self, predicate):
-        return type(self)(item for item in self if predicate(item))
+        return type(self)((item for item in self if predicate(item)), source=self.source)
 
     def to_records(self):
         return [asdict(item) for item in self]
@@ -197,3 +198,32 @@ class Variants(Collection):
     def regions(self, *, padding=0):
         """Convert all selected literal alleles; unresolved entries raise."""
         return tuple(v.region(padding=padding) for v in self)
+
+    def to_varcode(self, *, genome, assembly=None):
+        """Return native variants on the caller's PyEnsembl reference.
+
+        Custom-named subset genomes require an explicit assembly. Their unique
+        reference_name is preserved. Every selected entry must have a ready
+        allele; metadata retains original entries even if Varcode merges them.
+        No annotation data are downloaded by this adapter.
+        """
+        from varcode import Variant as NativeVariant
+        from varcode import VariantCollection
+
+        from .reads import ASSEMBLY_LENGTHS, normalize_assembly
+        named = normalize_assembly(genome.reference_name)
+        declared = normalize_assembly(assembly) if assembly else named
+        if declared not in ASSEMBLY_LENGTHS:
+            raise ValueError("Supply assembly='GRCh38' or 'GRCh37' for a custom-named genome")
+        if named in ASSEMBLY_LENGTHS and named != declared:
+            raise ValueError("Declared assembly conflicts with the genome reference name")
+        result, metadata = [], {}
+        for item in self:
+            if normalize_assembly(item.assembly) != declared:
+                raise ValueError("Genome assembly must match variant assembly")
+            chrom, pos, ref, alt = item.allele
+            variant = NativeVariant(chrom.removeprefix("chr"), pos, ref, alt, ensembl=genome)
+            result.append(variant)
+            metadata.setdefault(variant, dict(source=dict(self.source), entries=[]))["entries"].append(asdict(item))
+        source = "osteosarc:" + self.source.get("snapshot_id", "unversioned")
+        return VariantCollection(result, source_to_metadata_dict={source: metadata})

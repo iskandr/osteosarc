@@ -58,6 +58,8 @@ def asset_type(key):
     if lower.endswith((".bai", ".csi", ".crai", ".tbi", ".fai")):
         return "index", lower.rsplit(".", 1)[-1]
     base = lower.removesuffix(".gz").removesuffix(".bgz")
+    if base.endswith((".genes.results", ".isoforms.results")):
+        return "expression", "tsv"
     suffix = base.rsplit(".", 1)[-1] if "." in base else ""
     if suffix in ("bam", "cram", "sam"):
         return "alignment", suffix
@@ -188,7 +190,7 @@ def parse_data_paths(html):
         title = context.lower()
         assay = ("wgs" if "whole genome" in title or re.search(r"\bwgs\b", title) else
                  "wes" if "whole exome" in title or re.search(r"\bwes\b", title) else
-                 "scrna-seq" if any(x in title for x in ("single cell", "single-cell", "long-read rna")) else
+                 "scrna-seq" if any(x in title for x in ("single cell", "single-cell")) else
                  "rna-seq" if "bulk rna" in title else None)
         platform = ("ont" if "nanopore" in title else "pacbio" if "pacbio" in title else
                     "illumina" if "illumina" in title else None)
@@ -204,7 +206,7 @@ def parse_data_paths(html):
                 continue
             points = set(re.findall(r"\bT[0-3]\b", values.get("Timepoint", "")))
             tissue = values.get("Tissue", "").lower()
-            tissue = {"tumor": "tumor", "normal": "blood", "normal (blood)": "blood",
+            tissue = {"tumor": "tumor", "normal": "normal", "normal (blood)": "blood",
                       "blood normal": "blood", "organoid": "organoid"}.get(tissue)
             label = " | ".join(v for k, v in values.items() if k not in ("Bucket Path", "Size", "Files"))
             result.append((values["Bucket Path"].strip("`"), SampleClaim(

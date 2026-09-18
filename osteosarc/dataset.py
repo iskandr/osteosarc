@@ -11,13 +11,12 @@ from pathlib import Path
 from .cache import Cache, Receipt, file_lock, stable_id, write_json
 from .catalog import (
     SNAPSHOT_SOURCES,
-    TABLE_SOURCES,
     build_assets,
     parse_data_paths,
 )
 from .errors import IntegrityError, SchemaError
 from .models import Asset
-from .parsing import Table, parse_file, parse_table, parse_variants, read_text
+from .parsing import PARSE_FORMATS, Table, parse_file, parse_table, parse_variants, read_text
 
 
 class Dataset:
@@ -116,7 +115,8 @@ class Dataset:
     def _variants(self):
         return parse_variants(read_text(self.source_path("variant_index")), self.vafs,
                               source_variants=self._json("source_variants"),
-                              vaccine_overlap=self._json("vaccine_overlap"))
+                              vaccine_overlap=self._json("vaccine_overlap"),
+                              source={"snapshot_id": self.id, "receipts": self.manifest["sources"]})
 
     def variants(self, set="site", **filters):
         """Select 'site', 'all' (includes count-export entries), or 'vaccine'.
@@ -232,14 +232,23 @@ class Dataset:
     def parse(self, asset):
         """Download explicitly selected data and parse it with original columns."""
         asset = asset if isinstance(asset, Asset) else self.asset(asset)
+        if asset.format not in PARSE_FORMATS:
+            raise ValueError(f"No built-in parser for {asset.format!r}; download the original asset")
         return parse_file(self.download(asset), format=asset.format,
                           source=dict(url=asset.url, snapshot_id=self.id))
 
-    def table(self, name):
-        """Read a named site table; VAF tables use this snapshot's pinned bytes."""
-        if name not in TABLE_SOURCES:
-            raise KeyError(f"Unknown table {name!r}; use parse(asset) for bucket tables")
-        return self.parse(name)
+    def table(self, asset):
+        """Read any CSV/TSV asset, including named site tables and RSEM output."""
+        asset = asset if isinstance(asset, Asset) else self.asset(asset)
+        if asset.format not in ("csv", "tsv"):
+            raise ValueError("table requires a CSV or TSV asset")
+        return self.parse(asset)
+
+    def inspect_alignment(self, asset, **kwargs):
+        """Cache the alignment header to inspect assembly before choosing regions."""
+        from .reads import inspect_alignment
+        asset = asset if isinstance(asset, Asset) else self.asset(asset)
+        return inspect_alignment(asset, cache=self.cache, snapshot_id=self.id, **kwargs)
 
     def extract_reads(self, asset, regions, **kwargs):
         """Extract an indexed region union; see osteosarc.extract_reads."""
@@ -263,25 +272,6 @@ class Dataset:
         if asset.index_urls:
             index = self.download(asset.index_urls[0])
         return pysam.VariantFile(str(path), index_filename=str(index) if index else None)
-
-    def to_varcode(self, variants=None, *, genome):
-        """Construct a VariantCollection on an explicitly supplied reference.
-
-        The caller supplies a compatible pyensembl Genome; no annotation data
-        are implicitly installed. Original Variant metadata remains in the
-        Dataset. A source-reported allele is not a clinical truth assertion.
-        """
-        from varcode import Variant, VariantCollection
-
-        from .reads import normalize_assembly
-        selected = self.variants(status="ready") if variants is None else variants
-        result = []
-        for item in selected:
-            if normalize_assembly(genome.reference_name) != normalize_assembly(item.assembly):
-                raise ValueError("Varcode genome assembly must match variant assembly")
-            chrom, pos, ref, alt = item.allele
-            result.append(Variant(chrom.removeprefix("chr"), pos, ref, alt, ensembl=genome))
-        return VariantCollection(result)
 
     def receipts(self):
         return {name: Receipt(**value) for name, value in self.manifest["sources"].items()}

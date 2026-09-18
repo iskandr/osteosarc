@@ -15,6 +15,8 @@ from bs4 import BeautifulSoup
 from .errors import SchemaError
 from .models import Variant, Variants
 
+PARSE_FORMATS = frozenset(("json", "csv", "tsv", "fasta", "fa", "fna", "faa"))
+
 
 class Table:
     """Source-preserving table. Missing strings and numeric zero remain distinct."""
@@ -72,9 +74,12 @@ def parse_table(text, *, delimiter="\t", source=None, required=()):
 
 def parse_file(path, *, format=None, source=None):
     """Parse JSON, CSV, TSV, or FASTA without changing source annotations."""
-    text = read_text(path)
     suffix = Path(str(path).removesuffix(".gz")).suffix.lstrip(".").lower()
-    format = format or suffix
+    rsem = str(path).removesuffix(".gz").endswith((".genes.results", ".isoforms.results"))
+    format = format or ("tsv" if rsem else suffix)
+    if format not in PARSE_FORMATS:
+        raise ValueError(f"No built-in parser for {format!r}; download the original asset")
+    text = read_text(path)
     if format == "json":
         return json.loads(text)
     if format in ("csv", "tsv"):
@@ -115,7 +120,7 @@ def parse_variant_index(html):
     return rows
 
 
-def parse_variants(index_html, vafs, *, source_variants=(), vaccine_overlap=None):
+def parse_variants(index_html, vafs, *, source_variants=(), vaccine_overlap=None, source=None):
     """Join exact IDs; preserve unresolvable entries and source disagreements.
 
     The GRCh38 label is the site's assertion, not independent REF validation.
@@ -190,4 +195,4 @@ def parse_variants(index_html, vafs, *, source_variants=(), vaccine_overlap=None
                               entry.get("on_site", True), count, membership,
                               tuple(sorted(k for k, value in record.get("detection", {}).items() if value)),
                               extra))
-    return Variants(result)
+    return Variants(result, source=source)

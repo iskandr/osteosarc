@@ -22,6 +22,22 @@ joins, missing versus zero values, complete S3 pagination, assembly and
 mitochondrial checks, indexed region unions, real duplicate preservation,
 filter effects, offline extraction reuse, and explicit template sampling.
 
+The consumer review additionally exercises custom-named PyEnsembl references
+and retained Varcode metadata, native Isovar read evidence, Topiary RSEM/pVAC
+imports (including header-only reports), paired-mate recovery outside a panel,
+cached header inspection, changed remote identities, and untested vaccine assay
+states. The native adapter tests run with Varcode 7.0.0, Isovar 1.17.0, and
+Topiary 5.55.1 in a dedicated CI job. No reference downloads or prediction
+models are needed. Full consumer scientific pipelines remain their own tests.
+
+Review found and fixed a Linux-specific failure: SAMtools distribution build
+flags can contain non-UTF-8 bytes after the version line. Version receipts now
+decode only the version line, with a regression test. Parser support is checked
+before downloading an unsupported large alignment object.
+
+Documentation builds with `python -m mkdocs build --strict`. PRs validate the
+site; merges to main publish it through the GitHub Pages workflow.
+
 ## Public smoke check performed 2026-09-18
 
 The public website bucket listing was generated **2026-09-11T23:56:05Z**.

@@ -75,6 +75,11 @@ metadata is not replaced with a guessed platform or sample identity.
 
 Existing cached files can be adopted without redownloading:
 
+See [consumer recipes](consumers.md) for the native API calls and usage-test
+coverage. Custom subset genomes keep their unique reference names and use
+`selected.to_varcode(genome=genome, assembly="GRCh38")`. Header surveys use
+`data.inspect_alignment(asset)` before the consumer chooses coordinates.
+
 ```python
 from osteosarc import Cache
 

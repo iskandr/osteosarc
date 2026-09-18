@@ -72,3 +72,8 @@ def test_data_page_links_enrich_raw_files_without_provider_guessing(dataset):
     claim = next(c for prefix, c in claims if prefix == "rna-seq/fastq/bostongene_2022")
     assert claim.timepoint == "T0" and claim.assay == "rna-seq"
     assert claim.platform is None
+def test_unsupported_format_does_not_read_large_file(tmp_path):
+    from osteosarc import parse_file
+    # The nonexistent path must not be opened before deciding parser support.
+    with pytest.raises(ValueError, match="No built-in parser"):
+        parse_file(tmp_path / "huge.bam")

@@ -8,6 +8,9 @@ The initial implementation consolidates the acquisition patterns found in
 Varcode, Isovar, Topiary, and Vaxrank. Those repositories have not yet been
 migrated. See the [comparison and migration guide](docs/migration.md).
 
+[Documentation and short examples](https://iskandr.github.io/osteosarc/) ·
+[Consumer migration recipes](docs/consumers.md)
+
 ## Install
 
 Python 3.10+, Linux or macOS, and `curl` are required. Indexed read extraction
@@ -211,7 +214,7 @@ receipt as a sampled fixture unsuitable for estimating VAF.
 ```python
 # Optional varcode / pyensembl adapter; the caller provides its reference.
 from pyensembl import EnsemblRelease
-variants = data.to_varcode(ready, genome=EnsemblRelease(95))
+variants = ready.to_varcode(genome=EnsemblRelease(95))
 # Pass variants and subset.path to Isovar, then its products to Topiary/Vaxrank.
 ```
 

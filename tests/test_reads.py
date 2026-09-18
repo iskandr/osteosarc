@@ -10,6 +10,7 @@ from osteosarc import (
     ReadFilter,
     Region,
     extract_reads,
+    inspect_alignment,
     resolve_regions,
     subset_templates,
 )
@@ -66,6 +67,49 @@ def test_cached_reads_verified_and_reused_offline(bam, tmp_path, monkeypatch):
     subset.path.write_bytes(b"modified")
     with pytest.raises(IntegrityError):
         extract_reads(bam, regions, cache=cache)
+
+
+def test_cached_header_reuse_and_corruption(bam, tmp_path, monkeypatch):
+    cache = Cache(tmp_path / "cache", offline=True)
+    info = inspect_alignment(bam, cache=cache)
+    assert info.assembly == "GRCh38"
+    import osteosarc.reads
+    monkeypatch.setattr(osteosarc.reads, "_run", lambda *a: pytest.fail("cached header executed a command"))
+    assert inspect_alignment(bam, cache=cache).header == info.header
+    info.path.write_text("corrupted")
+    with pytest.raises(IntegrityError):
+        inspect_alignment(bam, cache=cache)
+
+
+def test_remote_extraction_refuses_changed_header_source(bam, tmp_path, monkeypatch):
+    import osteosarc.reads as reads
+    real_run = reads._run
+    url = "https://example.test/alignment.bam"
+    identity = {"etag": '"original"', "content-length": str(bam.stat().st_size), "last-modified": None}
+    monkeypatch.setattr(reads, "_remote_identity", lambda *a: dict(identity))
+
+    def remote_header(command, timeout):
+        assert command[:4] == ["samtools", "view", "--no-PG", "-H"] or command == ["samtools", "--version"]
+        return real_run([str(bam) if c == url else c for c in command], timeout)
+
+    monkeypatch.setattr(reads, "_run", remote_header)
+    cache = Cache(tmp_path / "cache")
+    info = inspect_alignment(url, cache=cache, snapshot_id="snapshot")
+    assert info.assembly == "GRCh38"
+    offline = Cache(cache.root, offline=True)
+    assert inspect_alignment(url, cache=offline, snapshot_id="snapshot").path == info.path
+    identity["etag"] = '"replacement"'
+    with pytest.raises(IntegrityError, match="since header inspection"):
+        extract_reads(url, [Region("chr1", 100, 160, "GRCh38")], cache=cache,
+                      index=str(bam) + ".bai", snapshot_id="snapshot")
+
+
+def test_samtools_version_ignores_non_utf8_distribution_build_flags(monkeypatch):
+    from subprocess import CompletedProcess
+
+    import osteosarc.reads as reads
+    monkeypatch.setattr(reads, "_run", lambda *a: CompletedProcess([], 0, b"samtools 1.19.2\nflags: \xab\n"))
+    assert reads._samtools_version() == "samtools 1.19.2"
 
 
 def test_assembly_mismatch_and_missing_index_fail_before_query(bam, tmp_path):

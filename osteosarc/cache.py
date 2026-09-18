@@ -186,6 +186,7 @@ class Cache:
         try:
             with os.fdopen(fd, "wb") as handle, path.open("rb") as source:
                 shutil.copyfileobj(source, handle)
+            self._validate(Path(temporary), sha256=checksum, size=receipt.size)
             os.replace(temporary, output)
         finally:
             Path(temporary).unlink(missing_ok=True)

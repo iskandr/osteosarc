@@ -89,6 +89,13 @@ def test_acquired_data_remains_pinned_after_url_refresh(dataset, tmp_path):
         dataset.download(asset, refresh=True)
 
 
+def test_unsupported_parser_refuses_before_downloading_alignment(dataset, monkeypatch):
+    asset = dataset.assets.select(format="bam")[0]
+    monkeypatch.setattr(dataset, "download", lambda *a: pytest.fail("downloaded unsupported format"))
+    with pytest.raises(ValueError, match="No built-in parser"):
+        dataset.parse(asset)
+
+
 def test_vcf_annotations_and_indexed_subsetting(dataset, tmp_path):
     import pysam
 
