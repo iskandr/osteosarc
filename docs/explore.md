@@ -49,9 +49,19 @@ for asset in conflicted[:3]:
 
 An asset is a file or processing product, not an independent biological sample.
 `samples` contains source-attributed claims and the associated asset IDs. Dates
-retain their published precision. Conflicting claims do not match metadata
-filters unless `include_conflicts=True`; path inferences require
-`include_inferred=True`. Review those claims before combining samples.
+retain their published precision; a month and a day within it do not conflict.
+Conflicting claims do not match metadata filters unless `include_conflicts=True`;
+path inferences require `include_inferred=True`. Review those claims before
+combining samples. For biological specimens (T0_tumor, blood_2025-06-26, ...)
+linked to their files, use `data.specimens` (see [timelines](timeline.md)).
+
+Label vocabulary lives in `osteosarc/curation.py`. For example, "Normal" and
+"Blood" are the same tissue (`blood`), because every normal here is a blood
+normal. A `CITE` viewer label means `cite-seq`. With the default corrections,
+the stale viewer labels for BG009368 and SARC0277 are fixed, and no
+sample-metadata conflicts remain. `Dataset.open(..., corrections=False)` shows
+the three genuine source disagreements. Unrecognized source labels are listed
+in `data.unrecognized`.
 
 ## Download exactly what you need
 
@@ -97,11 +107,13 @@ Interrupted whole-file downloads restart; byte-range resume is not implemented.
 Adopt a previously downloaded object using its original URL and receipt:
 
 ```python
-from osteosarc import Cache
+from osteosarc import Cache, digest
 
-# old_path, original_url, and expected_sha256 come from your existing manifest.
+# Stand-ins for an entry in your existing manifest: the table downloaded above.
+old_path, original_url = path, data.asset("snv_top").url
 cache = Cache()
-receipt = cache.import_file(old_path, original_url, sha256=expected_sha256)
+receipt = cache.import_file(old_path, original_url, sha256=digest(old_path))
+print(receipt.url, receipt.sha256)
 ```
 
 ## Explicit live discovery

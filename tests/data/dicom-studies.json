@@ -1,0 +1,50 @@
+{
+  "generated": {
+    "studyCount": 136,
+    "seriesCount": 1173,
+    "instanceCount": 125091,
+    "firstDate": "20221110",
+    "lastDate": "20260305",
+    "years": [
+      "2022",
+      "2023",
+      "2024",
+      "2025",
+      "2026"
+    ]
+  },
+  "studies": [
+    {
+      "slug": "2024-06-11_CT_SPECIALS_1LUNG_BX_ADULT",
+      "studyInstanceUID": "2.25.195862496764117660266212954548349555338",
+      "studyDate": "20240611",
+      "year": "2024",
+      "title": "Specials^1Lung_Bx (Adult)",
+      "modality": "CT",
+      "modalities": [
+        "CT"
+      ],
+      "seriesCount": 9,
+      "instanceCount": 120,
+      "thumb": "/dicom/dicomweb/studies/2.25.195862496764117660266212954548349555338/thumbnail",
+      "viewerUrl": "/dicom/viewer?StudyInstanceUIDs=2.25.195862496764117660266212954548349555338",
+      "impression": ""
+    },
+    {
+      "slug": "2025-01-28_CT_1BX_INTERVENTION_ADULT",
+      "studyInstanceUID": "2.25.85897207415471475978829444454163520909",
+      "studyDate": "20250128",
+      "year": "2025",
+      "title": "1Bx_Intervention(Adult)",
+      "modality": "CT",
+      "modalities": [
+        "CT"
+      ],
+      "seriesCount": 25,
+      "instanceCount": 2669,
+      "thumb": "/dicom/dicomweb/studies/2.25.85897207415471475978829444454163520909/thumbnail",
+      "viewerUrl": "/dicom/viewer?StudyInstanceUIDs=2.25.85897207415471475978829444454163520909",
+      "impression": ""
+    }
+  ]
+}

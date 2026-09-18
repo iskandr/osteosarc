@@ -1,0 +1,89 @@
+{
+  "date_source": "scripts/flow_data/sample_dates.tsv (lab analysis workbook)",
+  "samples": [
+    {
+      "id": "250929_260625-WLS",
+      "draw_date": "2025-06-24",
+      "label": "Jun 24, 2025",
+      "resolved": true,
+      "note": "filename looks like 2026-06-25 but is the 2025-06-24 draw (replicate)",
+      "batch": "250929",
+      "file": "260625 WLS",
+      "unmixing": "autospectral",
+      "image": "/data/flow/panels/250929_260625-WLS.png",
+      "dated": true,
+      "events": 5464588,
+      "gated_events": 113570,
+      "retention": {
+        "cells": 1.0,
+        "singlet": 0.9527,
+        "live": 0.7571,
+        "cd45_pos": 0.185,
+        "final": 0.7571
+      }
+    },
+    {
+      "id": "251022_6-24-2025-WLS",
+      "draw_date": "2025-06-24",
+      "label": "Jun 24, 2025",
+      "resolved": true,
+      "note": "",
+      "batch": "251022",
+      "file": "6-24-2025 WLS",
+      "unmixing": "autospectral",
+      "image": "/data/flow/panels/251022_6-24-2025-WLS.png",
+      "dated": true,
+      "events": 1917085,
+      "gated_events": 96018,
+      "retention": {
+        "cells": 1.0,
+        "singlet": 0.9809,
+        "live": 0.6401,
+        "cd45_pos": 0.5588,
+        "final": 0.6401
+      }
+    },
+    {
+      "id": "250929_250724-WLS",
+      "draw_date": "2025-07-22",
+      "label": "Jul 22, 2025",
+      "resolved": true,
+      "note": "filename says 07-24 but true draw is 2025-07-22",
+      "batch": "250929",
+      "file": "250724 WLS",
+      "unmixing": "autospectral",
+      "image": "/data/flow/panels/250929_250724-WLS.png",
+      "dated": true,
+      "events": 1837624,
+      "gated_events": 50595,
+      "retention": {
+        "cells": 1.0,
+        "singlet": 0.9766,
+        "live": 0.3373,
+        "cd45_pos": 0.5359,
+        "final": 0.3373
+      }
+    },
+    {
+      "id": "260716_260622",
+      "draw_date": "2026-06-22",
+      "label": "Jun 22, 2026",
+      "resolved": false,
+      "note": "postdates the analysis workbook; provisional from filename, confirm with lab",
+      "batch": "260716",
+      "file": "260622",
+      "unmixing": "plain",
+      "image": "/data/flow/panels/260716_260622.png",
+      "dated": true,
+      "events": 7609512,
+      "gated_events": 45933,
+      "retention": {
+        "cells": 0.5229,
+        "singlet": 0.514,
+        "live": 0.3062,
+        "cd45_pos": 0.1163,
+        "final": 0.3062
+      }
+    }
+  ]
+}

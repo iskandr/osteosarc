@@ -1,0 +1,67 @@
+{
+  "assays": {
+    "signatera_genome": {
+      "name": "Signatera",
+      "unit": "MTM/mL",
+      "scale": "linear",
+      "max_value": 5
+    },
+    "northstar_response_v2": {
+      "name": "Northstar",
+      "unit": "TMS",
+      "scale": "linear",
+      "max_value": 100
+    },
+    "personalis": {
+      "name": "Personalis",
+      "unit": "PPM",
+      "scale": "logarithmic",
+      "max_value": 1000
+    }
+  },
+  "measurements": [
+    {
+      "date": "2023-01-30",
+      "assay": "signatera_genome",
+      "value": "not_detected"
+    },
+    {
+      "date": "2024-06-11",
+      "assay": "signatera_genome",
+      "value": 2.46
+    },
+    {
+      "date": "2024-06-11",
+      "assay": "personalis",
+      "value": 963.0
+    },
+    {
+      "date": "2024-09-21",
+      "assay": "northstar_response_v2",
+      "value": {
+        "below_loq": 25.0
+      }
+    },
+    {
+      "date": "2024-10-25",
+      "assay": "northstar_response_v2",
+      "value": {
+        "below_loq": 25.0
+      }
+    },
+    {
+      "date": "2024-11-20",
+      "assay": "northstar_response_v2",
+      "value": {
+        "below_loq": 25.0
+      }
+    },
+    {
+      "date": "2025-11-05",
+      "assay": "northstar_response_v2",
+      "value": {
+        "below_loq": 10.0
+      }
+    }
+  ]
+}

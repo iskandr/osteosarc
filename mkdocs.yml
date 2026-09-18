@@ -12,10 +12,13 @@ theme:
   hljs_languages: [python, bash]
 nav:
   - Start here: index.md
+  - Guided tour: tour.md
   - Explore files and samples: explore.md
   - Variants and vaccines: variants.md
+  - Timelines and specimens: timeline.md
   - Extract reads: reads.md
   - Consumer recipes: consumers.md
+  - Corrections and drift: curation.md
   - API reference: api.md
   - Migration: migration.md
   - Design: design.md

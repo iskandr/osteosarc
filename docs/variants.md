@@ -26,6 +26,12 @@ print([(v.id, v.status) for v in unresolved])
 
 `ready` means the sources provide one internally consistent literal allele.
 It does not establish biological truth or validate REF against a genome.
+Internal consistency is weaker than it sounds: five published positions matched
+the right gene and reference base but were the wrong locus. By default, the
+verified corrections in [corrections](curation.md) supply those alleles and fix
+MAP2's vaccine target. `variant.annotations["corrections"]` names any
+correction that touched an entry, and `Dataset.open(..., corrections=False)`
+gives the published alleles.
 Unresolved entries remain inspectable. Their `.allele` and `.region()` raise;
 select explicitly before extracting reads. Indel anchors are retained.
 

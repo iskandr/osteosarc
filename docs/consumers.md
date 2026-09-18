@@ -9,7 +9,18 @@ from osteosarc import Dataset
 
 data = Dataset.open("baseline", offline=False)
 selected = data.variants("vaccine", status="ready")
+print(selected.source["corrections"][:3])   # applied correction IDs travel with the selection
 ```
+
+Verified corrections are on by default (see [corrections](curation.md)):
+
+* The MAP2 vaccine target is the observed complex allele, not the published
+  22-bp deletion.
+* Five Tempus entries become `ready` at their literal alleles.
+* The GRCh37 Tempus BAM's website counts are cleared.
+
+Native Varcode metadata records the applied IDs. For comparisons with
+published results, open a second Dataset with `corrections=False`.
 
 ## Varcode: selected alleles on your reference
 
@@ -28,8 +39,13 @@ For the custom-named partial genomes used in the fixture suites, keep their
 unique names and state assembly explicitly:
 
 ```python
-# genome is the already-created/indexed PyEnsembl subset from your fixture code.
+from pyensembl import Genome
+
+# Stand-in for your fixture's custom subset genome; to_varcode reads no annotation files.
+genome = Genome(reference_name="GRCh38-osteosarc-six-transcript-subset",
+                annotation_name="fixture", gtf_path_or_url="subset.gtf")
 native = selected.to_varcode(genome=genome, assembly="GRCh38")
+print(native[0].ensembl.reference_name)
 ```
 
 This preserves the genome's cache identity. A conflicting known reference name

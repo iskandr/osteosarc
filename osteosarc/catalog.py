@@ -8,12 +8,17 @@ from pathlib import PurePosixPath
 from urllib.parse import quote, unquote, urljoin, urlsplit
 
 from .cache import stable_id
+from .curation import (
+    ASSAYS,
+    label_assay,
+    label_claims,
+    normalize_provider,
+    normalize_timepoint,
+    normalize_tissue,
+)
 from .errors import SchemaError
 from .models import Asset, Assets, SampleClaim
-
-SITE = "https://osteosarc.com/"
-BUCKET = "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/"
-SOURCE_REPO = "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/"
+from .urls import BUCKET, SITE, SOURCE_REPO
 
 SNAPSHOT_SOURCES = {
     "bams": SITE + "bams/bams.json",
@@ -27,6 +32,22 @@ SNAPSHOT_SOURCES = {
     "data_page": SITE + "data/",
 }
 
+#: Dated sources behind the timeline and specimen views (about 1.7 MB).
+#: Snapshots created before these existed still open; their timeline is unavailable.
+TIMELINE_SOURCES = {
+    "events": SITE + "data/events.json",
+    "events_sheet": SOURCE_REPO + "scripts/timeline/timeline.csv",
+    "mrd": SITE + "data/mrd.json",
+    "specimens": SOURCE_REPO + "scripts/data/samples-consolidated.tsv",
+    "timepoint_summary": SOURCE_REPO + "src/data/samples.json",
+    "fastqs": SOURCE_REPO + "scripts/data/fastqs-consolidated.tsv",
+    "flow": SITE + "data/flow/manifest.json",
+    "imaging": SOURCE_REPO + "src/data/dicom-studies.json",
+    "pathology": SOURCE_REPO + "src/data/pathology-slides.json",
+    "labs": SITE + "data/lab_results.tsv",
+    "cytometry": SITE + "data/cytometry.tsv",
+}
+
 TABLE_SOURCES = {
     "vafs": (SNAPSHOT_SOURCES["vafs"], "tsv"),
     "vaf_columns": (SNAPSHOT_SOURCES["vaf_columns"], "tsv"),
@@ -34,22 +55,6 @@ TABLE_SOURCES = {
     "dna_fusions": (SITE + "fusions/tables/prioritized.tsv", "tsv"),
     "rna_fusions": (SITE + "ctat_lr_fusion/tables/lr_fusions_concordance.tsv", "tsv"),
 }
-
-ASSAYS = {"RNA": ("rna-seq", None), "WGS": ("wgs", None), "WES": ("wes", None),
-          "scRNA ONT": ("scrna-seq", "ont"), "scRNA_ONT": ("scrna-seq", "ont"),
-          "PacBio": ("scrna-seq", "pacbio"), "scRNA": ("scrna-seq", None),
-          "Tumor scRNA": ("scrna-seq", None), "Blood scRNA": ("scrna-seq", None),
-          "CITE": ("cite-seq", None)}
-
-
-def normalize_provider(value):
-    """Normalize spelling aliases without changing the underlying source rows."""
-    return {"Boston Gene": "BostonGene"}.get(value, value) or None
-
-
-def normalize_timepoint(value):
-    """Separate the explicit T1-organoid label from its specimen annotation."""
-    return {"T1-organoid": "T1"}.get(value, value) or None
 
 
 def asset_type(key):
@@ -83,7 +88,7 @@ def bucket_url(key, base=BUCKET):
     return base.rstrip("/") + "/" + quote(key, safe="/")
 
 
-def _key(value, base):
+def object_key(value, base=BUCKET):
     if value.startswith(base):
         return unquote(value[len(base):])
     if urlsplit(value).scheme:
@@ -107,7 +112,7 @@ def build_assets(listing, bams, metadata, vafs, path_claims=()):
     catalog, claims, extra = {}, defaultdict(list), defaultdict(dict)
     for category in bams["categories"]:
         for row in category["bams"]:
-            key = _key(row["url"], bams["baseUrl"])
+            key = object_key(row["url"], bams["baseUrl"])
             if key in catalog:
                 raise SchemaError(f"Duplicate catalog alignment: {key}")
             catalog[key] = row
@@ -115,39 +120,48 @@ def build_assets(listing, bams, metadata, vafs, path_claims=()):
             assay, platform = ASSAYS.get(category["name"], (None, None))
             match = re.match(r"(T\d+)\b", row["name"])
             claims[key].append(SampleClaim("bams", row["name"], match[1] if match else None,
-                                           assay=assay, platform=platform, tissue=row.get("tissue")))
+                                           assay=label_assay(row["name"], assay), platform=platform,
+                                           tissue=normalize_tissue(row.get("tissue")),
+                                           **label_claims(row["name"])))
             extra[key].update(catalog=row, category=category["name"],
                               catalog_genome_assertion=bams.get("genome"))
     for row in metadata:
         if not row.get("s3_path"):
             continue
-        key = _key(row["s3_path"], base)
+        key = object_key(row["s3_path"], base)
         objects.setdefault(key, dict(size=None, modified=None))
         assay, platform = ASSAYS.get(row.get("assay"), (None, None))
         claims[key].append(SampleClaim("bam_metadata", row["display_name"], normalize_timepoint(row.get("timepoint")),
                                        row.get("sample_date") or None, assay, platform,
-                                       row.get("tissue", "").lower() or None, normalize_provider(row.get("provider"))))
+                                       normalize_tissue(row.get("tissue")), normalize_provider(row.get("provider"))))
         extra[key].setdefault("metadata_rows", []).append(row)
     counts = Counter(PurePosixPath(key).name for key in objects if asset_type(key)[0] == "alignment")
     by_basename = defaultdict(set)
     for row in vafs:
         by_basename[row["bam_file"]].add(tuple(row.get(k, "") for k in
             ("sample_label", "timepoint", "sample_date", "assay_type", "tissue", "data_source")))
+    by_path = defaultdict(list)
+    for prefix, claim in path_claims:
+        by_path[prefix.rstrip("/")].append(claim)
     assets = []
     for key, object_metadata in objects.items():
         kind, format = asset_type(key)
         info = dict(extra.get(key, {}))
         records = list(claims.get(key, ()))
-        for prefix, claim in path_claims:
-            if key == prefix.rstrip("/") or key.startswith(prefix.rstrip("/") + "/"):
-                records.append(claim)
+        # The most specific data-page path wins: a file's own row overrides the
+        # row for its directory, which can also hold other assays' files.
+        parts = key.split("/")
+        for depth in range(len(parts), 0, -1):
+            if "/".join(parts[:depth]) in by_path:
+                records.extend(by_path["/".join(parts[:depth])])
+                break
         if kind == "alignment":
             basename = PurePosixPath(key).name
             if counts[basename] == 1:
                 for label, timepoint, date, assay_name, tissue, provider in sorted(by_basename[basename]):
                     assay, platform = ASSAYS.get(assay_name, (None, None))
                     records.append(SampleClaim("vafs", label, normalize_timepoint(timepoint), date or None,
-                                               assay, platform, tissue or None, normalize_provider(provider)))
+                                               assay, platform, normalize_tissue(tissue), normalize_provider(provider)))
             elif by_basename[basename]:
                 info["ambiguous_vaf_basename"] = basename
         # This inference is useful for discovery, but never establishes identity.
@@ -171,15 +185,11 @@ def build_assets(listing, bams, metadata, vafs, path_claims=()):
     return Assets(assets)
 
 
-def parse_data_paths(html):
-    """Extract the data page's explicit path-to-sample claims, including FASTQs.
-
-    Assays/platforms come from section headings, tissues/providers from cells.
-    Composite tissues and timepoints remain unresolved rather than guessed.
-    """
+def data_page_rows(html):
+    """Yield (section context, {column: text}) for data-page rows with a bucket path."""
     from bs4 import BeautifulSoup
     soup = BeautifulSoup(html, "html.parser")
-    headings, result = {}, []
+    headings = {}
     for element in soup.find_all(["h2", "h3", "h4", "table"]):
         if element.name != "table":
             level = int(element.name[1])
@@ -187,13 +197,6 @@ def parse_data_paths(html):
             headings[level] = element.get_text(" ", strip=True)
             continue
         context = " / ".join(headings.values())
-        title = context.lower()
-        assay = ("wgs" if "whole genome" in title or re.search(r"\bwgs\b", title) else
-                 "wes" if "whole exome" in title or re.search(r"\bwes\b", title) else
-                 "scrna-seq" if any(x in title for x in ("single cell", "single-cell")) else
-                 "rna-seq" if "bulk rna" in title else None)
-        platform = ("ont" if "nanopore" in title else "pacbio" if "pacbio" in title else
-                    "illumina" if "illumina" in title else None)
         headers = [c.get_text(" ", strip=True) for c in element.select("thead th")]
         if not headers:
             headers = [c.get_text(" ", strip=True) for c in element.select("tr:first-child th")]
@@ -202,17 +205,33 @@ def parse_data_paths(html):
             if len(cells) != len(headers):
                 continue
             values = dict(zip(headers, (c.get_text(" ", strip=True) for c in cells)))
-            if "Bucket Path" not in values:
-                continue
-            points = set(re.findall(r"\bT[0-3]\b", values.get("Timepoint", "")))
-            tissue = values.get("Tissue", "").lower()
-            tissue = {"tumor": "tumor", "normal": "normal", "normal (blood)": "blood",
-                      "blood normal": "blood", "organoid": "organoid"}.get(tissue)
-            label = " | ".join(v for k, v in values.items() if k not in ("Bucket Path", "Size", "Files"))
-            result.append((values["Bucket Path"].strip("`"), SampleClaim(
-                "data_page", context + " / " + label,
-                timepoint=next(iter(points)) if len(points) == 1 else None,
-                assay=assay, platform=platform, tissue=tissue, provider=normalize_provider(values.get("Provider")))))
+            if "Bucket Path" in values:
+                yield context, values
+
+
+def parse_data_paths(html):
+    """Extract the data page's explicit path-to-sample claims, including FASTQs.
+
+    Assays/platforms come from section headings, tissues/providers from cells.
+    Composite tissues and timepoints remain unresolved rather than guessed.
+    """
+    result = []
+    for context, values in data_page_rows(html):
+        title = context.lower()
+        assay = ("wgs" if "whole genome" in title or re.search(r"\bwgs\b", title) else
+                 "wes" if "whole exome" in title or re.search(r"\bwes\b", title) else
+                 "scrna-seq" if any(x in title for x in ("single cell", "single-cell")) else
+                 "rna-seq" if "bulk rna" in title else None)
+        platform = ("ont" if "nanopore" in title else "pacbio" if "pacbio" in title else
+                    "illumina" if "illumina" in title else None)
+        points = set(re.findall(r"\bT[0-3]\b", values.get("Timepoint", "")))
+        tissue = normalize_tissue(values.get("Tissue"))
+        label = " | ".join(v for k, v in values.items() if k not in ("Bucket Path", "Size", "Files"))
+        result.append((values["Bucket Path"].strip("`"), SampleClaim(
+            "data_page", context + " / " + label,
+            timepoint=next(iter(points)) if len(points) == 1 else None,
+            assay=assay, platform=platform, tissue=tissue,
+            provider=normalize_provider(values.get("Provider")))))
     return tuple(result)
 
 

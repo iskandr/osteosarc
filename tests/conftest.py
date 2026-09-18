@@ -3,19 +3,23 @@ from pathlib import Path
 
 import pytest
 
-from osteosarc import SNAPSHOT_SOURCES, Cache, Dataset
+from osteosarc import SNAPSHOT_SOURCES, TIMELINE_SOURCES, Cache, Dataset
 
 DATA = Path(__file__).parent / "data"
 FILES = {"bams": "bams.json", "bucket": "bucket_listing.json", "variant_index": "variants.html",
          "vafs": "vafs.tsv", "vaf_columns": "vafs-columns.tsv", "vaccine_overlap": "vaccine_overlap.json",
-         "source_variants": "source-variants.json", "bam_metadata": "bam-metadata.tsv", "data_page": "data.html"}
+         "source_variants": "source-variants.json", "bam_metadata": "bam-metadata.tsv", "data_page": "data.html",
+         "events": "events.json", "events_sheet": "timeline.csv", "mrd": "mrd.json",
+         "specimens": "samples-consolidated.tsv", "timepoint_summary": "samples.json",
+         "fastqs": "fastqs-consolidated.tsv", "flow": "flow-manifest.json", "imaging": "dicom-studies.json",
+         "pathology": "pathology-slides.json", "labs": "lab_results.tsv", "cytometry": "cytometry.tsv"}
 
 
 @pytest.fixture
 def dataset(tmp_path):
     cache = Cache(tmp_path / "cache", offline=True)
     for key, name in FILES.items():
-        cache.import_file(DATA / name, SNAPSHOT_SOURCES[key])
+        cache.import_file(DATA / name, {**SNAPSHOT_SOURCES, **TIMELINE_SOURCES}[key])
     return Dataset.sync("fixture", cache=cache)
 
 

@@ -26,6 +26,8 @@ include = ["osteosarc*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+# The fixture excerpt lacks most corrected records; curation tests assert warnings explicitly.
+filterwarnings = ["ignore::osteosarc.curation.CurationWarning"]
 
 [tool.ruff]
 line-length = 100

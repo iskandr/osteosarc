@@ -7,8 +7,8 @@ require the consumer packages. Extra dependencies are loaded at their usage site
 
 | Call | Returns / behavior |
 | --- | --- |
-| `Dataset.sync(name, cache=None, refresh=False, sources=None)` | Create a named metadata snapshot; repeated unchanged names reopen it |
-| `Dataset.open(name, cache=None, offline=True)` | Verify and reopen a saved snapshot |
+| `Dataset.sync(name, cache=None, refresh=False, sources=None, corrections=True)` | Create a named metadata snapshot; repeated unchanged names reopen it |
+| `Dataset.open(name, cache=None, offline=True, corrections=True)` | Verify and reopen a saved snapshot; `corrections=False` or a list of `Correction`s |
 | `data.id`, `data.receipts()` | Snapshot identity and source receipts |
 | `data.source_path(name)` | Verified local metadata path |
 | `data.assets`, `data.samples`, `data.timepoints` | All assets, source-attributed sample claims, published dates |
@@ -24,6 +24,27 @@ require the consumer packages. Extra dependencies are loaded at their usage site
 
 The named tables are `vafs`, `vaf_columns`, `snv_top`, `dna_fusions`, and
 `rna_fusions`. Other tables use exact asset keys or Asset instances.
+
+## Corrections, timelines, and specimens
+
+| Call / property | Returns / behavior |
+| --- | --- |
+| `data.corrections` | Table: each correction's `status` (`applied`, `fixed_upstream`, `stale`, `unavailable`, `disabled`), `changes`, `summary`, `evidence` |
+| `data.unrecognized` | Table of source labels outside the vocabulary (upstream drift) |
+| `CORRECTIONS`, `Correction(id, summary, changes, evidence, verified)`, `Change(source, match, expect, set)`, `glob(pattern)` | The built-in registry and its building blocks ([details](curation.md)) |
+| `data.timeline` | `Timeline` of `Event`s from every dated source |
+| `timeline.select(lane=, category=, kind=, source=, track=, timepoint=, contains=, since=, until=)` | Filtered Timeline; dates are `YYYY`, `YYYY-MM`, or `YYYY-MM-DD` |
+| `timeline.around(date, days=7)`, `timeline.lanes()` | Neighbourhood of a date; ordered lane names |
+| `timeline.render(width=None, since=None, until=None)`, `timeline.listing()` | ASCII chart; one line per event |
+| `event.date`, `.end`, `.precision`, `.open_end`, `.timepoint`, `.value`, `.source`, `.corrections`, `.details` | Published precision, correction IDs, and the original record |
+| `timeline.source["undated"]` | Source rows left off the timeline because their dates could not be read |
+| `data.specimens` | Table: registry rows with `assets`, `fastq_folders`, `disagreements`, `corrections` |
+| `data.measurements` | Table: MRD, lab, and cytometry values with raw strings and `kind` |
+| `osteosarc.explore.Explorer(data)` | Interactive shell (`osteosarc explore`) |
+| `osteosarc.explore.specimen_view`, `specimens_view`, `assets_view`, `variants_view`, `corrections_view`, `summary_view` | The shell's views as strings |
+
+A snapshot made before the timeline sources existed raises `SchemaError` from
+`timeline`, `specimens`, and `measurements`; everything else works.
 
 ## Selection and source interpretation
 
@@ -50,7 +71,7 @@ Variant filters additionally include `vaccinated`, `on_site`, and
 
 ## Alignments and fixtures
 
-```python
+```text
 Region(contig, start, end, assembly, reference_length=None)
 ReadFilter(min_mapq=0, exclude_flags=0, require_flags=0,
            barcodes=(), barcode_tag="CB")

@@ -65,8 +65,19 @@ def test_varcode_custom_reference_preserves_identity_and_metadata(dataset, tmp_p
 def test_isovar_accepts_native_variants_and_cached_alignments(bam, tmp_path):
     isovar = pytest.importorskip("isovar")
     pyensembl = pytest.importorskip("pyensembl")
+    # Isovar looks up gene names, so index a one-gene local GTF instead of an
+    # Ensembl release that would need a network install.
+    gtf = tmp_path / "one-gene.gtf"
+    attributes = 'gene_id "G1"; gene_name "GENE"; gene_biotype "protein_coding";'
+    transcript = attributes + ' transcript_id "T1"; transcript_name "GENE-201"; transcript_biotype "protein_coding";'
+    gtf.write_text("".join(f"1\tfixture\t{feature}\t50\t200\t.\t+\t.\t{attrs}\n" for feature, attrs in
+                           [("gene", attributes), ("transcript", transcript),
+                            ("exon", transcript + ' exon_number "1"; exon_id "E1";')]))
+    genome = pyensembl.Genome(reference_name="GRCh38-one-gene-fixture", annotation_name="fixture",
+                              gtf_path_or_url=str(gtf), cache_directory_path=str(tmp_path / "pyensembl"))
+    genome.index()
     selected = Variants([Variant("toy", "GENE", "GRCh38", (("chr1", 106, "A", "C"),), "ready")])
-    native = selected.to_varcode(genome=pyensembl.EnsemblRelease(95))
+    native = selected.to_varcode(genome=genome, assembly="GRCh38")
     subset = extract_reads(bam, selected.regions(padding=10), cache=tmp_path / "cache")
     with subset.open() as alignment:
         evidence = isovar.ReadCollector().read_evidence_for_variant(native[0], alignment)

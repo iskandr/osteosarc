@@ -120,13 +120,15 @@ def parse_variant_index(html):
     return rows
 
 
-def parse_variants(index_html, vafs, *, source_variants=(), vaccine_overlap=None, source=None):
+def parse_variants(index, vafs, *, source_variants=(), vaccine_overlap=None, source=None):
     """Join exact IDs; preserve unresolvable entries and source disagreements.
 
-    The GRCh38 label is the site's assertion, not independent REF validation.
-    This does not normalize indels, infer alleles from protein names, or lift.
+    index is the variant index HTML or its already parsed rows. The GRCh38
+    label is the site's assertion, not independent REF validation. This does
+    not normalize indels, infer alleles from protein names, or lift.
     """
-    entries = {row["id"]: row for row in parse_variant_index(index_html)}
+    rows = parse_variant_index(index) if isinstance(index, str) else index
+    entries = {row["id"]: dict(row) for row in rows}
     required = {"variant_id", "gene", "chrom", "pos", "ref", "alt"}
     if not required <= set(vafs.columns):
         raise SchemaError(f"VAF table missing fields: {required - set(vafs.columns)}")

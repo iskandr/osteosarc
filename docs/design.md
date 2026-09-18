@@ -37,6 +37,17 @@ not download data or import those projects.
   an empty *result* is valid. No implicit full-BAM fallback.
 * Fixture downsampling is a separate explicit operation. It cannot silently
   become the read source for VAF calculations.
+* All hand-written interpretation of the sources is in `osteosarc/curation.py`.
+  Vocabulary maps labels to query names and is lossless; unrecognized labels
+  are reported. Corrections are optional and record the published values they
+  were written against. Each load re-checks them and applies them all or
+  nothing, so an upstream edit makes a correction `stale` (not applied) rather
+  than silently wrong. Edited and flagged objects name the corrections that
+  touched them.
+* Timeline events keep published date precision and their source record. A
+  timepoint is attached only where a source states it. Specimens are registry
+  rows cross-checked against other dated sources; disagreements are reported,
+  not resolved, unless a correction resolves them.
 
 ## Deliverables
 

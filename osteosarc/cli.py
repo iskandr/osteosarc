@@ -18,11 +18,13 @@ def parser():
     root = argparse.ArgumentParser(description=__doc__)
     root.add_argument("--cache", help="Shared cache directory (or OSTEOSARC_CACHE)")
     root.add_argument("--offline", action="store_true", help="Forbid any network acquisition")
+    root.add_argument("--no-corrections", action="store_true",
+                      help="Use the published sources unchanged (see osteosarc.curation)")
     commands = root.add_subparsers(dest="command", required=True)
     sync = commands.add_parser("sync", help="Acquire metadata into a named snapshot")
     sync.add_argument("snapshot")
     sync.add_argument("--refresh", action="store_true")
-    sync.add_argument("--source-revision", help="Public site repository commit instead of main")
+    sync.add_argument("--source-revision", help="Pin every public site-repository source to this commit")
     assets = commands.add_parser("assets", help="List objects without downloading their data")
     assets.add_argument("snapshot")
     for field in ("kind", "format", "prefix", "contains", "timepoint", "assay", "platform", "tissue", "provider", "library"):
@@ -36,6 +38,29 @@ def parser():
     for field in ("gene", "vaccine", "pipeline", "status"):
         variants.add_argument("--" + field)
     variants.add_argument("--vaccine-source", choices=("overlap", "source_variants"), default="overlap")
+    curation = commands.add_parser("curation", help="Report corrections and unrecognized source labels")
+    curation.add_argument("snapshot")
+    curation.add_argument("--strict", action="store_true",
+                          help="Exit 1 if any correction is stale or any source label is unrecognized")
+    timeline = commands.add_parser("timeline", help="ASCII timeline of every dated source (or --list)")
+    timeline.add_argument("snapshot")
+    timeline.add_argument("--since", help="YYYY, YYYY-MM or YYYY-MM-DD")
+    timeline.add_argument("--until")
+    timeline.add_argument("--lane", help="Only lanes whose name contains this text")
+    timeline.add_argument("--contains", help="Only events whose label contains this text")
+    timeline.add_argument("--width", type=int)
+    timeline.add_argument("--list", action="store_true", help="One line per event instead of a chart")
+    timeline.add_argument("--json", action="store_true", help="Event records as JSON")
+    around = commands.add_parser("on", help="Events within some days of a date")
+    around.add_argument("snapshot")
+    around.add_argument("date")
+    around.add_argument("--days", type=int, default=7)
+    specimens = commands.add_parser("specimens", help="Specimen registry, or one specimen's details")
+    specimens.add_argument("snapshot")
+    specimens.add_argument("sample_id", nargs="?")
+    specimens.add_argument("--json", action="store_true")
+    explore = commands.add_parser("explore", help="Interactive terminal explorer")
+    explore.add_argument("snapshot")
     for name in ("samples", "timepoints", "vaccines"):
         command = commands.add_parser(name)
         command.add_argument("snapshot")
@@ -62,20 +87,23 @@ def parser():
     return root
 
 
+def pinned_sources(revision):
+    """Every site-repository source URL, rewritten from main to one commit."""
+    from .catalog import SNAPSHOT_SOURCES, SOURCE_REPO, TIMELINE_SOURCES
+    if any(c not in "0123456789abcdefABCDEF" for c in revision) or len(revision) != 40:
+        raise ValueError("--source-revision must be a full 40-character commit SHA")
+    return {key: url.replace(SOURCE_REPO, SOURCE_REPO.replace("/main/", f"/{revision}/"))
+            for key, url in {**SNAPSHOT_SOURCES, **TIMELINE_SOURCES}.items() if url.startswith(SOURCE_REPO)}
+
+
 def main(argv=None):
     args = parser().parse_args(argv)
     cache = Cache(args.cache, offline=args.offline)
     try:
         if args.command == "sync":
-            sources = None
-            if args.source_revision:
-                from .catalog import SNAPSHOT_SOURCES, SOURCE_REPO
-                revision = args.source_revision
-                if any(c not in "0123456789abcdefABCDEF" for c in revision) or len(revision) != 40:
-                    raise ValueError("--source-revision must be a full 40-character commit SHA")
-                sources = {key: url.replace(SOURCE_REPO, SOURCE_REPO.replace("/main/", f"/{revision}/"))
-                           for key, url in SNAPSHOT_SOURCES.items() if url.startswith(SOURCE_REPO)}
-            dataset = Dataset.sync(args.snapshot, cache=cache, refresh=args.refresh, sources=sources)
+            sources = pinned_sources(args.source_revision) if args.source_revision else None
+            dataset = Dataset.sync(args.snapshot, cache=cache, refresh=args.refresh, sources=sources,
+                                   corrections=not args.no_corrections)
             value = dict(snapshot=dataset.manifest["name"], id=dataset.id,
                          assets=len(dataset.assets), variants=len(dataset.variants()))
         elif args.command == "discover":
@@ -84,7 +112,8 @@ def main(argv=None):
             # Listing and parsing pinned metadata remain offline automatically;
             # commands that acquire new bytes opt in unless --offline is set.
             online = args.command in ("download", "table", "reads") and not args.offline
-            dataset = Dataset.open(args.snapshot, cache=cache, offline=not online)
+            dataset = Dataset.open(args.snapshot, cache=cache, offline=not online,
+                                   corrections=not args.no_corrections)
             if args.command == "assets":
                 selection = dataset.assets.select(**{name: getattr(args, name) for name in
                     ("kind", "format", "prefix", "contains", "timepoint", "assay", "platform", "tissue", "provider", "library", "include_conflicts", "include_inferred")})
@@ -94,6 +123,39 @@ def main(argv=None):
             elif args.command == "variants":
                 value = dataset.variants(**{name: getattr(args, name) for name in
                     ("set", "gene", "vaccine", "pipeline", "status", "vaccine_source")}).to_records()
+            elif args.command in ("timeline", "on", "specimens", "explore"):
+                from . import explore
+                if args.command == "explore":
+                    explore.Explorer(dataset).cmdloop()
+                    return 0
+                if args.command == "on":
+                    print(dataset.timeline.around(args.date, args.days).listing() or "(no events)")
+                    return 0
+                if args.command == "specimens":
+                    if args.json:
+                        value = list(dataset.specimens)
+                    else:
+                        print(explore.specimen_view(dataset, args.sample_id) if args.sample_id
+                              else explore.specimens_view(dataset))
+                        return 0
+                else:
+                    events = dataset.timeline.select(lane=args.lane, contains=args.contains,
+                                                     since=args.since, until=args.until)
+                    if args.json:
+                        value = events.to_records()
+                    else:
+                        print(events.listing() if args.list else
+                              events.render(width=args.width, since=args.since, until=args.until))
+                        return 0
+            elif args.command == "curation":
+                value = dict(corrections=list(dataset.corrections), unrecognized=list(dataset.unrecognized))
+                # Drift is judged on the evaluation, even when this run disables corrections.
+                drift = [r["id"] for r in value["corrections"] if r["evaluation"] == "stale"]
+                if args.strict and (drift or value["unrecognized"]):
+                    print(json.dumps(value, indent=2))
+                    print(f"osteosarc: stale corrections {drift}; "
+                          f"{len(value['unrecognized'])} unrecognized source labels", file=sys.stderr)
+                    return 1
             elif args.command in ("samples", "timepoints", "vaccines"):
                 value = list(getattr(dataset, args.command))
             elif args.command == "download":

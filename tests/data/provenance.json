@@ -1,6 +1,6 @@
 {
   "accessed": "2026-09-18",
-  "selection": "Five named variants, three reprocessed bulk RNA products; parsed excerpts, not byte-identical source files",
+  "selection": "Five named variants, three reprocessed bulk RNA products, and timeline rows around the four timepoints; parsed excerpts, not byte-identical source files",
   "files": {
     "variants.html": {
       "source_sha256": "e9707c90020ce84f0bb5424f8247140879b295d85858602506b47fa33ddc4925",
@@ -37,6 +37,50 @@
     "data.html": {
       "source_sha256": "9d1ae0a55938f7c419ef0d5a509052fe0927878c506cb858205cce0366500a9e",
       "fixture_sha256": "31b4b230f536ae3a84c2bb4d0312dbcafdba9c0c955cadcd5103da4ccdb63c5c"
+    },
+    "events.json": {
+      "source_sha256": "1fd312a432a6fd263e29c08cc62ebc647cbdb65f63a646fc96db1c4069aa1fb8",
+      "fixture_sha256": "67b41de5c1dd4a55bd78c840769861b158fa39f1d75930aabdc8755257d35b7e"
+    },
+    "timeline.csv": {
+      "source_sha256": "41313830f2b70549575fe1aab44df5cdf325970fd2332509a71b9f1dfef5d570",
+      "fixture_sha256": "543757ed5d5d1b7309758857536599d794ce85372b79b74cc81ceb2a7c357d35"
+    },
+    "mrd.json": {
+      "source_sha256": "5d1e0f10dea83ae21af97256b168cec0ba10a70b3b44ecca2f1cc51ee4ffc9dd",
+      "fixture_sha256": "2fe2c13c66887284e88ddb01d78d51ea00aa509892f31767653f1c9bde65fa2e"
+    },
+    "samples-consolidated.tsv": {
+      "source_sha256": "c42c48b41e4b29a7c7feaa60d9401e8ccfb1faf30ac24ec5011945b32016ff56",
+      "fixture_sha256": "bc0ee0f9e10d35611e16be62e60965e8d987d7fea942497cb219c268ca6c8e94"
+    },
+    "samples.json": {
+      "source_sha256": "6025a4f843eb483758cec60c1c91a0b5f27c44d2a4ed7fc3147039e78cd141f0",
+      "fixture_sha256": "6025a4f843eb483758cec60c1c91a0b5f27c44d2a4ed7fc3147039e78cd141f0"
+    },
+    "fastqs-consolidated.tsv": {
+      "source_sha256": "d5ba79663f1af7fe6faa370698f82d70bbd883693cb7d5404c1d094856363cbf",
+      "fixture_sha256": "5d7d3c4e22ca88af2f4e989107dcdc19da55ebd5fa2be0020e0fa4826ac4f277"
+    },
+    "flow-manifest.json": {
+      "source_sha256": "492a996c95f625a9490ff62e06d56079d741fdd10ce1232c79a7515a5a7a5b04",
+      "fixture_sha256": "d078ac3498b854831aedaa10402f2cc0d789f10cc62cc7c7ba00fef0e7009143"
+    },
+    "dicom-studies.json": {
+      "source_sha256": "e9710af61cd4b062238e6de1d1a96543e67ce8c9ee50c89ac180152430eb6cfc",
+      "fixture_sha256": "b48c0aa5041fe77800092f058485c95dd0cdfa3907101b043ea374a08b0657c3"
+    },
+    "pathology-slides.json": {
+      "source_sha256": "6270b51818a0783e47b7307cea8e042bcff15be3d0d2df4965671d15713758d3",
+      "fixture_sha256": "04eb1c67534112c5163488cd53251688038595953692f03cd8e7cb07188a8633"
+    },
+    "lab_results.tsv": {
+      "source_sha256": "0096a02b87d54c83a8302512eff391c9cd2f85dad2df3df5da3acd63793bb8b5",
+      "fixture_sha256": "957a8181c04c197116a1e389534a4c4806bfc5af7c4fb2170d570c4e9f2b4a35"
+    },
+    "cytometry.tsv": {
+      "source_sha256": "c1c20370ab67eddfdef60909e6fd7ca1ec47bdf4d17ddfb18f1064e69f90f055",
+      "fixture_sha256": "affa28d29d6166526897c9569bff39bb448cf7c7f7bf127410b9b912f83cc6c3"
     }
   }
 }

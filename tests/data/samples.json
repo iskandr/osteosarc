@@ -1,0 +1,28 @@
+{
+  "rows": [
+    {
+      "date": "2022-12-16",
+      "timepoint": "T0",
+      "location": "UCSF (spine resection)",
+      "assays": "WES \u00d74, WGS, WTS"
+    },
+    {
+      "date": "2024-06-06",
+      "timepoint": "T1",
+      "location": "UCLA (Th4 biopsy)",
+      "assays": "WGS, WTS, scRNA-seq"
+    },
+    {
+      "date": "2025-01-28",
+      "timepoint": "T2",
+      "location": "UCLA (Th4\u2013Th5 biopsy)",
+      "assays": "WGS, WTS, scRNA-seq"
+    },
+    {
+      "date": "2025-04-17",
+      "timepoint": "T3",
+      "location": "MSKCC (Th4\u2013Th5 excision)",
+      "assays": "scRNA-seq"
+    }
+  ]
+}

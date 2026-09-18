@@ -38,6 +38,68 @@ before downloading an unsupported large alignment object.
 Documentation builds with `python -m mkdocs build --strict`. PRs validate the
 site; merges to main publish it through the GitHub Pages workflow.
 
+## Curation and source drift
+
+`tests/test_curation.py` and `tests/test_timeline.py` exercise every
+correction outcome on public excerpts:
+
+* `applied`, `fixed_upstream`, stale because a record changed or disappeared,
+  and `unavailable` on older snapshots;
+* all-or-nothing application, flags on assets through globs, and the
+  `corrections` column;
+* `--strict` exit codes and vocabulary drift;
+* the registry's completeness (every ID documented, literal replacement alleles).
+
+The fixtures include every record the timeline corrections target, so those
+apply in tests exactly as they do live.
+
+Against the full 2026-09-18 sources:
+
+| Check | Result |
+| --- | --- |
+| Corrections | 29 applied; 0 stale; 0 fixed upstream |
+| Unrecognized source labels | 0 |
+| Site variants, corrected | 177 ready, 2 nonliteral (USH2A transposition, MUC3A), 3 missing literal alleles |
+| Site variants, `corrections=False` | 172 ready, 7 nonliteral, 3 missing |
+| Asset sample-metadata conflicts | 0 corrected; 3 genuine source disagreements uncorrected (previously 31, of which 28 were normalization artifacts) |
+| Timeline | 787 events from 8 sources (2022-10-06 .. 2026-09-16), 21 specimens |
+
+The corrections were derived from the original public records:
+
+* the Tempus VCFs and the BAM header;
+* the site's counting script (`pileup-json`), reproducing 171 of 172 website
+  SNV counts at the wrong locus;
+* Ensembl liftover and reference sequence;
+* NCBI RefSeq status;
+* regional reads.
+
+In the T1 tumor WGS, 30 reads support the corrected MAP2 allele and none
+support the published deletion (see the [tour](tour.md)).
+[Corrections](curation.md) lists the audit verdicts.
+
+The `drift` workflow (`.github/workflows/drift.yml`) runs every Monday and on
+demand. It syncs the live sources into a new snapshot and runs
+`osteosarc curation --strict`, so stale corrections or new labels fail the job.
+It then runs every documentation example.
+
+## Documentation examples
+
+```sh
+python scripts/check_docs.py                  # every page, fresh temporary cache
+python scripts/check_docs.py docs/tour.md     # one page
+```
+
+The script executes each page's Python blocks in order, in one namespace, and
+each `osteosarc` shell command. Interactive commands receive `quit`. Install,
+clone and development commands are listed but not run. It needs network access
+and `samtools`. The Varcode/Isovar recipes need the consumer packages and an
+installed Ensembl 95.
+
+On 2026-09-18, in a fresh virtualenv installed with
+`pip install -e '.[reads,test,docs]'` plus the three consumer packages, all 94
+examples passed: Python blocks and `osteosarc` commands across 13 pages. The 13
+install, clone, and development commands were listed but not run.
+
 ## Public smoke check performed 2026-09-18
 
 The public website bucket listing was generated **2026-09-11T23:56:05Z**.
@@ -46,8 +108,8 @@ five named website tables: 843 alignment files, 323 VCF/BCF files, 2,396 raw-rea
 files, and other catalog objects. These are file counts, not biological samples.
 
 The metadata join retained 182 website entries (172 ready, seven nonliteral,
-three missing literal alleles), 203 total entries including the count export,
-and 44 entries with a positive site vaccine count. All are source assertions.
+three missing literal alleles before corrections), 203 total entries including
+the count export, and 44 entries with a positive site vaccine count.
 
 The live shared downloader fetched `bams/bams.json` (19,722 bytes,
 SHA256 `88518bc3f9b0e9a7e6fffe13f6c5506e8f781a7287962eee20e412259313360e`).

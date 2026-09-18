@@ -86,10 +86,12 @@ assert offline.extract_reads(source, regions).path == subset.path
 ```python
 from osteosarc import extract_reads, inspect_alignment, subset_templates
 
-# local.bam must exist and have an adjacent BAI/CSI for extraction.
-info = inspect_alignment("local.bam")
-regional = extract_reads("local.bam", regions)
+# Any local indexed BAM works; here, the subset extracted above.
+local = str(subset.path)
+info = inspect_alignment(local)
+regional = extract_reads(local, regions)
 fixture = subset_templates(regional, count=48, seed="fixture-v1")
+print(info.assembly, regional.receipt["records"], fixture.receipt["records"])
 ```
 
 The sampler selects templates by `(read group, query name)` independently of

@@ -25,14 +25,15 @@ python -m pip install -e '.[reads]'
 ```python
 from osteosarc import Cache, Dataset
 
-cache = Cache("~/.cache/osteosarc")
+cache = Cache()  # $OSTEOSARC_CACHE, else ~/.cache/osteosarc
 data = Dataset.sync("2026-09-18", cache=cache)  # explicit metadata download
 
 # Later: verifies the saved snapshot and opens it without network access.
 data = Dataset.open("2026-09-18", cache=cache)
 ```
 
-`sync` acquires about 55 MB of metadata, including the full dated bucket index.
+`sync` acquires about 57 MB of metadata, including the full dated bucket index
+and the timeline sources.
 It does not download BAMs, FASTQs, or other large data files. Importing the
 package also does no downloading. All projects can share `OSTEOSARC_CACHE`;
 otherwise the default is `$XDG_CACHE_HOME/osteosarc` or `~/.cache/osteosarc`.
@@ -127,6 +128,42 @@ confirmed. Incomplete entries have a status such as `missing_literal_allele`,
 `non_literal_allele`, or `ambiguous_literal_allele`. No allele is fabricated from
 a gene symbol or protein label, and no coordinates are silently lifted over.
 
+## Timelines, specimens, and the terminal explorer
+
+```python
+print(data.timeline.render(since="2024-05", until="2024-09", width=100))
+print(data.timeline.around("2025-01-28", days=5).listing())
+t2 = next(r for r in data.specimens if r["sample_id"] == "T2_tumor")
+print(t2["date"], t2["site"], len(t2["assets"]), t2["corrections"])
+mrd = data.measurements.select(source="mrd")
+```
+
+The timeline brings together every dated public source: treatments and doses,
+procedures, imaging (events and DICOM studies), pathology, omics, time points,
+specimens, MRD, flow-cytometry draws, and lab and cytometry dates. Run
+`osteosarc explore baseline` to browse it interactively, or
+`osteosarc timeline baseline --since 2024-05` for a chart. See
+[timelines](docs/timeline.md) and the [guided tour](docs/tour.md).
+
+## Corrections are central, optional, and drift-aware
+
+All hand-written interpretation of the sources lives in `osteosarc/curation.py`.
+Verified corrections are applied by default, for example the GRCh37 Tempus
+counts, five relocated Tempus alleles, MAP2's observed allele, stale viewer
+labels, and specimen dates and sites. Each touched object names its
+corrections, and `Dataset.open(name, corrections=False)` gives the published
+sources unchanged. Every load re-checks each correction against the sources, so
+an upstream change makes it `stale` and unapplied rather than silently wrong.
+
+```python
+for row in data.corrections:
+    print(row["status"], row["id"])
+print(list(data.unrecognized))       # labels outside the vocabulary
+```
+
+`osteosarc curation baseline --strict` exits nonzero on drift. See
+[corrections and drift](docs/curation.md).
+
 ## Download and parse
 
 ```python
@@ -201,7 +238,8 @@ Local BAMs use the same implementation:
 ```python
 from osteosarc import extract_reads, subset_templates
 
-regional = extract_reads("local.bam", [region], cache=cache)
+local = str(subset.path)  # any local indexed BAM; here, the subset from above
+regional = extract_reads(local, [region], cache=cache)
 fixture = subset_templates(regional, count=48, seed="regression-v1", cache=cache)
 ```
 
@@ -229,11 +267,17 @@ osteosarc --cache .cache/osteosarc variants baseline --vaccine 'JLF V3'
 osteosarc --cache .cache/osteosarc table baseline dna_fusions
 osteosarc --cache .cache/osteosarc reads baseline 'rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam' chr14:101980529-101980530 --assembly GRCh38
 osteosarc --cache .cache/osteosarc discover 'neoantigen_prediction/pvactools/'
+osteosarc --cache .cache/osteosarc timeline baseline --since 2024-05 --until 2024-09
+osteosarc --cache .cache/osteosarc specimens baseline T1_tumor
+osteosarc --cache .cache/osteosarc curation baseline --strict
+osteosarc --cache .cache/osteosarc --no-corrections variants baseline --gene MAP2
 ```
 
 CLI regions are **one-based inclusive**, matching SAMtools. Add the global
 `--offline` flag to prohibit acquisition. `sync --source-revision <commit>` pins
-the two GitLab metadata resources to a full source-repository commit.
+every GitLab source-repository resource (variant JSON, BAM metadata, and the
+timeline and specimen sources) to a full commit; site-served files are not
+versioned by the site.
 
 ## Development and provenance
 

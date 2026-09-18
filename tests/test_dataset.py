@@ -35,7 +35,8 @@ def test_vaccine_peptides_annotations_and_missing_states(dataset):
 
 
 def test_sample_conflicts_do_not_silently_become_replicates(dataset):
-    assets = dataset.assets.select(kind="alignment")
+    raw = Dataset.open("fixture", cache=dataset.cache, corrections=False)
+    assets = raw.assets.select(kind="alignment")
     assert len(assets) == 3
     source = assets.select(contains="BG009368")[0]
     assert set(source.values("timepoint")) == {"T0", "T1"}
@@ -45,6 +46,35 @@ def test_sample_conflicts_do_not_silently_become_replicates(dataset):
     assert source.metadata["catalog_genome_assertion"] == "hg38"
     assert "assembly" not in source.metadata
     assert len(dataset.samples) > len(assets)
+    # The viewer label's stale date is surfaced alongside its timepoint.
+    assert source.conflicts["date"] == ("2022-12", "2024-06")
+    # The central correction for that stale label resolves it, traceably.
+    corrected = dataset.asset(source.key)
+    assert corrected.resolved("timepoint") == "T1" and not corrected.conflicts
+    assert corrected.metadata["corrections"] == ("viewer-label-BG009368",)
+
+
+def test_catalog_normalization_does_not_invent_conflicts():
+    from osteosarc import SampleClaim
+    from osteosarc.catalog import BUCKET, build_assets
+    from osteosarc.parsing import Table
+    cite, rna = "kamil/blood/Nov2025_CITE/possorted_genome_bam.bam", "vendor/cegat/P2/P3.bam"
+    listing = dict(files=[[cite, 1, 0], [rna, 1, 0], ["vendor/cegat/P2/P2.1.fastq.gz", 1, 0]])
+    bams = dict(baseUrl=BUCKET, genome="hg38", categories=[dict(name="Blood scRNA", bams=[
+        dict(name="Hudson Lab Blood CITE 2025-11 (Pool 1)", url=BUCKET + cite, tissue="blood")])])
+    metadata = Table([dict(s3_path=BUCKET + cite, display_name="CITE pool", assay="CITE",
+                           timepoint="", sample_date="2025-11-06", tissue="Blood", provider="Hudson Lab")])
+    vafs = Table([], columns=("bam_file",))
+    # A directory row for WES FASTQs must not override the RNA BAM's own row.
+    paths = (("vendor/cegat/P2", SampleClaim("data_page", "WES FASTQ", assay="wes")),
+             (rna, SampleClaim("data_page", "RNA BAM", assay="rna-seq")))
+    assets = {a.key: a for a in build_assets(listing, bams, metadata, vafs, paths)}
+    assert assets[cite].values("assay") == ("cite-seq",)
+    assert assets[cite].values("provider") == ("Hudson Lab",)
+    assert assets[cite].values("date") == ("2025-11-06",)  # month precision agrees
+    assert not assets[cite].conflicts
+    assert assets[rna].values("assay") == ("rna-seq",)
+    assert assets["vendor/cegat/P2/P2.1.fastq.gz"].values("assay") == ("wes",)
 
 
 def test_reopen_is_offline_and_uses_pinned_receipts(dataset):

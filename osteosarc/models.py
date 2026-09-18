@@ -72,11 +72,18 @@ class Asset:
     metadata: dict = field(default_factory=dict, compare=False)
 
     def values(self, name, *, include_inferred=False):
-        """Distinct nonmissing source assertions for a sample field."""
+        """Distinct nonmissing source assertions for a sample field.
+
+        A less precise date (2025-04) consistent with a more precise one
+        (2025-04-09) is not a separate value; claims retain both.
+        """
         if name not in SampleClaim.__dataclass_fields__:
             raise ValueError(f"Unknown sample field: {name}")
-        return tuple(sorted({getattr(c, name) for c in self.claims
-                             if (include_inferred or c.basis == "published") and getattr(c, name)}))
+        values = {getattr(c, name) for c in self.claims
+                  if (include_inferred or c.basis == "published") and getattr(c, name)}
+        if name == "date":
+            values = {v for v in values if not any(o.startswith(v + "-") for o in values)}
+        return tuple(sorted(values))
 
     def resolved(self, name):
         """Return a unique published assertion, otherwise None."""

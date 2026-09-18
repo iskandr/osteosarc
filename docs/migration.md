@@ -81,11 +81,13 @@ coverage. Custom subset genomes keep their unique reference names and use
 `data.inspect_alignment(asset)` before the consumer chooses coordinates.
 
 ```python
-from osteosarc import Cache
+from osteosarc import SNAPSHOT_SOURCES, Cache, Dataset, digest
 
-cache = Cache()
-receipt = cache.import_file("old-cache/vafs.tsv", original_url,
-                            sha256=existing_receipt["sha256"])
+# Stand-in for a file in an older project cache: the snapshot's own copy.
+old_path = Dataset.open("baseline").source_path("vafs")
+original_url = SNAPSHOT_SOURCES["vafs"]
+receipt = Cache().import_file(old_path, original_url, sha256=digest(old_path))
+print(receipt.sha256, receipt.size)
 ```
 
 Imports record the local import time, not a fabricated original download time.
@@ -97,8 +99,10 @@ The reviewed source metadata disagree about some BostonGene/UCLA library
 timepoints, and the viewer's global hg38 label covers files that require
 individual reference checks. Natera WGS tumor/normal assignments are described
 as inferred in the public data page. Vaccine-overlap and variant-source JSON
-also differ in their membership flags. The package retains these distinctions;
-it does not repair source records or declare a validated truth set.
+also differ in their membership flags. The package retains these distinctions.
+Verified corrections are optional, centralized in `osteosarc/curation.py`, and
+re-checked against every snapshot (see [corrections](curation.md)); they do not
+declare a validated truth set.
 
 `ready` checks internal literal-allele availability. Independent reference-allele
 validation, indel equivalence, liftover, donor demultiplexing, and biological
