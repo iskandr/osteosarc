@@ -154,3 +154,40 @@ def test_vcf_annotations_and_indexed_subsetting(dataset, tmp_path):
     assert rows[0].alts == ("C", "G")
     assert rows[0].info["GENE"] == "ONE"
     assert rows[0].samples["tumor"]["GT"] == (1, 2)
+
+
+def test_first_download_must_match_the_inventory_time():
+    from osteosarc import Asset, Receipt
+    from osteosarc.dataset import _check_inventory_time
+    asset = Asset("id", "a.tsv", "https://example.test/a.tsv", "table", "tsv", modified=1784586023)
+    same = Receipt("https://example.test/a.tsv", "0" * 64, 1, "a.tsv", "now",
+                   last_modified="Mon, 20 Jul 2026 22:20:23 GMT")
+    _check_inventory_time(asset, same)
+    newer = Receipt(**{**same.to_dict(), "last_modified": "Tue, 21 Jul 2026 09:00:00 GMT"})
+    with pytest.raises(IntegrityError, match="new snapshot"):
+        _check_inventory_time(asset, newer)
+
+
+def test_extraction_binds_the_listed_index_to_the_snapshot(dataset, monkeypatch):
+    import osteosarc.reads
+    source = dataset.asset("rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam")
+    assert source.index_urls
+    downloads, calls = [], []
+    monkeypatch.setattr(dataset, "download", lambda asset: downloads.append(asset) or "/pinned/index.bai")
+    monkeypatch.setattr(osteosarc.reads, "extract_reads", lambda *a, **k: calls.append(k))
+    dataset.extract_reads(source, ["region"])
+    assert downloads == [source.index_urls[0]] and calls[0]["index"] == "/pinned/index.bai"
+
+
+def test_mirrored_site_tables_stay_pinned(tmp_path):
+    from conftest import DATA, FILES
+
+    from osteosarc import SNAPSHOT_SOURCES, TIMELINE_SOURCES, Cache
+    mirror = "https://mirror.example.test/variant_vafs_long.tsv"
+    cache = Cache(tmp_path / "cache", offline=True)
+    urls = {**SNAPSHOT_SOURCES, **TIMELINE_SOURCES, "vafs": mirror}
+    for key, name in FILES.items():
+        cache.import_file(DATA / name, urls[key])
+    data = Dataset.sync("mirrored", cache=cache, sources={"vafs": mirror})
+    assert data.asset("vafs").url == mirror
+    assert len(data.table("vafs")) == len(data.vafs) > 0   # offline: the pinned copy, not a download

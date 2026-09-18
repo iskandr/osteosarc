@@ -96,8 +96,9 @@ and `samtools`. The Varcode/Isovar recipes need the consumer packages and an
 installed Ensembl 95.
 
 On 2026-09-18, in a fresh virtualenv installed with
-`pip install -e '.[reads,test,docs]'` plus the three consumer packages, all 94
-examples passed: Python blocks and `osteosarc` commands across 13 pages. The 13
+`pip install -e '.[reads,test,docs]'` plus the three consumer packages, all 98
+examples passed against a fresh shared-layout cache: Python blocks and
+`osteosarc` commands across 13 pages. The 13
 install, clone, and development commands were listed but not run.
 
 ## Public smoke check performed 2026-09-18

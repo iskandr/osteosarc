@@ -178,3 +178,9 @@ def test_cram_requires_explicit_reference_and_decodes_regional_records(bam, tmp_
         read = next(handle)
     assert read.query_sequence == "ACGT" * 10
     assert read.get_tag("CB") == "A"
+
+
+def test_a_single_barcode_string_is_not_split_into_characters():
+    from osteosarc import ReadFilter
+    assert ReadFilter(barcodes="AAACCTGAGAAACCAT").barcodes == ("AAACCTGAGAAACCAT",)
+    assert ReadFilter(barcodes=["A1", "B2"]).barcodes == ("A1", "B2")

@@ -15,6 +15,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -67,13 +68,15 @@ def run_python(page, items, env, cwd, timeout):
     runnable = [b for b in items if not b["skip"]]
     if not runnable:
         return {}
-    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as handle:
-        json.dump(runnable, handle)
+    blocks_file = Path(cwd) / "blocks.json"
+    blocks_file.write_text(json.dumps(runnable))
     try:
-        process = subprocess.run([sys.executable, "-c", DRIVER, handle.name], env=env, cwd=cwd,
+        process = subprocess.run([sys.executable, "-c", DRIVER, str(blocks_file)], env=env, cwd=cwd,
                                  capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
         return {b["line"]: dict(status="failed", seconds=timeout, error="page timed out") for b in runnable}
+    finally:
+        blocks_file.unlink(missing_ok=True)
     results = {r["line"]: r for r in map(json.loads, filter(None, process.stdout.splitlines()))}
     for block in runnable:
         results.setdefault(block["line"], dict(status="failed", seconds=0, error=process.stderr[-2000:]))
@@ -107,8 +110,17 @@ def main(argv=None):
     parser.add_argument("--cache", help="OSTEOSARC_CACHE to use (default: a fresh temporary directory)")
     parser.add_argument("--timeout", type=int, default=1800, help="Seconds per page or command")
     parser.add_argument("--show-output", action="store_true", help="Print what each Python block printed")
+    parser.add_argument("--keep", action="store_true", help="Keep the temporary work directory and cache")
     args = parser.parse_args(argv)
     work = Path(tempfile.mkdtemp(prefix="osteosarc-docs-"))
+    try:
+        return run(args, work)
+    finally:
+        if not args.keep:
+            shutil.rmtree(work, ignore_errors=True)
+
+
+def run(args, work):
     cache = Path(args.cache).resolve() if args.cache else work / "cache"
     bin_dir = str(Path(sys.executable).parent)
     env = dict(os.environ, OSTEOSARC_CACHE=str(cache), PATH=bin_dir + os.pathsep + os.environ.get("PATH", ""))

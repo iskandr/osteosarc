@@ -17,7 +17,10 @@ print(info.assembly)  # GRCh38, GRCh37, or None when unresolved
 print(info.header["SQ"][:2])
 ```
 
-Header inspection does not need an index. It caches the original SAM header
+`data.extract_reads` downloads the listed index once and binds it to the
+snapshot, like any other object, so repeated queries reuse the same index.
+Local sources are identified by SHA256; unchanged files (same size, mtime and
+inode) are not re-read for later queries. Header inspection does not need an index. It caches the original SAM header
 with a checksum and source evidence. Assembly requires at least two
 distinguishing canonical contigs and no conflicting lengths. A viewer-wide
 hg38 label is insufficient. Liftover remains an explicit consumer operation.

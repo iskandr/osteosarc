@@ -108,7 +108,8 @@ if rsem:
     raw = data.table(rsem[0])  # optional original strings/columns
 ```
 
-The cache preserves filenames for Topiary's format detection. Header-only
+Cached objects keep their original suffixes (`<sha256>.all_epitopes.aggregated.tsv`),
+which is what Topiary's format detection reads. Header-only
 reports remain empty reports. Topiary retains pVAC interpretation, numeric
 coercion, expression overlays, and fixture row selection. Migration sites:
 `scripts/osteosarc_variant_audit.py`, `scripts/osteosarc_rna_overlay.py`, and

@@ -19,8 +19,10 @@ from .timeline import _window
 
 def table(rows, columns, *, width=None, limit=None):
     """Fixed-width text table; long cells are truncated to fit the terminal."""
+    if limit is not None and (not isinstance(limit, int) or isinstance(limit, bool) or limit < 0):
+        raise ValueError("limit must be a nonnegative integer")
     rows = list(rows)
-    shown = rows[:limit] if limit else rows
+    shown = rows if limit is None else rows[:limit]
     cells = [[_text(row.get(c)) for c in columns] for row in shown]
     widths = [max([len(c)] + [len(r[i]) for r in cells]) for i, c in enumerate(columns)]
     width = width or shutil.get_terminal_size((120, 24)).columns
@@ -32,7 +34,7 @@ def table(rows, columns, *, width=None, limit=None):
     out = [line(c[:w].ljust(w) for c, w in zip(columns, widths)).rstrip(),
            line("-" * w for w in widths)]
     out += [line(cell[:w].ljust(w) for cell, w in zip(row, widths)).rstrip() for row in cells]
-    if limit and len(rows) > limit:
+    if limit is not None and len(rows) > limit:
         out.append(f"... {len(rows) - limit} more")
     return "\n".join(out)
 
@@ -66,9 +68,9 @@ def specimen_view(data, sample_id, *, days=7, width=None):
              f"vendors: {_text(row['vendors']) or '-'}   assays: {_text(row['assays']) or '-'}"]
     for item in row["disagreements"]:
         lines.append(f"  ! {item['source']} gives {item['field']} {item['value']!r}")
+    summaries = {r["id"]: r["summary"] for r in data.corrections} if row["corrections"] else {}
     for correction in row["corrections"]:
-        summary = next(r["summary"] for r in data.corrections if r["id"] == correction)
-        lines.append(f"  corrected by {correction}: {summary}")
+        lines.append(f"  corrected by {correction}: {summaries[correction]}")
     by_assay = defaultdict(list)
     for key in row["assets"]:
         asset = data.asset(key)

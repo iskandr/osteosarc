@@ -38,10 +38,13 @@ them, and every touched object says so:
 
 | Object | Where the correction IDs appear |
 | --- | --- |
-| `Variant` | `variant.annotations["corrections"]` |
+| `Variant` | `variant.annotations["corrections"]`: corrections to the variant's own records or all of its count rows |
+| `Variant` count rows | `variant.annotations["count_corrections"]`: corrections to only some count rows (e.g. one BAM) |
 | `Asset` | `asset.metadata["corrections"]` |
 | count rows (`data.vafs`, `data.table("vafs")`) | an extra final `corrections` column |
-| specimens (`data.specimens`) | the `corrections` field |
+| vaccine-overlap and annotation records (`data.vaccines`, `data.annotations`) | a `corrections` field |
+| measurements (`data.measurements`) | a `corrections` column |
+| specimens (`data.specimens`) | the `corrections` field (including FASTQ and timepoint-summary corrections) |
 | timeline events | `event.corrections` (and a note in `timeline.listing()`) |
 | `Variants.source` / Varcode metadata | `source["corrections"]` lists every applied ID |
 

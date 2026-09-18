@@ -5,9 +5,10 @@ from __future__ import annotations
 import copy
 import json
 import re
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import asdict
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from functools import cached_property
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -16,6 +17,7 @@ from .cache import Cache, Receipt, file_lock, stable_id, write_json
 from .catalog import (
     BUCKET,
     SNAPSHOT_SOURCES,
+    TABLE_SOURCES,
     TIMELINE_SOURCES,
     build_assets,
     data_page_rows,
@@ -23,7 +25,7 @@ from .catalog import (
     parse_data_paths,
 )
 from .curation import CORRECTIONS, Curation, normalize_tissue, unrecognized_values
-from .errors import IntegrityError, SchemaError
+from .errors import IntegrityError, OfflineError, SchemaError
 from .models import Asset
 from .parsing import (
     PARSE_FORMATS,
@@ -34,6 +36,18 @@ from .parsing import (
     parse_variants,
     read_text,
 )
+
+
+def _check_inventory_time(asset, receipt):
+    """Refuse bytes newer (or older) than the object this snapshot's inventory listed."""
+    if not isinstance(asset.modified, (int, float)) or not receipt.last_modified:
+        return
+    served = parsedate_to_datetime(receipt.last_modified).timestamp()
+    if abs(served - asset.modified) > 1:
+        raise IntegrityError(
+            f"{asset.key} was modified at {receipt.last_modified}, not at the time this snapshot's "
+            f"inventory lists ({datetime.fromtimestamp(asset.modified, timezone.utc).isoformat()}); "
+            "create a new snapshot to use the current object")
 
 
 class Dataset:
@@ -67,7 +81,7 @@ class Dataset:
     def _snapshot_path(cache, name):
         if not name or Path(name).name != name or name in (".", ".."):
             raise ValueError("Snapshot name must be one path component")
-        return cache.root / "snapshots" / (name + ".json")
+        return cache.workspace / "snapshots" / (name + ".json")
 
     @classmethod
     def sync(cls, name, *, cache=None, refresh=False, sources=None, corrections=True):
@@ -182,8 +196,9 @@ class Dataset:
         records, undated = self.curation.records, []
         events, event_marks = records("events")
         mrd, mrd_marks = records("mrd")
-        items = [*events_from_site(dict(self._json("events"), events=events), records("events_sheet")[0],
-                                   marks=event_marks, undated=undated),
+        sheet, sheet_marks = records("events_sheet")
+        items = [*events_from_site(dict(self._json("events"), events=events), sheet,
+                                   marks=event_marks, sheet_marks=sheet_marks, undated=undated),
                  *events_from_mrd(dict(self._json("mrd"), measurements=mrd), marks=mrd_marks, undated=undated),
                  *events_from_flow(dict(samples=records("flow")[0]), marks=records("flow")[1], undated=undated),
                  *events_from_imaging(dict(studies=records("imaging")[0]), marks=records("imaging")[1],
@@ -207,12 +222,16 @@ class Dataset:
         self._require_timeline()
         rows, touched = self.curation.records("specimens")
         metadata = {r["display_name"]: r for r in self.curation.records("bam_metadata")[0]}
-        fastqs = defaultdict(list)
-        for row in self.curation.records("fastqs")[0]:
+        fastqs, related = defaultdict(list), defaultdict(list)
+        fastq_rows, fastq_touched = self.curation.records("fastqs")
+        for i, row in enumerate(fastq_rows):
             fastqs[row["sample_id"]].append(row["s3_folder"])
-        claims = defaultdict(list)
-        for row in self.curation.records("timepoint_summary")[0]:
+            related[row["sample_id"]].extend(fastq_touched.get(i, ()))
+        claims, summary_corrections = defaultdict(list), defaultdict(list)
+        summary_rows, summary_touched = self.curation.records("timepoint_summary")
+        for i, row in enumerate(summary_rows):
             claims[row["timepoint"]].append(("timepoint_summary", row["date"], row["location"]))
+            summary_corrections[row["timepoint"]].extend(summary_touched.get(i, ()))
         for event in self.timeline.select(lane="Time points"):
             claims[event.timepoint].append(("events", event.date, None))
         result = []
@@ -236,7 +255,11 @@ class Dataset:
                              if metadata.get(n, {}).get("s3_path")),
                 unmatched_bams=tuple(n for n in names if not metadata.get(n, {}).get("s3_path")),
                 fastq_folders=tuple(fastqs.get(row["sample_id"], ())),
-                disagreements=disagreements, corrections=touched.get(i, ()), raw=row))
+                disagreements=disagreements,
+                corrections=tuple(dict.fromkeys((*touched.get(i, ()), *related[row["sample_id"]],
+                                                 *(summary_corrections[row["timepoint"]]
+                                                   if row.get("timepoint") else ())))),
+                raw=dict(row)))
         return Table(result, source=self.manifest["sources"]["specimens"])
 
     def _object_key(self, path):
@@ -254,16 +277,19 @@ class Dataset:
             rows.append(dict(date=event.date, source="mrd", category="MRD",
                              measurement=event.details["assay_name"], value=event.value,
                              unit=event.details["unit"], kind=event.details["value_kind"],
-                             reference_low="", reference_high="", out_of_range=""))
+                             reference_low="", reference_high="", out_of_range="",
+                             corrections=";".join(event.corrections)))
         for name in ("labs", "cytometry"):
-            for row in self.curation.records(name)[0]:
+            source_rows, touched = self.curation.records(name)
+            for i, row in enumerate(source_rows):
                 value = row.get("value", "")
                 kind = "missing" if value == "" else "numeric" if re.fullmatch(r"-?[\d.]+", value) else "text"
                 rows.append(dict(date=row["date"], source=name, category=row.get("category", ""),
                                  measurement=row.get("measurement", ""), value=value, unit=row.get("unit", ""),
                                  kind=kind, reference_low=row.get("reference_low", ""),
                                  reference_high=row.get("reference_high", ""),
-                                 out_of_range=row.get("out_of_range", "")))
+                                 out_of_range=row.get("out_of_range", ""),
+                                 corrections=";".join(touched.get(i, ()))))
         return Table(sorted(rows, key=lambda r: (r["date"], r["source"], r["measurement"])))
 
     @property
@@ -291,7 +317,7 @@ class Dataset:
         rows, touched = self.curation.records("vafs")
         columns = self._columns["vafs"]
         if not self.curation.enabled:
-            return Table(rows, columns=columns, source=source)
+            return Table((dict(row) for row in rows), columns=columns, source=source)
         return Table((dict(row, corrections=";".join(touched.get(i, ()))) for i, row in enumerate(rows)),
                      columns=(*columns, "corrections"), source=source)
 
@@ -306,8 +332,11 @@ class Dataset:
         rows = iter(rows)
         bams = dict(bams, categories=[dict(c, bams=[next(rows) for _ in c["bams"]]) for c in bams["categories"]])
         listing = dict(listing, files=[[f["key"], f["size"], f["modified"]] for f in files])
+        # Site tables pinned by this snapshot keep the snapshot's URLs (e.g. a mirror).
+        tables = {name: (self.manifest["sources"].get(name, {}).get("url", url), format)
+                  for name, (url, format) in TABLE_SOURCES.items()}
         assets = build_assets(listing, bams, metadata, self.vafs,
-                              parse_data_paths(read_text(self.source_path("data_page"))))
+                              parse_data_paths(read_text(self.source_path("data_page"))), tables=tables)
         touched = {}
         base = listing.get("download_base", BUCKET)
         for i, ids in bucket_touched.items():
@@ -336,20 +365,36 @@ class Dataset:
     def _variants(self):
         index, index_touched = self.curation.records("variant_index")
         records, record_touched = self.curation.records("source_variants")
-        mutations, _ = self.curation.records("vaccine_overlap")
-        variants = parse_variants(index, self.vafs, source_variants=records,
+        mutations, overlap_touched = self.curation.records("vaccine_overlap")
+        counts, count_touched = self.curation.records("vafs")
+        # Variants get their own copies, so edits to their annotations never reach the sources.
+        index, records, mutations = copy.deepcopy(index), copy.deepcopy(records), copy.deepcopy(mutations)
+        variants = parse_variants(index, Table(copy.deepcopy(counts), columns=self._columns["vafs"]),
+                                  source_variants=records,
                                   vaccine_overlap=dict(self._json("vaccine_overlap"), mutations=mutations),
                                   source={"snapshot_id": self.id, "receipts": self.manifest["sources"],
                                           "corrections": self.curation.applied()})
-        touched = {}
-        for rows, key, marks in ((index, "id", index_touched), (records, "id", record_touched)):
+        # A correction belongs to a variant when it touches the variant's own records
+        # or all of its count rows. One that touches only some count rows (e.g. one
+        # BAM's counts) is listed separately as a count correction.
+        own, partial = defaultdict(list), defaultdict(list)
+        for rows, marks in ((index, index_touched), (records, record_touched)):
             for i, ids in marks.items():
-                touched.setdefault(rows[i][key], []).extend(ids)
-        for row in self.vafs:
-            if row.get("corrections"):
-                touched.setdefault(row["variant_id"], []).extend(row["corrections"].split(";"))
+                own[rows[i]["id"]].extend(ids)
+        overlap_ids = {id(mutations[i]): ids for i, ids in overlap_touched.items()}
+        rows_per_variant, touched_rows = Counter(), defaultdict(Counter)
+        for i, row in enumerate(counts):
+            rows_per_variant[row["variant_id"]] += 1
+            for correction in count_touched.get(i, ()):
+                touched_rows[row["variant_id"]][correction] += 1
         for variant in variants:
-            variant.annotations["corrections"] = tuple(dict.fromkeys(touched.get(variant.id, ())))
+            ids = own[variant.id]
+            for record in variant.annotations.get("vaccine_overlap_records", ()):
+                ids.extend(overlap_ids.get(id(record), ()))
+            for correction, n in touched_rows[variant.id].items():
+                (ids if n == rows_per_variant[variant.id] else partial[variant.id]).append(correction)
+            variant.annotations["corrections"] = tuple(dict.fromkeys(ids))
+            variant.annotations["count_corrections"] = tuple(dict.fromkeys(partial[variant.id]))
         return variants
 
     def variants(self, set="site", **filters):
@@ -370,11 +415,19 @@ class Dataset:
             variants = variants.select(vaccinated=True)
         return variants.select(**filters)
 
+    def _traced(self, name):
+        """Copies of a JSON source's records, each naming the corrections that touched it."""
+        rows, touched = self.curation.records(name)
+        rows = copy.deepcopy(rows)
+        if self.curation.enabled:
+            for i, row in enumerate(rows):
+                row["corrections"] = touched.get(i, ())
+        return rows
+
     @property
     def vaccines(self):
         """Vaccine-overlap rows including unmodified ELISPOT states (copies; edits do not persist)."""
-        return Table(copy.deepcopy(self.curation.records("vaccine_overlap")[0]),
-                     source=self.manifest["sources"]["vaccine_overlap"])
+        return Table(self._traced("vaccine_overlap"), source=self.manifest["sources"]["vaccine_overlap"])
 
     @property
     def vaccine_names(self):
@@ -383,22 +436,21 @@ class Dataset:
     def vaccine_peptides(self, vaccine=None):
         """Published peptide sequences and experiments, keyed by exact variant ID."""
         rows = []
-        for variant in self._variants:
-            for peptide in variant.annotations["source_record"].get("vaccine_peptides", []):
+        for record in self.curation.records("source_variants")[0]:
+            for peptide in record.get("vaccine_peptides", []):
                 if vaccine is None or vaccine in peptide.get("in_vaccines", []):
-                    rows.append(dict(peptide, variant_id=variant.id, gene=variant.gene))
+                    rows.append(dict(copy.deepcopy(peptide), variant_id=record["id"], gene=record["gene"]))
         return Table(rows, source=self.manifest["sources"]["source_variants"])
 
     @property
     def annotations(self):
-        """Original variant annotation records, including peptides and validation."""
-        return Table(copy.deepcopy(self.curation.records("source_variants")[0]),
-                     source=self.manifest["sources"]["source_variants"])
+        """Variant annotation records, including peptides and validation (copies)."""
+        return Table(self._traced("source_variants"), source=self.manifest["sources"]["source_variants"])
 
     @property
     def pipeline_names(self):
-        return tuple(sorted({p for v in self._variants for p in
-                             v.annotations["source_record"].get("detection", {})}))
+        return tuple(sorted({p for record in self.curation.records("source_variants")[0]
+                             for p in record.get("detection", {})}))
 
     @property
     def samples(self):
@@ -422,10 +474,18 @@ class Dataset:
         return Table((dict(timepoint=t, date=d, source=s) for t, d, s in
                       sorted(rows, key=lambda r: tuple(x or "" for x in r))))
 
+    @cached_property
+    def _asset_index(self):
+        index = defaultdict(list)
+        for asset in self.assets:
+            for name in dict.fromkeys((asset.id, asset.key, asset.url, asset.metadata.get("resource"))):
+                if name:
+                    index[name].append(asset)
+        return index
+
     def asset(self, key_or_id):
         """Resolve an exact bucket key, URL, resource name, or asset ID."""
-        matches = [a for a in self.assets if key_or_id in
-                   (a.id, a.key, a.url, a.metadata.get("resource"))]
+        matches = self._asset_index.get(key_or_id, [])
         if len(matches) != 1:
             raise KeyError(f"Expected one asset for {key_or_id!r}, found {len(matches)}")
         return matches[0]
@@ -446,7 +506,7 @@ class Dataset:
                 if refresh:
                     raise ValueError("Create a new snapshot to refresh pinned metadata")
                 return self.cache.path(receipt)
-        binding = self.cache.root / "bindings" / self.id / (asset.id + ".json")
+        binding = self.cache.workspace / "bindings" / self.id / (asset.id + ".json")
         with file_lock(binding.with_suffix(".lock")):
             if binding.exists():
                 if refresh:
@@ -454,13 +514,20 @@ class Dataset:
                 receipt = Receipt(**json.loads(binding.read_text()))
                 if receipt.url != asset.url:
                     raise IntegrityError("Snapshot object binding has the wrong URL")
-                return self.cache.path(receipt)
+                try:
+                    return self.cache.path(receipt)
+                except OfflineError:
+                    if self.cache.offline:
+                        raise
+                    # A pruned object is restored only if the server still has the same bytes.
+                    return self.cache.path(self.cache.fetch(asset.url, sha256=receipt.sha256, size=receipt.size))
             md5s = {r.get("md5sum") for r in asset.metadata.get("metadata_rows", []) if r.get("md5sum")}
             if len(md5s) > 1:
                 raise IntegrityError("Conflicting published MD5 claims")
             receipt = self.cache.fetch(asset.url, refresh=refresh,
                                        size=asset.size if verify_size else None,
                                        md5=next(iter(md5s), None))
+            _check_inventory_time(asset, receipt)
             write_json(binding, receipt.to_dict())
             return self.cache.path(receipt)
 
@@ -488,9 +555,15 @@ class Dataset:
         return inspect_alignment(asset, cache=self.cache, snapshot_id=self.id, **kwargs)
 
     def extract_reads(self, asset, regions, **kwargs):
-        """Extract an indexed region union; see osteosarc.extract_reads."""
+        """Extract an indexed region union; see osteosarc.extract_reads.
+
+        The listed index is downloaded once, bound to this snapshot like any
+        other object, and reused for every query.
+        """
         from .reads import extract_reads
         asset = asset if isinstance(asset, Asset) else self.asset(asset)
+        if kwargs.get("index") is None and asset.index_urls:
+            kwargs["index"] = str(self.download(asset.index_urls[0]))
         return extract_reads(asset, regions, cache=self.cache, snapshot_id=self.id, **kwargs)
 
     def open_variants(self, asset):

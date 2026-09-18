@@ -72,8 +72,10 @@ table = data.table("snv_top")
 print(path.name, table.columns)
 ```
 
-`download` returns a `pathlib.Path` with the original basename, useful for
-existing format-specific readers. `table` accepts any CSV/TSV asset or exact
+`download` returns the shared cache object's `pathlib.Path`, named by its
+SHA256 plus the original suffixes (for example `…9c2e.genes.results`), so
+format-specific readers still recognize it. The original name is kept in the
+receipt (`data.cache.fetch(url).filename`). `table` accepts any CSV/TSV asset or exact
 key, including RSEM `.genes.results` and `.isoforms.results` files.
 
 ```python

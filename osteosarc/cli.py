@@ -16,7 +16,8 @@ from .reads import ReadFilter
 
 def parser():
     root = argparse.ArgumentParser(description=__doc__)
-    root.add_argument("--cache", help="Shared cache directory (or OSTEOSARC_CACHE)")
+    root.add_argument("--cache", help="Cache root (default: OSTEOSARC_CACHE, else the shared OpenVax "
+                                      "cache: OPENVAX_DATA_CACHE or the platform 'openvax' cache)")
     root.add_argument("--offline", action="store_true", help="Forbid any network acquisition")
     root.add_argument("--no-corrections", action="store_true",
                       help="Use the published sources unchanged (see osteosarc.curation)")

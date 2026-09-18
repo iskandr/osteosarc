@@ -16,6 +16,12 @@ not download data or import those projects.
 * A shared `Cache` stores immutable downloaded bytes and SHA256 receipts.
   Reuse verifies bytes. Refresh is explicit; old snapshot references survive
   refresh. Downloads publish atomically under a per-URL lock.
+* Bytes live in the OpenVax shared layout, `objects/sha256/<sha256><suffixes>`
+  under `OPENVAX_DATA_CACHE`, as vaxrank's downloader stores them, so OpenVax
+  tools share content. Objects already present (from any tool) are verified and
+  reused, never rewritten. Everything osteosarc-specific (per-URL receipts,
+  snapshots, snapshot bindings, headers, extracted reads, digest memos) lives
+  under `<root>/osteosarc/`.
 * The full bucket listing remains queryable, including unclassified files.
   Curated BAM metadata enriches it, rather than defining the entire dataset.
   The website listing has its own date; it is not a live S3 inventory. An

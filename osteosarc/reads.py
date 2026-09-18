@@ -10,7 +10,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from .cache import Cache, digest, file_lock, stable_id, write_json
+from .cache import Cache, digest, file_identity, file_lock, share, stable_id, write_json
 from .errors import CoordinateError, IntegrityError, OfflineError
 from .models import Asset, Region
 
@@ -99,6 +99,9 @@ class ReadFilter:
     barcode_tag: str = "CB"
 
     def __post_init__(self):
+        # One barcode may be given as a string; never split it into characters.
+        barcodes = (self.barcodes,) if isinstance(self.barcodes, str) else tuple(self.barcodes)
+        object.__setattr__(self, "barcodes", barcodes)
         if not 0 <= self.min_mapq <= 255 or self.exclude_flags < 0 or self.require_flags < 0:
             raise ValueError("Invalid MAPQ or SAM flags")
         if len(self.barcode_tag) != 2 or not self.barcode_tag.isalnum():
@@ -194,11 +197,11 @@ def inspect_alignment(source, *, cache=None, snapshot_id=None, timeout=600):
     cache = cache if isinstance(cache, Cache) else Cache(cache)
     asset, location, remote = _alignment_source(source)
     request = dict(schema_version=1, operation="inspect_alignment", source=location,
-                   source_sha256=None if remote else digest(location),
+                   source_sha256=None if remote else cache.file_digest(location),
                    source_size=asset.size if asset else None,
                    source_modified=asset.modified if asset else None, snapshot_id=snapshot_id)
-    directory = cache.root / "headers" / stable_id(request)
-    with file_lock(cache.root / "locks" / (directory.name + ".lock")):
+    directory = cache.workspace / "headers" / stable_id(request)
+    with file_lock(cache.workspace / "locks" / (directory.name + ".lock")):
         receipt = _verified_receipt(directory, request)
         if receipt is None:
             if remote and cache.offline:
@@ -207,11 +210,12 @@ def inspect_alignment(source, *, cache=None, snapshot_id=None, timeout=600):
             if before and asset and asset.size is not None and before["content-length"] is not None:
                 if int(before["content-length"]) != asset.size:
                     raise IntegrityError("Remote alignment size differs from the pinned inventory")
+            identity = None if remote else file_identity(location)
             command = ["samtools", "view", "--no-PG", "-H", location]
             header_text = _run(command, timeout).stdout.decode()
             pysam.AlignmentHeader.from_text(header_text)
             after = _remote_identity(location, min(timeout, 60)) if remote else None
-            if before != after or (not remote and digest(location) != request["source_sha256"]):
+            if before != after or (not remote and file_identity(location) != identity):
                 raise IntegrityError("Alignment changed during header inspection")
             directory.parent.mkdir(parents=True, exist_ok=True)
             with tempfile.TemporaryDirectory(dir=directory.parent, prefix=".header-") as temporary:
@@ -221,6 +225,7 @@ def inspect_alignment(source, *, cache=None, snapshot_id=None, timeout=600):
                                remote_identity=before, command=command,
                                samtools_version=_samtools_version())
                 write_json(work / "receipt.json", receipt)
+                share(work)
                 os.replace(work, directory)
         path = directory / "header.sam"
         return AlignmentInfo(path, pysam.AlignmentHeader.from_text(path.read_text()).to_dict(), receipt)
@@ -268,20 +273,22 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
     reference = Path(reference).resolve() if reference is not None else None
     if reference is not None and not Path(str(reference) + ".fai").is_file():
         raise CoordinateError("Reference FASTA must already have a .fai index")
+    local_identities = [file_identity(p) for p in ([] if remote else [location])
+                        + ([] if remote_index else [index])]
     request = dict(schema_version=1, operation="extract_reads", source=location,
-                   source_sha256=None if remote else digest(location),
+                   source_sha256=None if remote else cache.file_digest(location),
                    source_size=asset.size if asset else None,
                    source_modified=asset.modified if asset else None,
-                   index=index, index_sha256=None if remote_index else digest(index),
+                   index=index, index_sha256=None if remote_index else cache.file_digest(index),
                    snapshot_id=snapshot_id,
                    regions=sorted((asdict(r) for r in regions), key=lambda r: json.dumps(r, sort_keys=True)),
                    filters=asdict(filters), fetch_pairs=fetch_pairs,
-                   reference_sha256=digest(reference) if reference else None,
-                   reference_index_sha256=digest(str(reference) + ".fai") if reference else None)
+                   reference_sha256=cache.file_digest(reference) if reference else None,
+                   reference_index_sha256=cache.file_digest(str(reference) + ".fai") if reference else None)
     # JSON normalization makes tuples and serialized lists compare identically.
     request = json.loads(json.dumps(request))
-    directory = cache.root / "derived" / stable_id(request)
-    with file_lock(cache.root / "locks" / (directory.name + ".lock")):
+    directory = cache.workspace / "derived" / stable_id(request)
+    with file_lock(cache.workspace / "locks" / (directory.name + ".lock")):
         cached = _cached_subset(directory, request)
         if cached is not None:
             return cached
@@ -328,8 +335,8 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
             after = _remote_identity(location, min(timeout, 60)) if remote else None
             if before != after:
                 raise IntegrityError("Remote alignment changed during extraction")
-            if not remote and (digest(location) != request["source_sha256"] or
-                               (not remote_index and digest(index) != request["index_sha256"])):
+            if [file_identity(p) for p in ([] if remote else [location])
+                    + ([] if remote_index else [index])] != local_identities:
                 raise IntegrityError("Local alignment or index changed during extraction")
             (work / "header.sam").write_text(header_text)
             files = {name: digest(work / name) for name in ("reads.bam", "reads.bam.bai", "header.sam", "regions.bed")}
@@ -343,6 +350,7 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
                            scope="regional_records_and_paired_mates" if fetch_pairs else "regional_records")
             write_json(work / "receipt.json", receipt)
             # Only a complete directory becomes visible. No receipt means no cache hit.
+            share(work)
             os.replace(work, directory)
         return _cached_subset(directory, request)
 
@@ -359,10 +367,10 @@ def subset_templates(source, count, *, cache=None, seed="0"):
         raise ValueError("count must be a nonnegative integer")
     cache = cache if isinstance(cache, Cache) else Cache(cache)
     source = Path(source.path if isinstance(source, ReadSubset) else source).resolve()
-    request = dict(schema_version=1, operation="subset_templates", source_sha256=digest(source),
+    request = dict(schema_version=1, operation="subset_templates", source_sha256=cache.file_digest(source),
                    count=count, seed=str(seed))
-    directory = cache.root / "derived" / stable_id(request)
-    with file_lock(cache.root / "locks" / (directory.name + ".lock")):
+    directory = cache.workspace / "derived" / stable_id(request)
+    with file_lock(cache.workspace / "locks" / (directory.name + ".lock")):
         cached = _cached_subset(directory, request)
         if cached is not None:
             return cached
@@ -382,12 +390,13 @@ def subset_templates(source, count, *, cache=None, seed="0"):
                         out.write(read)
                         records += 1
             pysam.index(str(output))
-            if digest(source) != request["source_sha256"]:
+            if cache.file_digest(source) != request["source_sha256"]:
                 raise IntegrityError("Input BAM changed during template selection")
             receipt = dict(request=request, records=records, templates=len(selected),
                            files={name: digest(work / name) for name in ("reads.bam", "reads.bam.bai")},
                            selected_templates=sorted(selected), scope="sampled_fixture",
                            suitable_for_vaf=False, pysam_version=pysam.__version__)
             write_json(work / "receipt.json", receipt)
+            share(work)
             os.replace(work, directory)
         return _cached_subset(directory, request)

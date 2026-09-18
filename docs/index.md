@@ -29,9 +29,11 @@ print(len(data.assets), len(data.variants()))
 ```
 
 This downloads about 57 MB of metadata, including the dated bucket inventory and the timeline sources.
-Large sequencing files are acquired only when explicitly requested. All four
-projects can share `OSTEOSARC_CACHE`; the default is `~/.cache/osteosarc`
-(or `$XDG_CACHE_HOME/osteosarc`).
+Large sequencing files are acquired only when explicitly requested. Files go
+into the shared OpenVax cache (`OPENVAX_DATA_CACHE`, else the platform `openvax`
+cache directory) under `objects/sha256/`, the layout vaxrank also uses, so the
+OpenVax projects share downloaded bytes. `OSTEOSARC_CACHE` selects an isolated
+cache.
 
 ## Reopen offline
 

@@ -171,3 +171,37 @@ def test_malformed_bucket_rows_are_schema_errors(tmp_path):
         cache.import_file(path, urls[key])
     with pytest.raises(SchemaError, match="Malformed bucket object"):
         Dataset.sync("broken", cache=cache)
+
+
+def test_every_correctable_source_is_traced(dataset):
+    overlap = Correction("vo-edit", "overlap edit", (
+        Change("vaccine_overlap", {"gene": "SMC5"}, expect={"vaccines.mRNA": True},
+               set={"vaccines.mRNA": False}),))
+    labs = Correction("lab-flag", "labs flag", (Change("labs", {"measurement": "WBC"}),))
+    data = reopen(dataset, [overlap, labs])
+    smc5 = data.variants()[SMC5]
+    assert "mRNA" not in smc5.vaccines and smc5.annotations["corrections"] == ("vo-edit",)
+    assert [r["corrections"] for r in data.vaccines.select(gene="SMC5")] == [("vo-edit",)]
+    wbc = data.measurements.select(measurement="WBC")
+    assert wbc.rows and all(r["corrections"] == "lab-flag" for r in wbc)
+
+
+def test_count_row_corrections_are_separate_from_variant_corrections(dataset):
+    one_bam = dataset.vafs.select(variant_id=SMC5).rows[0]["bam_file"]
+    corrections = [
+        Correction("one-bam", "a single count row", (Change("vafs", {"bam_file": one_bam}),)),
+        Correction("all-rows", "every count row of SMC5", (Change("vafs", {"variant_id": SMC5}),))]
+    variant = reopen(dataset, corrections).variants()[SMC5]
+    assert variant.annotations["corrections"] == ("all-rows",)
+    assert variant.annotations["count_corrections"] == ("one-bam",)
+
+
+def test_variant_annotations_do_not_alias_the_sources(dataset):
+    data = reopen(dataset, True)
+    names = data.pipeline_names
+    data.variants()[SMC5].annotations["source_record"]["detection"].clear()
+    assert data.pipeline_names == names
+    assert data.annotations.select(id=SMC5).rows[0]["detection"]
+    raw = reopen(dataset, False)
+    raw.vafs.rows[0]["alt"] = "N"
+    assert raw.variants()[raw.vafs.rows[0]["variant_id"]].alleles[0][3] != "N"

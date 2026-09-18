@@ -190,3 +190,12 @@ def test_explorer_options_convert_booleans_and_integers(dataset):
     Explorer(dataset, width=120, stdin=io.StringIO("variants limit=1\nassets include_inferred=no kind=bam\nquit\n"),
              stdout=output).cmdloop()
     assert "... " in output.getvalue() and "error" not in output.getvalue()
+
+
+def test_table_limits_are_validated():
+    from osteosarc.explore import table
+    rows = [dict(a=str(i)) for i in range(4)]
+    assert table(rows, ("a",), limit=0).endswith("... 4 more")
+    assert "... 2 more" in table(rows, ("a",), limit=2)
+    with pytest.raises(ValueError):
+        table(rows, ("a",), limit=-2)

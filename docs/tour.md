@@ -86,6 +86,7 @@ from collections import Counter
 site = data.variants()
 print(Counter(v.status for v in site))
 print(Counter(c for v in site for c in v.annotations["corrections"]).most_common(4))
+print(Counter(c for v in site for c in v.annotations["count_corrections"]))
 
 raw = Dataset.open("baseline", corrections=False).variants()
 for v in site:
@@ -100,15 +101,17 @@ CeGaT calls describe a −28 bp complex event. The T1 tumor WGS reads settle it:
 
 ```text
 Counter({'ready': 177, 'missing_literal_allele': 3, 'non_literal_allele': 2})
-[('tempus-grch37-counts', 179), ('pvac-2025-detection', 4), ('natera-alleles-unavailable', 2), ('allele-CABLES1-chr18-23135500', 1)]
+[('pvac-2025-detection', 4), ('natera-alleles-unavailable', 2), ('allele-CABLES1-chr18-23135500', 1), ('allele-CCDC40-chr17-80058951', 1)]
+Counter({'tempus-grch37-counts': 179})
 CABLES1-chr18-23135500 (23135500, 'G', 'dup') -> (23135764, 'T', 'TGGCGGC')
 ...
 MAP2-chr2-209694768 (209694768, 'CCTGGGCTACTGTGTGTTCAATA', 'C') -> (209694768, 'CCTGGGCTACTGTGTGTTCAATAAGTACACAGT', 'CAGGG')
 ```
 
-Almost every variant carries `tempus-grch37-counts`: each has a count row for
-that BAM, and those rows were cleared. The allele edits are the six that
-changed.
+Seventeen variants carry corrections of their own. The allele edits are the
+six that changed. `tempus-grch37-counts` cleared one BAM's count row for 179
+variants without changing the variants themselves, so it is listed under
+`count_corrections`.
 
 ```python
 from collections import Counter

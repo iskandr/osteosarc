@@ -25,7 +25,7 @@ python -m pip install -e '.[reads]'
 ```python
 from osteosarc import Cache, Dataset
 
-cache = Cache()  # $OSTEOSARC_CACHE, else ~/.cache/osteosarc
+cache = Cache()  # the shared OpenVax cache (see below)
 data = Dataset.sync("2026-09-18", cache=cache)  # explicit metadata download
 
 # Later: verifies the saved snapshot and opens it without network access.
@@ -35,8 +35,16 @@ data = Dataset.open("2026-09-18", cache=cache)
 `sync` acquires about 57 MB of metadata, including the full dated bucket index
 and the timeline sources.
 It does not download BAMs, FASTQs, or other large data files. Importing the
-package also does no downloading. All projects can share `OSTEOSARC_CACHE`;
-otherwise the default is `$XDG_CACHE_HOME/osteosarc` or `~/.cache/osteosarc`.
+package also does no downloading.
+
+Files are stored in the **shared OpenVax cache**, the same layout vaxrank's
+downloader uses, so identical bytes are stored once across OpenVax tools:
+`<root>/objects/sha256/<sha256><original suffixes>` (for example
+`…9c2e.genes.results`). osteosarc keeps its receipts, snapshots, bindings and
+extracted reads under `<root>/osteosarc/`. The root is `OPENVAX_DATA_CACHE`,
+otherwise the platform cache directory for `openvax` (`~/Library/Caches/openvax`
+on macOS, `$XDG_CACHE_HOME/openvax` or `~/.cache/openvax` on Linux).
+`OSTEOSARC_CACHE` or `Cache(root)` selects an isolated cache instead.
 
 Snapshots pin source URLs and SHA256 receipts. Downloads use atomic publication,
 per-URL locks, bounded retries, and checksum verification on reuse. Interrupted

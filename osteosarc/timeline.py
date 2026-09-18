@@ -247,12 +247,13 @@ def _dated(source, rows, field, marks=None, undated=None):
         yield row, seen[key] - 1, day, tuple((marks or {}).get(i, ()))
 
 
-def events_from_site(document, sheet_rows=(), *, marks=None, undated=None):
+def events_from_site(document, sheet_rows=(), *, marks=None, sheet_marks=None, undated=None):
     """events.json rows; dose and dose number joined from the sheet export when unique."""
     doses = defaultdict(list)
-    for row in sheet_rows:
+    for i, row in enumerate(sheet_rows):
         start = normalize_date(row.get("Start date"))
-        doses[(row.get("Title", "").strip(), start, row.get("Category", "").strip())].append(row)
+        doses[(row.get("Title", "").strip(), start, row.get("Category", "").strip())].append(
+            (row, tuple((sheet_marks or {}).get(i, ()))))
     build_end = document.get("date_range", {}).get("end")
     names = {t["id"]: t["name"] for t in document.get("timelines", ())}
     result = []
@@ -270,7 +271,8 @@ def events_from_site(document, sheet_rows=(), *, marks=None, undated=None):
         else:
             lane = category or "Other"
         matches = doses.get((title.strip(), day, row.get("category", "")), [])
-        dose = matches[0] if len(matches) == 1 else {}
+        dose, sheet_corrections = matches[0] if len(matches) == 1 else ({}, ())
+        corrections = tuple(dict.fromkeys((*corrections, *sheet_corrections)))
         end = valid_date(row.get("end_date"))
         result.append(_event(
             "events", row, n, date=day, end=end, lane=lane, category=category or "Other",

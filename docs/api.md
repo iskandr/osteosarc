@@ -39,6 +39,7 @@ The named tables are `vafs`, `vaf_columns`, `snv_top`, `dna_fusions`, and
 | `event.date`, `.end`, `.precision`, `.open_end`, `.timepoint`, `.value`, `.source`, `.corrections`, `.details` | Published precision, correction IDs, and the original record |
 | `timeline.source["undated"]` | Source rows left off the timeline because their dates could not be read |
 | `data.specimens` | Table: registry rows with `assets`, `fastq_folders`, `disagreements`, `corrections` |
+| `variant.annotations["corrections"]`, `["count_corrections"]` | Corrections to the variant itself, and to only some of its count rows |
 | `data.measurements` | Table: MRD, lab, and cytometry values with raw strings and `kind` |
 | `osteosarc.explore.Explorer(data)` | Interactive shell (`osteosarc explore`) |
 | `osteosarc.explore.specimen_view`, `specimens_view`, `assets_view`, `variants_view`, `corrections_view`, `summary_view` | The shell's views as strings |

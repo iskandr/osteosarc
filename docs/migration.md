@@ -55,7 +55,8 @@ metadata is not replaced with a guessed platform or sample identity.
 ## Consumer changes to make next
 
 1. **Replace acquisition helpers first.** Add an `osteosarc` dependency (or test
-   extra where acquisition is test-only), choose a shared cache and a named
+   extra where acquisition is test-only), use the shared OpenVax cache
+   (`OPENVAX_DATA_CACHE`, the layout vaxrank already uses) and a named
    snapshot, and replace URL constants/download helpers with `Dataset` and
    `Cache`. Keep current fixture bytes and expected biological outputs.
 2. **Replace private test imports.** Varcode's analysis scripts should use the

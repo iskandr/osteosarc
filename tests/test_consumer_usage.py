@@ -92,7 +92,7 @@ def test_topiary_rsem_download_and_raw_table(dataset, tmp_path):
     assert asset.kind == "expression"
     assert list(dataset.table(asset.key)) == [{"gene_id": "ENSG000001", "transcript_id(s)": "ENST000001", "TPM": "0"}]
     path = dataset.download(asset)
-    assert path.name == "sample.genes.results"
+    assert path.name.endswith(".genes.results")  # shared OpenVax name: <sha256><original suffixes>
     pytest.importorskip("topiary")
     from topiary.rna.expression_loader import load_expression
     expression = load_expression(path)

@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from collections import Counter, defaultdict
 from pathlib import PurePosixPath
-from urllib.parse import quote, unquote, urljoin, urlsplit
+from urllib.parse import quote, unquote, urlsplit
 
 from .cache import stable_id
 from .curation import (
@@ -96,7 +96,7 @@ def object_key(value, base=BUCKET):
     return value
 
 
-def build_assets(listing, bams, metadata, vafs, path_claims=()):
+def build_assets(listing, bams, metadata, vafs, path_claims=(), *, tables=None):
     """Retain every listed object, enriching exact paths before basename matches.
 
     Basename joins are used only when unique among alignment objects. Path
@@ -179,7 +179,7 @@ def build_assets(listing, bams, metadata, vafs, path_claims=()):
         url = bucket_url(key, base)
         assets.append(Asset(stable_id(url), key, url, kind, format, index_urls=indexes,
                             claims=tuple(records), metadata=info, **object_metadata))
-    for name, (url, format) in TABLE_SOURCES.items():
+    for name, (url, format) in (tables or TABLE_SOURCES).items():
         assets.append(Asset(stable_id(url), "site/" + name, url, "table", format,
                             metadata={"resource": name}))
     return Assets(assets)
@@ -233,12 +233,3 @@ def parse_data_paths(html):
             assay=assay, platform=platform, tissue=tissue,
             provider=normalize_provider(values.get("Provider")))))
     return tuple(result)
-
-
-def table_links(html, page_url):
-    """Discover downloadable tables from an actual source page."""
-    from bs4 import BeautifulSoup
-    soup = BeautifulSoup(html, "html.parser")
-    return tuple(sorted({urljoin(page_url, a["href"]) for a in soup.select("a[href]")
-                         if asset_type(urlsplit(a["href"]).path)[0] in
-                         ("table", "variants", "annotation", "reference")}))
