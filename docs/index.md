@@ -7,16 +7,20 @@ reads. Your existing libraries handle annotation and analysis.
 
 ## Install
 
-Python 3.10+, Linux or macOS, and `curl` are required. Install from the repository:
+Python 3.10+, Linux or macOS, and `curl` are required. Install from PyPI:
+
+```sh
+python -m pip install 'osteosarc[reads]'
+```
+
+Read inspection/extraction also needs `samtools` on PATH. Pin a version in
+reproducible consumer environments. For development:
 
 ```sh
 git clone https://github.com/iskandr/osteosarc.git
 cd osteosarc
-python -m pip install -e '.[reads]'
+python -m pip install -e '.[test]'
 ```
-
-Read inspection/extraction also needs `samtools` on PATH. Pin a Git commit in
-reproducible consumer environments; this project is not yet published to PyPI.
 
 ## Create a snapshot once
 
