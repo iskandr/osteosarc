@@ -6,10 +6,10 @@ variants and vaccines, and extract indexed sequencing reads.
 
 The initial implementation consolidates the acquisition patterns found in
 Varcode, Isovar, Topiary, and Vaxrank. Those repositories have not yet been
-migrated. See the [comparison and migration guide](docs/migration.md).
+migrated. See the [comparison and migration guide](https://iskandr.github.io/osteosarc/migration/).
 
 [Documentation and short examples](https://iskandr.github.io/osteosarc/) ·
-[Consumer migration recipes](docs/consumers.md)
+[Consumer migration recipes](https://iskandr.github.io/osteosarc/consumers/)
 
 ## Install
 
@@ -17,8 +17,10 @@ Python 3.10+, Linux or macOS, and `curl` are required. Indexed read extraction
 also requires `samtools` on PATH and the `reads` extra.
 
 ```sh
-python -m pip install -e '.[reads]'
+python -m pip install 'osteosarc[reads]'
 ```
+
+For development, clone the repository and use `python -m pip install -e '.[test]'`.
 
 ## One dataset, one cache
 
@@ -151,7 +153,7 @@ procedures, imaging (events and DICOM studies), pathology, omics, time points,
 specimens, MRD, flow-cytometry draws, and lab and cytometry dates. Run
 `osteosarc explore baseline` to browse it interactively, or
 `osteosarc timeline baseline --since 2024-05` for a chart. See
-[timelines](docs/timeline.md) and the [guided tour](docs/tour.md).
+[timelines](https://iskandr.github.io/osteosarc/timeline/) and the [guided tour](https://iskandr.github.io/osteosarc/tour/).
 
 ## Corrections are central, optional, and drift-aware
 
@@ -170,7 +172,7 @@ print(list(data.unrecognized))       # labels outside the vocabulary
 ```
 
 `osteosarc curation baseline --strict` exits nonzero on drift. See
-[corrections and drift](docs/curation.md).
+[corrections and drift](https://iskandr.github.io/osteosarc/curation/).
 
 ## Download and parse
 
@@ -297,8 +299,8 @@ python -m build --no-isolation
 ```
 
 Tests are offline and use small public metadata excerpts plus synthetic indexed
-BAMs. See [validation](docs/validation.md) for the bounded live check and
-[API contracts](docs/design.md) for the design rationale.
+BAMs. See [validation](https://iskandr.github.io/osteosarc/validation/) for the bounded live check and
+[API contracts](https://iskandr.github.io/osteosarc/design/) for the design rationale.
 
 Code is Apache-2.0. The public dataset is separately listed as CC0-1.0 in the
 [AWS Open Data Registry](https://registry.opendata.aws/sid-osteosarc/). Cite the
