@@ -40,6 +40,12 @@ print([(v.id, v.status) for v in unresolved])
 [Source corrections](curation.md) are on by default. Use `corrections=False`
 when opening the snapshot to inspect the published alleles.
 
+A malformed count-export row marks its entry `malformed_source_row`; other
+entries remain available. Inspect `variant.annotations["parse_errors"]` for
+the source values and error. For standalone parsing, pass the index and TSV
+text to `parse_variants(index, vaf_tsv)`. Missing or duplicate required headers
+still raise `SchemaError`.
+
 ## Read counts and annotations
 
 ```python
@@ -52,6 +58,8 @@ detected = data.variants(pipeline="oncoanalyser")
 
 Counts retain raw source values. Missing counts differ from zero; counts for
 corrected alleles or wrongly mapped alignments are cleared to unmeasured.
+`data.vafs.diagnostics` retains ragged rows' original fields and line numbers;
+missing trailing cells are `None`.
 
 ## Get vaccine peptides
 

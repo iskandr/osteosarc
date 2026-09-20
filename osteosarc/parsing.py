@@ -21,11 +21,12 @@ PARSE_FORMATS = frozenset(("json", "csv", "tsv", "fasta", "fa", "fna", "faa"))
 class Table:
     """Source-preserving table. Missing strings and numeric zero remain distinct."""
 
-    def __init__(self, rows, *, columns=None, source=None):
+    def __init__(self, rows, *, columns=None, source=None, diagnostics=()):
         self.rows = tuple(rows)
         self.columns = tuple(columns if columns is not None else
                              dict.fromkeys(k for row in self.rows for k in row))
         self.source = source
+        self.diagnostics = tuple(diagnostics)
 
     def __len__(self):
         return len(self.rows)
@@ -34,7 +35,11 @@ class Table:
         return iter(self.rows)
 
     def where(self, predicate):
-        return Table((r for r in self if predicate(r)), columns=self.columns, source=self.source)
+        selected = [i for i, row in enumerate(self) if predicate(row)]
+        positions = {old: new for new, old in enumerate(selected)}
+        diagnostics = [dict(d, row=positions[d["row"]]) for d in self.diagnostics if d["row"] in positions]
+        return Table((self.rows[i] for i in selected), columns=self.columns, source=self.source,
+                     diagnostics=diagnostics)
 
     def select(self, **fields):
         unknown = set(fields) - set(self.columns)
@@ -58,18 +63,28 @@ def read_text(path):
         return handle.read()
 
 
-def parse_table(text, *, delimiter="\t", source=None, required=()):
-    """Parse CSV/TSV with a header; preserve raw strings and reject ragged rows."""
+def parse_table(text, *, delimiter="\t", source=None, required=(), strict=True):
+    """Parse CSV/TSV; strict=False retains ragged rows and their diagnostics.
+
+    Missing trailing fields are None; extra fields are retained in diagnostics.
+    Every diagnostic has a zero-based row index and the original parsed fields.
+    Missing/duplicate headers are errors in either mode.
+    """
     reader = csv.DictReader(io.StringIO(text), delimiter=delimiter)
     columns = reader.fieldnames
     if not columns or len(set(columns)) != len(columns) or not set(required) <= set(columns):
         raise SchemaError(f"Missing or duplicate table columns; required={tuple(required)}")
-    rows = []
+    rows, diagnostics = [], []
     for row in reader:
         if None in row or any(value is None for value in row.values()):
-            raise SchemaError(f"Ragged table row {reader.line_num}")
+            if strict:
+                raise SchemaError(f"Ragged table row {reader.line_num}")
+            fields = tuple(row[c] for c in columns if row[c] is not None) + tuple(row.pop(None, ()))
+            diagnostics.append(dict(row=len(rows), line=reader.line_num, code="ragged_row",
+                                    message=f"Expected {len(columns)} fields, found {len(fields)}",
+                                    fields=fields))
         rows.append(row)
-    return Table(rows, columns=columns, source=source)
+    return Table(rows, columns=columns, source=source, diagnostics=diagnostics)
 
 
 def parse_file(path, *, format=None, source=None):
@@ -125,25 +140,39 @@ def parse_variants(index, vafs, *, source_variants=(), vaccine_overlap=None, sou
 
     index is the variant index HTML or its already parsed rows. The GRCh38
     label is the site's assertion, not independent REF validation. This does
-    not normalize indels, infer alleles from protein names, or lift.
+    not normalize indels, infer alleles from protein names, or lift. vafs may be
+    TSV text or a Table. Malformed rows with an ID mark that entry non-ready;
+    its annotations["parse_errors"] retain the diagnostics and source values.
     """
     rows = parse_variant_index(index) if isinstance(index, str) else index
     entries = {row["id"]: dict(row) for row in rows}
     required = {"variant_id", "gene", "chrom", "pos", "ref", "alt"}
-    if not required <= set(vafs.columns):
-        raise SchemaError(f"VAF table missing fields: {required - set(vafs.columns)}")
-    alleles, annotations = defaultdict(set), {}
-    for row in vafs:
-        vid = row["variant_id"]
-        try:
-            allele = (row["chrom"], int(row["pos"]), row["ref"], row["alt"])
-        except ValueError as error:
-            raise SchemaError(f"Invalid variant position: {vid}") from error
+    if isinstance(vafs, str):
+        vafs = parse_table(vafs, required=required, strict=False)
+    if len(set(vafs.columns)) != len(vafs.columns) or not required <= set(vafs.columns):
+        raise SchemaError(f"Missing or duplicate VAF table columns; required={sorted(required)}")
+    alleles, annotations, errors = defaultdict(set), {}, defaultdict(list)
+    row_errors = defaultdict(list)
+    for diagnostic in getattr(vafs, "diagnostics", ()):
+        row_errors[diagnostic["row"]].append(diagnostic)
+    for i, row in enumerate(vafs):
+        vid = row.get("variant_id")
+        if not isinstance(vid, str) or not vid.strip():
+            raise SchemaError(f"VAF row {i + 1} has no recoverable variant ID")
+        if vid not in entries:
+            entries[vid] = dict(id=vid, gene=row.get("gene"), on_site=False)
+        problems = list(row_errors[i])
+        if not problems and any(row.get(field) is None for field in required):
+            problems.append(dict(row=i, code="missing_field", message="Missing required VAF field"))
+        if not problems and (not re.fullmatch(r"[0-9]+", str(row["pos"])) or int(row["pos"]) < 1):
+            problems.append(dict(row=i, code="invalid_position", message=f"Invalid variant position: {row['pos']!r}"))
+        if problems:
+            errors[vid].extend(dict(p, source="vafs", values=dict(row)) for p in problems)
+            continue
+        allele = (row["chrom"], int(row["pos"]), row["ref"], row["alt"])
         alleles[vid].add(allele)
         annotations.setdefault(vid, {k: row.get(k) for k in
                                      ("consequence", "protein_change", "variant_type")})
-        if vid not in entries:
-            entries[vid] = dict(id=vid, gene=row["gene"], on_site=False)
     source_by_id = {}
     for record in source_variants:
         if record["id"] in source_by_id:
@@ -193,6 +222,9 @@ def parse_variants(index, vafs, *, source_variants=(), vaccine_overlap=None, sou
         count = entry.get("vaccine_count")
         if count is None and record:
             count = len(source_membership)
+        if errors[vid]:
+            status = "malformed_source_row"
+            extra["parse_errors"] = errors[vid]
         result.append(Variant(vid, entry["gene"], "GRCh38", candidates, status,
                               entry.get("on_site", True), count, membership,
                               tuple(sorted(k for k, value in record.get("detection", {}).items() if value)),

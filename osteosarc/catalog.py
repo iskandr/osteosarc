@@ -137,7 +137,10 @@ def build_assets(listing, bams, metadata, vafs, path_claims=(), *, tables=None):
         extra[key].setdefault("metadata_rows", []).append(row)
     counts = Counter(PurePosixPath(key).name for key in objects if asset_type(key)[0] == "alignment")
     by_basename = defaultdict(set)
-    for row in vafs:
+    malformed = {d["row"] for d in getattr(vafs, "diagnostics", ())}
+    for i, row in enumerate(vafs):
+        if i in malformed or not row.get("bam_file"):
+            continue
         by_basename[row["bam_file"]].add(tuple(row.get(k, "") for k in
             ("sample_label", "timepoint", "sample_date", "assay_type", "tissue", "data_source")))
     by_path = defaultdict(list)

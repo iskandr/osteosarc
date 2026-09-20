@@ -67,6 +67,9 @@ A snapshot made before the timeline sources existed raises `SchemaError` from
 | `collection.where(predicate)`, `collection[:n]`, `collection.to_records()` | Predicate filtering, slicing, dictionaries |
 | `table.select(**fields)`, `table.where(predicate)` | Original-row filtering; no type coercion |
 | `table.rows`, `table.columns`, `table.source`, `table.to_dataframe()` | Raw table values and optional pandas conversion |
+| `parse_variants(index, vafs)` | Join index rows/HTML to VAF TSV text or a Table; preserve malformed entries with `annotations["parse_errors"]` |
+| `parse_table(text, strict=True)` | Parse CSV/TSV; opt into `strict=False` to retain ragged rows |
+| `table.diagnostics` | Ragged-row diagnostics with zero-based `row`, source `line`, and original `fields`; filtering keeps the associated diagnostics |
 
 Asset selections accept `include_conflicts` and `include_inferred` opt-ins.
 Variant filters additionally include `vaccinated`, `on_site`, and

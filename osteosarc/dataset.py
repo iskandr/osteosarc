@@ -75,7 +75,7 @@ class Dataset:
             cache.path(receipt)
         chosen = CORRECTIONS if corrections in (True, False) else tuple(corrections)
         self.curation = Curation(chosen, self._published, enabled=corrections is not False)
-        self._columns, self._bucket_header = {}, None
+        self._columns, self._table_diagnostics, self._bucket_header = {}, {}, None
 
     @staticmethod
     def _snapshot_path(cache, name):
@@ -139,8 +139,9 @@ class Dataset:
     def _published(self, name):
         """Published records of one source as a list of dicts (for curation)."""
         if name in ("vafs", "bam_metadata"):
-            table = parse_table(read_text(self.source_path(name)))
+            table = parse_table(read_text(self.source_path(name)), strict=name != "vafs")
             self._columns[name] = table.columns
+            self._table_diagnostics[name] = table.diagnostics
             return list(table.rows)
         if name == "variant_index":
             return parse_variant_index(read_text(self.source_path(name)))
@@ -330,10 +331,11 @@ class Dataset:
         source = self.manifest["sources"]["vafs"]
         rows, touched = self.curation.records("vafs")
         columns = self._columns["vafs"]
+        diagnostics = copy.deepcopy(self._table_diagnostics["vafs"])
         if not self.curation.enabled:
-            return Table((dict(row) for row in rows), columns=columns, source=source)
+            return Table((dict(row) for row in rows), columns=columns, source=source, diagnostics=diagnostics)
         return Table((dict(row, corrections=";".join(touched.get(i, ()))) for i, row in enumerate(rows)),
-                     columns=(*columns, "corrections"), source=source)
+                     columns=(*columns, "corrections"), source=source, diagnostics=diagnostics)
 
     @cached_property
     def assets(self):
@@ -383,7 +385,8 @@ class Dataset:
         counts, count_touched = self.curation.records("vafs")
         # Variants get their own copies, so edits to their annotations never reach the sources.
         index, records, mutations = copy.deepcopy(index), copy.deepcopy(records), copy.deepcopy(mutations)
-        variants = parse_variants(index, Table(copy.deepcopy(counts), columns=self._columns["vafs"]),
+        variants = parse_variants(index, Table(copy.deepcopy(counts), columns=self._columns["vafs"],
+                                              diagnostics=copy.deepcopy(self._table_diagnostics["vafs"])),
                                   source_variants=records,
                                   vaccine_overlap=dict(self._json("vaccine_overlap"), mutations=mutations),
                                   source={"snapshot_id": self.id, "receipts": self.manifest["sources"],
