@@ -32,10 +32,12 @@ from __future__ import annotations
 import copy
 import fnmatch
 import functools
+import json
 import re
 import warnings
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+from importlib.resources import files
 
 from .urls import BUCKET, SOURCE_REPO
 
@@ -365,11 +367,43 @@ _PVAC = "neoantigen_prediction/pvactools/"
 
 _ALMY = _BUCKET + "vendor/tempus/TL-24-ALMY2X4KMV/DNA/TL-24-ALMY2X4KMV.soma."
 _COUNTS = dict.fromkeys(("ref_reads", "alt_reads", "other_reads", "total_reads", "vaf"), "")
+_RESOLUTIONS = json.loads(files("osteosarc").joinpath("data/allele_resolutions.json").read_text())
 
 
 def _kind(ref, alt):
     return "insertion" if len(alt) > len(ref) else "deletion" if len(alt) < len(ref) else (
         "snv" if len(ref) == 1 else "mnv")
+
+
+def _catalogue_resolution(variant_id, correction_id):
+    """Attach reviewed evidence; fill missing alleles without inventing count rows."""
+    entry = _RESOLUTIONS[variant_id]
+    resolution = entry["resolution"]
+    values, index_values = {"allele_resolution": resolution}, {}
+    if resolution["status"] == "resolved":
+        allele = resolution["allele"]
+        chrom, pos, ref, alt = (allele[k] for k in ("chrom", "pos", "ref", "alt"))
+        values.update(chr=chrom, pos=pos, ref=ref, alt=alt,
+                      variant_type=_kind(ref, alt), genomic_location=f"{chrom}:{pos}")
+        index_values["location"] = f"{chrom}:{pos}"
+    changes = [
+        Change("source_variants", {"id": variant_id}, expect=entry["expected_source"], set=values),
+        Change("variant_index", {"id": variant_id}, expect=entry["expected_index"], set=index_values),
+    ]
+    if entry["expected_source"]["pos"] is not None:
+        old = entry["expected_source"]
+        changes.append(Change("vafs", {"variant_id": variant_id},
+                              expect=dict(chrom=old["chr"], pos=str(old["pos"]),
+                                          ref=old["ref"], alt=old["alt"])))
+    if "expected_related_source" in entry:
+        changes.append(Change("source_variants", {"id": resolution["relationship"]["variant_id"]},
+                              expect=entry["expected_related_source"]))
+    evidence = [resolution["source"]["url"]]
+    evidence.extend(r["url"] for r in resolution.get("references", ()))
+    if "mapping" in resolution:
+        evidence.append(resolution["mapping"]["url"])
+    return Correction(correction_id, resolution["summary"], tuple(changes),
+                      evidence=tuple(evidence), verified=entry["verified"])
 
 
 def _allele(variant_id, old, new, summary, evidence, *, extra_source=None):
@@ -505,17 +539,7 @@ CORRECTIONS = (
                                               "MHCI.extended/*")}),),
         evidence=(_BUCKET + _PVAC + "2025.04.27.sg.curated.neoantigen.predictions.MHCI.extended/",),
         verified="2026-09-18"),
-    Correction(
-        "muc3a-grch38-placement",
-        "MUC3A's catalogue coordinate lies in GRCh38-only sequence with no GRCh37 counterpart. "
-        "The original Tempus call (GRCh37 7:100550767, 102 bp tandem duplication) maps to GRCh38 "
-        "7:100958638, and the duplicated unit does not occur verbatim nearby in GRCh38. Its "
-        "GRCh38 placement and the counts at the catalogue locus are unresolved.",
-        (Change("variant_index", {"id": "MUC3A-chr7-100953130"}),
-         Change("vafs", {"variant_id": "MUC3A-chr7-100953130"})),
-        evidence=(_BUCKET + "vendor/tempus/TL-24-ALMY2X4KMV/DNA/TL-24-ALMY2X4KMV.soma.pindel.vcf",
-                  "https://rest.ensembl.org/map/human/GRCh37/7:100550767..100550767:1/GRCh38"),
-        verified="2026-09-18"),
+    _catalogue_resolution("MUC3A-chr7-100953130", "muc3a-grch38-placement"),
     _tempus_relocation("CABLES1-chr18-23135500", ("chr18", 23135500, "G", "dup"),
                        ("chr18", 23135764, "T", "TGGCGGC"), "18:20715728"),
     _tempus_relocation("CCDC40-chr17-80058951", ("chr17", 80058951, "A", "not_reported"),
@@ -561,21 +585,15 @@ CORRECTIONS = (
         "The 14-residue insertion is annotated on NM_001145248.1, which NCBI has suppressed "
         "(transcript supported, protein not); FAM157A is now only lncRNA NR_146164.1. Tempus "
         "gives a literal allele (GRCh37 3:197880130 G>G+42, GRCh38 chr3:198153259) inside a "
-        "low-complexity repeat; it is not supplied here.",
+        "low-complexity repeat. The genomic allele is supplied separately from this protein caveat.",
         (Change("variant_index", {"id": "FAM157A-p_W70_Q71ins_14"}),),
         evidence=(_ALMY + "pindel.vcf", "https://www.ncbi.nlm.nih.gov/nuccore/NM_001145248.1",
                   "https://www.ncbi.nlm.nih.gov/gene/728262"),
         verified="2026-09-18"),
-    Correction(
-        "ush2a-transposed-duplicate",
-        "USH2A-chr1-215560752 is a digit transposition of USH2A-chr1-215650752 (C>A, "
-        "p.Cys4728Phe): 215560752 lies outside any gene, so a missense label there is "
-        "impossible. The original Natera record is not public.",
-        (Change("variant_index", {"id": "USH2A-chr1-215560752"}),
-         Change("vafs", {"variant_id": "USH2A-chr1-215560752"}, expect={"alt": "not_reported"})),
-        evidence=(_ALMY + "freebayes.vcf",
-                  "https://rest.ensembl.org/overlap/region/human/1:215560752-215560752?feature=gene"),
-        verified="2026-09-18"),
+    _catalogue_resolution("USH2A-chr1-215560752", "ush2a-transposed-duplicate"),
+    _catalogue_resolution("FAM157A-p_W70_Q71ins_14", "allele-FAM157A-p_W70_Q71ins_14"),
+    _catalogue_resolution("COL3A1-Splice", "allele-COL3A1-Splice"),
+    _catalogue_resolution("OTUD4-p_A153del", "otud4-source-unavailable"),
     # --- Timeline and specimen registry -------------------------------------
     Correction(
         "specimen-T1-site",
@@ -660,7 +678,7 @@ CORRECTIONS = (
     Correction(
         "natera-alleles-unavailable",
         "COL3A1 (splice) and OTUD4 (p.Ala153del) come from the Natera 2022 report, which is not "
-        "public; no public source gives their exact alleles.",
+        "public. An independent public Tempus call now resolves COL3A1; OTUD4 remains unavailable.",
         (Change("variant_index", {"id": "COL3A1-Splice"}),
          Change("variant_index", {"id": "OTUD4-p_A153del"})),
         evidence=(_SITE_REPO + "scripts/variants/source_data/SS%20neoantigen%20_%20mutations%20-%20Mutations.tsv",

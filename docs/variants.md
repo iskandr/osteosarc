@@ -40,6 +40,32 @@ print([(v.id, v.status) for v in unresolved])
 [Source corrections](curation.md) are on by default. Use `corrections=False`
 when opening the snapshot to inspect the published alleles.
 
+For the five entries reviewed in [issue #5](https://github.com/iskandr/osteosarc/issues/5),
+`allele_resolution` records the outcome and source evidence:
+
+```python
+for v in site:
+    resolution = v.annotations.get("allele_resolution")
+    if resolution:
+        print(v.id, resolution["status"], resolution["summary"])
+
+fam157a = site["FAM157A-p_W70_Q71ins_14"]
+print(fam157a.allele)
+print(fam157a.annotations["allele_resolution"]["protein_interpretation"])
+```
+
+| Entry | Outcome |
+| --- | --- |
+| FAM157A | Verified 42-base insertion at GRCh38 chr3:198153259. The protein model was withdrawn; a usable genomic allele does not establish a neoantigen. |
+| COL3A1 | Verified 737-base deletion anchored at GRCh38 chr2:189010889, matching the catalogue's cDNA annotation. |
+| MUC3A | Public GRCh37 duplication; GRCh38 placement remains unresolved across an assembly gap. |
+| OTUD4 | Source unavailable: the protein label alone does not identify a genomic allele. |
+| USH2A-chr1-215560752 | Possible duplicate of USH2A-chr1-215650752. The original report is needed to confirm identity; both entries remain separate. |
+
+The two resolved alleles come from a public Tempus VCF, with versioned RefSeq
+checks and source checksums in the annotation. Neither has published count
+rows; use [read extraction](reads.md) to examine support.
+
 A malformed count-export row marks its entry `malformed_source_row`; other
 entries remain available. Inspect `variant.annotations["parse_errors"]` for
 the source values and error. For standalone parsing, pass the index and TSV

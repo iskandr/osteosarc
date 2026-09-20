@@ -12,13 +12,16 @@ def test_real_source_identity_and_unresolved_variants(dataset):
     variants = dataset.variants()
     assert len(variants) == 5
     assert variants["DYNC1H1-chr14-101980529"].allele == ("chr14", 101980529, "G", "A")
-    assert variants["COL3A1-Splice"].status == "missing_literal_allele"
-    assert len(dataset.variants(status="ready")) == 3
+    assert variants["COL3A1-Splice"].status == "ready"
+    assert len(dataset.variants(status="ready")) == 5
     deletion = variants["GTF3C5-chr9-133057893"].region()
     # The original anchored REF has 13 bases: anchor plus twelve deleted bases.
     assert (deletion.start, deletion.end) == (133057892, 133057905)
+    assert len(variants.regions()) == 5
+    raw = Dataset.open("fixture", cache=dataset.cache, corrections=False).variants()
+    assert raw["COL3A1-Splice"].status == "missing_literal_allele"
     with pytest.raises(ValueError):
-        variants.regions()
+        raw.regions()
 
 
 def test_vaccine_peptides_annotations_and_missing_states(dataset):

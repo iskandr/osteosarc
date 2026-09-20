@@ -1,0 +1,114 @@
+{
+  "verified": "2026-09-20",
+  "files": {
+    "tempus.pindel.vcf": {
+      "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/tempus/TL-24-ALMY2X4KMV/DNA/TL-24-ALMY2X4KMV.soma.pindel.vcf",
+      "sha256": "f3b39c22454ed0269b9e163e1f09f406bc2c1a57c48735233915901e6dc58090",
+      "fixture": "tempus.pindel.vcf",
+      "fixture_sha256": "f3b39c22454ed0269b9e163e1f09f406bc2c1a57c48735233915901e6dc58090",
+      "selection": "whole file"
+    },
+    "tempus.freebayes.vcf": {
+      "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/tempus/TL-24-ALMY2X4KMV/DNA/TL-24-ALMY2X4KMV.soma.freebayes.vcf",
+      "sha256": "8e7a2f125c52f785971a16b2d2fb9577dc19b5415e674a16bb5e4829aa0499bd",
+      "fixture": "tempus.freebayes.vcf",
+      "fixture_sha256": "ad6b2fcd108d81fab2f81783e24629046738bcf789bb8e4e47e21bcff1e1f334",
+      "selection": "excerpt"
+    },
+    "NC_000001.10.fasta": {
+      "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000001.10&seq_start=215823594&seq_stop=215824594&rettype=fasta&retmode=text",
+      "sha256": "9143ff80cf7ce0600af9df38b9af0f413263c70c46822ae3d0e9c503ad1b4e1c",
+      "fixture": "NC_000001.10.fasta",
+      "fixture_sha256": "9143ff80cf7ce0600af9df38b9af0f413263c70c46822ae3d0e9c503ad1b4e1c",
+      "selection": "whole file"
+    },
+    "NC_000002.12.fasta": {
+      "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000002.12&seq_start=189010389&seq_stop=189012126&rettype=fasta&retmode=text",
+      "sha256": "ba0cca8c5f8ff532111a5f1cf324a1acb722c8162b1139f3fbb4545ceaa30472",
+      "fixture": "NC_000002.12.fasta",
+      "fixture_sha256": "ba0cca8c5f8ff532111a5f1cf324a1acb722c8162b1139f3fbb4545ceaa30472",
+      "selection": "whole file"
+    },
+    "NC_000001.11.fasta": {
+      "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000001.11&seq_start=215650252&seq_stop=215651252&rettype=fasta&retmode=text",
+      "sha256": "6cb964f52d8b0c5f72c41aba4681eb615dfe17c545ea601909ef4f70936d1077",
+      "fixture": "NC_000001.11.fasta",
+      "fixture_sha256": "6cb964f52d8b0c5f72c41aba4681eb615dfe17c545ea601909ef4f70936d1077",
+      "selection": "whole file"
+    },
+    "NC_000003.11.fasta": {
+      "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000003.11&seq_start=197879630&seq_stop=197880630&rettype=fasta&retmode=text",
+      "sha256": "f308a720abf846c7be3fe9f9e433eafd40d3b622306c063750f05998f8b56353",
+      "fixture": "NC_000003.11.fasta",
+      "fixture_sha256": "f308a720abf846c7be3fe9f9e433eafd40d3b622306c063750f05998f8b56353",
+      "selection": "whole file"
+    },
+    "NC_000007.14.fasta": {
+      "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000007.14&seq_start=100952527&seq_stop=100959238&rettype=fasta&retmode=text",
+      "sha256": "813307fcab0fb06ba19217fa8f431aaaa256fbd46b105d9e66f2b25070c70c56",
+      "fixture": "NC_000007.14.fasta",
+      "fixture_sha256": "813307fcab0fb06ba19217fa8f431aaaa256fbd46b105d9e66f2b25070c70c56",
+      "selection": "whole file"
+    },
+    "NC_000002.11.fasta": {
+      "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000002.11&seq_start=189875115&seq_stop=189876852&rettype=fasta&retmode=text",
+      "sha256": "66ccf5a5c3ff62c3f01a20c4de6e92a95ed636b65aae220972a7e8934f5a50a6",
+      "fixture": "NC_000002.11.fasta",
+      "fixture_sha256": "66ccf5a5c3ff62c3f01a20c4de6e92a95ed636b65aae220972a7e8934f5a50a6",
+      "selection": "whole file"
+    },
+    "NC_000003.12.fasta": {
+      "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000003.12&seq_start=198152759&seq_stop=198153759&rettype=fasta&retmode=text",
+      "sha256": "bf700b25dc5b4cdfbf0f4bce7e09aae159926ae08d5cabad734dc081e6305115",
+      "fixture": "NC_000003.12.fasta",
+      "fixture_sha256": "bf700b25dc5b4cdfbf0f4bce7e09aae159926ae08d5cabad734dc081e6305115",
+      "selection": "whole file"
+    },
+    "NC_000007.13.fasta": {
+      "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000007.13&seq_start=100550167&seq_stop=100551367&rettype=fasta&retmode=text",
+      "sha256": "46d171aea384c11a198d712bd00c96dd070777ceb38b5603fa022a39cb287956",
+      "fixture": "NC_000007.13.fasta",
+      "fixture_sha256": "46d171aea384c11a198d712bd00c96dd070777ceb38b5603fa022a39cb287956",
+      "selection": "whole file"
+    },
+    "FAM157A-ncbi.txt": {
+      "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=gene&id=728262&retmode=xml",
+      "sha256": "a6ed3ce8173d5fafe94a01960d1b35bf2eab3f59ccaf4413c0a0665873842378",
+      "fixture": "FAM157A-ncbi.txt",
+      "fixture_sha256": "3e1b1f5eb1697568bf8b12398fa9925f739a11887f105ac7284a3a2b099c0c1d",
+      "selection": "excerpt"
+    },
+    "natera-catalogue.tsv": {
+      "url": "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/scripts/variants/source_data/SS%20neoantigen%20_%20mutations%20-%20Mutations.tsv",
+      "sha256": "b84ece29e11884d14b2273bc7872b6660bd3e5aeaba4a278b28dc3de9a579931",
+      "fixture": "natera-catalogue.tsv",
+      "fixture_sha256": "18bdf7d735cc8c1caa23b94f9c7b7bbf4116c3ac7ea57d6c4e55e526173fd2d9",
+      "selection": "selected rows and columns"
+    },
+    "source-variants.json": {
+      "url": "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/src/data/variants.json",
+      "sha256": "815e3052a5b4c3a9611a0e7ed3f6ccccde7bf95faaf4519ebffcae6633ef3db0",
+      "fixture": "source-variants.json",
+      "fixture_sha256": "70cfef2b4c0829cbd9fe156bfea4865dd675e59858fb201944dab8a97c9f17da",
+      "selection": "excerpt"
+    },
+    "variant-index.json": {
+      "url": "https://osteosarc.com/variants/",
+      "sha256": "ba39e7be5ae5435ec884f53192526f76847fdb3bbef32d08d6a3e7dbe48ea01b",
+      "fixture": "variant-index.json",
+      "fixture_sha256": "d9d80bed06daed522dfbbf0d3c3e1f70f94e2da7af14a39e4d76cdbece56deb5",
+      "selection": "excerpt"
+    },
+    "vafs.tsv": {
+      "url": "https://osteosarc.com/variants/variant_vafs_long.tsv",
+      "sha256": "265224cae8bb7c43c85a65a7d4512195edbd7bbd9741d1cbe935f6027acbe93c",
+      "fixture": "vafs.tsv",
+      "fixture_sha256": "4f892f5469d8cacd521d54c5b1790ce218bb1b8cb9befac6455e19ee01b77e77",
+      "selection": "excerpt"
+    }
+  },
+  "chain": {
+    "url": "https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz",
+    "sha256": "5c0598e500ceb5a78c73086929e8ef993aec309bcafb595139b53d440b125a1d"
+  }
+}

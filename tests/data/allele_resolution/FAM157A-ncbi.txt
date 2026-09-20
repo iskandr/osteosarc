@@ -1,0 +1,10 @@
+<Gene-track_geneid>728262</Gene-track_geneid>
+<Entrezgene_type value="ncRNA">10</Entrezgene_type>
+<Gene-commentary_accession>NR_146164</Gene-commentary_accession>
+<Gene-commentary_accession>NR_146164</Gene-commentary_accession>
+<Gene-commentary_accession>NR_146164</Gene-commentary_accession>
+<Gene-commentary_heading>Suppressed Reference Sequence(s)</Gene-commentary_heading>
+<Gene-commentary_text>NM_001145248.1: This RefSeq was removed because currently there is support for the transcript but not for the protein.</Gene-commentary_text>
+<Gene-commentary_accession>NR_146164</Gene-commentary_accession>
+<Other-source_anchor>NR_146164</Other-source_anchor>
+<Other-source_url>http://genome.ucsc.edu/cgi-bin/hgTracks?org=human&amp;position=NR_146164</Other-source_url>

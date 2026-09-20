@@ -44,6 +44,9 @@ osteosarc = "osteosarc.cli:main"
 [tool.setuptools.packages.find]
 include = ["osteosarc*"]
 
+[tool.setuptools.package-data]
+osteosarc = ["data/*.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
