@@ -77,3 +77,72 @@ def test_unsupported_format_does_not_read_large_file(tmp_path):
     # The nonexistent path must not be opened before deciding parser support.
     with pytest.raises(ValueError, match="No built-in parser"):
         parse_file(tmp_path / "huge.bam")
+
+
+@pytest.mark.parametrize("bad", [
+    "bad\tBAD\tchr1\t10\n",
+    "bad\tBAD\tchr1\t10\tA\tC\textra\n",
+    "bad\tBAD\tchr1\tNA\tA\tC\n",
+    "bad\tBAD\tchr1\t\tA\tC\n",
+    "bad\tBAD\tchr1\t10.0\tA\tC\n",
+])
+@pytest.mark.parametrize("bad_first", [True, False])
+def test_malformed_catalogue_rows_preserve_each_entry(dataset, tmp_path, bad, bad_first):
+    from osteosarc import Dataset
+
+    index = [dict(id="bad", gene="BAD", location="chr1:10", vaccine_count=0),
+             dict(id="good", gene="GOOD", location="chr2:20", vaccine_count=0)]
+    good = "good\tGOOD\tchr2\t20\tG\tT\n"
+    text = "variant_id\tgene\tchrom\tpos\tref\talt\n" + (bad + good if bad_first else good + bad)
+
+    def check(variants):
+        assert variants["good"].allele == ("chr2", 20, "G", "T")
+        unavailable = variants["bad"]
+        assert unavailable.status == "malformed_source_row" and not unavailable.alleles
+        error, = unavailable.annotations["parse_errors"]
+        assert error["source"] == "vafs" and error["row"] == (0 if bad_first else 1)
+        assert error["values"]["pos"] == bad.split("\t")[3].rstrip("\n")
+        if error["code"] == "ragged_row":
+            assert error["fields"] == tuple(bad.rstrip("\n").split("\t"))
+        with pytest.raises(ValueError, match="malformed_source_row"):
+            unavailable.region()
+
+    # Text and explicit tolerant Table are both supported public entry points.
+    check(parse_variants(index, text))
+    table = parse_table(text, strict=False)
+    check(parse_variants(index, table))
+    bad_only = table.select(variant_id="bad")
+    if table.diagnostics:
+        assert bad_only.diagnostics[0]["row"] == 0
+        assert not table.select(variant_id="good").diagnostics
+
+    original = tmp_path / "malformed.tsv"
+    original.write_text(text)
+    dataset.cache.import_file(original, dataset.manifest["sources"]["vafs"]["url"])
+    # Use the actual sync/reopen/correction paths. These two export-only IDs
+    # must survive alongside the fixture's ordinary site entries.
+    data = Dataset.sync("malformed", cache=dataset.cache)
+    check(data.variants("all"))
+    bad_row = data.vafs.select(variant_id="bad").rows[0]
+    assert bad_row["ref"] == (None if len(bad.rstrip("\n").split("\t")) == 4 else "A")
+    assert data.vafs.diagnostics == table.diagnostics
+    check(Dataset.open("malformed", cache=data.cache, corrections=False).variants("all"))
+
+
+@pytest.mark.parametrize("header", [
+    "variant_id\tgene\tchrom\tpos\tref",  # missing ALT
+    "variant_id\tgene\tchrom\tpos\tref\talt\talt",
+])
+def test_malformed_catalogue_headers_still_fail(header):
+    with pytest.raises(SchemaError):
+        parse_variants([], header + "\n")
+
+
+def test_malformed_row_for_otherwise_valid_entry_stays_nonready():
+    text = ("variant_id\tgene\tchrom\tpos\tref\talt\n"
+            "entry\tGENE\tchr1\t10\tA\tC\n"
+            "entry\tGENE\tchr1\tNA\tA\tC\n")
+    variants = parse_variants([], text)
+    assert variants["entry"].alleles == (("chr1", 10, "A", "C"),)
+    assert variants["entry"].status == "malformed_source_row"
+    assert not variants.select(status="ready")

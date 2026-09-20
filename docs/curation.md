@@ -1,139 +1,95 @@
-# Corrections and source drift
+# Source corrections
 
-Every hand-written interpretation of the osteosarc sources lives in one file,
-[`osteosarc/curation.py`](https://github.com/iskandr/osteosarc/blob/main/osteosarc/curation.py).
-It has two layers:
+Osteosarc applies documented corrections to source records by default. You can
+inspect each change, disable corrections, or supply your own.
 
-* **Vocabulary (always on).** This layer maps source spellings to query names,
-  such as `"Boston Gene"` to `BostonGene`, a `CITE` viewer label to `cite-seq`,
-  or `"Normal"` to `blood`. The mapping is lossless: claims keep their original
-  labels, and metadata rows keep their original values.
-* **Corrections (optional).** These target specific source records known to be
-  wrong or misleading. Each correction records:
-    * the records it touches;
-    * the published values it was written against;
-    * what it changes, or that it only flags the records;
-    * its evidence.
+## Compare corrected and published values
 
 ```python
 from osteosarc import Dataset
 
-data = Dataset.open("baseline")                          # verified corrections applied
-raw = Dataset.open("baseline", corrections=False)        # published sources, unchanged
-for row in data.corrections:
-    print(row["status"], row["id"], row["summary"][:70])
+data = Dataset.open("baseline")
+raw = Dataset.open("baseline", corrections=False)
+map2 = data.variants()["MAP2-chr2-209694768"]
+print("Corrected:", map2.allele)
+print("Published:", raw.variants()[map2.id].allele)
+print(map2.annotations["corrections"])
 ```
 
-The command line takes `--no-corrections` before any subcommand:
+Allele corrections clear affected count rows to `""` (unmeasured), because the
+original counts describe a different allele or locus. Website IDs are retained
+even if coordinates change. See the [MAP2 example](tour.md) to check a
+correction against reads.
+
+## Inspect the changes and evidence
+
+```python
+for row in data.corrections:
+    print(row["id"], row["status"], row["summary"], row["evidence"])
+```
+
+Each correction edits or flags records. The affected objects carry its ID:
+
+| Object | Correction IDs |
+| --- | --- |
+| Variant | `variant.annotations["corrections"]` |
+| Some of a variant's count rows | `variant.annotations["count_corrections"]` |
+| Asset | `asset.metadata["corrections"]` |
+| Count, vaccine, annotation, measurement, and specimen rows | `corrections` field |
+| Timeline event | `event.corrections` |
+| Variant selection / Varcode metadata | `source["corrections"]` |
+
+## Check for source changes
+
+Every load checks that a correction still matches the published records.
+
+| Status | Meaning |
+| --- | --- |
+| `applied` | Expected source values match; correction applied |
+| `fixed_upstream` | The source already contains the corrected values |
+| `stale` | The record changed or disappeared; correction skipped, with a warning |
+| `unavailable` | The snapshot lacks a required source |
+| `disabled` | Corrections were turned off |
+
+Corrections apply all or nothing. A correction may also check an unchanged
+record as evidence that the original problem remains. For example,
+`tempus-grch37-counts` checks PDZRN4's published 7/7 count before clearing rows.
 
 ```sh
-osteosarc curation baseline            # every correction's status, plus unrecognized labels
+osteosarc curation baseline --strict
 osteosarc --no-corrections variants baseline --gene MAP2
 ```
 
-## What a correction does to your data
+`--strict` exits nonzero for stale corrections or unrecognized source labels.
+Inspect the correction's `changes` field to see which records differ. Check
+the new source evidence before revising or removing a correction.
 
-Nothing is corrected silently. A correction either **edits** records or **flags**
-them, and every touched object says so:
+Source labels are normalized separately: for example, `Boston Gene` becomes
+`BostonGene`, and `CITE` becomes `cite-seq`. Original labels are retained.
+Unknown labels appear in `data.unrecognized`.
 
-| Object | Where the correction IDs appear |
-| --- | --- |
-| `Variant` | `variant.annotations["corrections"]`: corrections to the variant's own records or all of its count rows |
-| `Variant` count rows | `variant.annotations["count_corrections"]`: corrections to only some count rows (e.g. one BAM) |
-| `Asset` | `asset.metadata["corrections"]` |
-| count rows (`data.vafs`, `data.table("vafs")`) | an extra final `corrections` column |
-| vaccine-overlap and annotation records (`data.vaccines`, `data.annotations`) | a `corrections` field |
-| measurements (`data.measurements`) | a `corrections` column |
-| specimens (`data.specimens`) | the `corrections` field (including FASTQ and timepoint-summary corrections) |
-| timeline events | `event.corrections` (and a note in `timeline.listing()`) |
-| `Variants.source` / Varcode metadata | `source["corrections"]` lists every applied ID |
-
-```python
-map2 = data.variants()["MAP2-chr2-209694768"]
-print(map2.allele, map2.annotations["corrections"])
-print(raw.variants()["MAP2-chr2-209694768"].allele)       # the published 22-bp deletion
-tempus = data.vafs.select(bam_file="TL-24-5GQLV9WSXQ_T.sorted.bam")
-print(tempus.rows[0]["total_reads"] == "", tempus.rows[0]["corrections"])
-```
-
-When a correction replaces an allele, that variant's count rows are cleared to
-`""` (unmeasured), because their counts were measured for the wrong allele or
-locus. Clearing is never presented as a zero. Variant IDs remain the website's
-identifiers, so `CABLES1-chr18-23135500` keeps its ID while its allele moves to
-chr18:23135764.
-
-## Anticipating upstream changes
-
-The website is rebuilt from sheets and scripts, so the sources will change.
-Every time a Dataset loads, each correction is re-checked against its sources:
-
-| Status | Meaning | Applied? |
-| --- | --- | --- |
-| `applied` | The published values still match what the correction was written against | yes |
-| `fixed_upstream` | The source already contains the corrected values | nothing to do |
-| `stale` | The source changed some other way, or the record is gone | **no**, and a `CurationWarning` is issued |
-| `unavailable` | The snapshot predates a source the correction needs | no |
-| `disabled` | `corrections=False` | no |
-
-A correction applies all or nothing: if any of its changes is stale, none is
-made. Some corrections carry a *witness*: a change that only checks a
-known-wrong published value. For example, `tempus-grch37-counts` requires
-PDZRN4's published 7/7. If the website recomputes those counts, the witness
-fails and the correction goes stale instead of blanking corrected data.
-
-Vocabulary drift is reported separately. New assay, tissue, provider,
-timepoint, pipeline, or vaccine labels appear in `data.unrecognized`, so that
-filters are not silently wrong:
-
-```python
-print(len(data.unrecognized))   # 0 for the 2026-09-18 sources
-```
-
-A routine for each new sync:
-
-```sh
-osteosarc sync 2026-10-01
-osteosarc curation 2026-10-01 --strict   # exit 1 on stale corrections or unrecognized labels
-```
-
-The `drift` workflow in `.github/workflows/drift.yml` runs this check weekly and
-on demand. When it fails, run `osteosarc curation <snapshot>` and read each stale
-correction's `changes` entries. Each entry shows the source, the record
-selector, the state (`missing`, `changed`, `pending`, `already_correct`), and
-the fields that differ. Then either delete the correction (fixed upstream) or
-update its `expect` values.
-
-## Your own corrections
-
-Corrections are plain data. Add to the built-in list, remove from it, or replace it:
+## Add a local correction
 
 ```python
 from osteosarc import CORRECTIONS, Change, Correction, glob
 
 mine = Correction(
-    "my-lab-note", "Flag every CITE-seq BAM for a local QC review.",
+    "my-lab-note", "Flag CITE-seq BAMs for QC review.",
     (Change("bucket", {"key": glob("kamil/blood/output/*CITE*/outs/*.bam")}),),
-    evidence=("internal QC log 2026-09",), verified="2026-09-18")
+    evidence=("internal QC log 2026-09",), verified="2026-09-18",
+)
 data = Dataset.open("baseline", corrections=[*CORRECTIONS, mine])
-without_counts = [c for c in CORRECTIONS if c.id != "tempus-grch37-counts"]
-data = Dataset.open("baseline", corrections=without_counts)
 ```
 
-`Change(source, match, expect={}, set={})`:
-
-* `source` is one of `vafs`, `bam_metadata`, `source_variants`,
-  `vaccine_overlap`, `variant_index`, `bams`, `bucket`, or one of the timeline
-  sources (`events`, `events_sheet`, `mrd`, `specimens`, `timepoint_summary`,
-  `fastqs`, `flow`, `imaging`, `pathology`, `labs`, `cytometry`).
-* `match` selects records by exact field values or `glob(...)`, and always
-  matches against the *published* records.
-* Dotted names reach nested fields, for example `"detection.pVACtools 2025"`.
-* An empty `set` flags the records without editing them.
+`Change(source, match, expect={}, set={})` selects published records by exact
+field values or `glob(...)`. Dotted names address nested fields. An empty
+`set` flags records without editing them. Pass a filtered list of `CORRECTIONS`
+to disable individual corrections.
 
 ## Built-in corrections (sources of 2026-09-18)
 
-All 29 apply to a snapshot of the 2026-09-18 sources. Each summary and its
-evidence URLs are in the registry and in `data.corrections`.
+All 29 applied to the 2026-09-18 sources. Evidence URLs are available in
+`data.corrections` and the [registry source](https://github.com/iskandr/osteosarc/blob/main/osteosarc/curation.py).
 
 ### Read counts and alleles
 
@@ -154,16 +110,11 @@ evidence URLs are in the registry and in `data.corrections`.
 | `transcript-DCHS2` | edit | `NM_1142552` becomes `NM_001142552.1`. |
 | `gene-symbol-TRMO` | edit | `TMRO` is a typo for `TRMO`; gene-symbol joins with pVACseq otherwise miss it. |
 
-The five relocations and MAP2 were lifted from the original GRCh37 Tempus
-TL-24-ALMY2X4KMV VCFs with Ensembl. Each lift was a single ungapped mapping on
-the forward strand, and each GRCh38 REF matched the reference sequence. No
-website coordinate falls inside its variant's indel-equivalence span, so
-normalization cannot explain the differences. The website positions came from
-wrong transcript offsets in the curated sheet. For CABLES1 the offset is exactly
-its 264-bp 5′UTR. Each wrong position still lands in an exon of the right gene
-with a matching reference base, so simple consistency checks pass. **`ready`
-therefore does not mean validated.** It means the sources agree on one literal
-allele.
+The relocated alleles and MAP2 were mapped from the original GRCh37 Tempus
+TL-24-ALMY2X4KMV VCFs with Ensembl. Each mapped REF matched GRCh38. The
+published positions fall outside the indel-equivalence spans, so normalization
+does not explain the differences. Several wrong positions still matched a
+reference base in the correct gene; `ready` alone cannot validate an allele.
 
 ### Samples, pipelines, and files
 
@@ -190,47 +141,17 @@ allele.
 | `apheresis-date` | flag | The apheresis is 2024-05-14 in the timeline and 2024-05-15 in the ELISPOT records. |
 | `reyagel-end-date` | flag | The sheet's ReyaGel end date is `7/14` with no year, so the site shows a single day. It is the only malformed date among about 28,000. |
 
-## Audit verification (2026-09-18)
+## Other source limitations (2026-09-18)
 
-An external audit reported six groups of curation problems. Each claim was
-re-derived from public sources: the original VCFs, BAM headers, the counting
-code, and Ensembl or NCBI.
+* The `Tempus 2022` detection label refers to a 2024 accession.
+* Three organoid DRAGEN BAMs and the T2 UCLA blood DRAGEN BAM have no specimen
+  assignment in the consolidated metadata. Four 2026 blood specimens have no BAMs.
+* ELISPOT `experiments[].date` is the earliest PBMC sample date, not the assay date.
+* The legacy `data/treatment_timeline.json` is stale and is not used here.
+* LENS files and Natera/BostonGene clinical reports were absent from the bucket.
 
-| Audit claim | Verdict | Notes |
-| --- | --- | --- |
-| 1. Tempus BAM counted at the wrong build | **Confirmed** | The BAM header is b37 (`human_g1k_v37`). `pileup-json` only toggles the `chr` prefix. 171 of 172 website SNV rows reproduce exactly at the wrong locus. KMT2D 0/1,851, ZNRF3 0/1,287, AKT2 2/1,217, ATRX 1/586 and PDZRN4 7/7→0/0 all reproduce, using primary non-duplicate reads with MAPQ and BQ ≥20. Four "100% VAF" rows (PDZRN4, FHL3, HIC2, BRAT1) are reference reads at the wrong locus. Only this one of the 38 counted BAMs is GRCh37. |
-| 2. Five wrong coordinates | **Confirmed** | See above. The calls come from TL-24-ALMY2X4KMV, not the BAM in claim 1. |
-| 3. DCHS2 accession, FAM157A, USH2A | **Confirmed** | NM_001145248.1 is suppressed; FAM157A is now lncRNA NR_146164.1. The original USH2A Natera record is not public. |
-| 3. MAP2 representations unreconciled | **Partly confirmed** | Tempus and CeGaT agree with each other, and with the site's `CT>AG` plus 28-bp deletion taken together. Only the curated 22-bp deletion is inconsistent. |
-| 4. BG009368 and SARC0277 metadata conflicts | **Confirmed** | The consolidated metadata's notes column documents deliberate re-assignment, so the viewer labels are stale. |
-| 4. Counting metadata labels 9 BAMs ONT, 2 normals tumour | **Confirmed, no impact** | That file only maps paths to labels; the count export uses the consolidated metadata. Not corrected. |
-| 5. Missing pVAC flags, empty RNA fields, incomplete outputs | **Confirmed** | The four missing flags are the complete set. The RNA fields were already `NA` in the pVACseq inputs. |
-| 6. MUC3A, COL3A1, OTUD4, LENS, Natera and BostonGene reports | **Confirmed** | No LENS files or clinical reports are in the bucket. The Natera BAMs are GRCh37 (hs37d5). |
-
-The review found further issues beyond the audit. Some are corrected above; the
-rest are documented here only:
-
-* The detection key "Tempus 2022" names calls that come from a 2024 accession.
-* The consolidated metadata leaves four BAMs with no specimen: three organoid
-  DRAGEN BAMs and the T2 UCLA blood DRAGEN BAM.
-* Four 2026 blood specimens have no BAMs yet.
-* ELISPOT `experiments[].date` is the earliest PBMC sample in an experiment,
-  not the assay date.
-* The legacy `data/treatment_timeline.json` is still served but stale. It is
-  not used here.
-* The website's MT-ND5 row reads 0/0 for the Tempus BAM because `chrM` never
-  resolves to `MT`. It is covered by `tempus-grch37-counts`.
-* The curated sheet contains placeholder strings that went through
-  reverse-complement code: `dearoper_aon` is "not_reported" reverse-complemented,
-  and `pud` is "dup" reversed.
-
-Three changes in the package itself were also needed:
-
-* CITE-seq libraries are now `cite-seq`.
-* A file's own data-page row overrides its directory's row.
-* Viewer-label dates and providers are now claims. A month and a day inside
-  that month are not a conflict.
-
-Before these fixes, 28 of the snapshot's 31 metadata conflicts were
-normalization artifacts. With corrections applied, no sample-metadata conflicts
-remain. Without corrections, the three genuine source disagreements are visible.
+The Tempus count correction was checked against the site's `pileup-json`
+script: 171 of 172 SNV rows reproduced at the wrong locus. The BAM uses b37
+(`human_g1k_v37`), while the site queried GRCh38 positions. Its MT-ND5 0/0
+count also reflects a failed `chrM` to `MT` lookup. These rows are cleared,
+not interpreted as negative evidence.

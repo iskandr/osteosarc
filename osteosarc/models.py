@@ -155,6 +155,14 @@ class Collection(Sequence):
 
 
 class Assets(Collection):
+    def __getitem__(self, key):
+        if isinstance(key, str):
+            matches = [a for a in self if key in (a.id, a.key, a.url)]
+            if len(matches) != 1:
+                raise KeyError(key)
+            return matches[0]
+        return super().__getitem__(key)
+
     def select(self, *, kind=None, format=None, prefix=None, contains=None, timepoint=None,
                assay=None, platform=None, tissue=None, provider=None, library=None,
                include_conflicts=False, include_inferred=False):

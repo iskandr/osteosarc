@@ -199,3 +199,39 @@ def test_table_limits_are_validated():
     assert "... 2 more" in table(rows, ("a",), limit=2)
     with pytest.raises(ValueError):
         table(rows, ("a",), limit=-2)
+
+
+def test_sample_overview_keeps_full_assay_labels_and_filters(dataset, capsys):
+    text = dataset.describe_samples(timepoint="T1", tissue="tumor", width=80)
+    assert "T1_tumor" in text and "T0_tumor" not in text and "T1_blood" not in text
+    assert "sequencing" in text and "FASTQ_folders" in text
+    specimen = next(r for r in dataset.specimens if r["sample_id"] == "T1_tumor")
+    for assay in specimen["assays"]:
+        assert assay in text
+    assert dataset.describe_samples(timepoint="missing") == "(no matching samples)"
+    assert main(["--cache", str(dataset.cache.root), "samples", "fixture", "--timepoint", "T1", "--tissue", "tumor"]) == 0
+    assert "T1_tumor" in capsys.readouterr().out
+    assert main(["--cache", str(dataset.cache.root), "samples", "fixture", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == list(dataset.samples)
+
+
+def test_sample_asset_selection_includes_only_linked_files(dataset):
+    from osteosarc import Asset, Assets
+    from osteosarc.cache import stable_id
+
+    sample = next(r for r in dataset.specimens if r["sample_id"] == "T1_tumor")
+    folder = dataset._object_key(sample["fastq_folders"][0]).rstrip("/")
+    files = []
+    for key in (folder + "/reads.fastq.gz", folder + "-other/reads.fastq.gz"):
+        url = "https://example.test/" + key
+        files.append(Asset(stable_id(url), key, url, "reads", "fastq"))
+    dataset.assets = Assets([*dataset.assets, *files])
+    selected = dataset.assets_for_sample("T1_tumor")
+    assert files[0] in selected and files[1] not in selected
+    assert selected[files[0].key] is selected[files[0].url] is selected[files[0].id]
+    with pytest.raises(KeyError):
+        selected[files[1].key]
+    assert any(a.key in sample["assets"] for a in selected)
+    assert all(a.kind == "alignment" for a in dataset.assets_for_sample("T1_tumor", kind="alignment"))
+    with pytest.raises(KeyError, match="Unknown sample"):
+        dataset.assets_for_sample("typo")

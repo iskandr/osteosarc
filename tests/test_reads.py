@@ -89,7 +89,7 @@ def test_remote_extraction_refuses_changed_header_source(bam, tmp_path, monkeypa
     monkeypatch.setattr(reads, "_remote_identity", lambda *a: dict(identity))
 
     def remote_header(command, timeout):
-        assert command[:4] == ["samtools", "view", "--no-PG", "-H"] or command == ["samtools", "--version"]
+        assert command[:4] == ["samtools", "view", "--no-PG", "-H"] or command in (["samtools", "--version"], ["samtools", "view", "--help"])
         return real_run([str(bam) if c == url else c for c in command], timeout)
 
     monkeypatch.setattr(reads, "_run", remote_header)
@@ -184,3 +184,46 @@ def test_a_single_barcode_string_is_not_split_into_characters():
     from osteosarc import ReadFilter
     assert ReadFilter(barcodes="AAACCTGAGAAACCAT").barcodes == ("AAACCTGAGAAACCAT",)
     assert ReadFilter(barcodes=["A1", "B2"]).barcodes == ("A1", "B2")
+
+
+@pytest.mark.parametrize("help_text,options,missing", [
+    (b"--no-PG -M -X", {"fetch_pairs": True}, "--fetch-pairs"),
+    (b"--no-PG -M", {}, "-X"),
+    (b"--no-PG -M -X", {"filters": ReadFilter(barcodes=("A",))}, "-D"),
+])
+def test_missing_samtools_options_fail_before_any_acquisition(dataset, monkeypatch, help_text, options, missing):
+    from subprocess import CompletedProcess
+
+    import osteosarc.reads as reads
+    from osteosarc import OsteosarcError
+
+    dataset.cache = Cache(dataset.cache.root)
+    source = dataset.assets.select(format="bam")[0]
+    assert source.index_urls
+    def run(command, timeout):
+        assert command == ["samtools", "view", "--help"]
+        return CompletedProcess(command, 0, help_text, b"")
+    monkeypatch.setattr(reads, "_run", run)
+    monkeypatch.setattr("osteosarc.cache.http_identity", lambda *a: pytest.fail("contacted source before capability check"))
+    with pytest.raises(OsteosarcError, match=missing):
+        dataset.extract_reads(source, [Region("chr1", 100, 140, "GRCh38")], **options)
+
+
+def test_variant_selection_produces_the_same_complete_regional_records(dataset, bam, monkeypatch):
+    import osteosarc.reads as reads
+    from osteosarc import Asset, Variant, Variants
+    from osteosarc.cache import stable_id
+
+    # A local file URL exercises the real Dataset path without remote data.
+    source = Asset(stable_id(str(bam)), "toy.bam", str(bam), "alignment", "bam")
+    selected = Variants([Variant("toy", "GENE", "GRCh38", (("chr1", 106, "A", "C"),), "ready")])
+    subset = dataset.extract_reads(source, variants=selected, padding=40)
+    expected = extract_reads(source, selected.regions(padding=40), cache=dataset.cache, snapshot_id=dataset.id)
+    assert subset.path == expected.path
+    assert Counter(records(subset.path)) == Counter(r for r in records(bam) if not r.startswith("outside\t"))
+    monkeypatch.setattr(reads, "_run", lambda *a: pytest.fail("cached request needed SAMtools"))
+    assert dataset.extract_reads(source, variants=selected, padding=40).path == subset.path
+    with pytest.raises(ValueError, match="either"):
+        dataset.extract_reads(source, selected.regions(), variants=selected)
+    with pytest.raises(CoordinateError, match="nonempty"):
+        dataset.extract_reads(source, variants=[])

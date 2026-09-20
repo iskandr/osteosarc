@@ -62,7 +62,12 @@ def parser():
     specimens.add_argument("--json", action="store_true")
     explore = commands.add_parser("explore", help="Interactive terminal explorer")
     explore.add_argument("snapshot")
-    for name in ("samples", "timepoints", "vaccines"):
+    samples = commands.add_parser("samples", help="Readable specimen and sequencing overview")
+    samples.add_argument("snapshot")
+    samples.add_argument("--timepoint")
+    samples.add_argument("--tissue")
+    samples.add_argument("--json", action="store_true", help="Original source-attributed sample claims")
+    for name in ("timepoints", "vaccines"):
         command = commands.add_parser(name)
         command.add_argument("snapshot")
     table = commands.add_parser("table", help="Parse a named site table or bucket table")
@@ -82,6 +87,7 @@ def parser():
     reads.add_argument("--reference-length", type=int, help="Expected contig length (mitochondrial queries)")
     reads.add_argument("--min-mapq", type=int, default=0)
     reads.add_argument("--exclude-flags", type=lambda s: int(s, 0), default=0)
+    reads.add_argument("--fetch-pairs", action="store_true", help="Also retrieve paired mates outside the regions")
     discover = commands.add_parser("discover", help="Explicitly list a live S3 prefix")
     discover.add_argument("prefix")
     discover.add_argument("--refresh", action="store_true")
@@ -157,7 +163,15 @@ def main(argv=None):
                     print(f"osteosarc: stale corrections {drift}; "
                           f"{len(value['unrecognized'])} unrecognized source labels", file=sys.stderr)
                     return 1
-            elif args.command in ("samples", "timepoints", "vaccines"):
+            elif args.command == "samples":
+                if args.json:
+                    if args.timepoint or args.tissue:
+                        raise ValueError("--json returns original sample claims; filters apply to the specimen overview")
+                    value = list(dataset.samples)
+                else:
+                    print(dataset.describe_samples(timepoint=args.timepoint, tissue=args.tissue))
+                    return 0
+            elif args.command in ("timepoints", "vaccines"):
                 value = list(getattr(dataset, args.command))
             elif args.command == "download":
                 value = str(dataset.download(args.asset, refresh=args.refresh))
@@ -168,7 +182,8 @@ def main(argv=None):
                 regions = [Region.from_samtools(r, assembly=args.assembly,
                                                reference_length=args.reference_length) for r in args.regions]
                 subset = dataset.extract_reads(args.asset, regions, reference=args.reference, index=args.index,
-                                               filters=ReadFilter(args.min_mapq, args.exclude_flags))
+                                               filters=ReadFilter(args.min_mapq, args.exclude_flags),
+                                               fetch_pairs=args.fetch_pairs)
                 value = dict(path=str(subset.path), index=str(subset.index_path), receipt=subset.receipt)
         print(json.dumps(value, indent=2, default=lambda x: asdict(x)))
         return 0

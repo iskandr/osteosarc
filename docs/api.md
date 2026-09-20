@@ -1,7 +1,7 @@
 # API reference
 
 Import public objects from `osteosarc`. Imports perform no downloads and do not
-require the consumer packages. Extra dependencies are loaded at their usage site.
+require the consumer packages. Install optional libraries only for the features you use.
 
 ## Dataset and cache
 
@@ -12,6 +12,8 @@ require the consumer packages. Extra dependencies are loaded at their usage site
 | `data.id`, `data.receipts()` | Snapshot identity and source receipts |
 | `data.source_path(name)` | Verified local metadata path |
 | `data.assets`, `data.samples`, `data.timepoints` | All assets, source-attributed sample claims, published dates |
+| `data.describe_samples(timepoint=None, tissue=None, width=None)` | Readable sample and sequencing overview |
+| `data.assets_for_sample(sample_id, **filters)` | Registry-linked alignments and files in the sample's FASTQ folders |
 | `data.asset(key_or_id)` | Resolve exactly one key, URL, asset ID, or named resource |
 | `data.download(asset)` | Fetch one complete object, bind bytes to the snapshot, return Path |
 | `data.table(asset)`, `data.parse(asset)` | Parse a table or a supported JSON/FASTA resource |
@@ -65,6 +67,9 @@ A snapshot made before the timeline sources existed raises `SchemaError` from
 | `collection.where(predicate)`, `collection[:n]`, `collection.to_records()` | Predicate filtering, slicing, dictionaries |
 | `table.select(**fields)`, `table.where(predicate)` | Original-row filtering; no type coercion |
 | `table.rows`, `table.columns`, `table.source`, `table.to_dataframe()` | Raw table values and optional pandas conversion |
+| `parse_variants(index, vafs)` | Join index rows/HTML to VAF TSV text or a Table; preserve malformed entries with `annotations["parse_errors"]` |
+| `parse_table(text, strict=True)` | Parse CSV/TSV; opt into `strict=False` to retain ragged rows |
+| `table.diagnostics` | Ragged-row diagnostics with zero-based `row`, source `line`, and original `fields`; filtering keeps the associated diagnostics |
 
 Asset selections accept `include_conflicts` and `include_inferred` opt-ins.
 Variant filters additionally include `vaccinated`, `on_site`, and
@@ -81,7 +86,7 @@ ReadFilter(min_mapq=0, exclude_flags=0, require_flags=0,
 | Call | Returns / behavior |
 | --- | --- |
 | `data.inspect_alignment(asset)` | `AlignmentInfo`: original `.header`, `.assembly`, `.path`, `.receipt` |
-| `data.extract_reads(asset, regions, **options)` | `ReadSubset`: indexed `.path`, `.index_path`, `.receipt`, `.open()` |
+| `data.extract_reads(asset, regions=None, variants=None, padding=0, **options)` | Supply regions or selected variants; returns `ReadSubset` with `.path`, `.index_path`, `.receipt`, `.open()` |
 | `inspect_alignment(source, cache=None, snapshot_id=None, timeout=600)` | Same inspection for local files or HTTP(S) URLs |
 | `extract_reads(source, regions, cache=None, index=None, filters=None, reference=None, fetch_pairs=False, snapshot_id=None, timeout=600)` | Explicit indexed region union |
 | `subset_templates(source, count, cache=None, seed="0")` | Deterministic local fixture sampling |
@@ -101,4 +106,4 @@ with captured diagnostic output; callers can record it in acquisition manifests.
 
 No implicit full-BAM fallback, liftover, biological sample deduplication,
 reference installation, variant-effect calculation, or peptide ranking occurs.
-See [design contracts](design.md) for the detailed boundaries.
+See [snapshots and cache](design.md) for storage and refresh behavior.

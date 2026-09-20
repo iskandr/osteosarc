@@ -11,13 +11,14 @@ from __future__ import annotations
 import cmd
 import shlex
 import shutil
+import textwrap
 from collections import Counter, defaultdict
 
 from .errors import OsteosarcError
 from .timeline import _window
 
 
-def table(rows, columns, *, width=None, limit=None):
+def table(rows, columns, *, width=None, limit=None, wrap=False):
     """Fixed-width text table; long cells are truncated to fit the terminal."""
     if limit is not None and (not isinstance(limit, int) or isinstance(limit, bool) or limit < 0):
         raise ValueError("limit must be a nonnegative integer")
@@ -33,7 +34,12 @@ def table(rows, columns, *, width=None, limit=None):
     line = "  ".join
     out = [line(c[:w].ljust(w) for c, w in zip(columns, widths)).rstrip(),
            line("-" * w for w in widths)]
-    out += [line(cell[:w].ljust(w) for cell, w in zip(row, widths)).rstrip() for row in cells]
+    for row in cells:
+        parts = [textwrap.wrap(cell, width=w) or [""] if wrap else [cell[:w]]
+                 for cell, w in zip(row, widths)]
+        for i in range(max(map(len, parts), default=0)):
+            out.append(line((part[i] if i < len(part) else "").ljust(w)
+                            for part, w in zip(parts, widths)).rstrip())
     if limit is not None and len(rows) > limit:
         out.append(f"... {len(rows) - limit} more")
     return "\n".join(out)
@@ -45,6 +51,18 @@ def _text(value):
     if isinstance(value, (tuple, list)):
         return "; ".join(_text(v) for v in value)
     return str(value)
+
+
+def samples_view(data, *, timepoint=None, tissue=None, width=None):
+    """Compact registry overview, with complete sequencing labels."""
+    rows = [dict(sample=r["sample_id"], date=r["date"], sequencing=_text(r["assays"]) or "unknown",
+                 BAMs=len(r["assets"]), FASTQ_folders=len(r["fastq_folders"]))
+            for r in data.specimens
+            if (timepoint is None or r["timepoint"] == timepoint)
+            and (tissue is None or r["tissue"] == tissue)]
+    if not rows:
+        return "(no matching samples)"
+    return table(rows, ("sample", "date", "sequencing", "BAMs", "FASTQ_folders"), width=width, wrap=True)
 
 
 def specimens_view(data, *, width=None):
@@ -191,6 +209,10 @@ class Explorer(cmd.Cmd):
     def do_summary(self, arg):
         """summary -- snapshot, correction, timeline, variant and asset counts."""
         self._print(summary_view(self.data))
+
+    def do_samples(self, arg):
+        """samples [timepoint=T2] [tissue=tumor] -- specimens and sequencing types."""
+        self._print(self.data.describe_samples(width=self.width, **options(shlex.split(arg))))
 
     def do_timeline(self, arg):
         """timeline [SINCE [UNTIL]] [lane=TEXT] -- ASCII chart; dates are YYYY, YYYY-MM or YYYY-MM-DD.

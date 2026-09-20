@@ -26,6 +26,6 @@ jobs:
         with:
           python-version: '3.12'
       - run: sudo apt-get update && sudo apt-get install -y samtools
-      - run: python -m pip install -e '.[reads,test,docs]' pandas varcode==7.0.0 isovar==1.17.0 topiary==5.55.1
+      - run: python -m pip install -e '.[test,docs]' pandas varcode==7.0.0 isovar==1.17.0 topiary==5.55.1
       - run: pyensembl install --release 95 --species homo_sapiens
       - run: python scripts/check_docs.py

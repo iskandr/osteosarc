@@ -1,112 +1,51 @@
-# Repository comparison and migration
+# Replace existing download helpers
 
-Reviewed 2026-09-18 in `~/code/varcode`, `~/code/isovar`, `~/code/topiary`,
-and `~/code/vaxrank`. The requested `varode` and `~/vaxrank` paths were absent;
-the existing sibling repositories were used. This change creates the shared
-package in `~/code/osteosarc`; it does not modify the four consumers.
+Use the [library examples](consumers.md) for the API calls. Migrate acquisition
+separately from changes to reference releases, allele selection, or analysis
+settings.
 
-## What overlaps today
+## Replace one operation at a time
 
-| Repository | Existing entry points | Scope and differences |
-| --- | --- | --- |
-| Isovar | `tests/data/osteosarc/fetch_sources.py`, `rebuild.py`, `expansion/inventory.py`, `discover.py`, `acquire.py`, `metadata.py` | Small selected fixtures plus the broadest inventory/acquisition implementation. Separate immutable receipts, source/header surveys, RNA-oriented bucket classification, explicit GRCh37 handling, variant-page metadata. Initial fixture selection includes allele/quality-blind template sampling **and** selected low-quality alternate-supporting templates. |
-| Topiary | `scripts/osteosarc_variant_audit.py`, `osteosarc_rna_overlay.py`, `tests/osteosarc_helpers.py`, `tests/data/pvacseq/osteosarc/regenerate.py` | Another curl/SHA256 snapshot function and nine-cell HTML variant parser; all site variants, selected RNA products, reference subsets, pVAC row selection, expression overlays. Keeps unresolved catalog entries. |
-| Vaxrank | `examples/osteosarc_read_corpus/build.py`, `tests/osteosarc_fixture_support.py`, `tests/osteosarc_helpers.py` | Another downloader with resumable curl transfers, read identities, canonical-allele trimming, sample/path inference, DNA + RNA corpus acquisition and receipt checks. Several test assets are copied from Isovar. |
-| Varcode | `tests/test_osteosarc_fusions.py`, `output/osteosarc-phasing/*/scripts/`, `output/osteosarc-phasing/*/inputs/generator-source/` | Curated structural-variant and phasing fixtures; analysis scripts import Isovar's test helpers through a hardcoded repository path or retain copied generator modules. Annotation references vary by task. |
+Install `osteosarc` normally: pysam and datacache are standard dependencies.
+The older `[reads]` extra remains accepted for compatibility. The CLI now
+prints a sample overview by default; use `samples --json` for its original
+source-attributed claims.
 
-These are concrete duplications, not just similarly named helpers:
-
-* Isovar `expansion/inventory.py:fetch_snapshot`, Topiary
-  `osteosarc_variant_audit.py:fetch_snapshot`, and Vaxrank
-  `osteosarc_read_corpus/build.py:download` all fetch the same website resources
-  with curl and SHA256 receipts, using different file layouts and retry policies.
-* Isovar and Topiary duplicate the HTML variant table parser. Their initial
-  selection differs: vaccine targets versus all website entries. Varcode's
-  analysis scripts import the Isovar version and redo joins to VAF alleles.
-* All four construct local reference/fixture subsets and verify hashes, but
-  reference versions and biological expected results belong to their individual
-  tests. Sharing acquisition does not justify changing those expected results.
-* Read acquisition differs in index discovery, interval padding, record identity,
-  filtering, failure reporting, and whether downstream code is reading a sampled
-  fixture or an uncapped regional source.
-
-## Concepts made explicit
-
-| Concept | Shared representation |
+| Existing code | Replacement |
 | --- | --- |
-| Website/S3 metadata at an acquisition date | Named `Dataset` with exact source receipts |
-| One original file or processing product | `Asset`, identified by complete URL |
-| Sample, timepoint, assay, provider assertion | `SampleClaim` with source, basis, and retained conflicts |
-| Shared local download | `Cache` object bytes + SHA256 receipt; optional published MD5 verification |
-| File/table subset | `Assets.select`, `Table.select/where` |
-| Website entry vs literal genomic allele | `Variant.id`, `alleles`, `status`; source annotations retained |
-| Site/vaccine/pipeline variant selection | `Dataset.variants` + explicit source of vaccine membership |
-| Coordinate interval | `Region`, zero-based half-open with required assembly |
-| Uncapped regional alignment records | `extract_reads`, default `ReadFilter()` |
-| Small deterministic regression fixture | `subset_templates`, separate from acquisition |
-| Variant effects and transcript choice | Explicit Varcode/PyEnsembl consumer code |
-| RNA assemblies, epitopes, ranking | Existing Isovar, Topiary, Vaxrank APIs |
+| Download website metadata and save checksums | `Dataset.sync(name)` |
+| Reopen pinned metadata | `Dataset.open(name)` |
+| Parse the variant page and join count-export alleles | `data.variants()` |
+| Find files by assay, timepoint, or path | `data.assets.select(...)` |
+| Download and verify a whole file | `data.download(asset)` |
+| Survey an alignment's reference | `data.inspect_alignment(asset)` |
+| Fetch indexed regions and optional paired mates | `data.extract_reads(asset, regions, ...)` |
+| Construct native Varcode alleles | `variants.to_varcode(genome=...)` |
 
-The full inventory contains raw reads, multiple alignment products, VCFs,
-pipeline reports, expression matrices, and other files. Classification is
-conservative. An unclassified file remains accessible by key or URL; unknown
-metadata is not replaced with a guessed platform or sample identity.
+## Preserve the analysis
 
-## Consumer changes to make next
+Keep reference releases, transcript selection, structural-variant definitions,
+read filters, and scoring settings in the downstream project. Declare the
+assembly for custom-named references with `to_varcode(..., assembly="GRCh38")`.
 
-1. **Replace acquisition helpers first.** Add an `osteosarc` dependency (or test
-   extra where acquisition is test-only), use the shared OpenVax cache
-   (`OPENVAX_DATA_CACHE`, the layout vaxrank already uses) and a named
-   snapshot, and replace URL constants/download helpers with `Dataset` and
-   `Cache`. Keep current fixture bytes and expected biological outputs.
-2. **Replace private test imports.** Varcode's analysis scripts should use the
-   public package rather than `sys.path` edits into Isovar's `tests` package.
-   Use `Dataset.variants` instead of copying the HTML/VAF join.
-3. **Adopt one regional extractor.** Pass explicit asset IDs/keys, regions, and
-   filters. Compare complete SAM record multisets and tag values against each
-   old acquisition before deleting it. Matching read counts alone is insufficient.
-4. **Separate selection recipes.** Keep Isovar's stress selection and Topiary's
-   pVAC feature/row selection as named consumer fixture recipes. The shared
-   allele-blind template sampler does not reproduce the existing low-quality
-   alternate-read enrichment. Record its policy separately if migrating it.
-5. **Keep biological choices in consumers.** Preserve reference release,
-   transcript selection, allele normalization, RNA policy, and scoring behavior.
-   The current fixture references include Ensembl 87 and 95 for different
-   purposes; do not silently select one release for all projects.
+Before retiring an old extractor, compare complete SAM records, including tags
+and the number of occurrences of each record. Equal read counts alone do not
+show that the records match.
 
-Existing cached files can be adopted without redownloading:
+`subset_templates` samples without using allele support or quality. It does not
+reproduce Isovar's alternate-read enrichment or another project's fixture
+selection policy.
 
-See [consumer recipes](consumers.md) for the native API calls and usage-test
-coverage. Custom subset genomes keep their unique reference names and use
-`selected.to_varcode(genome=genome, assembly="GRCh38")`. Header surveys use
-`data.inspect_alignment(asset)` before the consumer chooses coordinates.
+## Review corrections
 
-```python
-from osteosarc import SNAPSHOT_SOURCES, Cache, Dataset, digest
+Osteosarc applies [source corrections](curation.md) by default, including the
+MAP2 allele change and five relocated Tempus alleles. Open a snapshot with
+`corrections=False` when comparing against original published inputs. Review
+changes to biological expectations separately from the acquisition migration.
 
-# Stand-in for a file in an older project cache: the snapshot's own copy.
-old_path = Dataset.open("baseline").source_path("vafs")
-original_url = SNAPSHOT_SOURCES["vafs"]
-receipt = Cache().import_file(old_path, original_url, sha256=digest(old_path))
-print(receipt.sha256, receipt.size)
-```
+## Reuse old downloads
 
-Imports record the local import time, not a fabricated original download time.
-Keep original manifests when historical acquisition dates matter.
-
-## Known source limitations retained in the API
-
-The reviewed source metadata disagree about some BostonGene/UCLA library
-timepoints, and the viewer's global hg38 label covers files that require
-individual reference checks. Natera WGS tumor/normal assignments are described
-as inferred in the public data page. Vaccine-overlap and variant-source JSON
-also differ in their membership flags. The package retains these distinctions.
-Verified corrections are optional, centralized in `osteosarc/curation.py`, and
-re-checked against every snapshot (see [corrections](curation.md)); they do not
-declare a validated truth set.
-
-`ready` checks internal literal-allele availability. Independent reference-allele
-validation, indel equivalence, liftover, donor demultiplexing, and biological
-replicate resolution remain separate analyses. Byte-equivalent aliases are not
-automatically collapsed across URLs, and metadata completeness is limited to
-what the public sources actually publish.
+Use the shared `OPENVAX_DATA_CACHE` directory where possible. Import existing
+files with `Cache.import_file(path, original_url, sha256=...)`; see
+[snapshots and cache](design.md#import-a-file-you-already-downloaded).
+Keep the old manifests for their acquisition dates and provenance.

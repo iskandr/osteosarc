@@ -170,12 +170,17 @@ def test_first_download_must_match_the_inventory_time():
 
 def test_extraction_binds_the_listed_index_to_the_snapshot(dataset, monkeypatch):
     import osteosarc.reads
+    from osteosarc import Region
     source = dataset.asset("rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam")
     assert source.index_urls
+    # A source from an earlier session must also work on a freshly reopened
+    # dataset, before its catalog and curation state have been populated.
+    dataset = Dataset.open("fixture", cache=dataset.cache, offline=False)
     downloads, calls = [], []
+    monkeypatch.setattr(osteosarc.reads, "require_samtools", lambda **k: None)
     monkeypatch.setattr(dataset, "download", lambda asset: downloads.append(asset) or "/pinned/index.bai")
     monkeypatch.setattr(osteosarc.reads, "extract_reads", lambda *a, **k: calls.append(k))
-    dataset.extract_reads(source, ["region"])
+    dataset.extract_reads(source, [Region("chr1", 100, 140, "GRCh38")])
     assert downloads == [source.index_urls[0]] and calls[0]["index"] == "/pinned/index.bai"
 
 
