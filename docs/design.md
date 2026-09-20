@@ -1,62 +1,90 @@
-# Shared osteosarc data API
+# Snapshots and cache
 
-The package owns data acquisition and source interpretation. Varcode owns
-variant effects, Isovar owns RNA interpretation, Topiary owns annotation and
-ranking, and Vaxrank owns vaccine design/reporting. Importing osteosarc does
-not download data or import those projects.
+## Save and reopen a snapshot
 
-## Contracts
+```python
+from osteosarc import Dataset
 
-* A `Dataset` is a named, immutable snapshot of source metadata. Creating a
-  new snapshot is explicit. Opening an existing snapshot is offline.
-* An `Asset` is one published object, not a biological replicate. Its stable
-  ID derives from its complete URL. BAM processing products remain separate.
-  Sample claims retain their source and conflicts; unknown is not inferred
-  to mean Illumina, tumor, T0, GRCh38, or negative evidence.
-* A shared `Cache` stores immutable downloaded bytes and SHA256 receipts.
-  Reuse verifies bytes. Refresh is explicit; old snapshot references survive
-  refresh. Downloads publish atomically under a per-URL lock.
-* Bytes live in the OpenVax shared layout, `objects/sha256/<sha256><suffixes>`
-  under `OPENVAX_DATA_CACHE`, as vaxrank's downloader stores them, so OpenVax
-  tools share content. Objects already present (from any tool) are verified and
-  reused, never rewritten. Everything osteosarc-specific (per-URL receipts,
-  snapshots, snapshot bindings, headers, extracted reads, digest memos) lives
-  under `<root>/osteosarc/`.
-* The full bucket listing remains queryable, including unclassified files.
-  Curated BAM metadata enriches it, rather than defining the entire dataset.
-  The website listing has its own date; it is not a live S3 inventory. An
-  explicit paginated S3 listing can discover newer objects.
-* Parsing is separate from downloading. Raw rows and original field names
-  survive TSV/CSV/JSON parsing. VCF parsing delegates to pysam or varcode.
-  Missing measurements remain missing, independently of zero measurements.
-* Variant identities include assembly and literal alleles. Website entries
-  without unique literal alleles remain visible with a status. Gene symbols
-  and protein labels are never substitutes for exact alleles. Source-reported
-  coordinates are not silently corrected or lifted over.
-* `Region` uses zero-based, half-open coordinates and requires assembly.
-  SAMtools conversion is one-based inclusive. Read extraction inspects BAM
-  headers, rejects assembly conflicts/ambiguous contigs/missing indexes, and
-  uses the indexed union. It retains original record multiplicity and tags.
-  Defaults impose no allele, quality, duplicate, or template-count selection.
-* Derived BAMs are cached by the complete request and source evidence, with
-  checksums, tool version, filters and counts. An empty request is an error;
-  an empty *result* is valid. No implicit full-BAM fallback.
-* Fixture downsampling is a separate explicit operation. It cannot silently
-  become the read source for VAF calculations.
-* All hand-written interpretation of the sources is in `osteosarc/curation.py`.
-  Vocabulary maps labels to query names and is lossless; unrecognized labels
-  are reported. Corrections are optional and record the published values they
-  were written against. Each load re-checks them and applies them all or
-  nothing, so an upstream edit makes a correction `stale` (not applied) rather
-  than silently wrong. Edited and flagged objects name the corrections that
-  touched them.
-* Timeline events keep published date precision and their source record. A
-  timepoint is attached only where a source states it. Specimens are registry
-  rows cross-checked against other dated sources; disagreements are reported,
-  not resolved, unless a correction resolves them.
+data = Dataset.sync("baseline")
+print(data.id)
+data = Dataset.open("baseline")
+```
 
-## Deliverables
+A snapshot records metadata URLs and SHA256 receipts. `sync` creates it;
+`open` verifies the saved files and defaults to offline operation. Reusing a
+name with `sync` reopens it without refreshing the sources.
 
-Python package, CLI, offline regression tests, reproducible live smoke recipe,
-and migration guidance for the four existing repositories. Downstream
-repositories are reviewed read-only during this initial extraction.
+To permit additional downloads, use `Dataset.open("baseline", offline=False)`.
+An uncached request while offline raises `OfflineError`; changed cached bytes
+raise `IntegrityError`.
+
+## Choose a cache directory
+
+```python
+from osteosarc import Cache
+
+cache = Cache(".cache/my-analysis")
+```
+
+Pass `cache=cache` to `Dataset.sync` or `Dataset.open`. Otherwise the cache
+location is chosen in this order:
+
+| Setting | Location |
+| --- | --- |
+| `OSTEOSARC_CACHE` | An isolated cache for this package |
+| `OPENVAX_DATA_CACHE` | A shared OpenVax cache |
+| macOS default | `~/Library/Caches/openvax` |
+| Linux default | `$XDG_CACHE_HOME/openvax`, or `~/.cache/openvax` |
+
+Downloaded objects live at `objects/sha256/<sha256><original suffixes>`, so
+other OpenVax tools can reuse them. Osteosarc's snapshots, receipts, and
+extracted reads live under `osteosarc/` within that root.
+
+## Refresh metadata
+
+```python
+new_data = Dataset.sync("follow-up", refresh=True)
+print(new_data.receipts()["bucket"].sha256)
+```
+
+Use a new name: existing snapshots cannot be overwritten. A file's first full
+download is bound to its snapshot, so refreshing the same URL elsewhere cannot
+replace those bytes. A snapshot cannot recover historical contents of a file
+that was never downloaded.
+
+The CLI's `sync --source-revision <commit>` pins GitLab source resources to a
+full commit. Site-served files have no equivalent versioning.
+
+## Import a file you already downloaded
+
+```python
+from osteosarc import SNAPSHOT_SOURCES, digest
+
+# This example uses an existing snapshot's table; substitute your file and URL.
+old_path = data.source_path("vafs")
+receipt = Cache().import_file(
+    old_path, SNAPSHOT_SOURCES["vafs"], sha256=digest(old_path)
+)
+print(receipt.sha256, receipt.size)
+```
+
+An import records the import time. Retain your old manifest if the original
+acquisition date matters.
+
+## Download behavior
+
+Datacache downloads and verifies files, retries transient failures, and
+publishes complete files atomically. Osteosarc adds per-URL locks, immutable
+snapshot receipts, and MD5 checks where the source supplies them. Existing
+0.1.0 snapshots and cached reads remain usable without conversion.
+
+HTTP headers are checked before and after downloads when the server supports
+HEAD. Regional BAM/CRAM access uses SAMtools; its indexes use datacache and
+its extracted BAMs have separate checksum receipts.
+
+Interrupted whole-file downloads restart from the
+beginning; byte-range resume is not supported. Cached objects keep their
+original suffixes so format-specific readers can recognize them.
+
+[Read extraction](reads.md) has a separate cache keyed by its complete request.
+Importing the Python package performs no downloads.

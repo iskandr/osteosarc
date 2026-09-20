@@ -1,5 +1,5 @@
 site_name: Osteosarc
-site_description: Explore the public osteosarc dataset with one reproducible Python API.
+site_description: Find files, select variants, and fetch sequencing reads from osteosarc.com.
 site_url: https://iskandr.github.io/osteosarc/
 repo_url: https://github.com/iskandr/osteosarc
 edit_uri: edit/main/docs/
@@ -11,18 +11,21 @@ theme:
   highlightjs: true
   hljs_languages: [python, bash]
 nav:
-  - Start here: index.md
-  - Guided tour: tour.md
-  - Explore files and samples: explore.md
-  - Variants and vaccines: variants.md
-  - Timelines and specimens: timeline.md
-  - Extract reads: reads.md
-  - Consumer recipes: consumers.md
-  - Corrections and drift: curation.md
-  - API reference: api.md
-  - Migration: migration.md
-  - Design: design.md
-  - Validation: validation.md
+  - Get started: index.md
+  - Examples:
+      - Find files and tables: explore.md
+      - Select variants and peptides: variants.md
+      - Extract reads: reads.md
+      - Browse the timeline: timeline.md
+      - Use other libraries: consumers.md
+      - Check MAP2 against reads: tour.md
+  - Reference:
+      - API: api.md
+      - Snapshots and cache: design.md
+      - Source corrections: curation.md
+  - Development:
+      - Migrate existing code: migration.md
+      - Testing: validation.md
 markdown_extensions:
   - admonition
   - tables

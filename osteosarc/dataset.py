@@ -25,8 +25,8 @@ from .catalog import (
     parse_data_paths,
 )
 from .curation import CORRECTIONS, Curation, normalize_tissue, unrecognized_values
-from .errors import IntegrityError, OfflineError, SchemaError
-from .models import Asset
+from .errors import CoordinateError, IntegrityError, OfflineError, SchemaError
+from .models import Asset, Region
 from .parsing import (
     PARSE_FORMATS,
     Table,
@@ -268,6 +268,20 @@ class Dataset:
             return path
         return object_key(path, self._download_header.get("download_base", BUCKET))
 
+    def describe_samples(self, *, timepoint=None, tissue=None, width=None):
+        """Readable specimen/sequence-type overview; no data acquisition."""
+        from .explore import samples_view
+        return samples_view(self, timepoint=timepoint, tissue=tissue, width=width)
+
+    def assets_for_sample(self, sample_id, **filters):
+        """Registry-linked alignments and files under the specimen's FASTQ folders."""
+        row = next((r for r in self.specimens if r["sample_id"] == sample_id), None)
+        if row is None:
+            raise KeyError(f"Unknown sample: {sample_id}")
+        keys = set(row["assets"])
+        prefixes = tuple(self._object_key(p).rstrip("/") + "/" for p in row["fastq_folders"])
+        return self.assets.where(lambda a: a.key in keys or a.key.startswith(prefixes)).select(**filters)
+
     @cached_property
     def measurements(self):
         """MRD, lab, and cytometry values with raw strings and an explicit kind."""
@@ -497,6 +511,10 @@ class Dataset:
         snapshot's bytes. Use a new snapshot to acquire a newer object. The
         binding is populated lazily, so metadata-only use downloads no data.
         """
+        return self._download(asset, cache=self.cache, refresh=refresh, verify_size=verify_size)
+
+    def _download(self, asset, *, cache, refresh=False, verify_size=True):
+        """Acquire a snapshot-bound asset with the supplied cache's network policy."""
         asset = asset if isinstance(asset, Asset) else self.asset(asset)
         if asset.id != stable_id(asset.url):
             raise ValueError("Asset ID must be the stable hash of its URL")
@@ -505,8 +523,8 @@ class Dataset:
             if receipt["url"] == asset.url:
                 if refresh:
                     raise ValueError("Create a new snapshot to refresh pinned metadata")
-                return self.cache.path(receipt)
-        binding = self.cache.workspace / "bindings" / self.id / (asset.id + ".json")
+                return cache.path(receipt)
+        binding = cache.workspace / "bindings" / self.id / (asset.id + ".json")
         with file_lock(binding.with_suffix(".lock")):
             if binding.exists():
                 if refresh:
@@ -515,21 +533,21 @@ class Dataset:
                 if receipt.url != asset.url:
                     raise IntegrityError("Snapshot object binding has the wrong URL")
                 try:
-                    return self.cache.path(receipt)
+                    return cache.path(receipt)
                 except OfflineError:
-                    if self.cache.offline:
+                    if cache.offline:
                         raise
                     # A pruned object is restored only if the server still has the same bytes.
-                    return self.cache.path(self.cache.fetch(asset.url, sha256=receipt.sha256, size=receipt.size))
+                    return cache.path(cache.fetch(asset.url, sha256=receipt.sha256, size=receipt.size))
             md5s = {r.get("md5sum") for r in asset.metadata.get("metadata_rows", []) if r.get("md5sum")}
             if len(md5s) > 1:
                 raise IntegrityError("Conflicting published MD5 claims")
-            receipt = self.cache.fetch(asset.url, refresh=refresh,
-                                       size=asset.size if verify_size else None,
-                                       md5=next(iter(md5s), None))
+            receipt = cache.fetch(asset.url, refresh=refresh,
+                                  size=asset.size if verify_size else None,
+                                  md5=next(iter(md5s), None))
             _check_inventory_time(asset, receipt)
             write_json(binding, receipt.to_dict())
-            return self.cache.path(receipt)
+            return cache.path(receipt)
 
     def parse(self, asset):
         """Download explicitly selected data and parse it with original columns."""
@@ -554,16 +572,36 @@ class Dataset:
         asset = asset if isinstance(asset, Asset) else self.asset(asset)
         return inspect_alignment(asset, cache=self.cache, snapshot_id=self.id, **kwargs)
 
-    def extract_reads(self, asset, regions, **kwargs):
+    def extract_reads(self, asset, regions=None, *, variants=None, padding=0, **kwargs):
         """Extract an indexed region union; see osteosarc.extract_reads.
 
+        Supply regions or selected osteosarc variants with optional padding.
         The listed index is downloaded once, bound to this snapshot like any
         other object, and reused for every query.
         """
-        from .reads import extract_reads
+        from .reads import extract_reads, require_samtools
+        if variants is not None:
+            if regions is not None:
+                raise ValueError("Supply either regions or variants, not both")
+            regions = tuple(v.region(padding=padding) for v in variants)
+        elif padding:
+            raise ValueError("padding requires variants; pad explicit regions when constructing them")
+        regions = tuple(regions) if regions is not None else ()
+        if not regions or not all(isinstance(r, Region) for r in regions):
+            raise CoordinateError("Provide a nonempty sequence of regions or ready variants")
         asset = asset if isinstance(asset, Asset) else self.asset(asset)
         if kwargs.get("index") is None and asset.index_urls:
-            kwargs["index"] = str(self.download(asset.index_urls[0]))
+            # Try the pinned/local index first so cached reads work without
+            # SAMtools. Check capabilities before an index needs downloading.
+            offline = Cache(self.cache.root, offline=True, timeout=self.cache.timeout)
+            try:
+                index_path = self._download(asset.index_urls[0], cache=offline)
+            except OfflineError:
+                if self.cache.offline:
+                    raise
+                require_samtools(fetch_pairs=kwargs.get("fetch_pairs", False), filters=kwargs.get("filters"))
+                index_path = self.download(asset.index_urls[0])
+            kwargs["index"] = str(index_path)
         return extract_reads(asset, regions, cache=self.cache, snapshot_id=self.id, **kwargs)
 
     def open_variants(self, asset):

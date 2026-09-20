@@ -1,4 +1,4 @@
-"""Verified, shared, content-addressed downloads (curl; Linux and macOS).
+"""Datacache downloads with immutable snapshot receipts (Linux and macOS).
 
 Files live in the OpenVax shared cache, the same layout vaxrank and other
 OpenVax tools use, so identical bytes are stored once:
@@ -17,7 +17,6 @@ import hashlib
 import json
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 from contextlib import contextmanager
@@ -26,7 +25,24 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-from .errors import IntegrityError, OfflineError
+import datacache
+import requests
+
+from .errors import IntegrityError, OfflineError, OsteosarcError
+
+
+def http_identity(url, timeout, *, optional=False):
+    """HTTP evidence for a remote object; datacache returns file paths only."""
+    try:
+        with requests.head(url, allow_redirects=True, timeout=timeout,
+                           headers={"Accept-Encoding": "identity"}) as response:
+            response.raise_for_status()
+            return {key: response.headers.get(key)
+                    for key in ("etag", "last-modified", "content-length")}
+    except requests.RequestException as error:
+        if optional and error.response is not None and error.response.status_code in (405, 501):
+            return dict.fromkeys(("etag", "last-modified", "content-length"))
+        raise OsteosarcError(f"Cannot inspect {url}: {error}") from error
 
 
 def digest(path, algorithm="sha256"):
@@ -156,8 +172,10 @@ class Cache:
         if verify:
             identity = json.dumps(file_identity(path))
             if self._verified.get(identity) != receipt.sha256:
-                if path.stat().st_size != receipt.size or digest(path) != receipt.sha256:
-                    raise IntegrityError(f"Cached object was modified: {path}")
+                try:
+                    datacache.validate_file(path, expected_sha256=receipt.sha256, expected_size=receipt.size)
+                except datacache.FileValidationError as error:
+                    raise IntegrityError(f"Cached object was modified: {path}") from error
                 self._verified[identity] = receipt.sha256
         return path
 
@@ -187,6 +205,9 @@ class Cache:
         """
         if urlsplit(url).scheme not in ("https", "http"):
             raise ValueError("Downloads require an HTTP(S) URL; use Cache.import_file for local data")
+        if sha256 is not None and (not isinstance(sha256, str) or len(sha256) != 64
+                                   or any(c not in "0123456789abcdef" for c in sha256.lower())):
+            raise ValueError("sha256 must be a 64-character hexadecimal digest")
         if refresh and self.offline:
             raise OfflineError("Cannot refresh in offline mode")
         pointer = self.workspace / "urls" / (stable_id(url) + ".json")
@@ -207,29 +228,47 @@ class Cache:
                     self._validate(path, sha256=None if sha256 == receipt.sha256 else sha256,
                                    md5=None if known_md5 else md5, size=size, max_bytes=max_bytes)
                     return receipt
+            # A checksum can identify an object acquired by another OpenVax tool,
+            # even when this package has no URL receipt yet.
+            filename = Path(unquote(urlsplit(url).path)).name or "index"
+            if filename in (".", ".."):
+                filename = "index"
+            if sha256 is not None and not refresh:
+                shared = self.objects / object_name(sha256.lower(), filename)
+                if shared.is_file():
+                    self._validate(shared, sha256=sha256, md5=md5, size=size, max_bytes=max_bytes)
+                    receipt = self._store(shared, url, {}, md5, checksum=sha256.lower())
+                    write_json(pointer, receipt.to_dict())
+                    return receipt
             if self.offline:
                 raise OfflineError(f"Not cached: {url}")
             staging = self.workspace / "staging"
             staging.mkdir(parents=True, exist_ok=True)
             with tempfile.TemporaryDirectory(dir=staging) as temporary:
-                path = Path(temporary) / "download"
-                headers = Path(temporary) / "headers"
-                command = ["curl", "--fail", "--location", "--silent", "--show-error",
-                           "--proto", "=http,https", "--proto-redir", "=http,https",
-                           "--connect-timeout", "30", "--max-time", str(self.timeout),
-                           "--retry", "2", "--retry-all-errors",
-                           "--dump-header", str(headers), "--output", str(path)]
-                if max_bytes is not None:
-                    command += ["--max-filesize", str(max_bytes)]
-                subprocess.run(command + [url], check=True, capture_output=True,
-                               timeout=self.timeout * 3 + 120)
+                # Keep the source suffix: datacache interprets removing .gz/.zip
+                # from an explicit destination as a decompression request.
+                path = Path(temporary) / filename
+                before = http_identity(url, min(self.timeout, 60), optional=True)
+
+                def check_size(done, total):
+                    if max_bytes is not None and (done > max_bytes or
+                                                 (total is not None and total > max_bytes)):
+                        raise IntegrityError(f"Download exceeds {max_bytes} bytes: {url}")
+
+                try:
+                    datacache.fetch_file(url, destination=path, decompress=False,
+                                         expected_sha256=sha256, expected_size=size,
+                                         timeout=self.timeout, progress_callback=check_size)
+                except datacache.FileValidationError as error:
+                    raise IntegrityError(str(error)) from error
+                except requests.RequestException as error:
+                    raise OsteosarcError(f"Cannot download {url}: {error}") from error
+                after = http_identity(url, min(self.timeout, 60), optional=True)
+                if before != after:
+                    raise IntegrityError(f"Remote object changed during download: {url}")
                 hashes = digests(path, ("sha256", "md5") if md5 else ("sha256",))
                 self._validate(path, sha256=sha256, md5=md5, size=size, max_bytes=max_bytes, hashes=hashes)
-                # Keep the final HTTP response, rather than a redirect's headers.
-                final = headers.read_text().strip().split("\n\n")[-1]
-                fields = {k.lower(): v.strip() for line in final.splitlines()
-                          if ":" in line for k, v in [line.split(":", 1)]}
-                receipt = self._store(path, url, fields, md5, move=True, checksum=hashes["sha256"])
+                receipt = self._store(path, url, after, md5, move=True, checksum=hashes["sha256"])
             write_json(pointer, receipt.to_dict())
             return receipt
 

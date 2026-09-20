@@ -4,14 +4,24 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from .cache import Cache, digest, file_identity, file_lock, share, stable_id, write_json
-from .errors import CoordinateError, IntegrityError, OfflineError
+from .cache import (
+    Cache,
+    digest,
+    file_identity,
+    file_lock,
+    http_identity,
+    share,
+    stable_id,
+    write_json,
+)
+from .errors import CoordinateError, IntegrityError, OfflineError, OsteosarcError
 from .models import Asset, Region
 
 ASSEMBLY_LENGTHS = {
@@ -145,12 +155,30 @@ def _samtools_version():
 
 
 def _remote_identity(url, timeout):
-    response = _run(["curl", "--fail", "--silent", "--show-error", "--location", "--head",
-                     "--connect-timeout", "30", "--max-time", str(timeout), url], timeout + 5)
-    final = response.stdout.decode().replace("\r\n", "\n").strip().split("\n\n")[-1]
-    fields = {k.lower(): v.strip() for line in final.splitlines() if ":" in line
-              for k, v in [line.split(":", 1)]}
-    return {k: fields.get(k) for k in ("etag", "last-modified", "content-length")}
+    return http_identity(url, timeout)
+
+
+def require_samtools(*, header_only=False, fetch_pairs=False, filters=None):
+    """Fail before acquisition when the installed binary lacks required options."""
+    try:
+        result = _run(["samtools", "view", "--help"], 30)
+    except FileNotFoundError as error:
+        raise OsteosarcError("Read extraction requires samtools on PATH; install SAMtools 1.21 or newer.") from error
+    except subprocess.CalledProcessError as error:
+        # Some versions print usable help but exit nonzero.
+        result = error
+    help_text = ((result.stdout or b"") + (result.stderr or b"")).decode(errors="replace")
+    needed = ["--no-PG"]
+    if not header_only:
+        needed += ["-M", "-X"]
+        if fetch_pairs:
+            needed.append("--fetch-pairs")
+        if filters is not None and filters.barcodes:
+            needed.append("-D")
+    missing = [flag for flag in needed if not re.search(r"(?<![\w-])" + re.escape(flag) + r"(?![\w-])", help_text)]
+    if missing:
+        raise OsteosarcError("samtools view lacks required options: " + ", ".join(missing)
+                            + ". Install SAMtools 1.21 or newer; requested read filters and mate recovery cannot be omitted.")
 
 
 def _verified_receipt(directory, request):
@@ -206,6 +234,7 @@ def inspect_alignment(source, *, cache=None, snapshot_id=None, timeout=600):
         if receipt is None:
             if remote and cache.offline:
                 raise OfflineError("Alignment header is not cached")
+            require_samtools(header_only=True)
             before = _remote_identity(location, min(timeout, 60)) if remote else None
             if before and asset and asset.size is not None and before["content-length"] is not None:
                 if int(before["content-length"]) != asset.size:
@@ -294,6 +323,7 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
             return cached
         if remote and cache.offline:
             raise OfflineError("Regional reads are not cached")
+        require_samtools(fetch_pairs=fetch_pairs, filters=filters)
         directory.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(dir=directory.parent, prefix=".reads-") as temporary:
             work = Path(temporary)

@@ -1,53 +1,79 @@
-# Variants, annotations, and vaccines
+# Select variants and vaccine peptides
+
+These examples use the `baseline` snapshot from [Get started](index.md).
+
+## Select variants
 
 ```python
 from osteosarc import Dataset
 
 data = Dataset.open("baseline")
 site = data.variants()
-all_entries = data.variants("all")
-vaccine_targets = data.variants("vaccine")
+vaccine_targets = data.variants("vaccine", status="ready")
+dynein = site.select(gene="DYNC1H1", status="ready")
+for variant in dynein:
+    print(variant.id, variant.allele)
 ```
 
-`site` includes unresolved website entries. `all` also includes additional
-entries from the count export and source annotation JSON. `vaccine` selects
-site entries with a positive website vaccine count.
+`site` includes all website entries, including unresolved alleles. The `vaccine`
+set selects entries with a positive site vaccine count. Use `data.variants("all")`
+to include additional count-export and source-JSON entries.
 
-## Select exact alleles
+## Get an allele and its read-extraction region
 
 ```python
-ready = site.select(status="ready")
 variant = site["DYNC1H1-chr14-101980529"]
-print(variant.allele)  # original (chrom, one-based position, REF, ALT)
-regions = ready.select(gene="DYNC1H1").regions(padding=100)
+print(variant.allele)  # (chromosome, one-based position, REF, ALT)
+print(variant.region(padding=100))
+regions = dynein.regions(padding=100)
+```
+
+`ready` means one literal allele with internally consistent coordinates. It does
+not validate REF against a genome or establish somatic status. Unresolved
+entries remain visible, but `.allele` and `.region()` raise errors:
+
+```python
 unresolved = site.where(lambda v: v.status != "ready")
 print([(v.id, v.status) for v in unresolved])
 ```
 
-`ready` means the sources provide one internally consistent literal allele.
-It does not establish biological truth or validate REF against a genome.
-Internal consistency is weaker than it sounds: five published positions matched
-the right gene and reference base but were the wrong locus. By default, the
-verified corrections in [corrections](curation.md) supply those alleles and fix
-MAP2's vaccine target. `variant.annotations["corrections"]` names any
-correction that touched an entry, and `Dataset.open(..., corrections=False)`
-gives the published alleles.
-Unresolved entries remain inspectable. Their `.allele` and `.region()` raise;
-select explicitly before extracting reads. Indel anchors are retained.
+[Source corrections](curation.md) are on by default. Use `corrections=False`
+when opening the snapshot to inspect the published alleles.
 
-## Inspect source annotations
+## Read counts and annotations
 
 ```python
-print(data.pipeline_names)
-detected = data.variants(pipeline="oncoanalyser")
-print(variant.annotations["source_record"])
 counts = data.vafs.select(variant_id=variant.id)
 print(counts.rows[:2])
+print(variant.annotations["source_record"])
+print(data.pipeline_names)
+detected = data.variants(pipeline="oncoanalyser")
 ```
 
-`data.annotations` preserves the full source records. Caller VCF/BCF files use
-their native parser so headers, genotypes, multiallelic records, and symbolic
-alleles survive:
+Counts retain raw source values. Missing counts differ from zero; counts for
+corrected alleles or wrongly mapped alignments are cleared to unmeasured.
+
+## Get vaccine peptides
+
+```python
+print(data.vaccine_names)
+mrna = data.variants(vaccine="mRNA")
+for row in data.vaccine_peptides("mRNA"):
+    print(row["variant_id"], row["sequence"], row["experiments"])
+```
+
+Vaccine membership comes from the overlap JSON. For the separate flags in the
+source variant JSON, use `vaccine_source="source_variants"`. These sources can
+disagree; the annotations retain those disagreements.
+
+```python
+for row in data.vaccines.select(gene="SMC5"):
+    print(row["elispot_status"], row["elispot_response"])
+```
+
+An untested assay or missing response is not a negative result.
+
+## Open a VCF
 
 ```python
 data = Dataset.open("baseline", offline=False)
@@ -60,28 +86,6 @@ if calls:
             break
 ```
 
-`open_variants` downloads the selected full file and its listed index, when
-present. Use `.fetch(contig, start, end)` for indexed subsetting afterward.
-
-## Vaccine membership and experiments
-
-```python
-print(data.vaccine_names)
-mrna = data.variants(vaccine="mRNA")
-source_flags = data.variants(vaccine="mRNA", vaccine_source="source_variants")
-for row in data.vaccine_peptides("mRNA"):
-    print(row["variant_id"], row["sequence"], row["experiments"])
-```
-
-Default membership uses the vaccine-overlap JSON, joined only at an
-unambiguous gene/locus. `source_variants` requests the separate source JSON
-flags. The site count, membership, peptide inclusion, and experimental results
-are distinct source assertions; disagreements remain in annotations.
-
-```python
-for row in data.vaccines.select(gene="SMC5"):
-    print(row["elispot_status"], row["elispot_response"])
-```
-
-`not_tested` and a missing response do not mean a negative assay. Published
-peptides are comparator data, not recommendations for vaccine design.
+This downloads the full VCF and its listed index.
+The returned pysam reader preserves headers, genotypes, and multiallelic records.
+For native Varcode objects, see [Use other libraries](consumers.md#varcode).

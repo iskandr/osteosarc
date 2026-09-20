@@ -1,17 +1,37 @@
-# Files, samples, and local caching
+# Find files and read tables
 
-Start with an existing snapshot:
+Create a snapshot with `Dataset.sync("baseline")` first, as shown in
+[Get started](index.md). The examples below use that saved snapshot.
+
+## Browse samples and sequencing types
 
 ```python
 from osteosarc import Dataset
 
 data = Dataset.open("baseline")
-rna = data.assets.select(kind="alignment", assay="rna-seq", timepoint="T2")
-for asset in rna:
-    print(asset.key, asset.size, asset.conflicts)
+print(data.describe_samples())
+print(data.describe_samples(timepoint="T2", tissue="tumor"))
 ```
 
-## Select sequencing products
+The overview lists the registry's sequencing types, BAM counts, and FASTQ
+folder counts. Counts are file products, not independent samples.
+
+## Find a sample's RNA alignments
+
+```python
+rna = data.assets_for_sample("T0_tumor", kind="alignment", assay="rna-seq")
+for asset in rna:
+    print(asset.key, asset.size)
+```
+
+Each asset is a file. Different processing products from the same sample have
+separate entries.
+
+`assets_for_sample` uses registry links and FASTQ folders. Unassigned files
+remain available through `data.assets`. To search all samples at a timepoint,
+use `data.assets.select(timepoint="T2", assay="rna-seq")`.
+
+## Find other file types
 
 ```python
 ont = data.assets.select(kind="alignment", platform="ont")
@@ -21,62 +41,48 @@ fastqs = data.assets.select(kind="reads")
 pvac = data.assets.select(prefix="neoantigen_prediction/pvactools/", format="tsv")
 ```
 
-Assays include `rna-seq`, `scrna-seq`, `cite-seq`, `wgs`, and `wes`.
-Known platform names are `ont`, `pacbio`, and `illumina`. Unknown metadata is
-retained as unknown. Every listed object remains accessible, even when its
-format or sample identity cannot be classified.
+Assays are `rna-seq`, `scrna-seq`, `cite-seq`, `wgs`, and `wes`. Platforms are
+`ont`, `pacbio`, and `illumina`. You can also search by path with `prefix` or
+`contains`, including files whose sample metadata is unknown.
 
-Use an exact key to choose a processing product; substring searches may find
-several versions of the same library:
+Use an exact key when choosing an alignment for [read extraction](reads.md):
 
 ```python
 source = data.asset(
     "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.bam"
 )
 print(source.index_urls)
-print(source.claims)
 ```
 
-## Examine sample claims
+## Check sample metadata
 
 ```python
-print(data.timepoints.rows[:5])
-print(data.samples.columns)
-conflicted = data.assets.where(lambda a: bool(a.conflicts))
-for asset in conflicted[:3]:
-    print(asset.key, asset.values("timepoint"), asset.resolved("timepoint"))
+print(source.claims)
+print(source.values("timepoint"))
+print(source.conflicts)
+print(data.samples.rows[:2])
 ```
 
-An asset is a file or processing product, not an independent biological sample.
-`samples` contains source-attributed claims and the associated asset IDs. Dates
-retain their published precision; a month and a day within it do not conflict.
-Conflicting claims do not match metadata filters unless `include_conflicts=True`;
-path inferences require `include_inferred=True`. Review those claims before
-combining samples. For biological specimens (T0_tumor, blood_2025-06-26, ...)
-linked to their files, use `data.specimens` (see [timelines](timeline.md)).
+Metadata filters exclude conflicting values by default. Pass
+`include_conflicts=True` to match any published claim, or `include_inferred=True`
+to include values inferred from paths. Use [specimens](timeline.md#find-a-specimens-files)
+for biological samples and their associated files.
 
-Label vocabulary lives in `osteosarc/curation.py`. For example, "Normal" and
-"Blood" are the same tissue (`blood`), because every normal here is a blood
-normal. A `CITE` viewer label means `cite-seq`. With the default corrections,
-the stale viewer labels for BG009368 and SARC0277 are fixed, and no
-sample-metadata conflicts remain. `Dataset.open(..., corrections=False)` shows
-the three genuine source disagreements. Unrecognized source labels are listed
-in `data.unrecognized`.
-
-## Download exactly what you need
+## Download and read a table
 
 ```python
 data = Dataset.open("baseline", offline=False)
 path = data.download("snv_top")
 table = data.table("snv_top")
-print(path.name, table.columns)
+print(path, table.columns)
+print(table.rows[:2])
+
+counts = data.table("vafs").select(gene="SMC5")
+print(counts.rows[:2])
 ```
 
-`download` returns the shared cache object's `pathlib.Path`, named by its
-SHA256 plus the original suffixes (for example `…9c2e.genes.results`), so
-format-specific readers still recognize it. The original name is kept in the
-receipt (`data.cache.fetch(url).filename`). `table` accepts any CSV/TSV asset or exact
-key, including RSEM `.genes.results` and `.isoforms.results` files.
+Named tables include `vafs`, `vaf_columns`, `snv_top`, `dna_fusions`, and
+`rna_fusions`. You can also pass an asset or exact key:
 
 ```python
 reports = data.assets.select(contains=".genes.results", format="tsv")
@@ -85,40 +91,14 @@ if reports:
     print(expression.rows[:2])
 ```
 
-Tables preserve original strings: `"0"`, `"NA"`, and `""` are distinct.
-`table.to_dataframe()` needs pandas and performs no automatic coercion.
-`data.parse(asset)` also supports JSON and FASTA. For large tables/FASTA,
-use `download` with a streaming reader; built-in parsers materialize their input.
+Tables preserve strings: `"0"`, `"NA"`, and `""` stay distinct.
+`table.to_dataframe()` requires pandas. `data.parse(asset)` also reads JSON and
+FASTA. These parsers load their input into memory; for large files, pass the
+downloaded path to a streaming reader.
 
-## Reproducibility and refresh
+## Look for newer files
 
-Metadata snapshots pin URL, SHA256, size, and acquisition receipts. A full
-object's first download is bound to that snapshot. Reuse verifies its checksum,
-and later URL refreshes cannot replace bound bytes. Missing offline data raises
-`OfflineError`; modified cached bytes raise `IntegrityError`.
-
-```python
-new_data = Dataset.sync("follow-up", refresh=True)
-print(new_data.receipts()["bucket"].sha256)
-```
-
-Choose a new name to refresh metadata. Data objects are still acquired lazily:
-a snapshot cannot recover historical bytes of an object never downloaded.
-Interrupted whole-file downloads restart; byte-range resume is not implemented.
-
-Adopt a previously downloaded object using its original URL and receipt:
-
-```python
-from osteosarc import Cache, digest
-
-# Stand-ins for an entry in your existing manifest: the table downloaded above.
-old_path, original_url = path, data.asset("snv_top").url
-cache = Cache()
-receipt = cache.import_file(old_path, original_url, sha256=digest(old_path))
-print(receipt.url, receipt.sha256)
-```
-
-## Explicit live discovery
+The snapshot uses the website's dated bucket listing. To query S3 directly:
 
 ```python
 from osteosarc import Cache, list_bucket
@@ -127,5 +107,6 @@ listing = list_bucket(Cache(), "ONT/", refresh=True)
 print(len(listing["files"]))
 ```
 
-This lists every page of the requested public S3 prefix and keeps page receipts.
-It returns a separate inventory and does not mutate the dated Dataset snapshot.
+This returns all pages for the prefix, with receipts, without changing your
+snapshot. See [snapshots and cache](design.md) to refresh metadata or import
+files you already have.

@@ -1,66 +1,58 @@
-# Recipes for the four consumers
+# Use other libraries
 
-These recipes replace acquisition and format conversion at the existing usage
-sites. Keep reference releases, transcript selection, RNA interpretation,
-peptide scoring, and expected scientific outputs in each consumer.
+These examples use the `baseline` snapshot from [Get started](index.md).
+Install the libraries you want to use. The Isovar examples also need an
+indexed human Ensembl 95 reference:
+
+```sh
+pyensembl install --release 95 --species homo_sapiens
+```
+
+Start each example by opening your snapshot:
 
 ```python
 from osteosarc import Dataset
 
 data = Dataset.open("baseline", offline=False)
-selected = data.variants("vaccine", status="ready")
-print(selected.source["corrections"][:3])   # applied correction IDs travel with the selection
 ```
 
-Verified corrections are on by default (see [corrections](curation.md)):
+## Varcode
 
-* The MAP2 vaccine target is the observed complex allele, not the published
-  22-bp deletion.
-* Five Tempus entries become `ready` at their literal alleles.
-* The GRCh37 Tempus BAM's website counts are cleared.
-
-Native Varcode metadata records the applied IDs. For comparisons with
-published results, open a second Dataset with `corrections=False`.
-
-## Varcode: selected alleles on your reference
+Convert selected alleles to native Varcode objects on your chosen reference:
 
 ```python
 from pyensembl import EnsemblRelease
 
+selected = data.variants("vaccine", status="ready")
 native = selected.to_varcode(genome=EnsemblRelease(95))
 for variant in native:
     print(variant, native.metadata[variant]["entries"][0]["id"])
 ```
 
-The caller selects the reference. The adapter itself downloads no annotation
-data. Effect calculation may need your existing indexed reference installation.
+The adapter downloads no reference data. It preserves snapshot provenance and
+all source entries, including entries Varcode normalizes to the same allele.
+Unresolved alleles and assembly mismatches raise errors.
 
-For the custom-named partial genomes used in the fixture suites, keep their
-unique names and state assembly explicitly:
+For a custom reference name, declare the assembly:
 
 ```python
 from pyensembl import Genome
 
-# Stand-in for your fixture's custom subset genome; to_varcode reads no annotation files.
 genome = Genome(reference_name="GRCh38-osteosarc-six-transcript-subset",
                 annotation_name="fixture", gtf_path_or_url="subset.gtf")
-native = selected.to_varcode(genome=genome, assembly="GRCh38")
-print(native[0].ensembl.reference_name)
+custom = selected.to_varcode(genome=genome, assembly="GRCh38")
 ```
 
-This preserves the genome's cache identity. A conflicting known reference name
-is rejected. Native metadata retains the snapshot provenance and all original
-entries if Varcode normalizes multiple entries to one allele. Unresolved
-selected entries raise; they are never silently dropped by the adapter.
+Conversion preserves the genome's cache identity. Annotation later requires
+the reference files, such as `subset.gtf` above, to be available and indexed.
 
-Migration sites: Varcode's osteosarc phasing `prepare.py` and `bounded_acquire.py`
-can remove imports into Isovar's private test tree. Curated structural variants
-and their expected effects remain Varcode fixtures.
+## Isovar
 
-## Isovar: native variants and an alignment handle
+Extract reads and pass the resulting alignment handle to Isovar:
 
 ```python
 from isovar import ReadCollector
+from pyensembl import EnsemblRelease
 
 source = data.asset(
     "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.bam"
@@ -73,22 +65,51 @@ with subset.open() as bam:
     print(len(evidence.alt_reads), len(evidence.ref_reads))
 ```
 
-The full pipeline accepts the same native inputs:
+To run protein reconstruction on those inputs:
 
 ```python
 from isovar import run_isovar
 
-# Requires your selected reference's installed/indexed annotation resources.
 with subset.open() as bam:
     results = list(run_isovar(native, bam))
 ```
 
-Keep your current transcript whitelist, read collector, and protein-sequence
-creator options. Migration sites: `tests/data/osteosarc/fetch_sources.py` and
-`expansion/{inventory,discover,acquire}.py`. Keep liftover, fusion validation,
-and the existing alternate-read stress-selection recipe local to Isovar.
+Set transcript and read-collection options in Isovar as usual.
 
-## Topiary: original report paths
+## Vaxrank
+
+For a read corpus, inspect the reference and request paired mates when needed:
+
+```python
+from osteosarc import Region
+
+source = data.asset(
+    "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.bam"
+)
+info = data.inspect_alignment(source)
+if info.assembly == "GRCh38":
+    panel = [Region("chr14", 101980428, 101980630, "GRCh38")]
+    corpus = data.extract_reads(source, panel, fetch_pairs=True)
+    print(corpus.path, corpus.receipt["scope"])
+```
+
+Pass the resulting reads through Isovar, then use Vaxrank's existing predictor
+and ranking configuration. See [read requirements](reads.md#requirements) for
+paired-mate support.
+
+Fetch published peptides to compare with your results:
+
+```python
+for peptide in data.vaccine_peptides("mRNA"):
+    print(peptide["variant_id"], peptide["sequence"])
+```
+
+When updating fixtures, review [source corrections](curation.md), especially
+MAP2's changed allele. Use `corrections=False` to reproduce the published inputs.
+
+## Topiary
+
+Load a pVAC report from the cache:
 
 ```python
 from topiary import read_pvacseq
@@ -99,61 +120,18 @@ if aggregated:
     predictions = read_pvacseq(data.download(aggregated[0]))
 ```
 
+Or load RSEM expression:
+
 ```python
 from topiary.rna.expression_loader import load_expression
 
 rsem = data.assets.where(lambda a: a.key.endswith(".genes.results"))
 if rsem:
     expression = load_expression(data.download(rsem[0]))
-    raw = data.table(rsem[0])  # optional original strings/columns
 ```
 
-Cached objects keep their original suffixes (`<sha256>.all_epitopes.aggregated.tsv`),
-which is what Topiary's format detection reads. Header-only
-reports remain empty reports. Topiary retains pVAC interpretation, numeric
-coercion, expression overlays, and fixture row selection. Migration sites:
-`scripts/osteosarc_variant_audit.py`, `scripts/osteosarc_rna_overlay.py`, and
-`tests/data/pvacseq/osteosarc/regenerate.py`.
+Cached paths retain their file suffixes for format detection. Header-only
+reports remain empty reports.
 
-## Vaxrank: corpus acquisition and published comparator peptides
-
-```python
-from osteosarc import Region
-
-# source is an explicitly selected RNA or DNA alignment product.
-info = data.inspect_alignment(source)
-if info.assembly == "GRCh38":
-    panel = [Region("chr14", 101980428, 101980630, "GRCh38")]
-    corpus = data.extract_reads(source, panel, fetch_pairs=True)
-    print(corpus.receipt["scope"])
-```
-
-Survey headers before choosing native or explicitly lifted coordinates. Use
-mate recovery for libraries where the corpus recipe requires it. For batches,
-record per-source acquisition failures in the caller's manifest and continue
-only according to that workflow's policy.
-
-```python
-published = data.vaccine_peptides("mRNA")
-for peptide in published:
-    print(peptide["variant_id"], peptide["sequence"])
-```
-
-Migration sites: `examples/osteosarc_read_corpus/build.py` and acquisition
-portions of fixture support. Vaxrank's `run_vaxrank` continues to consume
-Isovar results and its existing predictor/configuration objects; no additional
-Osteosarc ranking wrapper is needed. Preserve reviewed extra calls, structural
-events, source-selection rules, and biological expectations in Vaxrank.
-
-## Tested handoffs
-
-[`tests/test_consumer_usage.py`](https://github.com/iskandr/osteosarc/blob/main/tests/test_consumer_usage.py)
-exercises native Varcode metadata/custom references, Isovar read evidence,
-Topiary RSEM and pVAC loading (including empty reports), Vaxrank's header-survey
-and paired-read acquisition pattern, and untested vaccine assay states.
-The core suite also covers complete record preservation, indexed VCF access,
-CRAM references, offline reuse, and conflicting source claims.
-
-The dedicated consumer CI job installs Varcode 7.0.0, Isovar 1.17.0, and Topiary
-5.55.1. It needs no genomes or prediction models. Full annotation, RNA protein
-assembly, MHC prediction, and Vaxrank ranking belong to the consumer suites.
+See [migration](migration.md) to replace existing download helpers and
+[testing](validation.md) for integration coverage.
