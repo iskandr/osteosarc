@@ -1,5 +1,6 @@
 import json
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from pathlib import Path
 
 import datacache
@@ -71,6 +72,15 @@ def test_refresh_preserves_old_content_and_offline_verifies(tmp_path, download_t
     cache.path(second).write_bytes(b"modified")
     with pytest.raises(IntegrityError):
         offline.fetch(url)
+
+
+def test_digest_memo_does_not_bypass_another_receipts_size(tmp_path, download_transport):
+    cache = Cache(tmp_path)
+    receipt = cache.fetch("https://example.test/data.tsv")
+    cache.path(receipt)
+    with pytest.raises(IntegrityError, match="size differs"):
+        cache.path(replace(receipt, size=receipt.size + 1))
+    assert cache.path(receipt).read_bytes() == download_transport["body"]
 
 
 def test_failed_and_mismatched_downloads_never_publish(tmp_path, download_transport):

@@ -170,7 +170,10 @@ class Cache:
         if not path.is_file():
             raise OfflineError(f"Cached object is missing: {receipt.url}")
         if verify:
-            identity = json.dumps(file_identity(path))
+            current = file_identity(path)
+            if current[1] != receipt.size:
+                raise IntegrityError(f"Cached object size differs from receipt: {path}")
+            identity = json.dumps(current)
             if self._verified.get(identity) != receipt.sha256:
                 try:
                     datacache.validate_file(path, expected_sha256=receipt.sha256, expected_size=receipt.size)
