@@ -1,0 +1,44 @@
+[
+  {
+    "id": "COL3A1-Splice",
+    "gene": "COL3A1",
+    "location": "",
+    "protein_label": "Splice",
+    "vaccine_count": 0
+  },
+  {
+    "id": "FAM157A-p_W70_Q71ins_14",
+    "gene": "FAM157A",
+    "location": "",
+    "protein_label": "p.Trp70_Gln71ins(14)",
+    "vaccine_count": 0
+  },
+  {
+    "id": "MUC3A-chr7-100953130",
+    "gene": "MUC3A",
+    "location": "chr7:100953130",
+    "protein_label": "p.Pro451_Ala484dup",
+    "vaccine_count": 0
+  },
+  {
+    "id": "OTUD4-p_A153del",
+    "gene": "OTUD4",
+    "location": "",
+    "protein_label": "p.Ala153del",
+    "vaccine_count": 0
+  },
+  {
+    "id": "USH2A-chr1-215560752",
+    "gene": "USH2A",
+    "location": "chr1:215560752",
+    "protein_label": "p.Cys4728Phe",
+    "vaccine_count": 0
+  },
+  {
+    "id": "USH2A-chr1-215650752",
+    "gene": "USH2A",
+    "location": "chr1:215650752",
+    "protein_label": "p.Cys4728Phe",
+    "vaccine_count": 0
+  }
+]

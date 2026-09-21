@@ -64,8 +64,8 @@ The source header and index were checked, and the same result reopened offline.
 | Check | Result |
 | --- | --- |
 | Catalog | 395,541 assets, including 843 alignments and 323 VCF/BCF files |
-| Site variants after corrections | 177 ready, 2 nonliteral, 3 missing literal alleles |
-| Corrections | 29 applied, none stale |
+| Site variants after corrections | 179 ready, 2 nonliteral, 1 missing literal allele (rechecked 2026-09-20) |
+| Corrections | 32 applied, none stale (rechecked 2026-09-20) |
 | Unrecognized source labels | 0 |
 | Sample metadata conflicts | 0 corrected; 3 with corrections disabled |
 | Timeline | 787 events, 21 specimens |

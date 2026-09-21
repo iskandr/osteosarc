@@ -1,0 +1,182 @@
+[
+  {
+    "id": "COL3A1-Splice",
+    "gene": "COL3A1",
+    "chr": null,
+    "pos": null,
+    "ref": null,
+    "alt": null,
+    "genomic_change_on_cdna": "c.4254+1_4255-1del",
+    "refseq_id": "NM_000090",
+    "protein_change": "Splice",
+    "detection": {
+      "LENS 2022": false,
+      "LENS 2024": false,
+      "Mutect2 2024": false,
+      "Mutect2 2025": false,
+      "pVACtools 2025": false,
+      "Natera 2022": true,
+      "Tempus 2022": false,
+      "BG 2024": false,
+      "oncoanalyser": false,
+      "DRAGEN": false
+    },
+    "vaccines": {
+      "JLF V1": false,
+      "JLF V2": false,
+      "JLF V3": false,
+      "CeGaT": false,
+      "Cure 2024": false
+    }
+  },
+  {
+    "id": "FAM157A-p_W70_Q71ins_14",
+    "gene": "FAM157A",
+    "chr": null,
+    "pos": null,
+    "ref": null,
+    "alt": null,
+    "genomic_change_on_cdna": "c.211_212ins(42)",
+    "refseq_id": "NM_001145248",
+    "protein_change": "p.Trp70_Gln71ins(14)",
+    "detection": {
+      "LENS 2022": false,
+      "LENS 2024": false,
+      "Mutect2 2024": false,
+      "Mutect2 2025": false,
+      "pVACtools 2025": false,
+      "Natera 2022": false,
+      "Tempus 2022": true,
+      "BG 2024": false,
+      "oncoanalyser": false,
+      "DRAGEN": false
+    },
+    "vaccines": {
+      "JLF V1": false,
+      "JLF V2": false,
+      "JLF V3": false,
+      "CeGaT": false,
+      "Cure 2024": false
+    }
+  },
+  {
+    "id": "MUC3A-chr7-100953130",
+    "gene": "MUC3A",
+    "chr": "chr7",
+    "pos": 100953130,
+    "ref": "A",
+    "alt": "dup",
+    "genomic_change_on_cdna": "c.1352_1453dup",
+    "refseq_id": "NM_005960",
+    "protein_change": "p.Pro451_Ala484dup",
+    "detection": {
+      "LENS 2022": false,
+      "LENS 2024": false,
+      "Mutect2 2024": false,
+      "Mutect2 2025": false,
+      "pVACtools 2025": false,
+      "Natera 2022": false,
+      "Tempus 2022": true,
+      "BG 2024": false,
+      "oncoanalyser": false,
+      "DRAGEN": false
+    },
+    "vaccines": {
+      "JLF V1": false,
+      "JLF V2": false,
+      "JLF V3": false,
+      "CeGaT": false,
+      "Cure 2024": false
+    }
+  },
+  {
+    "id": "OTUD4-p_A153del",
+    "gene": "OTUD4",
+    "chr": null,
+    "pos": null,
+    "ref": null,
+    "alt": null,
+    "genomic_change_on_cdna": null,
+    "refseq_id": null,
+    "protein_change": "p.Ala153del",
+    "detection": {
+      "LENS 2022": false,
+      "LENS 2024": false,
+      "Mutect2 2024": false,
+      "Mutect2 2025": false,
+      "pVACtools 2025": false,
+      "Natera 2022": true,
+      "Tempus 2022": false,
+      "BG 2024": false,
+      "oncoanalyser": false,
+      "DRAGEN": false
+    },
+    "vaccines": {
+      "JLF V1": false,
+      "JLF V2": false,
+      "JLF V3": false,
+      "CeGaT": false,
+      "Cure 2024": false
+    }
+  },
+  {
+    "id": "USH2A-chr1-215560752",
+    "gene": "USH2A",
+    "chr": "chr1",
+    "pos": 215560752,
+    "ref": "A",
+    "alt": "not_reported",
+    "genomic_change_on_cdna": "c.***C>A",
+    "refseq_id": "NM_206933",
+    "protein_change": "p.Cys4728Phe",
+    "detection": {
+      "LENS 2022": false,
+      "LENS 2024": false,
+      "Mutect2 2024": false,
+      "Mutect2 2025": false,
+      "pVACtools 2025": false,
+      "Natera 2022": true,
+      "Tempus 2022": false,
+      "BG 2024": false,
+      "oncoanalyser": false,
+      "DRAGEN": false
+    },
+    "vaccines": {
+      "JLF V1": false,
+      "JLF V2": false,
+      "JLF V3": false,
+      "CeGaT": false,
+      "Cure 2024": false
+    }
+  },
+  {
+    "id": "USH2A-chr1-215650752",
+    "gene": "USH2A",
+    "chr": "chr1",
+    "pos": 215650752,
+    "ref": "C",
+    "alt": "A",
+    "genomic_change_on_cdna": null,
+    "refseq_id": null,
+    "protein_change": "p.Cys4728Phe",
+    "detection": {
+      "LENS 2022": false,
+      "LENS 2024": false,
+      "Mutect2 2024": false,
+      "Mutect2 2025": false,
+      "pVACtools 2025": false,
+      "Natera 2022": false,
+      "Tempus 2022": false,
+      "BG 2024": false,
+      "oncoanalyser": true,
+      "DRAGEN": false
+    },
+    "vaccines": {
+      "JLF V1": false,
+      "JLF V2": false,
+      "JLF V3": false,
+      "CeGaT": false,
+      "Cure 2024": false
+    }
+  }
+]

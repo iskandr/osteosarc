@@ -1,0 +1,432 @@
+{
+  "COL3A1-Splice": {
+    "verified": "2026-09-20",
+    "expected_source": {
+      "gene": "COL3A1",
+      "chr": null,
+      "pos": null,
+      "ref": null,
+      "alt": null,
+      "genomic_change_on_cdna": "c.4254+1_4255-1del",
+      "refseq_id": "NM_000090",
+      "protein_change": "Splice"
+    },
+    "expected_index": {
+      "gene": "COL3A1",
+      "location": "",
+      "protein_label": "Splice"
+    },
+    "resolution": {
+      "status": "resolved",
+      "source_allele": {
+        "assembly": "GRCh37",
+        "chrom": "chr2",
+        "pos": 189875615,
+        "ref": "CGGTAGGAAACATTTTTCTCAATATAGGTCATAAAGCAGTCAGCATTTTAGTTTAATCATGCAAATTATTTTGAATAGAATAAATAAAATTAATAGGATGAAATAAAGATAGCATTTGGTATGAATTACATACATTGCATCTACTGATTCATTGCAGGGAATGTTAAATGCAACAAAATGGATCTTAGCCTCCAGATGAAAACCAGTTGAAATAAAAGCATTTAAAATTTAAATCCATAATGCAAACTTTATCAGATAATTGGGATAGTTACTATATGTTTTGAATAATACCTGTCACATTAACTCAGTTTGAAATATCTGTTTTTTAAAATTTTAAAGGTTAACTTCAAATCTCTCATTTGTTATTGTTATTTGTGAACAAAGGGAAAACTCACTTCTAATATTAGCGAATTTCATTGTGAGAGACCTATCCTCTTTTTAATAAACCATTTATAAACCTGTTAGCAATGGCCGGAACCAGGCCTCCTGAGGATGCACTGGTCTATAGCAATTGCCCTGCTGCATTTACTAAGAATCCTTACAAGGCATTTGTTTAAGAATATTGTTTATCAACTAAGAAGATTACAGCTTTGAAGTAGAGCAGGTCTCATATACATGAATAATAACATGGCACGATGAATGCTTCTTTAGAGTAAAAAGGTTTTCTTTAACTTGTTAAGTCAGAGTTGTCTAAGTAATTGTAATGTCATGATCATGTACATTTTGTCCTTTTTTACA",
+        "alt": "C"
+      },
+      "allele": {
+        "assembly": "GRCh38",
+        "chrom": "chr2",
+        "pos": 189010889,
+        "ref": "CGGTAGGAAACATTTTTCTCAATATAGGTCATAAAGCAGTCAGCATTTTAGTTTAATCATGCAAATTATTTTGAATAGAATAAATAAAATTAATAGGATGAAATAAAGATAGCATTTGGTATGAATTACATACATTGCATCTACTGATTCATTGCAGGGAATGTTAAATGCAACAAAATGGATCTTAGCCTCCAGATGAAAACCAGTTGAAATAAAAGCATTTAAAATTTAAATCCATAATGCAAACTTTATCAGATAATTGGGATAGTTACTATATGTTTTGAATAATACCTGTCACATTAACTCAGTTTGAAATATCTGTTTTTTAAAATTTTAAAGGTTAACTTCAAATCTCTCATTTGTTATTGTTATTTGTGAACAAAGGGAAAACTCACTTCTAATATTAGCGAATTTCATTGTGAGAGACCTATCCTCTTTTTAATAAACCATTTATAAACCTGTTAGCAATGGCCGGAACCAGGCCTCCTGAGGATGCACTGGTCTATAGCAATTGCCCTGCTGCATTTACTAAGAATCCTTACAAGGCATTTGTTTAAGAATATTGTTTATCAACTAAGAAGATTACAGCTTTGAAGTAGAGCAGGTCTCATATACATGAATAATAACATGGCACGATGAATGCTTCTTTAGAGTAAAAAGGTTTTCTTTAACTTGTTAAGTCAGAGTTGTCTAAGTAATTGTAATGTCATGATCATGTACATTTTGTCCTTTTTTACA",
+        "alt": "C"
+      },
+      "source": {
+        "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/tempus/TL-24-ALMY2X4KMV/DNA/TL-24-ALMY2X4KMV.soma.pindel.vcf",
+        "sha256": "f3b39c22454ed0269b9e163e1f09f406bc2c1a57c48735233915901e6dc58090"
+      },
+      "references": [
+        {
+          "accession": "NC_000002.11",
+          "start": 189875115,
+          "end": 189876852,
+          "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000002.11&seq_start=189875115&seq_stop=189876852&rettype=fasta&retmode=text",
+          "sha256": "66ccf5a5c3ff62c3f01a20c4de6e92a95ed636b65aae220972a7e8934f5a50a6"
+        },
+        {
+          "accession": "NC_000002.12",
+          "start": 189010389,
+          "end": 189012126,
+          "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000002.12&seq_start=189010389&seq_stop=189012126&rettype=fasta&retmode=text",
+          "sha256": "ba0cca8c5f8ff532111a5f1cf324a1acb722c8162b1139f3fbb4545ceaa30472"
+        }
+      ],
+      "mapping": {
+        "url": "https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz",
+        "sha256": "5c0598e500ceb5a78c73086929e8ef993aec309bcafb595139b53d440b125a1d",
+        "coordinates": "0-based half-open",
+        "blocks": [
+          {
+            "chain_id": "1",
+            "source": [
+              "chr2",
+              189875114,
+              189876852
+            ],
+            "target": [
+              "chr2",
+              189010388,
+              189012126
+            ],
+            "strand": "+"
+          }
+        ]
+      },
+      "normalization": {
+        "representation": "leftmost anchored allele in the checked reference window",
+        "equivalent_positions_grch38": [
+          189010889,
+          189010890
+        ],
+        "identical_reference_windows": true
+      },
+      "transcript": "NM_000090.3",
+      "source_hgvs_c": "c.4254+1_4255-1del",
+      "summary": "The public Tempus Pindel call matches the catalogue transcript and c.4254+1_4255-1del annotation: a 737-base intronic deletion. Its full REF and flanking sequence match both assemblies.",
+      "caveats": [
+        "The original Natera report is not public; the allele is supported by the independent public Tempus call.",
+        "No read-count rows are published for this catalogue entry."
+      ]
+    }
+  },
+  "FAM157A-p_W70_Q71ins_14": {
+    "verified": "2026-09-20",
+    "expected_source": {
+      "gene": "FAM157A",
+      "chr": null,
+      "pos": null,
+      "ref": null,
+      "alt": null,
+      "genomic_change_on_cdna": "c.211_212ins(42)",
+      "refseq_id": "NM_001145248",
+      "protein_change": "p.Trp70_Gln71ins(14)"
+    },
+    "expected_index": {
+      "gene": "FAM157A",
+      "location": "",
+      "protein_label": "p.Trp70_Gln71ins(14)"
+    },
+    "resolution": {
+      "status": "resolved",
+      "source_allele": {
+        "assembly": "GRCh37",
+        "chrom": "chr3",
+        "pos": 197880130,
+        "ref": "G",
+        "alt": "GGCGGCGGCGGCGGCAGCAGCAGCAGCAGCAGCAGCAGCAGCA"
+      },
+      "allele": {
+        "assembly": "GRCh38",
+        "chrom": "chr3",
+        "pos": 198153259,
+        "ref": "G",
+        "alt": "GGCGGCGGCGGCGGCAGCAGCAGCAGCAGCAGCAGCAGCAGCA"
+      },
+      "source": {
+        "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/tempus/TL-24-ALMY2X4KMV/DNA/TL-24-ALMY2X4KMV.soma.pindel.vcf",
+        "sha256": "f3b39c22454ed0269b9e163e1f09f406bc2c1a57c48735233915901e6dc58090"
+      },
+      "references": [
+        {
+          "accession": "NC_000003.11",
+          "start": 197879630,
+          "end": 197880630,
+          "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000003.11&seq_start=197879630&seq_stop=197880630&rettype=fasta&retmode=text",
+          "sha256": "f308a720abf846c7be3fe9f9e433eafd40d3b622306c063750f05998f8b56353"
+        },
+        {
+          "accession": "NC_000003.12",
+          "start": 198152759,
+          "end": 198153759,
+          "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000003.12&seq_start=198152759&seq_stop=198153759&rettype=fasta&retmode=text",
+          "sha256": "bf700b25dc5b4cdfbf0f4bce7e09aae159926ae08d5cabad734dc081e6305115"
+        }
+      ],
+      "mapping": {
+        "url": "https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz",
+        "sha256": "5c0598e500ceb5a78c73086929e8ef993aec309bcafb595139b53d440b125a1d",
+        "coordinates": "0-based half-open",
+        "blocks": [
+          {
+            "chain_id": "3",
+            "source": [
+              "chr3",
+              197879629,
+              197880630
+            ],
+            "target": [
+              "chr3",
+              198152758,
+              198153759
+            ],
+            "strand": "+"
+          }
+        ]
+      },
+      "normalization": {
+        "representation": "leftmost anchored allele in the checked reference window",
+        "equivalent_positions_grch38": [
+          198153259,
+          198153260,
+          198153261
+        ],
+        "identical_reference_windows": true
+      },
+      "transcript": "NM_001145248.1",
+      "source_hgvs_c": "c.211_212insGGCGGCGGCGGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGC",
+      "summary": "The public Tempus Pindel call supplies the 42-base insertion. Its REF and flanking sequence match both assemblies.",
+      "protein_interpretation": {
+        "status": "withdrawn_protein_model",
+        "transcript": "NM_001145248.1",
+        "current_transcript": "NR_146164.1",
+        "source": {
+          "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=gene&id=728262&retmode=xml",
+          "sha256": "a6ed3ce8173d5fafe94a01960d1b35bf2eab3f59ccaf4413c0a0665873842378"
+        },
+        "reason": "NCBI supports the transcript but not the protein; FAM157A is now annotated as ncRNA."
+      },
+      "caveats": [
+        "Genomic readiness does not establish a protein-coding insertion or a neoantigen.",
+        "No read-count rows are published for this catalogue entry."
+      ]
+    }
+  },
+  "MUC3A-chr7-100953130": {
+    "verified": "2026-09-20",
+    "expected_source": {
+      "gene": "MUC3A",
+      "chr": "chr7",
+      "pos": 100953130,
+      "ref": "A",
+      "alt": "dup",
+      "genomic_change_on_cdna": "c.1352_1453dup",
+      "refseq_id": "NM_005960",
+      "protein_change": "p.Pro451_Ala484dup"
+    },
+    "expected_index": {
+      "gene": "MUC3A",
+      "location": "chr7:100953130",
+      "protein_label": "p.Pro451_Ala484dup"
+    },
+    "resolution": {
+      "status": "unresolved_grch38_placement",
+      "source_allele": {
+        "assembly": "GRCh37",
+        "chrom": "chr7",
+        "pos": 100550767,
+        "ref": "T",
+        "alt": "TCTCCCAGCTTCACTTCTTTGATCACCACCACGGAGACCACCTCACACAGTACTCCCAGCTTCACTTCTTCGATCACCACCACCGAGACCACCTCACACAGTG"
+      },
+      "source": {
+        "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/tempus/TL-24-ALMY2X4KMV/DNA/TL-24-ALMY2X4KMV.soma.pindel.vcf",
+        "sha256": "f3b39c22454ed0269b9e163e1f09f406bc2c1a57c48735233915901e6dc58090"
+      },
+      "references": [
+        {
+          "accession": "NC_000007.13",
+          "start": 100550167,
+          "end": 100551367,
+          "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000007.13&seq_start=100550167&seq_stop=100551367&rettype=fasta&retmode=text",
+          "sha256": "46d171aea384c11a198d712bd00c96dd070777ceb38b5603fa022a39cb287956"
+        },
+        {
+          "accession": "NC_000007.14",
+          "start": 100952527,
+          "end": 100959238,
+          "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000007.14&seq_start=100952527&seq_stop=100959238&rettype=fasta&retmode=text",
+          "sha256": "813307fcab0fb06ba19217fa8f431aaaa256fbd46b105d9e66f2b25070c70c56"
+        }
+      ],
+      "transcript": "NM_005960.1",
+      "mapping": {
+        "url": "https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz",
+        "sha256": "5c0598e500ceb5a78c73086929e8ef993aec309bcafb595139b53d440b125a1d",
+        "coordinates": "0-based half-open",
+        "blocks": [
+          {
+            "chain_id": "7",
+            "source": [
+              "chr7",
+              100550266,
+              100550653
+            ],
+            "target": [
+              "chr7",
+              100952626,
+              100953013
+            ],
+            "strand": "+"
+          },
+          {
+            "chain_id": "7",
+            "source": [
+              "chr7",
+              100550873,
+              100551267
+            ],
+            "target": [
+              "chr7",
+              100958744,
+              100959138
+            ],
+            "strand": "+"
+          }
+        ],
+        "source_gap": [
+          "chr7",
+          100550653,
+          100550873
+        ],
+        "target_gap": [
+          "chr7",
+          100953013,
+          100958744
+        ]
+      },
+      "summary": "The Tempus GRCh37 102-base duplication matches the catalogue transcript annotation, but its anchor lies in a gap in the checked GRCh37-to-GRCh38 chain. No GRCh38 allele is established.",
+      "caveats": [
+        "The catalogue GRCh38 coordinate lies in the corresponding target gap.",
+        "Counts at the catalogue locus do not establish support for the Tempus allele."
+      ]
+    }
+  },
+  "OTUD4-p_A153del": {
+    "verified": "2026-09-20",
+    "expected_source": {
+      "gene": "OTUD4",
+      "chr": null,
+      "pos": null,
+      "ref": null,
+      "alt": null,
+      "genomic_change_on_cdna": null,
+      "refseq_id": null,
+      "protein_change": "p.Ala153del"
+    },
+    "expected_index": {
+      "gene": "OTUD4",
+      "location": "",
+      "protein_label": "p.Ala153del"
+    },
+    "resolution": {
+      "status": "source_unavailable",
+      "source": {
+        "url": "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/scripts/variants/source_data/SS%20neoantigen%20_%20mutations%20-%20Mutations.tsv",
+        "sha256": "b84ece29e11884d14b2273bc7872b6660bd3e5aeaba4a278b28dc3de9a579931"
+      },
+      "summary": "The catalogue reports Natera p.Ala153del without a transcript, cDNA change or genomic allele. The original clinical variant report is not public; no matching allele was found in the public Tempus or CeGaT calls checked.",
+      "needed": "The original Natera call with assembly, position, REF and ALT (or transcript-versioned HGVS).",
+      "caveats": [
+        "A protein deletion alone cannot identify a unique genomic allele."
+      ]
+    }
+  },
+  "USH2A-chr1-215560752": {
+    "verified": "2026-09-20",
+    "expected_source": {
+      "gene": "USH2A",
+      "chr": "chr1",
+      "pos": 215560752,
+      "ref": "A",
+      "alt": "not_reported",
+      "genomic_change_on_cdna": "c.***C>A",
+      "refseq_id": "NM_206933",
+      "protein_change": "p.Cys4728Phe"
+    },
+    "expected_index": {
+      "gene": "USH2A",
+      "location": "chr1:215560752",
+      "protein_label": "p.Cys4728Phe"
+    },
+    "resolution": {
+      "status": "source_identity_unconfirmed",
+      "source": {
+        "url": "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/scripts/variants/source_data/SS%20neoantigen%20_%20mutations%20-%20Mutations.tsv",
+        "sha256": "b84ece29e11884d14b2273bc7872b6660bd3e5aeaba4a278b28dc3de9a579931"
+      },
+      "summary": "The positions differ by a digit transposition and both entries carry p.Cys4728Phe. Public Tempus evidence verifies chr1:215650752 C>A, but cannot establish the identity of the original Natera entry.",
+      "relationship": {
+        "kind": "possible_duplicate",
+        "variant_id": "USH2A-chr1-215650752",
+        "evidence": {
+          "source_allele": {
+            "assembly": "GRCh37",
+            "chrom": "chr1",
+            "pos": 215824094,
+            "ref": "C",
+            "alt": "A"
+          },
+          "allele": {
+            "assembly": "GRCh38",
+            "chrom": "chr1",
+            "pos": 215650752,
+            "ref": "C",
+            "alt": "A"
+          },
+          "source": {
+            "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/tempus/TL-24-ALMY2X4KMV/DNA/TL-24-ALMY2X4KMV.soma.freebayes.vcf",
+            "sha256": "8e7a2f125c52f785971a16b2d2fb9577dc19b5415e674a16bb5e4829aa0499bd"
+          },
+          "references": [
+            {
+              "accession": "NC_000001.10",
+              "start": 215823594,
+              "end": 215824594,
+              "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000001.10&seq_start=215823594&seq_stop=215824594&rettype=fasta&retmode=text",
+              "sha256": "9143ff80cf7ce0600af9df38b9af0f413263c70c46822ae3d0e9c503ad1b4e1c"
+            },
+            {
+              "accession": "NC_000001.11",
+              "start": 215650252,
+              "end": 215651252,
+              "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000001.11&seq_start=215650252&seq_stop=215651252&rettype=fasta&retmode=text",
+              "sha256": "6cb964f52d8b0c5f72c41aba4681eb615dfe17c545ea601909ef4f70936d1077"
+            }
+          ],
+          "mapping": {
+            "url": "https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz",
+            "sha256": "5c0598e500ceb5a78c73086929e8ef993aec309bcafb595139b53d440b125a1d",
+            "coordinates": "0-based half-open",
+            "blocks": [
+              {
+                "chain_id": "2",
+                "source": [
+                  "chr1",
+                  215823593,
+                  215824594
+                ],
+                "target": [
+                  "chr1",
+                  215650251,
+                  215651252
+                ],
+                "strand": "+"
+              }
+            ]
+          },
+          "normalization": {
+            "representation": "leftmost anchored allele in the checked reference window",
+            "equivalent_positions_grch38": [],
+            "identical_reference_windows": true
+          },
+          "transcript": "NM_206933.2",
+          "source_hgvs_c": "c.14183G>T"
+        }
+      },
+      "needed": "The original Natera call identifying the genomic allele.",
+      "caveats": [
+        "The two catalogue IDs remain separate; no allele or counts are copied between them."
+      ]
+    },
+    "expected_related_source": {
+      "gene": "USH2A",
+      "chr": "chr1",
+      "pos": 215650752,
+      "ref": "C",
+      "alt": "A",
+      "genomic_change_on_cdna": null,
+      "refseq_id": null,
+      "protein_change": "p.Cys4728Phe"
+    }
+  }
+}

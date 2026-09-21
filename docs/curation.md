@@ -86,9 +86,9 @@ field values or `glob(...)`. Dotted names address nested fields. An empty
 `set` flags records without editing them. Pass a filtered list of `CORRECTIONS`
 to disable individual corrections.
 
-## Built-in corrections (sources of 2026-09-18)
+## Built-in corrections
 
-All 29 applied to the 2026-09-18 sources. Evidence URLs are available in
+All 32 applied to the 2026-09-18 snapshot when checked on 2026-09-20. Evidence URLs are available in
 `data.corrections` and the [registry source](https://github.com/iskandr/osteosarc/blob/main/osteosarc/curation.py).
 
 ### Read counts and alleles
@@ -102,11 +102,14 @@ All 29 applied to the 2026-09-18 sources. Evidence URLs are available in
 | `allele-GAPVD1-chr9-125299105` | edit | Literal Tempus delins at chr9:125301980 (TAGTGC>ATTGG). |
 | `allele-GOLGA6L2-chr15-23441121` | edit | Literal Tempus 120-bp insertion at chr15:23440197. |
 | `allele-MAP2-chr2-209694768` | edit | The curated 22-bp deletion, a vaccine target, is not the observed allele. Tempus and CeGaT report one complex −28 bp event, which the catalogue's own protein sequence matches. |
+| `allele-FAM157A-p_W70_Q71ins_14` | edit | Supply the verified 42-base insertion at GRCh38 chr3:198153259; retain the withdrawn protein-model caveat. |
+| `allele-COL3A1-Splice` | edit | Supply the public Tempus 737-base deletion matching c.4254+1_4255-1del, anchored at GRCh38 chr2:189010889. |
 | `map2-split-representations` | flag | Two other MAP2 entries are pieces of that same event. |
-| `muc3a-grch38-placement` | flag | The catalogue locus lies in GRCh38-only sequence; the original call does not place there. |
-| `ush2a-transposed-duplicate` | flag | chr1:215560752 is a digit transposition of chr1:215650752. |
+| `muc3a-grch38-placement` | annotate | Record the GRCh37 call and assembly gap; leave GRCh38 placement unresolved. |
+| `ush2a-transposed-duplicate` | annotate | Record a possible relationship to chr1:215650752; original Natera identity remains unconfirmed. |
 | `fam157a-withdrawn-protein` | flag | The annotated protein model has been withdrawn by NCBI. |
-| `natera-alleles-unavailable` | flag | No public source gives the COL3A1 or OTUD4 alleles. |
+| `natera-alleles-unavailable` | flag | The original Natera report is unavailable. COL3A1 now has independent Tempus evidence. |
+| `otud4-source-unavailable` | annotate | No public genomic allele was found; retain the entry and identify the missing source. |
 | `transcript-DCHS2` | edit | `NM_1142552` becomes `NM_001142552.1`. |
 | `gene-symbol-TRMO` | edit | `TMRO` is a typo for `TRMO`; gene-symbol joins with pVACseq otherwise miss it. |
 
@@ -115,6 +118,12 @@ TL-24-ALMY2X4KMV VCFs with Ensembl. Each mapped REF matched GRCh38. The
 published positions fall outside the indel-equivalence spans, so normalization
 does not explain the differences. Several wrong positions still matched a
 reference base in the correct gene; `ready` alone cannot validate an allele.
+
+FAM157A and COL3A1 were checked separately against UCSC's GRCh37-to-GRCh38
+chain and versioned NCBI RefSeq windows. The complete REF and surrounding
+sequence agree across assemblies. Offline fixtures test the source VCFs,
+reference bases and equivalent indel representations. See
+[the five reviewed entries](variants.md) for usage and remaining limitations.
 
 ### Samples, pipelines, and files
 

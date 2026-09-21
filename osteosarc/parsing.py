@@ -143,6 +143,7 @@ def parse_variants(index, vafs, *, source_variants=(), vaccine_overlap=None, sou
     not normalize indels, infer alleles from protein names, or lift. vafs may be
     TSV text or a Table. Malformed rows with an ID mark that entry non-ready;
     its annotations["parse_errors"] retain the diagnostics and source values.
+    A reviewed GRCh38 allele_resolution can fill an allele absent from vafs.
     """
     rows = parse_variant_index(index) if isinstance(index, str) else index
     entries = {row["id"]: dict(row) for row in rows}
@@ -179,6 +180,15 @@ def parse_variants(index, vafs, *, source_variants=(), vaccine_overlap=None, sou
             raise SchemaError(f"Duplicate source variant ID: {record['id']}")
         source_by_id[record["id"]] = record
         entries.setdefault(record["id"], dict(id=record["id"], gene=record["gene"], on_site=False))
+        # Reviewed source corrections can supply an allele even when the site
+        # never counted it. Never replace VAF candidates or fabricate count rows.
+        resolution = record.get("allele_resolution", {})
+        if not alleles[record["id"]] and resolution.get("status") == "resolved":
+            resolved = resolution["allele"]
+            allele = (record.get("chr"), record.get("pos"), record.get("ref"), record.get("alt"))
+            if (resolved["assembly"] == "GRCh38"
+                    and allele == tuple(resolved[k] for k in ("chrom", "pos", "ref", "alt"))):
+                alleles[record["id"]].add(allele)
     overlap = defaultdict(list)
     for record in (vaccine_overlap or {}).get("mutations", []):
         if record.get("chrom") and record.get("pos"):
@@ -195,6 +205,8 @@ def parse_variants(index, vafs, *, source_variants=(), vaccine_overlap=None, sou
             "ambiguous_literal_allele" if len(candidates) > 1 else "ready")
         record = source_by_id.get(vid, {})
         extra = dict(annotations.get(vid, {}), index=entry, source_record=record)
+        if "allele_resolution" in record:
+            extra["allele_resolution"] = record["allele_resolution"]
         source_membership = tuple(sorted(k for k, value in record.get("vaccines", {}).items() if value))
         extra["source_vaccines"] = source_membership
         membership = ()

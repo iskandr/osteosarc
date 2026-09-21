@@ -1,0 +1,4 @@
+nid	gene	refseq	chr	pos	ref	alt	protein_change	genomic_change_on_cdna	Natera_2022
+COL3A1.1	COL3A1	NM_000090					Splice	c.4254+1_4255-1del	yes
+OTUD4.1	OTUD4						p.A153del		yes
+USH2A.1	USH2A	NM_206933	chr1	215560752	A	not_reported	p.C4728F	c.***C>A	yes

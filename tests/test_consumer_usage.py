@@ -12,6 +12,7 @@ from osteosarc import (
     Asset,
     Assets,
     Cache,
+    Dataset,
     Region,
     Variant,
     Variants,
@@ -58,7 +59,13 @@ def test_varcode_custom_reference_preserves_identity_and_metadata(dataset, tmp_p
     with pytest.raises(ValueError, match="conflicts"):
         selected.to_varcode(genome=pyensembl.EnsemblRelease(95), assembly="GRCh37")
     with pytest.raises(ValueError, match="missing_literal"):
-        dataset.variants(gene="COL3A1").to_varcode(genome=genome, assembly="GRCh38")
+        raw = Dataset.open("fixture", cache=dataset.cache, corrections=False)
+        raw.variants(gene="COL3A1").to_varcode(genome=genome, assembly="GRCh38")
+    for gene in ("COL3A1", "FAM157A"):
+        resolved = dataset.variants(gene=gene).to_varcode(genome=genome, assembly="GRCh38")
+        assert len(resolved) == 1
+        metadata = resolved.metadata[resolved[0]]["entries"][0]
+        assert metadata["annotations"]["allele_resolution"]["status"] == "resolved"
     assert not (tmp_path / "not-downloaded.gtf").exists()
 
 

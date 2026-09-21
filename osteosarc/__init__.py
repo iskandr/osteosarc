@@ -21,7 +21,7 @@ from .reads import (
 )
 from .timeline import Event, Timeline
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 __all__ = [
     "AlignmentInfo", "Asset", "Assets", "CORRECTIONS", "Cache", "Change", "CoordinateError", "Correction",
