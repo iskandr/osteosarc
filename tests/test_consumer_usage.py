@@ -69,6 +69,86 @@ def test_varcode_custom_reference_preserves_identity_and_metadata(dataset, tmp_p
     assert not (tmp_path / "not-downloaded.gtf").exists()
 
 
+@pytest.fixture
+def contig_genome(tmp_path):
+    pyensembl = pytest.importorskip("pyensembl")
+    pytest.importorskip("varcode")
+
+    def make(contig):
+        # A noncoding transcript exercises real annotation without downloading
+        # Ensembl sequences. The locus includes the chrM:12994 G>A report (#8).
+        gtf = tmp_path / "contig.gtf"
+        attributes = 'gene_id "G1"; gene_name "GENE"; gene_biotype "lncRNA";'
+        transcript = attributes + ' transcript_id "T1"; transcript_name "GENE-201"; transcript_biotype "lncRNA";'
+        gtf.write_text("".join(
+            f"{contig}\tfixture\t{feature}\t12950\t13050\t.\t+\t.\t{attrs}\n"
+            for feature, attrs in [("gene", attributes), ("transcript", transcript),
+                                   ("exon", transcript + ' exon_number "1"; exon_id "E1";')]))
+        genome = pyensembl.Genome(
+            reference_name=f"GRCh38-osteosarc-{contig}-fixture", annotation_name="fixture",
+            gtf_path_or_url=str(gtf), cache_directory_path=str(tmp_path / "pyensembl"))
+        genome.index()
+        return genome
+
+    return make
+
+
+@pytest.mark.parametrize("contig, expected", [
+    ("chrM", "MT"), ("M", "MT"), ("MT", "MT"), ("chrMT", "MT"),
+    ("chr1", "1"), ("chrX", "X"),
+    ("chrUn_KI270442v1", "chrUn_KI270442v1"), ("NC_012920.1", "NC_012920.1"),
+])
+def test_varcode_contig_conversion_retains_source_name(contig, expected):
+    pyensembl = pytest.importorskip("pyensembl")
+    pytest.importorskip("varcode")
+    selected = Variants([Variant("entry", "GENE", "GRCh38", ((contig, 12994, "G", "A"),), "ready")])
+    native = selected.to_varcode(genome=pyensembl.EnsemblRelease(95))
+    assert native[0].contig == expected
+    assert native[0].original_contig == contig
+    assert native.metadata[native[0]]["entries"][0]["alleles"] == selected[0].alleles
+
+
+def test_varcode_mitochondrial_annotation_and_alias_provenance(contig_genome):
+    genome = contig_genome("MT")
+    selected = Variants([
+        Variant(contig, "GENE", "GRCh38", ((contig, 12994, "G", "A"),), "ready")
+        for contig in ("chrM", "MT")
+    ], source={"snapshot_id": "mitochondrial-fixture"})
+    native = selected.to_varcode(genome=genome, assembly="GRCh38")
+    variant = native[0]
+    effects = variant.effects(raise_on_error=True)
+    assert len(native) == 1
+    assert len(effects) == 1
+    assert effects[0].gene_name == "GENE"
+    assert effects[0].transcript_id == "T1"
+    metadata = native.metadata[variant]
+    assert [entry["alleles"][0][0] for entry in metadata["entries"]] == ["chrM", "MT"]
+    assert metadata["source"]["snapshot_id"] == "mitochondrial-fixture"
+
+
+@pytest.mark.parametrize("contig", ["chrM", "chrMixedCase"])
+def test_varcode_literal_contig_conversion(contig):
+    pyensembl = pytest.importorskip("pyensembl")
+    pytest.importorskip("varcode")
+    selected = Variants([Variant("entry", "GENE", "GRCh38", ((contig, 12994, "G", "A"),), "ready")])
+    native = selected.to_varcode(genome=pyensembl.EnsemblRelease(95),
+                                convert_ucsc_contig_names=False, normalize_contig_names=False)
+    assert native[0].contig == native[0].original_contig == contig
+
+
+def test_varcode_literal_custom_contig_annotation(contig_genome):
+    contig = "chrM"
+    genome = contig_genome(contig)
+    selected = Variants([Variant("entry", "GENE", "GRCh38", ((contig, 12994, "G", "A"),), "ready")])
+    native = selected.to_varcode(genome=genome, assembly="GRCh38",
+                                convert_ucsc_contig_names=False, normalize_contig_names=False)
+    assert native[0].contig == native[0].original_contig == contig
+    assert native[0].ensembl is genome
+    effects = native[0].effects(raise_on_error=True)
+    assert len(effects) == 1
+    assert effects[0].gene_name == "GENE"
+
+
 def test_isovar_accepts_native_variants_and_cached_alignments(bam, tmp_path):
     isovar = pytest.importorskip("isovar")
     pyensembl = pytest.importorskip("pyensembl")

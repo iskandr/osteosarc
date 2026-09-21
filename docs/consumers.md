@@ -33,6 +33,11 @@ The adapter downloads no reference data. It preserves snapshot provenance and
 all source entries, including entries Varcode normalizes to the same allele.
 Unresolved alleles and assembly mismatches raise errors.
 
+By default, Varcode converts `chr1` to `1` and `chrM` (or `M`) to `MT`.
+Use `variant.contig` for the annotation name and `variant.original_contig`
+for the source name. If several entries become one variant, all their names
+remain in `native.metadata[variant]["entries"]`.
+
 For a custom reference name, declare the assembly:
 
 ```python
@@ -45,6 +50,23 @@ custom = selected.to_varcode(genome=genome, assembly="GRCh38")
 
 Conversion preserves the genome's cache identity. Annotation later requires
 the reference files, such as `subset.gtf` above, to be available and indexed.
+
+If your GTF uses the source names exactly, such as `chrM`, disable both naming
+options to preserve prefixes and case:
+
+```python
+custom = selected.to_varcode(
+    genome=genome, assembly="GRCh38",
+    convert_ucsc_contig_names=False, normalize_contig_names=False,
+)
+```
+
+The result must still match `genome.contigs()`: PyEnsembl itself can normalize
+case while indexing a GTF.
+
+This conversion does not change assemblies or resolve every contig alias.
+Scaffolds such as `chrUn_KI270442v1` and accessions such as `NC_012920.1`
+remain unchanged; their names must match the annotation reference.
 
 ## Isovar
 

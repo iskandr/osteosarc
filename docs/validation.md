@@ -17,8 +17,9 @@ They cover cache integrity, source conflicts, corrections, coordinate checks,
 record and tag preservation, filtering, and offline reuse. Excerpt checksums
 are recorded in `tests/data/provenance.json`.
 
-The consumer CI job installs Varcode 7.0.0, Isovar 1.17.0, and Topiary 5.55.1.
-It checks native variant conversion, Isovar read evidence, Topiary report
+The consumer CI job tests Varcode 7.0.0 and 9.3.7 with Isovar 1.17.0 and
+Topiary 5.55.1. It checks native variant conversion, mitochondrial and custom
+contig annotation, source-name preservation, Isovar read evidence, Topiary report
 loading, and the paired-read acquisition pattern used by Vaxrank. Full protein
 reconstruction and vaccine ranking remain downstream integration tests.
 
