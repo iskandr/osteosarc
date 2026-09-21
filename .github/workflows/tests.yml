@@ -22,12 +22,15 @@ jobs:
 
   consumers:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        varcode-version: ['7.0.0', '9.3.7']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - run: sudo apt-get update && sudo apt-get install -y samtools
-      - run: python -m pip install -e '.[test]' varcode==7.0.0 isovar==1.17.0 topiary==5.55.1
+      - run: python -m pip install -e '.[test]' varcode==${{ matrix.varcode-version }} isovar==1.17.0 topiary==5.55.1
       - run: python -c 'import varcode, isovar, topiary'
       - run: python -m pytest tests/test_consumer_usage.py -q

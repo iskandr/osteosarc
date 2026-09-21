@@ -60,7 +60,7 @@ A snapshot made before the timeline sources existed raises `SchemaError` from
 | `variants.select(gene=..., ids=..., vaccine=..., pipeline=..., status=...)` | Compose exact variant filters |
 | `variant.allele`, `variant.region(padding=0)` | Unique literal allele / anchored reference span; unresolved entries raise |
 | `variants.regions(padding=0)` | Explicit Region tuple for selected alleles |
-| `variants.to_varcode(genome=..., assembly=None)` | Native collection with original entries in metadata |
+| `variants.to_varcode(genome=..., assembly=None, ...)` | Native collection with original entries in metadata; [contig naming options](consumers.md#varcode) |
 | `data.annotations`, `data.vafs` | Original source annotations and count rows |
 | `data.vaccines`, `data.vaccine_names`, `data.vaccine_peptides(vaccine=None)` | Overlap rows, vaccine names, exact published peptides/experiments |
 | `data.pipeline_names` | Available source-JSON pipeline labels |

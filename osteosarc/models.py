@@ -214,13 +214,18 @@ class Variants(Collection):
         """Convert all selected literal alleles; unresolved entries raise."""
         return tuple(v.region(padding=padding) for v in self)
 
-    def to_varcode(self, *, genome, assembly=None):
+    def to_varcode(self, *, genome, assembly=None, convert_ucsc_contig_names=True,
+                   normalize_contig_names=True):
         """Return native variants on the caller's PyEnsembl reference.
 
         Custom-named subset genomes require an explicit assembly. Their unique
         reference_name is preserved. Every selected entry must have a ready
         allele; metadata retains original entries even if Varcode merges them.
         No annotation data are downloaded by this adapter.
+
+        Varcode converts primary UCSC names (chr1 -> 1, chrM -> MT) by default
+        and retains original_contig. Set both contig options to False to use
+        literal names in a custom reference. Renaming is not assembly liftover.
         """
         from varcode import Variant as NativeVariant
         from varcode import VariantCollection
@@ -237,7 +242,9 @@ class Variants(Collection):
             if normalize_assembly(item.assembly) != declared:
                 raise ValueError("Genome assembly must match variant assembly")
             chrom, pos, ref, alt = item.allele
-            variant = NativeVariant(chrom.removeprefix("chr"), pos, ref, alt, ensembl=genome)
+            variant = NativeVariant(chrom, pos, ref, alt, ensembl=genome,
+                                    convert_ucsc_contig_names=convert_ucsc_contig_names,
+                                    normalize_contig_names=normalize_contig_names)
             result.append(variant)
             metadata.setdefault(variant, dict(source=dict(self.source), entries=[]))["entries"].append(asdict(item))
         source = "osteosarc:" + self.source.get("snapshot_id", "unversioned")
