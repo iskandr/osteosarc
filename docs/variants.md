@@ -28,9 +28,27 @@ print(variant.region(padding=100))
 regions = dynein.regions(padding=100)
 ```
 
-`ready` means one literal allele with internally consistent coordinates. It does
-not validate REF against a genome or establish somatic status. Unresolved
-entries remain visible, but `.allele` and `.region()` raise errors:
+## Variant status
+
+`status` describes whether a catalogue entry has a usable genomic allele.
+It is independent of the sample, sequencing assay and measured read support.
+
+| `variant.status` | Meaning |
+| --- | --- |
+| `ready` | One allele with literal DNA bases and consistent chromosome/position fields |
+| `missing_literal_allele` | No usable genomic allele was supplied |
+| `non_literal_allele` | REF or ALT contains a placeholder such as `dup` or `not_reported` |
+| `ambiguous_literal_allele` | Multiple candidate alleles were supplied for the same entry |
+| `conflicting_coordinates` | The index, count export or source JSON disagree on the locus or allele |
+| `malformed_source_row` | A count-export row has an invalid position or missing/extra fields |
+
+`ready` permits `.allele`, `.region()` and Varcode conversion. It does not
+validate REF against a genome, establish somatic status, guarantee RNA support
+or establish a protein effect. These need separate evidence. The source-backed
+checks for individual corrected alleles are recorded in their annotations.
+
+Omit the `status` filter to keep all entries. Unresolved entries remain visible,
+but `.allele` and `.region()` raise errors:
 
 ```python
 unresolved = site.where(lambda v: v.status != "ready")
@@ -39,6 +57,10 @@ print([(v.id, v.status) for v in unresolved])
 
 [Source corrections](curation.md) are on by default. Use `corrections=False`
 when opening the snapshot to inspect the published alleles.
+
+The `status` in `data.corrections` describes whether a correction applied.
+The nested `allele_resolution["status"]` describes the evidence review's outcome.
+Neither replaces the `variant.status` values above.
 
 For the five entries reviewed in [issue #5](https://github.com/iskandr/osteosarc/issues/5),
 `allele_resolution` records the outcome and source evidence:
