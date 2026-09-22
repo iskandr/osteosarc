@@ -17,8 +17,8 @@ print(map2.annotations["corrections"])
 ```
 
 Allele corrections clear affected count rows to `""` (unmeasured), because the
-original counts describe a different allele or locus. Website IDs are retained
-even if coordinates change. See the [MAP2 example](tour.md) to check a
+original counts describe a different allele or locus. IDs are retained from
+each snapshot; newer website snapshots may rename entries. See the [MAP2 example](tour.md) to check a
 correction against reads.
 
 ## Inspect the changes and evidence
@@ -46,14 +46,16 @@ Every load checks that a correction still matches the published records.
 | Status | Meaning |
 | --- | --- |
 | `applied` | Expected source values match; correction applied |
-| `fixed_upstream` | The source already contains the corrected values |
-| `stale` | The record changed or disappeared; correction skipped, with a warning |
+| `fixed_upstream` | The source contains the corrected values, or a reviewed upstream removal resolved the problem |
+| `stale` | An unexpected change or disappearance; correction skipped, with a warning |
 | `unavailable` | The snapshot lacks a required source |
 | `disabled` | Corrections were turned off |
 
 Corrections apply all or nothing. A correction may also check an unchanged
 record as evidence that the original problem remains. For example,
 `tempus-grch37-counts` checks PDZRN4's published 7/7 count before clearing rows.
+When upstream renames or removes records, a correction can recognize a reviewed
+source layout. Exactly one layout must match; an unknown or mixed layout is stale.
 
 ```sh
 osteosarc curation baseline --strict
@@ -86,16 +88,27 @@ field values or `glob(...)`. Dotted names address nested fields. An empty
 `set` flags records without editing them. Pass a filtered list of `CORRECTIONS`
 to disable individual corrections.
 
+For reviewed upstream changes, `Correction(..., alternatives=(changes,))` adds
+another complete group of checks and edits. `Change(..., absent=True)` requires
+that no records match. Pair removal checks with surviving records as evidence;
+absence alone does not establish a fix.
+
 ## Built-in corrections
 
-All 32 applied to the 2026-09-18 snapshot when checked on 2026-09-20. Evidence URLs are available in
+The historical 2026-09-18 snapshot still uses all 32 corrections. On 2026-09-21,
+29 applied and three were fixed upstream. Evidence URLs are available in
 `data.corrections` and the [registry source](https://github.com/iskandr/osteosarc/blob/main/osteosarc/curation.py).
+
+The site moved CABLES1, CCDC40, DCHS2, GAPVD1 and GOLGA6L2 to their corrected
+positions and renamed their IDs. Their alleles remain placeholders, so Osteosarc
+still supplies the verified DNA sequences and clears the placeholder counts.
+The original correction IDs remain stable for provenance.
 
 ### Read counts and alleles
 
 | ID | Action | What |
 | --- | --- | --- |
-| `tempus-grch37-counts` | edit | The website counted the GRCh37 Tempus WES BAM (TL-24-5GQLV9WSXQ) at GRCh38 coordinates. All 200 count rows are cleared. |
+| `tempus-grch37-counts` | edit | Clear 200 wrongly mapped GRCh37 Tempus WES count rows in historical snapshots. New snapshots omit these rows and the viewer BAM; the original vendor BAM remains available. |
 | `allele-CABLES1-chr18-23135500` | edit | Literal Tempus allele at chr18:23135764 (T>TGGCGGC); the site had chr18:23135500 and `dup`. |
 | `allele-CCDC40-chr17-80058951` | edit | Literal Tempus allele at chr17:80090148; the site had `not_reported`. |
 | `allele-DCHS2-chr4-154322488` | edit | Literal Tempus delins at chr4:154323273. |
@@ -106,11 +119,11 @@ All 32 applied to the 2026-09-18 snapshot when checked on 2026-09-20. Evidence U
 | `allele-COL3A1-Splice` | edit | Supply the public Tempus 737-base deletion matching c.4254+1_4255-1del, anchored at GRCh38 chr2:189010889. |
 | `map2-split-representations` | flag | Two other MAP2 entries are pieces of that same event. |
 | `muc3a-grch38-placement` | annotate | Record the GRCh37 call and assembly gap; leave GRCh38 placement unresolved. |
-| `ush2a-transposed-duplicate` | annotate | Record a possible relationship to chr1:215650752; original Natera identity remains unconfirmed. |
+| `ush2a-transposed-duplicate` | annotate | Preserve the possible relationship in historical snapshots. After the site's merge, record its provenance and fix the retained entry's location label, preserving its allele and counts. Original Natera identity remains unconfirmed. |
 | `fam157a-withdrawn-protein` | flag | The annotated protein model has been withdrawn by NCBI. |
 | `natera-alleles-unavailable` | flag | The original Natera report is unavailable. COL3A1 now has independent Tempus evidence. |
 | `otud4-source-unavailable` | annotate | No public genomic allele was found; retain the entry and identify the missing source. |
-| `transcript-DCHS2` | edit | `NM_1142552` becomes `NM_001142552.1`. |
+| `transcript-DCHS2` | edit | Supply verified accession `NM_001142552.1` for the old typo or the newer versionless accession. |
 | `gene-symbol-TRMO` | edit | `TMRO` is a typo for `TRMO`; gene-symbol joins with pVACseq otherwise miss it. |
 
 The relocated alleles and MAP2 were mapped from the original GRCh37 Tempus

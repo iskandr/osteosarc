@@ -15,7 +15,8 @@ python -m mkdocs build --strict
 Tests run offline with public metadata excerpts and synthetic indexed BAMs.
 They cover cache integrity, source conflicts, corrections, coordinate checks,
 record and tag preservation, filtering, and offline reuse. Excerpt checksums
-are recorded in `tests/data/provenance.json`.
+are recorded in `tests/data/provenance.json`. The old and new correction layouts
+in `tests/data/curation_snapshots.json` include their snapshot IDs and source receipts.
 
 The consumer CI job tests Varcode 7.0.0 and 9.3.7 with Isovar 1.17.0 and
 Topiary 5.55.1. It checks native variant conversion, mitochondrial and custom
@@ -74,3 +75,12 @@ The source header and index were checked, and the same result reopened offline.
 See the [MAP2 example](tour.md) for a read-level check of an allele correction.
 These checks did not download every BAM/FASTQ or validate every source's
 scientific claims. CRAM extraction is tested with local reference files.
+
+## Source changes checked: 2026-09-21
+
+The current snapshot has 181 entries: 179 ready, one nonliteral and one missing
+a literal allele. The site merged two USH2A entries and renamed five variants.
+All 32 correction rules pass: 29 apply and three are fixed upstream. There are
+no unrecognized labels. The historical snapshot above still passes with its
+original IDs and 182 entries. See [source corrections](curation.md) for how the
+updated entries and their counts are handled.

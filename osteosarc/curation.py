@@ -18,7 +18,7 @@ Corrections anticipate upstream edits. Every load re-checks each correction
 against the snapshot's sources:
 
 ``applied``         expectations hold; the change was made (or the flag attached)
-``fixed_upstream``  the source already has the corrected values; nothing to do
+``fixed_upstream``  corrected values or a reviewed removal; nothing to do
 ``stale``           the source changed some other way or the record is gone;
                     the correction is NOT applied and a CurationWarning is issued
 ``unavailable``     the snapshot predates a source the correction needs
@@ -36,7 +36,7 @@ import json
 import re
 import warnings
 from collections import Counter, defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from importlib.resources import files
 
 from .urls import BUCKET, SOURCE_REPO
@@ -190,21 +190,37 @@ class Change:
     published values the correction was written against. ``set`` gives the
     replacement values; leave it empty to flag the records without editing.
     Dotted field names reach into nested objects ("detection.pVACtools 2025").
+    ``absent=True`` requires that no records match, for a reviewed removal.
     """
 
     source: str
     match: dict
     expect: dict = field(default_factory=dict)
     set: dict = field(default_factory=dict)
+    absent: bool = False
+
+    def __post_init__(self):
+        if self.absent and (self.expect or self.set):
+            raise ValueError("An absence check cannot expect or set record values")
 
 
 @dataclass(frozen=True)
 class Correction:
+    """An atomic group of changes, with optional reviewed source layouts.
+
+    Exactly one of ``changes`` and the groups in ``alternatives`` must match.
+    """
+
     id: str
     summary: str
     changes: tuple[Change, ...]
     evidence: tuple[str, ...] = ()
     verified: str = ""
+    alternatives: tuple[tuple[Change, ...], ...] = ()
+
+    @property
+    def versions(self):
+        return (self.changes, *self.alternatives)
 
 
 def _get(record, name):
@@ -254,6 +270,7 @@ class Curation:
         self._raw = {}
         self._evaluated = {}
         self._matched = {}
+        self._selected = {}
         self._records = {}
 
     def raw(self, source):
@@ -265,20 +282,49 @@ class Curation:
         """Return (status, per-change details) for one correction."""
         if correction.id in self._evaluated:
             return self._evaluated[correction.id]
-        details = []
-        for n, change in enumerate(correction.changes):
+        candidates = [self._evaluate_changes(changes) for changes in correction.versions]
+        valid = [i for i, (status, _, _) in enumerate(candidates)
+                 if status in ("applied", "fixed_upstream")]
+        # Prefer the matching published layout for diagnostics as well as edits.
+        selected = valid[0] if valid else max(range(len(candidates)), key=lambda i:
+            sum(d["records"] for d in candidates[i][1]))
+        status, details, matched = candidates[selected]
+        if len(valid) > 1:
+            status = "stale"
+            details = [*details, dict(source="correction", match=correction.id,
+                                     state="ambiguous_versions", records=0, differing=[])]
+        self._selected[correction.id] = correction.versions[selected]
+        for n, indices in enumerate(matched):
+            self._matched[correction.id, n] = indices
+        if status == "stale" and self.enabled:
+            problems = "; ".join(f"{d['source']} {d['match']}: {d['state']}"
+                                 + (f" ({', '.join(d['differing'])})" if d["differing"] else "")
+                                 for d in details if d["state"] in
+                                 ("missing", "changed", "unexpected", "ambiguous_versions"))
+            warnings.warn(f"Correction {correction.id!r} was not applied because its source changed: "
+                          f"{problems}. Review data.corrections.", CurationWarning, stacklevel=3)
+        self._evaluated[correction.id] = status, details
+        return status, details
+
+    def _evaluate_changes(self, changes):
+        details, matches = [], []
+        for change in changes:
             records = self.raw(change.source)
             if records is None:  # the snapshot predates this source
                 details.append(dict(source=change.source, match=_describe(change.match),
                                     state="unavailable", records=0, differing=[]))
+                matches.append([])
                 continue
             matched = [i for i, record in enumerate(records) if _matches(record, change.match)]
-            self._matched[correction.id, n] = matched
+            matches.append(matched)
             differing = sorted({name for i in matched for name, value in change.expect.items()
                                 if _get(records[i], name) != value})
-            if not matched:
+            if change.absent:
+                state = "unexpected" if matched else "absent"
+            elif not matched:
                 state = "missing"
-            elif change.set and all(_get(records[i], k) == v for i in matched for k, v in change.set.items()):
+            elif (change.set and not any(k not in change.set for k in differing)
+                  and all(_get(records[i], k) == v for i in matched for k, v in change.set.items())):
                 state = "already_correct"
             elif differing:
                 state = "changed"
@@ -288,23 +334,17 @@ class Curation:
                                 records=len(matched), differing=differing))
         states = [d["state"] for d in details]
         if "unavailable" in states:
-            self._evaluated[correction.id] = "unavailable", details
-            return self._evaluated[correction.id]
-        edits = [d["state"] for d, c in zip(details, correction.changes) if c.set]
-        if all(s in ("pending", "already_correct") for s in states) and "pending" in states:
-            status = "applied"
+            return "unavailable", details, matches
+        edits = [d["state"] for d, c in zip(details, changes) if c.set]
+        if not states or any(s not in ("pending", "already_correct", "absent") for s in states):
+            status = "stale"
+        elif not edits and "absent" in states:
+            status = "fixed_upstream"
         elif edits and all(s == "already_correct" for s in edits):
             status = "fixed_upstream"
         else:
-            status = "stale"
-        if status == "stale" and self.enabled:
-            problems = "; ".join(f"{d['source']} {d['match']}: {d['state']}"
-                                 + (f" ({', '.join(d['differing'])})" if d["differing"] else "")
-                                 for d in details if d["state"] in ("missing", "changed"))
-            warnings.warn(f"Correction {correction.id!r} was not applied because its source changed: "
-                          f"{problems}. Review data.corrections.", CurationWarning, stacklevel=3)
-        self._evaluated[correction.id] = status, details
-        return status, details
+            status = "applied"
+        return status, details, matches
 
     def records(self, source):
         """Corrected records plus, per record index, the IDs of corrections touching it."""
@@ -313,11 +353,11 @@ class Curation:
         records, touched = list(self.raw(source) or ()), defaultdict(list)
         if self.enabled:
             for correction in self.corrections:
-                if not any(c.source == source for c in correction.changes):
+                if not any(c.source == source for group in correction.versions for c in group):
                     continue
                 if self.evaluate(correction)[0] != "applied":
                     continue
-                for n, change in enumerate(correction.changes):
+                for n, change in enumerate(self._selected[correction.id]):
                     if change.source != source:
                         continue
                     # Matches are made against the published records.
@@ -346,7 +386,7 @@ class Curation:
             status, details = self.evaluate(correction)
             rows.append(dict(id=correction.id, status=status if self.enabled else "disabled",
                              evaluation=status, summary=correction.summary,
-                             action="edit" if any(c.set for c in correction.changes) else "flag",
+                             action="edit" if any(c.set for c in self._selected[correction.id]) else "flag",
                              changes=details, evidence=list(correction.evidence),
                              verified=correction.verified))
         return rows
@@ -368,6 +408,17 @@ _PVAC = "neoantigen_prediction/pvactools/"
 _ALMY = _BUCKET + "vendor/tempus/TL-24-ALMY2X4KMV/DNA/TL-24-ALMY2X4KMV.soma."
 _COUNTS = dict.fromkeys(("ref_reads", "alt_reads", "other_reads", "total_reads", "vaf"), "")
 _RESOLUTIONS = json.loads(files("osteosarc").joinpath("data/allele_resolutions.json").read_text())
+_COMMITS = SOURCE_REPO.split("/-/")[0] + "/-/commit/"
+_COUNT_FIX = _COMMITS + "7e80e3a6432bb4c8d5c5260fdd4e18f25ba5b9fb"
+_COORDINATE_FIX = _COMMITS + "cf2f59169aa65e851269544f78bbfdf4520f896a"
+_PILEUP_FIX = _COMMITS + "f6c59f0fc01201c2158b4503fe1b821fbbb5b415"
+_USH2A_FIX = _COMMITS + "bc138897b77323f595acffa46cbfce5c45720a1d"
+
+
+def _absent_variant(variant_id):
+    return tuple(Change(source, {key: variant_id}, absent=True)
+                 for source, key in (("source_variants", "id"), ("variant_index", "id"),
+                                     ("vafs", "variant_id")))
 
 
 def _kind(ref, alt):
@@ -432,7 +483,7 @@ def _allele(variant_id, old, new, summary, evidence, *, extra_source=None):
 
 
 def _tempus_relocation(variant_id, old, new, grch37, caller="pindel"):
-    return _allele(
+    original = _allele(
         variant_id, old, new,
         f"The catalogue places this Tempus call at {old[0]}:{old[1]} without a literal allele. "
         f"The original Tempus TL-24-ALMY2X4KMV record (GRCh37 {grch37}) lifts to "
@@ -440,6 +491,42 @@ def _tempus_relocation(variant_id, old, new, grch37, caller="pindel"):
         f"the gap. The website position came from a wrong transcript offset. Counts measured "
         f"at the old position are cleared.",
         (_ALMY + caller + ".vcf", f"https://rest.ensembl.org/map/human/GRCh37/{grch37}..{grch37.split(':')[1]}:1/GRCh38"))
+    # September 20: coordinates/IDs were fixed, but the alleles used for the
+    # regenerated counts are still placeholders. Do not reuse those counts.
+    new_id = f"{variant_id.split('-')[0]}-{new[0]}-{new[1]}"
+    relocated = _allele(new_id, (new[0], new[1], old[2], old[3]), new,
+                        original.summary, original.evidence)
+    current = (*relocated.changes,
+               Change("variant_index", {"id": new_id}, expect={"location": f"{new[0]}:{new[1]}"}),
+               *_absent_variant(variant_id))
+    return replace(original, changes=(*original.changes, *_absent_variant(new_id)),
+                   alternatives=(current,), verified="2026-09-21",
+                   summary=original.summary + " The renamed upstream entry still needs its literal "
+                           "allele; counts regenerated for the placeholder are also cleared.",
+                   evidence=(*original.evidence, _COORDINATE_FIX, _PILEUP_FIX))
+
+
+def _ush2a_resolution():
+    old_id, new_id = "USH2A-chr1-215560752", "USH2A-chr1-215650752"
+    original = _catalogue_resolution(old_id, "ush2a-transposed-duplicate")
+    current = (
+        *_absent_variant(old_id),
+        Change("source_variants", {"id": new_id},
+               expect=dict(gene="USH2A", chr="chr1", pos=215650752, ref="C", alt="A",
+                           genomic_change_on_cdna="c.14183G>T", refseq_id="NM_206933",
+                           protein_change="p.Cys4728Phe", genomic_location="chr1:215560752"),
+               set=dict(genomic_location="chr1:215650752", upstream_merge=dict(
+                   retired_id=old_id, retained_id=new_id, evidence=_USH2A_FIX,
+                   original_source_identity="unconfirmed"))),
+        Change("variant_index", {"id": new_id},
+               expect=dict(gene="USH2A", location="chr1:215650752", protein_label="p.Cys4728Phe")),
+        Change("vafs", {"variant_id": new_id},
+               expect=dict(gene="USH2A", chrom="chr1", pos="215650752", ref="C", alt="A")),
+    )
+    return replace(original, alternatives=(current,), verified="2026-09-21",
+                   evidence=(*original.evidence, _USH2A_FIX),
+                   summary=original.summary + " After the site's merge, preserve its retained "
+                           "allele/counts, record the merge provenance, and fix the old location label.")
 
 
 def _stale_viewer_label(library, old, new, note):
@@ -465,11 +552,20 @@ CORRECTIONS = (
                 expect={"sample_label": "T1 Tempus Tumor WES 2024-06 (TL-24-5GQLV9WSXQ)"}, set=_COUNTS),
          # Witness: the known-wrong value. If the site recomputes counts, this goes stale.
          Change("vafs", {"bam_file": "TL-24-5GQLV9WSXQ_T.sorted.bam", "variant_id": "PDZRN4-chr12-41572809"},
-                expect={"alt_reads": "7", "total_reads": "7"})),
+                expect={"alt_reads": "7", "total_reads": "7"}, set=_COUNTS)),
         evidence=(_BUCKET + "vendor/tempus/TL-24-5GQLV9WSXQ/DNA/TL-24-5GQLV9WSXQ_T.sorted.bam (header: "
                   "AS:human_g1k_v37)", _SITE_REPO + "scripts/variants/run_pileup-json.sh",
-                  _SITE_REPO + "crates/pileup-json/src/main.rs (resolve_chrom only toggles 'chr')"),
-        verified="2026-09-18"),
+                  _SITE_REPO + "crates/pileup-json/src/main.rs (resolve_chrom only toggles 'chr')",
+                  _COUNT_FIX),
+        verified="2026-09-21",
+        alternatives=((
+            Change("vafs", {"bam_file": glob("*TL-24-5GQLV9WSXQ*")}, absent=True),
+            Change("bams", {"url": glob("*TL-24-5GQLV9WSXQ*")}, absent=True),
+            Change("bam_metadata", {"s3_path": "vendor/tempus/TL-24-5GQLV9WSXQ/DNA/"
+                                                "TL-24-5GQLV9WSXQ_T.sorted.bam"},
+                   expect=dict(provider="Tempus", assay="WES", timepoint="T1", tissue="Tumor")),
+            Change("vafs", {"variant_id": "PDZRN4-chr12-41572809"}),
+        ),)),
     _stale_viewer_label(
         "BG009368", "T0 BostonGene Tumor RNA 2022-12 (BG009368 reprocessed)",
         "T1 BostonGene Tumor RNA 2024-06 (BG009368 reprocessed)",
@@ -578,8 +674,14 @@ CORRECTIONS = (
         "transcript-DCHS2",
         "DCHS2's RefSeq accession is missing two leading zeros and its version.",
         (Change("source_variants", {"id": "DCHS2-chr4-154322488"}, expect={"refseq_id": "NM_1142552"},
-                set={"refseq_id": "NM_001142552.1"}),),
-        evidence=(_ALMY + "pindel.vcf",), verified="2026-09-18"),
+                set={"refseq_id": "NM_001142552.1"}),
+         Change("source_variants", {"id": "DCHS2-chr4-154323273"}, absent=True)),
+        alternatives=((
+            Change("source_variants", {"id": "DCHS2-chr4-154323273"},
+                   expect={"refseq_id": "NM_001142552"}, set={"refseq_id": "NM_001142552.1"}),
+            Change("source_variants", {"id": "DCHS2-chr4-154322488"}, absent=True),
+        ),),
+        evidence=(_ALMY + "pindel.vcf", _COORDINATE_FIX), verified="2026-09-21"),
     Correction(
         "fam157a-withdrawn-protein",
         "The 14-residue insertion is annotated on NM_001145248.1, which NCBI has suppressed "
@@ -590,7 +692,7 @@ CORRECTIONS = (
         evidence=(_ALMY + "pindel.vcf", "https://www.ncbi.nlm.nih.gov/nuccore/NM_001145248.1",
                   "https://www.ncbi.nlm.nih.gov/gene/728262"),
         verified="2026-09-18"),
-    _catalogue_resolution("USH2A-chr1-215560752", "ush2a-transposed-duplicate"),
+    _ush2a_resolution(),
     _catalogue_resolution("FAM157A-p_W70_Q71ins_14", "allele-FAM157A-p_W70_Q71ins_14"),
     _catalogue_resolution("COL3A1-Splice", "allele-COL3A1-Splice"),
     _catalogue_resolution("OTUD4-p_A153del", "otud4-source-unavailable"),

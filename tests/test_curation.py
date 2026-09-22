@@ -123,7 +123,7 @@ def test_registry_is_complete_and_documented():
     for correction in CORRECTIONS:
         assert correction.summary and correction.evidence and correction.verified
         assert f"`{correction.id}`" in docs, correction.id
-        for change in correction.changes:
+        for change in (change for group in correction.versions for change in group):
             assert change.source in sources
             if change.source in ("source_variants", "vafs") and "ref" in change.set:
                 assert re.fullmatch("[ACGT]+", change.set["ref"]) and re.fullmatch("[ACGT]+", change.set["alt"])
