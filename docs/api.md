@@ -33,7 +33,7 @@ The named tables are `vafs`, `vaf_columns`, `snv_top`, `dna_fusions`, and
 | --- | --- |
 | `data.corrections` | Table: each correction's `status` (`applied`, `fixed_upstream`, `stale`, `unavailable`, `disabled`), `changes`, `summary`, `evidence` |
 | `data.unrecognized` | Table of source labels outside the vocabulary (upstream drift) |
-| `CORRECTIONS`, `Correction(id, summary, changes, evidence, verified)`, `Change(source, match, expect, set)`, `glob(pattern)` | The built-in registry and its building blocks ([details](curation.md)) |
+| `CORRECTIONS`, `Correction(id, summary, changes, evidence, verified, alternatives=())`, `Change(source, match, expect, set, absent=False)`, `glob(pattern)` | The built-in registry and its building blocks ([details](curation.md)) |
 | `data.timeline` | `Timeline` of `Event`s from every dated source |
 | `timeline.select(lane=, category=, kind=, source=, track=, timepoint=, contains=, since=, until=)` | Filtered Timeline; dates are `YYYY`, `YYYY-MM`, or `YYYY-MM-DD` |
 | `timeline.around(date, days=7)`, `timeline.lanes()` | Neighbourhood of a date; ordered lane names |

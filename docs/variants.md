@@ -82,11 +82,16 @@ print(fam157a.annotations["allele_resolution"]["protein_interpretation"])
 | COL3A1 | Verified 737-base deletion anchored at GRCh38 chr2:189010889, matching the catalogue's cDNA annotation. |
 | MUC3A | Public GRCh37 duplication; GRCh38 placement remains unresolved across an assembly gap. |
 | OTUD4 | Source unavailable: the protein label alone does not identify a genomic allele. |
-| USH2A-chr1-215560752 | Possible duplicate of USH2A-chr1-215650752. The original report is needed to confirm identity; both entries remain separate. |
+| USH2A-chr1-215560752 | Possible duplicate of USH2A-chr1-215650752. Historical snapshots retain both. The site now merges them; the original report is still needed to confirm identity. |
 
 The two resolved alleles come from a public Tempus VCF, with versioned RefSeq
 checks and source checksums in the annotation. Neither has published count
 rows; use [read extraction](reads.md) to examine support.
+
+In newer snapshots, the retained USH2A entry keeps its published `C>A` allele
+and counts. Its `annotations["source_record"]["upstream_merge"]` records the
+retired ID, the upstream commit and the identity caveat. Osteosarc corrects the
+outdated location label without creating an allele for the retired entry.
 
 A malformed count-export row marks its entry `malformed_source_row`; other
 entries remain available. Inspect `variant.annotations["parse_errors"]` for
