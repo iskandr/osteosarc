@@ -1,0 +1,4879 @@
+[
+  {
+    "event": "SV0055--ATP8B5P",
+    "direction": "reverse",
+    "nucleotide_sequence": "ATGCATTTATATTCACTAGTGTTATATTCATTTAGTTATTTTAAAATTCACAATTAA",
+    "amino_acids": "MHLYSLVLYSFSYFKIHN",
+    "full_sequence_templates": {
+      "T1-ONT-tagged": 59,
+      "T1-short": 1,
+      "T2-ONT-tagged": 19
+    },
+    "full_sequence_Q10_templates": {
+      "T1-ONT-tagged": 58,
+      "T1-short": 1,
+      "T2-ONT-tagged": 19
+    },
+    "witnesses": [
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "4dd23800-ad74-45fa-af2b-9d9a534743ce_0",
+          0
+        ],
+        "minimum_quality": 36,
+        "source_query_interval": [
+          77,
+          134
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          750,
+          807
+        ],
+        "junction_interval": [
+          770,
+          784
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "53a92499-fc65-462e-ab29-086e7b106e1d_0",
+          0
+        ],
+        "minimum_quality": 39,
+        "source_query_interval": [
+          225,
+          282
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          747,
+          804
+        ],
+        "junction_interval": [
+          767,
+          781
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "e245cf59-ec98-4964-85d4-08c2f2acb576_0",
+          0
+        ],
+        "minimum_quality": 34,
+        "source_query_interval": [
+          164,
+          221
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          833,
+          890
+        ],
+        "junction_interval": [
+          853,
+          867
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "e03e5bd5-c8b9-4bb3-9381-2be958ea0b1a_0",
+          0
+        ],
+        "minimum_quality": 36,
+        "source_query_interval": [
+          375,
+          432
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          746,
+          803
+        ],
+        "junction_interval": [
+          766,
+          780
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "b30751b3-fded-4c3e-b255-bb82c3f49a27_0",
+          0
+        ],
+        "minimum_quality": 38,
+        "source_query_interval": [
+          115,
+          172
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          491,
+          548
+        ],
+        "junction_interval": [
+          511,
+          525
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "8ca54e22-e5de-4d4b-b003-9b0ac1e1426d_0",
+          0
+        ],
+        "minimum_quality": 39,
+        "source_query_interval": [
+          360,
+          417
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          414,
+          471
+        ],
+        "junction_interval": [
+          434,
+          448
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "c8355a3c-c254-461e-9a48-61d178d98b4e_0",
+          0
+        ],
+        "minimum_quality": 37,
+        "source_query_interval": [
+          105,
+          162
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          618,
+          675
+        ],
+        "junction_interval": [
+          638,
+          652
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "654a97c7-1ed9-4d1e-87fb-75de99b3bdbc_0",
+          0
+        ],
+        "minimum_quality": 39,
+        "source_query_interval": [
+          155,
+          212
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          618,
+          675
+        ],
+        "junction_interval": [
+          638,
+          652
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "fb9c9a11-9681-4ec3-89e6-4874dd1aa10c_0",
+          0
+        ],
+        "minimum_quality": 25,
+        "source_query_interval": [
+          169,
+          226
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          612,
+          669
+        ],
+        "junction_interval": [
+          632,
+          646
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "6bfc7eac-45e7-46c7-adfd-03354c4b60a6_0",
+          0
+        ],
+        "minimum_quality": 39,
+        "source_query_interval": [
+          382,
+          439
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          617,
+          674
+        ],
+        "junction_interval": [
+          637,
+          651
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "8da04b14-4411-4b47-9343-4647e1d3c7af_0",
+          0
+        ],
+        "minimum_quality": 38,
+        "source_query_interval": [
+          168,
+          225
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          616,
+          673
+        ],
+        "junction_interval": [
+          636,
+          650
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "0858c9f4-c59b-4b8b-884d-b07380763dc2_0",
+          0
+        ],
+        "minimum_quality": 36,
+        "source_query_interval": [
+          455,
+          512
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          491,
+          548
+        ],
+        "junction_interval": [
+          511,
+          525
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "7c802313-02a0-46a7-922c-01bff1d1d1db_0",
+          0
+        ],
+        "minimum_quality": 23,
+        "source_query_interval": [
+          244,
+          301
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          618,
+          675
+        ],
+        "junction_interval": [
+          638,
+          652
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "9560200c-e9be-4270-8178-f40a019a6b23_0",
+          0
+        ],
+        "minimum_quality": 25,
+        "source_query_interval": [
+          163,
+          220
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          831,
+          888
+        ],
+        "junction_interval": [
+          851,
+          865
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "cbbda4f8-f032-4cb3-84cd-80801fb06fd7_0",
+          0
+        ],
+        "minimum_quality": 27,
+        "source_query_interval": [
+          243,
+          300
+        ],
+        "start_context": "TGTTGAATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          618,
+          675
+        ],
+        "junction_interval": [
+          638,
+          652
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "74295a7d-c382-4bf3-9f96-5a2f011dcc17_0",
+          0
+        ],
+        "minimum_quality": 39,
+        "source_query_interval": [
+          414,
+          471
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          618,
+          675
+        ],
+        "junction_interval": [
+          638,
+          652
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "5132a250-d80e-41f6-ba91-b92b4e97098b_0",
+          0
+        ],
+        "minimum_quality": 37,
+        "source_query_interval": [
+          339,
+          396
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          747,
+          804
+        ],
+        "junction_interval": [
+          767,
+          781
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "a2cef50b-30ca-4d39-812a-24469b0d529f_0",
+          0
+        ],
+        "minimum_quality": 9,
+        "source_query_interval": [
+          201,
+          258
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          749,
+          806
+        ],
+        "junction_interval": [
+          769,
+          783
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "3d35d647-a0bb-476c-af42-4131241d98c8_0",
+          0
+        ],
+        "minimum_quality": 38,
+        "source_query_interval": [
+          493,
+          550
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          70,
+          127
+        ],
+        "junction_interval": [
+          90,
+          104
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "27ce715e-35f5-4e27-a6aa-64fd2ed8f563_0",
+          0
+        ],
+        "minimum_quality": 22,
+        "source_query_interval": [
+          375,
+          432
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          490,
+          547
+        ],
+        "junction_interval": [
+          510,
+          524
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "3d6b0a30-c008-4d5d-9134-5abfe85bfb10_0",
+          0
+        ],
+        "minimum_quality": 19,
+        "source_query_interval": [
+          77,
+          134
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          749,
+          806
+        ],
+        "junction_interval": [
+          769,
+          783
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "56e5aa2d-8bfd-4fb8-965c-5189a1ad9275_0",
+          0
+        ],
+        "minimum_quality": 39,
+        "source_query_interval": [
+          198,
+          255
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          746,
+          803
+        ],
+        "junction_interval": [
+          766,
+          780
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "fc07aa6e-a3fc-4497-a10c-1b3eacf144bf_0",
+          0
+        ],
+        "minimum_quality": 30,
+        "source_query_interval": [
+          249,
+          306
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          854,
+          911
+        ],
+        "junction_interval": [
+          874,
+          888
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "51d04bc2-37c1-4080-b1e0-5a32c8383761_0",
+          0
+        ],
+        "minimum_quality": 34,
+        "source_query_interval": [
+          198,
+          255
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          747,
+          804
+        ],
+        "junction_interval": [
+          767,
+          781
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "cbd33f3e-021c-44c7-b2c3-fbb38ad8bf10_0",
+          0
+        ],
+        "minimum_quality": 38,
+        "source_query_interval": [
+          113,
+          170
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          489,
+          546
+        ],
+        "junction_interval": [
+          509,
+          523
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "f0590b7b-4990-490d-8fcd-1b6b43cc6629_0",
+          0
+        ],
+        "minimum_quality": 35,
+        "source_query_interval": [
+          106,
+          163
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          618,
+          675
+        ],
+        "junction_interval": [
+          638,
+          652
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "1bd329d1-8e50-4fdd-981d-ef7df9b47b99_0",
+          0
+        ],
+        "minimum_quality": 39,
+        "source_query_interval": [
+          86,
+          143
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          618,
+          675
+        ],
+        "junction_interval": [
+          638,
+          652
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "78b9c6df-4bcb-4cac-99bf-c749027e1c25_0",
+          0
+        ],
+        "minimum_quality": 37,
+        "source_query_interval": [
+          115,
+          172
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          488,
+          545
+        ],
+        "junction_interval": [
+          508,
+          522
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "1e4cff8e-2133-4c9a-a31d-e346652ee065_0",
+          0
+        ],
+        "minimum_quality": 18,
+        "source_query_interval": [
+          83,
+          140
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          616,
+          673
+        ],
+        "junction_interval": [
+          636,
+          650
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "d7cfa4e9-1281-4e65-b8bc-715bdade199a_0",
+          0
+        ],
+        "minimum_quality": 39,
+        "source_query_interval": [
+          73,
+          130
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          618,
+          675
+        ],
+        "junction_interval": [
+          638,
+          652
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "e3e6f870-e8ef-4aec-bf08-d41b7a93c171_0",
+          0
+        ],
+        "minimum_quality": 30,
+        "source_query_interval": [
+          197,
+          254
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          748,
+          805
+        ],
+        "junction_interval": [
+          768,
+          782
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "e0fead87-f89c-4e68-8306-936d5de295ea_0",
+          0
+        ],
+        "minimum_quality": 38,
+        "source_query_interval": [
+          374,
+          431
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          747,
+          804
+        ],
+        "junction_interval": [
+          767,
+          781
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "6651ff54-2fb5-48af-94cf-401a16c0901a_0",
+          0
+        ],
+        "minimum_quality": 39,
+        "source_query_interval": [
+          385,
+          442
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          614,
+          671
+        ],
+        "junction_interval": [
+          634,
+          648
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "090ce422-7fd6-4b6e-937e-8c3fc3189071_0",
+          0
+        ],
+        "minimum_quality": 30,
+        "source_query_interval": [
+          218,
+          275
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          723,
+          780
+        ],
+        "junction_interval": [
+          743,
+          757
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "c76af423-7d8e-426c-9d66-53aaec6b88de_0",
+          0
+        ],
+        "minimum_quality": 28,
+        "source_query_interval": [
+          169,
+          226
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          485,
+          542
+        ],
+        "junction_interval": [
+          505,
+          519
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "c99e6fd3-0e03-4b55-94e7-7d2978c22763_0",
+          0
+        ],
+        "minimum_quality": 21,
+        "source_query_interval": [
+          198,
+          255
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          754,
+          811
+        ],
+        "junction_interval": [
+          774,
+          788
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "48f45110-3d22-41f4-916d-0f97326ac01a_0",
+          0
+        ],
+        "minimum_quality": 37,
+        "source_query_interval": [
+          358,
+          415
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          414,
+          471
+        ],
+        "junction_interval": [
+          434,
+          448
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "9cec1c0b-9612-4541-a3bc-65ed6f7de56b_0",
+          0
+        ],
+        "minimum_quality": 38,
+        "source_query_interval": [
+          254,
+          311
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          748,
+          805
+        ],
+        "junction_interval": [
+          768,
+          782
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "c04294b8-32cf-4594-a222-ea98a2b85ab0_0",
+          0
+        ],
+        "minimum_quality": 36,
+        "source_query_interval": [
+          155,
+          212
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          1173,
+          1230
+        ],
+        "junction_interval": [
+          1193,
+          1207
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "411623c1-d6b5-41bd-a142-3264bfe5a1c9_0",
+          0
+        ],
+        "minimum_quality": 31,
+        "source_query_interval": [
+          163,
+          220
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          832,
+          889
+        ],
+        "junction_interval": [
+          852,
+          866
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "0ddf4608-d861-49e1-9d9f-8c8389f128b2_0",
+          0
+        ],
+        "minimum_quality": 39,
+        "source_query_interval": [
+          173,
+          230
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          616,
+          673
+        ],
+        "junction_interval": [
+          636,
+          650
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "daf29b91-01e6-4e97-82e5-9f9906570cb7_0",
+          0
+        ],
+        "minimum_quality": 37,
+        "source_query_interval": [
+          493,
+          550
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          69,
+          126
+        ],
+        "junction_interval": [
+          89,
+          103
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "9ed5b1fb-3c19-487e-bc30-f181a5f8d833_0",
+          0
+        ],
+        "minimum_quality": 38,
+        "source_query_interval": [
+          266,
+          323
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          619,
+          676
+        ],
+        "junction_interval": [
+          639,
+          653
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "067a383a-8f05-4dff-a71b-25e9126de818_0",
+          0
+        ],
+        "minimum_quality": 39,
+        "source_query_interval": [
+          249,
+          306
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          495,
+          552
+        ],
+        "junction_interval": [
+          515,
+          529
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "657d0bf5-3b6e-4b53-88ec-77b2b2794e69_0",
+          0
+        ],
+        "minimum_quality": 21,
+        "source_query_interval": [
+          107,
+          164
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          617,
+          674
+        ],
+        "junction_interval": [
+          637,
+          651
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "05ee57e7-fe8b-4aae-b132-ed68adaaf4ee_0",
+          0
+        ],
+        "minimum_quality": 37,
+        "source_query_interval": [
+          106,
+          163
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          618,
+          675
+        ],
+        "junction_interval": [
+          638,
+          652
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "5a4bcb02-298d-4aba-8027-e78e36225a9f_0",
+          0
+        ],
+        "minimum_quality": 33,
+        "source_query_interval": [
+          100,
+          157
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          490,
+          547
+        ],
+        "junction_interval": [
+          510,
+          524
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "195123e7-a33e-4321-bf3d-9de04bd167d1_0",
+          0
+        ],
+        "minimum_quality": 30,
+        "source_query_interval": [
+          98,
+          155
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          615,
+          672
+        ],
+        "junction_interval": [
+          635,
+          649
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "3338f5bc-4d1a-44f4-a637-719055d913ac_0",
+          0
+        ],
+        "minimum_quality": 33,
+        "source_query_interval": [
+          169,
+          226
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          616,
+          673
+        ],
+        "junction_interval": [
+          636,
+          650
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "57592d87-e209-4318-ac48-c68ac45bf6ac_0",
+          0
+        ],
+        "minimum_quality": 30,
+        "source_query_interval": [
+          250,
+          307
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          840,
+          897
+        ],
+        "junction_interval": [
+          860,
+          874
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "e32cbbf1-cefa-493d-8c03-085e6b980986_0",
+          0
+        ],
+        "minimum_quality": 21,
+        "source_query_interval": [
+          53,
+          110
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          490,
+          547
+        ],
+        "junction_interval": [
+          510,
+          524
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "0c39ccb3-4a9c-4e9e-a629-1721bb0c779a_0",
+          0
+        ],
+        "minimum_quality": 39,
+        "source_query_interval": [
+          264,
+          321
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          623,
+          680
+        ],
+        "junction_interval": [
+          643,
+          657
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "01494bd7-adf4-4b38-8cf7-84af4fa01eed_0",
+          0
+        ],
+        "minimum_quality": 17,
+        "source_query_interval": [
+          104,
+          161
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          616,
+          673
+        ],
+        "junction_interval": [
+          636,
+          650
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "85ebed13-d568-45f6-b9cc-f3c38235ac38_0",
+          0
+        ],
+        "minimum_quality": 17,
+        "source_query_interval": [
+          74,
+          131
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          618,
+          675
+        ],
+        "junction_interval": [
+          638,
+          652
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "35c1340d-5895-49e3-98ff-2cfe03ff3188_0",
+          0
+        ],
+        "minimum_quality": 34,
+        "source_query_interval": [
+          412,
+          469
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          620,
+          677
+        ],
+        "junction_interval": [
+          640,
+          654
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "2427b9e5-e82d-462e-b392-6b7cc2ef3a4f_0",
+          0
+        ],
+        "minimum_quality": 38,
+        "source_query_interval": [
+          74,
+          131
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          619,
+          676
+        ],
+        "junction_interval": [
+          639,
+          653
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "b33b8006-11d5-47e6-a8f0-2168429409e6_0",
+          0
+        ],
+        "minimum_quality": 31,
+        "source_query_interval": [
+          53,
+          110
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          491,
+          548
+        ],
+        "junction_interval": [
+          511,
+          525
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "80509775-4596-40fc-a509-afb520ec9589_0",
+          0
+        ],
+        "minimum_quality": 39,
+        "source_query_interval": [
+          244,
+          301
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          617,
+          674
+        ],
+        "junction_interval": [
+          637,
+          651
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "8110f373-5747-4d73-966b-0ba0d8d675a3_0",
+          0
+        ],
+        "minimum_quality": 34,
+        "source_query_interval": [
+          168,
+          225
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          619,
+          676
+        ],
+        "junction_interval": [
+          639,
+          653
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-short",
+        "identity": [
+          "IPISRC044_tumor_T1_ucla_rna.BG009368.001",
+          "A01231:888:HGH32DSXC:1:1337:1127:35822",
+          64
+        ],
+        "minimum_quality": 11,
+        "source_query_interval": [
+          16,
+          73
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          12,
+          69
+        ],
+        "junction_interval": [
+          32,
+          33
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "570b9fe0-c712-4cfe-bce6-7dbf6bfeb481_0",
+          0
+        ],
+        "minimum_quality": 30,
+        "source_query_interval": [
+          108,
+          165
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          747,
+          804
+        ],
+        "junction_interval": [
+          767,
+          781
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "413031b3-7c05-4b1b-8163-7a2dec8a1ee2_0",
+          0
+        ],
+        "minimum_quality": 38,
+        "source_query_interval": [
+          417,
+          474
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          746,
+          803
+        ],
+        "junction_interval": [
+          766,
+          780
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "32638473-2f23-4b63-adaa-9cc87e2f529d_0",
+          0
+        ],
+        "minimum_quality": 37,
+        "source_query_interval": [
+          155,
+          212
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          726,
+          783
+        ],
+        "junction_interval": [
+          746,
+          760
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "ff19e674-59b3-426e-aebe-1da97dd412a5_0",
+          0
+        ],
+        "minimum_quality": 25,
+        "source_query_interval": [
+          798,
+          855
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          614,
+          671
+        ],
+        "junction_interval": [
+          634,
+          648
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "4e25b5d0-d9ff-45f9-87b6-e3863d725291_0",
+          0
+        ],
+        "minimum_quality": 27,
+        "source_query_interval": [
+          490,
+          547
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          495,
+          552
+        ],
+        "junction_interval": [
+          515,
+          529
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "97e69a93-b058-4e3a-bf03-dbe0787ffedf_0",
+          0
+        ],
+        "minimum_quality": 38,
+        "source_query_interval": [
+          61,
+          118
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          745,
+          802
+        ],
+        "junction_interval": [
+          765,
+          779
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "8c379198-8933-49a6-8d5e-2e935161c2ac_0",
+          0
+        ],
+        "minimum_quality": 25,
+        "source_query_interval": [
+          74,
+          131
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          840,
+          897
+        ],
+        "junction_interval": [
+          860,
+          874
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "07035daa-eee8-4035-a928-2790b7ea55a1_0",
+          0
+        ],
+        "minimum_quality": 39,
+        "source_query_interval": [
+          1025,
+          1082
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          723,
+          780
+        ],
+        "junction_interval": [
+          743,
+          757
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "82d8d65a-88a6-4f25-bbcb-c7aeef57d2d0_0",
+          0
+        ],
+        "minimum_quality": 39,
+        "source_query_interval": [
+          81,
+          138
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          744,
+          801
+        ],
+        "junction_interval": [
+          764,
+          778
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "77788589-940f-46b3-aa80-48c3e01d5e46_0",
+          0
+        ],
+        "minimum_quality": 36,
+        "source_query_interval": [
+          89,
+          146
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          614,
+          671
+        ],
+        "junction_interval": [
+          634,
+          648
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "95aaa648-24d3-4e00-b3a2-397d6e7489f2_0",
+          0
+        ],
+        "minimum_quality": 18,
+        "source_query_interval": [
+          89,
+          146
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          613,
+          670
+        ],
+        "junction_interval": [
+          633,
+          647
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "ff489d80-cdf8-4908-9739-a0889694465a_0",
+          0
+        ],
+        "minimum_quality": 31,
+        "source_query_interval": [
+          488,
+          545
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          490,
+          547
+        ],
+        "junction_interval": [
+          510,
+          524
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "ccade52c-94fb-49d9-a3bc-caa59ea846ce_0",
+          0
+        ],
+        "minimum_quality": 34,
+        "source_query_interval": [
+          225,
+          282
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          747,
+          804
+        ],
+        "junction_interval": [
+          767,
+          781
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "62d4d13e-0011-43df-aaae-6671cdd0a608_0",
+          0
+        ],
+        "minimum_quality": 39,
+        "source_query_interval": [
+          385,
+          442
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          495,
+          552
+        ],
+        "junction_interval": [
+          515,
+          529
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "d5dca2db-1bd3-4f93-b0e0-43d5ff01ce15_0",
+          0
+        ],
+        "minimum_quality": 36,
+        "source_query_interval": [
+          90,
+          147
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          614,
+          671
+        ],
+        "junction_interval": [
+          634,
+          648
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "969176e4-35ab-421e-a61a-645de263102f_0",
+          0
+        ],
+        "minimum_quality": 19,
+        "source_query_interval": [
+          108,
+          165
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          723,
+          780
+        ],
+        "junction_interval": [
+          743,
+          757
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "58d48078-171d-4414-b6b0-0465d11011c2_0",
+          0
+        ],
+        "minimum_quality": 37,
+        "source_query_interval": [
+          570,
+          627
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          490,
+          547
+        ],
+        "junction_interval": [
+          510,
+          524
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "2842c363-90c4-4571-bada-06912939dc82_0",
+          0
+        ],
+        "minimum_quality": 32,
+        "source_query_interval": [
+          154,
+          211
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          489,
+          546
+        ],
+        "junction_interval": [
+          509,
+          523
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "6773a844-6aa9-4bcb-8459-ac7ab260a382_0",
+          0
+        ],
+        "minimum_quality": 35,
+        "source_query_interval": [
+          106,
+          163
+        ],
+        "start_context": "TGTTGGATGCATTTA",
+        "start_placement": [
+          "chr9",
+          35428831,
+          "-"
+        ],
+        "nucleotide_interval": [
+          488,
+          545
+        ],
+        "junction_interval": [
+          508,
+          522
+        ],
+        "coding_relation": "spans_both_flanks"
+      }
+    ],
+    "library_cell_umi_support": {
+      "T1-ONT-tagged": {
+        "unit": "cell_umi_label",
+        "segment_ids": [
+          [
+            "",
+            "01494bd7-adf4-4b38-8cf7-84af4fa01eed_0",
+            0
+          ],
+          [
+            "",
+            "05ee57e7-fe8b-4aae-b132-ed68adaaf4ee_0",
+            0
+          ],
+          [
+            "",
+            "067a383a-8f05-4dff-a71b-25e9126de818_0",
+            0
+          ],
+          [
+            "",
+            "0858c9f4-c59b-4b8b-884d-b07380763dc2_0",
+            0
+          ],
+          [
+            "",
+            "090ce422-7fd6-4b6e-937e-8c3fc3189071_0",
+            0
+          ],
+          [
+            "",
+            "0c39ccb3-4a9c-4e9e-a629-1721bb0c779a_0",
+            0
+          ],
+          [
+            "",
+            "0ddf4608-d861-49e1-9d9f-8c8389f128b2_0",
+            0
+          ],
+          [
+            "",
+            "195123e7-a33e-4321-bf3d-9de04bd167d1_0",
+            0
+          ],
+          [
+            "",
+            "1bd329d1-8e50-4fdd-981d-ef7df9b47b99_0",
+            0
+          ],
+          [
+            "",
+            "1e4cff8e-2133-4c9a-a31d-e346652ee065_0",
+            0
+          ],
+          [
+            "",
+            "2427b9e5-e82d-462e-b392-6b7cc2ef3a4f_0",
+            0
+          ],
+          [
+            "",
+            "27ce715e-35f5-4e27-a6aa-64fd2ed8f563_0",
+            0
+          ],
+          [
+            "",
+            "3338f5bc-4d1a-44f4-a637-719055d913ac_0",
+            0
+          ],
+          [
+            "",
+            "35c1340d-5895-49e3-98ff-2cfe03ff3188_0",
+            0
+          ],
+          [
+            "",
+            "3d35d647-a0bb-476c-af42-4131241d98c8_0",
+            0
+          ],
+          [
+            "",
+            "3d6b0a30-c008-4d5d-9134-5abfe85bfb10_0",
+            0
+          ],
+          [
+            "",
+            "411623c1-d6b5-41bd-a142-3264bfe5a1c9_0",
+            0
+          ],
+          [
+            "",
+            "48f45110-3d22-41f4-916d-0f97326ac01a_0",
+            0
+          ],
+          [
+            "",
+            "4dd23800-ad74-45fa-af2b-9d9a534743ce_0",
+            0
+          ],
+          [
+            "",
+            "5132a250-d80e-41f6-ba91-b92b4e97098b_0",
+            0
+          ],
+          [
+            "",
+            "51d04bc2-37c1-4080-b1e0-5a32c8383761_0",
+            0
+          ],
+          [
+            "",
+            "53a92499-fc65-462e-ab29-086e7b106e1d_0",
+            0
+          ],
+          [
+            "",
+            "56e5aa2d-8bfd-4fb8-965c-5189a1ad9275_0",
+            0
+          ],
+          [
+            "",
+            "57592d87-e209-4318-ac48-c68ac45bf6ac_0",
+            0
+          ],
+          [
+            "",
+            "5a4bcb02-298d-4aba-8027-e78e36225a9f_0",
+            0
+          ],
+          [
+            "",
+            "654a97c7-1ed9-4d1e-87fb-75de99b3bdbc_0",
+            0
+          ],
+          [
+            "",
+            "657d0bf5-3b6e-4b53-88ec-77b2b2794e69_0",
+            0
+          ],
+          [
+            "",
+            "6651ff54-2fb5-48af-94cf-401a16c0901a_0",
+            0
+          ],
+          [
+            "",
+            "6bfc7eac-45e7-46c7-adfd-03354c4b60a6_0",
+            0
+          ],
+          [
+            "",
+            "74295a7d-c382-4bf3-9f96-5a2f011dcc17_0",
+            0
+          ],
+          [
+            "",
+            "78b9c6df-4bcb-4cac-99bf-c749027e1c25_0",
+            0
+          ],
+          [
+            "",
+            "7c802313-02a0-46a7-922c-01bff1d1d1db_0",
+            0
+          ],
+          [
+            "",
+            "80509775-4596-40fc-a509-afb520ec9589_0",
+            0
+          ],
+          [
+            "",
+            "8110f373-5747-4d73-966b-0ba0d8d675a3_0",
+            0
+          ],
+          [
+            "",
+            "85ebed13-d568-45f6-b9cc-f3c38235ac38_0",
+            0
+          ],
+          [
+            "",
+            "8ca54e22-e5de-4d4b-b003-9b0ac1e1426d_0",
+            0
+          ],
+          [
+            "",
+            "8da04b14-4411-4b47-9343-4647e1d3c7af_0",
+            0
+          ],
+          [
+            "",
+            "9560200c-e9be-4270-8178-f40a019a6b23_0",
+            0
+          ],
+          [
+            "",
+            "9cec1c0b-9612-4541-a3bc-65ed6f7de56b_0",
+            0
+          ],
+          [
+            "",
+            "9ed5b1fb-3c19-487e-bc30-f181a5f8d833_0",
+            0
+          ],
+          [
+            "",
+            "a2cef50b-30ca-4d39-812a-24469b0d529f_0",
+            0
+          ],
+          [
+            "",
+            "b30751b3-fded-4c3e-b255-bb82c3f49a27_0",
+            0
+          ],
+          [
+            "",
+            "b33b8006-11d5-47e6-a8f0-2168429409e6_0",
+            0
+          ],
+          [
+            "",
+            "c04294b8-32cf-4594-a222-ea98a2b85ab0_0",
+            0
+          ],
+          [
+            "",
+            "c76af423-7d8e-426c-9d66-53aaec6b88de_0",
+            0
+          ],
+          [
+            "",
+            "c8355a3c-c254-461e-9a48-61d178d98b4e_0",
+            0
+          ],
+          [
+            "",
+            "c99e6fd3-0e03-4b55-94e7-7d2978c22763_0",
+            0
+          ],
+          [
+            "",
+            "cbbda4f8-f032-4cb3-84cd-80801fb06fd7_0",
+            0
+          ],
+          [
+            "",
+            "cbd33f3e-021c-44c7-b2c3-fbb38ad8bf10_0",
+            0
+          ],
+          [
+            "",
+            "d7cfa4e9-1281-4e65-b8bc-715bdade199a_0",
+            0
+          ],
+          [
+            "",
+            "daf29b91-01e6-4e97-82e5-9f9906570cb7_0",
+            0
+          ],
+          [
+            "",
+            "e03e5bd5-c8b9-4bb3-9381-2be958ea0b1a_0",
+            0
+          ],
+          [
+            "",
+            "e0fead87-f89c-4e68-8306-936d5de295ea_0",
+            0
+          ],
+          [
+            "",
+            "e245cf59-ec98-4964-85d4-08c2f2acb576_0",
+            0
+          ],
+          [
+            "",
+            "e32cbbf1-cefa-493d-8c03-085e6b980986_0",
+            0
+          ],
+          [
+            "",
+            "e3e6f870-e8ef-4aec-bf08-d41b7a93c171_0",
+            0
+          ],
+          [
+            "",
+            "f0590b7b-4990-490d-8fcd-1b6b43cc6629_0",
+            0
+          ],
+          [
+            "",
+            "fb9c9a11-9681-4ec3-89e6-4874dd1aa10c_0",
+            0
+          ],
+          [
+            "",
+            "fc07aa6e-a3fc-4497-a10c-1b3eacf144bf_0",
+            0
+          ]
+        ],
+        "observed_labels": 35,
+        "unresolved_segments": 0,
+        "unknown_library_segments": 59,
+        "all_segments_labeled": true,
+        "complete_label_count": null,
+        "independent_molecules": null,
+        "status_counts": {
+          "resolved_label": 59
+        }
+      },
+      "T1-short": {
+        "unit": "cell_umi_label",
+        "segment_ids": [
+          [
+            "IPISRC044_tumor_T1_ucla_rna.BG009368.001",
+            "A01231:888:HGH32DSXC:1:1337:1127:35822",
+            64
+          ]
+        ],
+        "observed_labels": 0,
+        "unresolved_segments": 1,
+        "unknown_library_segments": 1,
+        "all_segments_labeled": false,
+        "complete_label_count": null,
+        "independent_molecules": null,
+        "status_counts": {
+          "missing_cell_barcode": 1
+        }
+      },
+      "T2-ONT-tagged": {
+        "unit": "cell_umi_label",
+        "segment_ids": [
+          [
+            "",
+            "07035daa-eee8-4035-a928-2790b7ea55a1_0",
+            0
+          ],
+          [
+            "",
+            "2842c363-90c4-4571-bada-06912939dc82_0",
+            0
+          ],
+          [
+            "",
+            "32638473-2f23-4b63-adaa-9cc87e2f529d_0",
+            0
+          ],
+          [
+            "",
+            "413031b3-7c05-4b1b-8163-7a2dec8a1ee2_0",
+            0
+          ],
+          [
+            "",
+            "4e25b5d0-d9ff-45f9-87b6-e3863d725291_0",
+            0
+          ],
+          [
+            "",
+            "570b9fe0-c712-4cfe-bce6-7dbf6bfeb481_0",
+            0
+          ],
+          [
+            "",
+            "58d48078-171d-4414-b6b0-0465d11011c2_0",
+            0
+          ],
+          [
+            "",
+            "62d4d13e-0011-43df-aaae-6671cdd0a608_0",
+            0
+          ],
+          [
+            "",
+            "6773a844-6aa9-4bcb-8459-ac7ab260a382_0",
+            0
+          ],
+          [
+            "",
+            "77788589-940f-46b3-aa80-48c3e01d5e46_0",
+            0
+          ],
+          [
+            "",
+            "82d8d65a-88a6-4f25-bbcb-c7aeef57d2d0_0",
+            0
+          ],
+          [
+            "",
+            "8c379198-8933-49a6-8d5e-2e935161c2ac_0",
+            0
+          ],
+          [
+            "",
+            "95aaa648-24d3-4e00-b3a2-397d6e7489f2_0",
+            0
+          ],
+          [
+            "",
+            "969176e4-35ab-421e-a61a-645de263102f_0",
+            0
+          ],
+          [
+            "",
+            "97e69a93-b058-4e3a-bf03-dbe0787ffedf_0",
+            0
+          ],
+          [
+            "",
+            "ccade52c-94fb-49d9-a3bc-caa59ea846ce_0",
+            0
+          ],
+          [
+            "",
+            "d5dca2db-1bd3-4f93-b0e0-43d5ff01ce15_0",
+            0
+          ],
+          [
+            "",
+            "ff19e674-59b3-426e-aebe-1da97dd412a5_0",
+            0
+          ],
+          [
+            "",
+            "ff489d80-cdf8-4908-9739-a0889694465a_0",
+            0
+          ]
+        ],
+        "observed_labels": 17,
+        "unresolved_segments": 0,
+        "unknown_library_segments": 19,
+        "all_segments_labeled": true,
+        "complete_label_count": null,
+        "independent_molecules": null,
+        "status_counts": {
+          "resolved_label": 19
+        }
+      }
+    },
+    "Q10_library_cell_umi_support": {
+      "T1-ONT-tagged": {
+        "unit": "cell_umi_label",
+        "segment_ids": [
+          [
+            "",
+            "01494bd7-adf4-4b38-8cf7-84af4fa01eed_0",
+            0
+          ],
+          [
+            "",
+            "05ee57e7-fe8b-4aae-b132-ed68adaaf4ee_0",
+            0
+          ],
+          [
+            "",
+            "067a383a-8f05-4dff-a71b-25e9126de818_0",
+            0
+          ],
+          [
+            "",
+            "0858c9f4-c59b-4b8b-884d-b07380763dc2_0",
+            0
+          ],
+          [
+            "",
+            "090ce422-7fd6-4b6e-937e-8c3fc3189071_0",
+            0
+          ],
+          [
+            "",
+            "0c39ccb3-4a9c-4e9e-a629-1721bb0c779a_0",
+            0
+          ],
+          [
+            "",
+            "0ddf4608-d861-49e1-9d9f-8c8389f128b2_0",
+            0
+          ],
+          [
+            "",
+            "195123e7-a33e-4321-bf3d-9de04bd167d1_0",
+            0
+          ],
+          [
+            "",
+            "1bd329d1-8e50-4fdd-981d-ef7df9b47b99_0",
+            0
+          ],
+          [
+            "",
+            "1e4cff8e-2133-4c9a-a31d-e346652ee065_0",
+            0
+          ],
+          [
+            "",
+            "2427b9e5-e82d-462e-b392-6b7cc2ef3a4f_0",
+            0
+          ],
+          [
+            "",
+            "27ce715e-35f5-4e27-a6aa-64fd2ed8f563_0",
+            0
+          ],
+          [
+            "",
+            "3338f5bc-4d1a-44f4-a637-719055d913ac_0",
+            0
+          ],
+          [
+            "",
+            "35c1340d-5895-49e3-98ff-2cfe03ff3188_0",
+            0
+          ],
+          [
+            "",
+            "3d35d647-a0bb-476c-af42-4131241d98c8_0",
+            0
+          ],
+          [
+            "",
+            "3d6b0a30-c008-4d5d-9134-5abfe85bfb10_0",
+            0
+          ],
+          [
+            "",
+            "411623c1-d6b5-41bd-a142-3264bfe5a1c9_0",
+            0
+          ],
+          [
+            "",
+            "48f45110-3d22-41f4-916d-0f97326ac01a_0",
+            0
+          ],
+          [
+            "",
+            "4dd23800-ad74-45fa-af2b-9d9a534743ce_0",
+            0
+          ],
+          [
+            "",
+            "5132a250-d80e-41f6-ba91-b92b4e97098b_0",
+            0
+          ],
+          [
+            "",
+            "51d04bc2-37c1-4080-b1e0-5a32c8383761_0",
+            0
+          ],
+          [
+            "",
+            "53a92499-fc65-462e-ab29-086e7b106e1d_0",
+            0
+          ],
+          [
+            "",
+            "56e5aa2d-8bfd-4fb8-965c-5189a1ad9275_0",
+            0
+          ],
+          [
+            "",
+            "57592d87-e209-4318-ac48-c68ac45bf6ac_0",
+            0
+          ],
+          [
+            "",
+            "5a4bcb02-298d-4aba-8027-e78e36225a9f_0",
+            0
+          ],
+          [
+            "",
+            "654a97c7-1ed9-4d1e-87fb-75de99b3bdbc_0",
+            0
+          ],
+          [
+            "",
+            "657d0bf5-3b6e-4b53-88ec-77b2b2794e69_0",
+            0
+          ],
+          [
+            "",
+            "6651ff54-2fb5-48af-94cf-401a16c0901a_0",
+            0
+          ],
+          [
+            "",
+            "6bfc7eac-45e7-46c7-adfd-03354c4b60a6_0",
+            0
+          ],
+          [
+            "",
+            "74295a7d-c382-4bf3-9f96-5a2f011dcc17_0",
+            0
+          ],
+          [
+            "",
+            "78b9c6df-4bcb-4cac-99bf-c749027e1c25_0",
+            0
+          ],
+          [
+            "",
+            "7c802313-02a0-46a7-922c-01bff1d1d1db_0",
+            0
+          ],
+          [
+            "",
+            "80509775-4596-40fc-a509-afb520ec9589_0",
+            0
+          ],
+          [
+            "",
+            "8110f373-5747-4d73-966b-0ba0d8d675a3_0",
+            0
+          ],
+          [
+            "",
+            "85ebed13-d568-45f6-b9cc-f3c38235ac38_0",
+            0
+          ],
+          [
+            "",
+            "8ca54e22-e5de-4d4b-b003-9b0ac1e1426d_0",
+            0
+          ],
+          [
+            "",
+            "8da04b14-4411-4b47-9343-4647e1d3c7af_0",
+            0
+          ],
+          [
+            "",
+            "9560200c-e9be-4270-8178-f40a019a6b23_0",
+            0
+          ],
+          [
+            "",
+            "9cec1c0b-9612-4541-a3bc-65ed6f7de56b_0",
+            0
+          ],
+          [
+            "",
+            "9ed5b1fb-3c19-487e-bc30-f181a5f8d833_0",
+            0
+          ],
+          [
+            "",
+            "b30751b3-fded-4c3e-b255-bb82c3f49a27_0",
+            0
+          ],
+          [
+            "",
+            "b33b8006-11d5-47e6-a8f0-2168429409e6_0",
+            0
+          ],
+          [
+            "",
+            "c04294b8-32cf-4594-a222-ea98a2b85ab0_0",
+            0
+          ],
+          [
+            "",
+            "c76af423-7d8e-426c-9d66-53aaec6b88de_0",
+            0
+          ],
+          [
+            "",
+            "c8355a3c-c254-461e-9a48-61d178d98b4e_0",
+            0
+          ],
+          [
+            "",
+            "c99e6fd3-0e03-4b55-94e7-7d2978c22763_0",
+            0
+          ],
+          [
+            "",
+            "cbbda4f8-f032-4cb3-84cd-80801fb06fd7_0",
+            0
+          ],
+          [
+            "",
+            "cbd33f3e-021c-44c7-b2c3-fbb38ad8bf10_0",
+            0
+          ],
+          [
+            "",
+            "d7cfa4e9-1281-4e65-b8bc-715bdade199a_0",
+            0
+          ],
+          [
+            "",
+            "daf29b91-01e6-4e97-82e5-9f9906570cb7_0",
+            0
+          ],
+          [
+            "",
+            "e03e5bd5-c8b9-4bb3-9381-2be958ea0b1a_0",
+            0
+          ],
+          [
+            "",
+            "e0fead87-f89c-4e68-8306-936d5de295ea_0",
+            0
+          ],
+          [
+            "",
+            "e245cf59-ec98-4964-85d4-08c2f2acb576_0",
+            0
+          ],
+          [
+            "",
+            "e32cbbf1-cefa-493d-8c03-085e6b980986_0",
+            0
+          ],
+          [
+            "",
+            "e3e6f870-e8ef-4aec-bf08-d41b7a93c171_0",
+            0
+          ],
+          [
+            "",
+            "f0590b7b-4990-490d-8fcd-1b6b43cc6629_0",
+            0
+          ],
+          [
+            "",
+            "fb9c9a11-9681-4ec3-89e6-4874dd1aa10c_0",
+            0
+          ],
+          [
+            "",
+            "fc07aa6e-a3fc-4497-a10c-1b3eacf144bf_0",
+            0
+          ]
+        ],
+        "observed_labels": 35,
+        "unresolved_segments": 0,
+        "unknown_library_segments": 58,
+        "all_segments_labeled": true,
+        "complete_label_count": null,
+        "independent_molecules": null,
+        "status_counts": {
+          "resolved_label": 58
+        }
+      },
+      "T1-short": {
+        "unit": "cell_umi_label",
+        "segment_ids": [
+          [
+            "IPISRC044_tumor_T1_ucla_rna.BG009368.001",
+            "A01231:888:HGH32DSXC:1:1337:1127:35822",
+            64
+          ]
+        ],
+        "observed_labels": 0,
+        "unresolved_segments": 1,
+        "unknown_library_segments": 1,
+        "all_segments_labeled": false,
+        "complete_label_count": null,
+        "independent_molecules": null,
+        "status_counts": {
+          "missing_cell_barcode": 1
+        }
+      },
+      "T2-ONT-tagged": {
+        "unit": "cell_umi_label",
+        "segment_ids": [
+          [
+            "",
+            "07035daa-eee8-4035-a928-2790b7ea55a1_0",
+            0
+          ],
+          [
+            "",
+            "2842c363-90c4-4571-bada-06912939dc82_0",
+            0
+          ],
+          [
+            "",
+            "32638473-2f23-4b63-adaa-9cc87e2f529d_0",
+            0
+          ],
+          [
+            "",
+            "413031b3-7c05-4b1b-8163-7a2dec8a1ee2_0",
+            0
+          ],
+          [
+            "",
+            "4e25b5d0-d9ff-45f9-87b6-e3863d725291_0",
+            0
+          ],
+          [
+            "",
+            "570b9fe0-c712-4cfe-bce6-7dbf6bfeb481_0",
+            0
+          ],
+          [
+            "",
+            "58d48078-171d-4414-b6b0-0465d11011c2_0",
+            0
+          ],
+          [
+            "",
+            "62d4d13e-0011-43df-aaae-6671cdd0a608_0",
+            0
+          ],
+          [
+            "",
+            "6773a844-6aa9-4bcb-8459-ac7ab260a382_0",
+            0
+          ],
+          [
+            "",
+            "77788589-940f-46b3-aa80-48c3e01d5e46_0",
+            0
+          ],
+          [
+            "",
+            "82d8d65a-88a6-4f25-bbcb-c7aeef57d2d0_0",
+            0
+          ],
+          [
+            "",
+            "8c379198-8933-49a6-8d5e-2e935161c2ac_0",
+            0
+          ],
+          [
+            "",
+            "95aaa648-24d3-4e00-b3a2-397d6e7489f2_0",
+            0
+          ],
+          [
+            "",
+            "969176e4-35ab-421e-a61a-645de263102f_0",
+            0
+          ],
+          [
+            "",
+            "97e69a93-b058-4e3a-bf03-dbe0787ffedf_0",
+            0
+          ],
+          [
+            "",
+            "ccade52c-94fb-49d9-a3bc-caa59ea846ce_0",
+            0
+          ],
+          [
+            "",
+            "d5dca2db-1bd3-4f93-b0e0-43d5ff01ce15_0",
+            0
+          ],
+          [
+            "",
+            "ff19e674-59b3-426e-aebe-1da97dd412a5_0",
+            0
+          ],
+          [
+            "",
+            "ff489d80-cdf8-4908-9739-a0889694465a_0",
+            0
+          ]
+        ],
+        "observed_labels": 17,
+        "unresolved_segments": 0,
+        "unknown_library_segments": 19,
+        "all_segments_labeled": true,
+        "complete_label_count": null,
+        "independent_molecules": null,
+        "status_counts": {
+          "resolved_label": 19
+        }
+      }
+    },
+    "coding_relations": [
+      "spans_both_flanks"
+    ],
+    "initiation_observed": false,
+    "translation_observed": false
+  },
+  {
+    "event": "SV0175--GABBR1",
+    "direction": "nominated",
+    "nucleotide_sequence": "ATGGTAAGTGCCCAATATAGGTGGATGCTTGCACAGGTAAGGGAGGATTGGAAGATAGGTAGGCAAATCCTTTTCACATGTGATTTTCTTTAG",
+    "amino_acids": "MVSAQYRWMLAQVREDWKIGRQILFTCDFL",
+    "full_sequence_templates": {
+      "T1-ONT-tagged": 4,
+      "T1-PacBio": 1
+    },
+    "full_sequence_Q10_templates": {
+      "T1-ONT-tagged": 2,
+      "T1-PacBio": 0
+    },
+    "witnesses": [
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "95cd6557-3258-4152-a16f-13031b5264ff_0",
+          0
+        ],
+        "minimum_quality": 13,
+        "source_query_interval": [
+          585,
+          678
+        ],
+        "start_context": "CCATTTATGGTAAGT",
+        "start_placement": [
+          "chr6",
+          29141029,
+          "-"
+        ],
+        "nucleotide_interval": [
+          658,
+          751
+        ],
+        "junction_interval": [
+          677,
+          680
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "a2a44544-4bb7-499c-84b8-bb118bb40f94_0",
+          0
+        ],
+        "minimum_quality": 6,
+        "source_query_interval": [
+          470,
+          563
+        ],
+        "start_context": "CCATTTATGGTAAGT",
+        "start_placement": [
+          "chr6",
+          29141029,
+          "-"
+        ],
+        "nucleotide_interval": [
+          1709,
+          1802
+        ],
+        "junction_interval": [
+          1728,
+          1731
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "84d36fc1-6224-49e5-8f77-b48d52d252b5_0",
+          0
+        ],
+        "minimum_quality": 35,
+        "source_query_interval": [
+          14,
+          107
+        ],
+        "start_context": "CCATTTATGGTAAGT",
+        "start_placement": [
+          "chr6",
+          29141029,
+          "-"
+        ],
+        "nucleotide_interval": [
+          915,
+          1008
+        ],
+        "junction_interval": [
+          934,
+          937
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-ONT-tagged",
+        "identity": [
+          "",
+          "7f9ce7ac-c386-4f72-9637-b876b4e77d90_0",
+          0
+        ],
+        "minimum_quality": 8,
+        "source_query_interval": [
+          556,
+          649
+        ],
+        "start_context": "CCATTTATGGTAAGT",
+        "start_placement": [
+          "chr6",
+          29141029,
+          "-"
+        ],
+        "nucleotide_interval": [
+          1722,
+          1815
+        ],
+        "junction_interval": [
+          1741,
+          1744
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T1-PacBio",
+        "identity": [
+          "e4927d21",
+          "molecule/5043243",
+          0
+        ],
+        "minimum_quality": null,
+        "source_query_interval": [
+          916,
+          1009
+        ],
+        "start_context": "CCATTTATGGTAAGT",
+        "start_placement": [
+          "chr6",
+          29141029,
+          "-"
+        ],
+        "nucleotide_interval": [
+          1701,
+          1794
+        ],
+        "junction_interval": [
+          1722,
+          1723
+        ],
+        "coding_relation": "spans_both_flanks"
+      }
+    ],
+    "library_cell_umi_support": {
+      "T1-ONT-tagged": {
+        "unit": "cell_umi_label",
+        "segment_ids": [
+          [
+            "",
+            "7f9ce7ac-c386-4f72-9637-b876b4e77d90_0",
+            0
+          ],
+          [
+            "",
+            "84d36fc1-6224-49e5-8f77-b48d52d252b5_0",
+            0
+          ],
+          [
+            "",
+            "95cd6557-3258-4152-a16f-13031b5264ff_0",
+            0
+          ],
+          [
+            "",
+            "a2a44544-4bb7-499c-84b8-bb118bb40f94_0",
+            0
+          ]
+        ],
+        "observed_labels": 4,
+        "unresolved_segments": 0,
+        "unknown_library_segments": 4,
+        "all_segments_labeled": true,
+        "complete_label_count": null,
+        "independent_molecules": null,
+        "status_counts": {
+          "resolved_label": 4
+        }
+      },
+      "T1-PacBio": {
+        "unit": "cell_umi_label",
+        "segment_ids": [
+          [
+            "e4927d21",
+            "molecule/5043243",
+            0
+          ]
+        ],
+        "observed_labels": 0,
+        "unresolved_segments": 1,
+        "unknown_library_segments": 1,
+        "all_segments_labeled": false,
+        "complete_label_count": null,
+        "independent_molecules": null,
+        "status_counts": {
+          "unresolved_xm": 1
+        }
+      }
+    },
+    "Q10_library_cell_umi_support": {
+      "T1-ONT-tagged": {
+        "unit": "cell_umi_label",
+        "segment_ids": [
+          [
+            "",
+            "84d36fc1-6224-49e5-8f77-b48d52d252b5_0",
+            0
+          ],
+          [
+            "",
+            "95cd6557-3258-4152-a16f-13031b5264ff_0",
+            0
+          ]
+        ],
+        "observed_labels": 2,
+        "unresolved_segments": 0,
+        "unknown_library_segments": 2,
+        "all_segments_labeled": true,
+        "complete_label_count": null,
+        "independent_molecules": null,
+        "status_counts": {
+          "resolved_label": 2
+        }
+      },
+      "T1-PacBio": {
+        "unit": "cell_umi_label",
+        "segment_ids": [],
+        "observed_labels": 0,
+        "unresolved_segments": 0,
+        "unknown_library_segments": 0,
+        "all_segments_labeled": true,
+        "complete_label_count": null,
+        "independent_molecules": null,
+        "status_counts": {}
+      }
+    },
+    "coding_relations": [
+      "spans_both_flanks"
+    ],
+    "initiation_observed": false,
+    "translation_observed": false
+  },
+  {
+    "event": "SV0402--intergenic",
+    "direction": "reverse",
+    "nucleotide_sequence": "ATGAGAACAAAACTTAAGCATGCTTATGAGCCATTGAGGGATGCAGGGAACATGGCTGAAAGTAAATGTAAAGCAATCAATGTCTGCATTCTTCTAAAATGA",
+    "amino_acids": "MRTKLKHAYEPLRDAGNMAESKCKAINVCILLK",
+    "full_sequence_templates": {
+      "T2-ONT-tagged": 7
+    },
+    "full_sequence_Q10_templates": {
+      "T2-ONT-tagged": 6
+    },
+    "witnesses": [
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "d8feea04-af64-4767-9f83-3b554a7ffcc0_0",
+          0
+        ],
+        "minimum_quality": 29,
+        "source_query_interval": [
+          439,
+          541
+        ],
+        "start_context": "GGATTCATGAGAACA",
+        "start_placement": [
+          "chr20",
+          55876653,
+          "+"
+        ],
+        "nucleotide_interval": [
+          267,
+          369
+        ],
+        "junction_interval": [
+          361,
+          363
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "7f8e8590-88ea-4a34-a118-525e849f4132_0",
+          0
+        ],
+        "minimum_quality": 30,
+        "source_query_interval": [
+          228,
+          330
+        ],
+        "start_context": "GGATTCATGAGAACA",
+        "start_placement": [
+          "chr20",
+          55876653,
+          "+"
+        ],
+        "nucleotide_interval": [
+          702,
+          804
+        ],
+        "junction_interval": [
+          796,
+          798
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "bb416aa0-ac25-46d3-b7f3-92b049e05705_1",
+          0
+        ],
+        "minimum_quality": 28,
+        "source_query_interval": [
+          487,
+          589
+        ],
+        "start_context": "GGATTCATGAGAACA",
+        "start_placement": [
+          "chr20",
+          55876653,
+          "+"
+        ],
+        "nucleotide_interval": [
+          706,
+          808
+        ],
+        "junction_interval": [
+          800,
+          802
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "e9d4a458-f634-4dff-ab95-442b8089f67b_0",
+          0
+        ],
+        "minimum_quality": 36,
+        "source_query_interval": [
+          233,
+          335
+        ],
+        "start_context": "GGATTCATGAGAACA",
+        "start_placement": [
+          "chr20",
+          55876653,
+          "+"
+        ],
+        "nucleotide_interval": [
+          701,
+          803
+        ],
+        "junction_interval": [
+          795,
+          797
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "c812cc5d-2e7c-40f4-b0eb-a7c8cd16ec16_0",
+          0
+        ],
+        "minimum_quality": 14,
+        "source_query_interval": [
+          439,
+          541
+        ],
+        "start_context": "GGATTCATGAGAACA",
+        "start_placement": [
+          "chr20",
+          55876653,
+          "+"
+        ],
+        "nucleotide_interval": [
+          267,
+          369
+        ],
+        "junction_interval": [
+          361,
+          363
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "f700b00c-425b-416c-98c4-18ac1da0c2df_0",
+          0
+        ],
+        "minimum_quality": 19,
+        "source_query_interval": [
+          231,
+          333
+        ],
+        "start_context": "GGATTCATGAGAACA",
+        "start_placement": [
+          "chr20",
+          55876653,
+          "+"
+        ],
+        "nucleotide_interval": [
+          702,
+          804
+        ],
+        "junction_interval": [
+          796,
+          798
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "0bbbe8f5-3fa4-4038-be68-a7959d9a69b5_0",
+          0
+        ],
+        "minimum_quality": 5,
+        "source_query_interval": [
+          1451,
+          1553
+        ],
+        "start_context": "GGATTCATGAGAACA",
+        "start_placement": [
+          "chr20",
+          55876653,
+          "+"
+        ],
+        "nucleotide_interval": [
+          266,
+          368
+        ],
+        "junction_interval": [
+          360,
+          362
+        ],
+        "coding_relation": "spans_both_flanks"
+      }
+    ],
+    "library_cell_umi_support": {
+      "T2-ONT-tagged": {
+        "unit": "cell_umi_label",
+        "segment_ids": [
+          [
+            "",
+            "0bbbe8f5-3fa4-4038-be68-a7959d9a69b5_0",
+            0
+          ],
+          [
+            "",
+            "7f8e8590-88ea-4a34-a118-525e849f4132_0",
+            0
+          ],
+          [
+            "",
+            "bb416aa0-ac25-46d3-b7f3-92b049e05705_1",
+            0
+          ],
+          [
+            "",
+            "c812cc5d-2e7c-40f4-b0eb-a7c8cd16ec16_0",
+            0
+          ],
+          [
+            "",
+            "d8feea04-af64-4767-9f83-3b554a7ffcc0_0",
+            0
+          ],
+          [
+            "",
+            "e9d4a458-f634-4dff-ab95-442b8089f67b_0",
+            0
+          ],
+          [
+            "",
+            "f700b00c-425b-416c-98c4-18ac1da0c2df_0",
+            0
+          ]
+        ],
+        "observed_labels": 5,
+        "unresolved_segments": 0,
+        "unknown_library_segments": 7,
+        "all_segments_labeled": true,
+        "complete_label_count": null,
+        "independent_molecules": null,
+        "status_counts": {
+          "resolved_label": 7
+        }
+      }
+    },
+    "Q10_library_cell_umi_support": {
+      "T2-ONT-tagged": {
+        "unit": "cell_umi_label",
+        "segment_ids": [
+          [
+            "",
+            "7f8e8590-88ea-4a34-a118-525e849f4132_0",
+            0
+          ],
+          [
+            "",
+            "bb416aa0-ac25-46d3-b7f3-92b049e05705_1",
+            0
+          ],
+          [
+            "",
+            "c812cc5d-2e7c-40f4-b0eb-a7c8cd16ec16_0",
+            0
+          ],
+          [
+            "",
+            "d8feea04-af64-4767-9f83-3b554a7ffcc0_0",
+            0
+          ],
+          [
+            "",
+            "e9d4a458-f634-4dff-ab95-442b8089f67b_0",
+            0
+          ],
+          [
+            "",
+            "f700b00c-425b-416c-98c4-18ac1da0c2df_0",
+            0
+          ]
+        ],
+        "observed_labels": 4,
+        "unresolved_segments": 0,
+        "unknown_library_segments": 6,
+        "all_segments_labeled": true,
+        "complete_label_count": null,
+        "independent_molecules": null,
+        "status_counts": {
+          "resolved_label": 6
+        }
+      }
+    },
+    "coding_relations": [
+      "spans_both_flanks"
+    ],
+    "initiation_observed": false,
+    "translation_observed": false
+  },
+  {
+    "event": "SV0461--intergenic",
+    "direction": "nominated",
+    "nucleotide_sequence": "ATGCAATCCACTTATCTAATGGAGTGTATGGGTATAATCCGTGGCATGCAGGGAAGGGCTGACATTTAA",
+    "amino_acids": "MQSTYLMECMGIIRGMQGRADI",
+    "full_sequence_templates": {
+      "T2-ONT-tagged": 25
+    },
+    "full_sequence_Q10_templates": {
+      "T2-ONT-tagged": 25
+    },
+    "witnesses": [
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "0d76cb53-2166-4270-84da-e4853d42ec79_0",
+          0
+        ],
+        "minimum_quality": 21,
+        "source_query_interval": [
+          220,
+          289
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          315,
+          384
+        ],
+        "junction_interval": [
+          340,
+          344
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "d297b462-9524-472e-a545-cc75ae6a79b1_0",
+          0
+        ],
+        "minimum_quality": 35,
+        "source_query_interval": [
+          219,
+          288
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          496,
+          565
+        ],
+        "junction_interval": [
+          521,
+          525
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "b6301e61-2df4-4b2e-9da4-cb3736b98304_0",
+          0
+        ],
+        "minimum_quality": 38,
+        "source_query_interval": [
+          854,
+          923
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          311,
+          380
+        ],
+        "junction_interval": [
+          336,
+          340
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "5d22752e-974c-4892-bfd5-01cfb16bd0b6_0",
+          0
+        ],
+        "minimum_quality": 39,
+        "source_query_interval": [
+          254,
+          323
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          518,
+          587
+        ],
+        "junction_interval": [
+          543,
+          547
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "b3e55953-adea-42c9-a8b1-17c0da8a7b36_0",
+          0
+        ],
+        "minimum_quality": 31,
+        "source_query_interval": [
+          174,
+          243
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          317,
+          386
+        ],
+        "junction_interval": [
+          342,
+          346
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "d534887e-5cf9-44c3-8fab-7150ae9eddfc_0",
+          0
+        ],
+        "minimum_quality": 19,
+        "source_query_interval": [
+          217,
+          286
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          251,
+          320
+        ],
+        "junction_interval": [
+          276,
+          280
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "921abc32-e840-4252-a378-2003f38b550b_0",
+          0
+        ],
+        "minimum_quality": 35,
+        "source_query_interval": [
+          118,
+          187
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          523,
+          592
+        ],
+        "junction_interval": [
+          548,
+          552
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "cf552dad-243b-4a41-867e-82bf6c132e53_0",
+          0
+        ],
+        "minimum_quality": 13,
+        "source_query_interval": [
+          217,
+          286
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          249,
+          318
+        ],
+        "junction_interval": [
+          274,
+          278
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "66f85d73-490e-4d51-abc4-f48974432cd0_0",
+          0
+        ],
+        "minimum_quality": 21,
+        "source_query_interval": [
+          348,
+          417
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          524,
+          593
+        ],
+        "junction_interval": [
+          549,
+          553
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "690316dd-1bcb-469e-b873-267a0bf3ee80_0",
+          0
+        ],
+        "minimum_quality": 24,
+        "source_query_interval": [
+          69,
+          138
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          2740,
+          2809
+        ],
+        "junction_interval": [
+          2765,
+          2769
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "3738c185-4a3e-4b2e-987f-291d29fb6f78_0",
+          0
+        ],
+        "minimum_quality": 32,
+        "source_query_interval": [
+          627,
+          696
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          495,
+          564
+        ],
+        "junction_interval": [
+          520,
+          524
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "48ae6952-a5e7-42ad-8ac1-adf16fbb098c_0",
+          0
+        ],
+        "minimum_quality": 12,
+        "source_query_interval": [
+          134,
+          203
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          524,
+          593
+        ],
+        "junction_interval": [
+          549,
+          553
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "3d816ac6-6025-4c8f-87fc-e4c04d21d47d_0",
+          0
+        ],
+        "minimum_quality": 12,
+        "source_query_interval": [
+          133,
+          202
+        ],
+        "start_context": "ACGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          497,
+          566
+        ],
+        "junction_interval": [
+          522,
+          526
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "dac00271-f6f2-4c09-9603-c7e9114282c5_0",
+          0
+        ],
+        "minimum_quality": 24,
+        "source_query_interval": [
+          1709,
+          1778
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          521,
+          590
+        ],
+        "junction_interval": [
+          546,
+          550
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "7687b063-5335-458e-8b1d-8eac3cd0510e_0",
+          0
+        ],
+        "minimum_quality": 32,
+        "source_query_interval": [
+          134,
+          203
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          497,
+          566
+        ],
+        "junction_interval": [
+          522,
+          526
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "fd9013fc-e0a2-4100-b74b-a477e8111ae2_0",
+          0
+        ],
+        "minimum_quality": 25,
+        "source_query_interval": [
+          567,
+          636
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          497,
+          566
+        ],
+        "junction_interval": [
+          522,
+          526
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "5092f189-95a6-4c4f-81fb-101c07b14a34_0",
+          0
+        ],
+        "minimum_quality": 24,
+        "source_query_interval": [
+          246,
+          315
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          523,
+          592
+        ],
+        "junction_interval": [
+          548,
+          552
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "35fadbd3-423a-436b-82fe-b91ce9107781_0",
+          0
+        ],
+        "minimum_quality": 30,
+        "source_query_interval": [
+          646,
+          715
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          97,
+          166
+        ],
+        "junction_interval": [
+          122,
+          126
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "9f4f87c2-0eec-4cc2-aeb3-63f46f6c8fb6_1",
+          0
+        ],
+        "minimum_quality": 27,
+        "source_query_interval": [
+          212,
+          281
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          495,
+          564
+        ],
+        "junction_interval": [
+          520,
+          524
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "5b8dcc00-7966-4d53-aff5-b0a420c9fe5e_0",
+          0
+        ],
+        "minimum_quality": 29,
+        "source_query_interval": [
+          903,
+          972
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          332,
+          401
+        ],
+        "junction_interval": [
+          357,
+          361
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "768442ce-623a-44d0-aa88-9b69d58042f9_0",
+          0
+        ],
+        "minimum_quality": 26,
+        "source_query_interval": [
+          135,
+          204
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          523,
+          592
+        ],
+        "junction_interval": [
+          548,
+          552
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "49bfbc70-d60b-4740-9d79-38a6edb7f235_0",
+          0
+        ],
+        "minimum_quality": 33,
+        "source_query_interval": [
+          162,
+          231
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          1141,
+          1210
+        ],
+        "junction_interval": [
+          1166,
+          1170
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "f803a7d4-d380-42a5-bf27-a42c2aa11300_0",
+          0
+        ],
+        "minimum_quality": 32,
+        "source_query_interval": [
+          514,
+          583
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          327,
+          396
+        ],
+        "junction_interval": [
+          352,
+          356
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "80f5f610-f672-438e-9843-7a10f0837369_0",
+          0
+        ],
+        "minimum_quality": 23,
+        "source_query_interval": [
+          106,
+          175
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          523,
+          592
+        ],
+        "junction_interval": [
+          548,
+          552
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "966750e4-5277-4542-9fc2-39f66a4af1ba_0",
+          0
+        ],
+        "minimum_quality": 31,
+        "source_query_interval": [
+          217,
+          286
+        ],
+        "start_context": "ATGAGGATGCAATCC",
+        "start_placement": [
+          "chr20",
+          52859927,
+          "-"
+        ],
+        "nucleotide_interval": [
+          525,
+          594
+        ],
+        "junction_interval": [
+          550,
+          554
+        ],
+        "coding_relation": "spans_both_flanks"
+      }
+    ],
+    "library_cell_umi_support": {
+      "T2-ONT-tagged": {
+        "unit": "cell_umi_label",
+        "segment_ids": [
+          [
+            "",
+            "0d76cb53-2166-4270-84da-e4853d42ec79_0",
+            0
+          ],
+          [
+            "",
+            "35fadbd3-423a-436b-82fe-b91ce9107781_0",
+            0
+          ],
+          [
+            "",
+            "3738c185-4a3e-4b2e-987f-291d29fb6f78_0",
+            0
+          ],
+          [
+            "",
+            "3d816ac6-6025-4c8f-87fc-e4c04d21d47d_0",
+            0
+          ],
+          [
+            "",
+            "48ae6952-a5e7-42ad-8ac1-adf16fbb098c_0",
+            0
+          ],
+          [
+            "",
+            "49bfbc70-d60b-4740-9d79-38a6edb7f235_0",
+            0
+          ],
+          [
+            "",
+            "5092f189-95a6-4c4f-81fb-101c07b14a34_0",
+            0
+          ],
+          [
+            "",
+            "5b8dcc00-7966-4d53-aff5-b0a420c9fe5e_0",
+            0
+          ],
+          [
+            "",
+            "5d22752e-974c-4892-bfd5-01cfb16bd0b6_0",
+            0
+          ],
+          [
+            "",
+            "66f85d73-490e-4d51-abc4-f48974432cd0_0",
+            0
+          ],
+          [
+            "",
+            "690316dd-1bcb-469e-b873-267a0bf3ee80_0",
+            0
+          ],
+          [
+            "",
+            "768442ce-623a-44d0-aa88-9b69d58042f9_0",
+            0
+          ],
+          [
+            "",
+            "7687b063-5335-458e-8b1d-8eac3cd0510e_0",
+            0
+          ],
+          [
+            "",
+            "80f5f610-f672-438e-9843-7a10f0837369_0",
+            0
+          ],
+          [
+            "",
+            "921abc32-e840-4252-a378-2003f38b550b_0",
+            0
+          ],
+          [
+            "",
+            "966750e4-5277-4542-9fc2-39f66a4af1ba_0",
+            0
+          ],
+          [
+            "",
+            "9f4f87c2-0eec-4cc2-aeb3-63f46f6c8fb6_1",
+            0
+          ],
+          [
+            "",
+            "b3e55953-adea-42c9-a8b1-17c0da8a7b36_0",
+            0
+          ],
+          [
+            "",
+            "b6301e61-2df4-4b2e-9da4-cb3736b98304_0",
+            0
+          ],
+          [
+            "",
+            "cf552dad-243b-4a41-867e-82bf6c132e53_0",
+            0
+          ],
+          [
+            "",
+            "d297b462-9524-472e-a545-cc75ae6a79b1_0",
+            0
+          ],
+          [
+            "",
+            "d534887e-5cf9-44c3-8fab-7150ae9eddfc_0",
+            0
+          ],
+          [
+            "",
+            "dac00271-f6f2-4c09-9603-c7e9114282c5_0",
+            0
+          ],
+          [
+            "",
+            "f803a7d4-d380-42a5-bf27-a42c2aa11300_0",
+            0
+          ],
+          [
+            "",
+            "fd9013fc-e0a2-4100-b74b-a477e8111ae2_0",
+            0
+          ]
+        ],
+        "observed_labels": 23,
+        "unresolved_segments": 0,
+        "unknown_library_segments": 25,
+        "all_segments_labeled": true,
+        "complete_label_count": null,
+        "independent_molecules": null,
+        "status_counts": {
+          "resolved_label": 25
+        }
+      }
+    },
+    "Q10_library_cell_umi_support": {
+      "T2-ONT-tagged": {
+        "unit": "cell_umi_label",
+        "segment_ids": [
+          [
+            "",
+            "0d76cb53-2166-4270-84da-e4853d42ec79_0",
+            0
+          ],
+          [
+            "",
+            "35fadbd3-423a-436b-82fe-b91ce9107781_0",
+            0
+          ],
+          [
+            "",
+            "3738c185-4a3e-4b2e-987f-291d29fb6f78_0",
+            0
+          ],
+          [
+            "",
+            "3d816ac6-6025-4c8f-87fc-e4c04d21d47d_0",
+            0
+          ],
+          [
+            "",
+            "48ae6952-a5e7-42ad-8ac1-adf16fbb098c_0",
+            0
+          ],
+          [
+            "",
+            "49bfbc70-d60b-4740-9d79-38a6edb7f235_0",
+            0
+          ],
+          [
+            "",
+            "5092f189-95a6-4c4f-81fb-101c07b14a34_0",
+            0
+          ],
+          [
+            "",
+            "5b8dcc00-7966-4d53-aff5-b0a420c9fe5e_0",
+            0
+          ],
+          [
+            "",
+            "5d22752e-974c-4892-bfd5-01cfb16bd0b6_0",
+            0
+          ],
+          [
+            "",
+            "66f85d73-490e-4d51-abc4-f48974432cd0_0",
+            0
+          ],
+          [
+            "",
+            "690316dd-1bcb-469e-b873-267a0bf3ee80_0",
+            0
+          ],
+          [
+            "",
+            "768442ce-623a-44d0-aa88-9b69d58042f9_0",
+            0
+          ],
+          [
+            "",
+            "7687b063-5335-458e-8b1d-8eac3cd0510e_0",
+            0
+          ],
+          [
+            "",
+            "80f5f610-f672-438e-9843-7a10f0837369_0",
+            0
+          ],
+          [
+            "",
+            "921abc32-e840-4252-a378-2003f38b550b_0",
+            0
+          ],
+          [
+            "",
+            "966750e4-5277-4542-9fc2-39f66a4af1ba_0",
+            0
+          ],
+          [
+            "",
+            "9f4f87c2-0eec-4cc2-aeb3-63f46f6c8fb6_1",
+            0
+          ],
+          [
+            "",
+            "b3e55953-adea-42c9-a8b1-17c0da8a7b36_0",
+            0
+          ],
+          [
+            "",
+            "b6301e61-2df4-4b2e-9da4-cb3736b98304_0",
+            0
+          ],
+          [
+            "",
+            "cf552dad-243b-4a41-867e-82bf6c132e53_0",
+            0
+          ],
+          [
+            "",
+            "d297b462-9524-472e-a545-cc75ae6a79b1_0",
+            0
+          ],
+          [
+            "",
+            "d534887e-5cf9-44c3-8fab-7150ae9eddfc_0",
+            0
+          ],
+          [
+            "",
+            "dac00271-f6f2-4c09-9603-c7e9114282c5_0",
+            0
+          ],
+          [
+            "",
+            "f803a7d4-d380-42a5-bf27-a42c2aa11300_0",
+            0
+          ],
+          [
+            "",
+            "fd9013fc-e0a2-4100-b74b-a477e8111ae2_0",
+            0
+          ]
+        ],
+        "observed_labels": 23,
+        "unresolved_segments": 0,
+        "unknown_library_segments": 25,
+        "all_segments_labeled": true,
+        "complete_label_count": null,
+        "independent_molecules": null,
+        "status_counts": {
+          "resolved_label": 25
+        }
+      }
+    },
+    "coding_relations": [
+      "spans_both_flanks"
+    ],
+    "initiation_observed": false,
+    "translation_observed": false
+  },
+  {
+    "event": "SV0499--IMMT",
+    "direction": "nominated",
+    "nucleotide_sequence": "ATGTCCCAGATTCAAACGATTCTCATGCCTCAGCCTCCGGAGTGGCTGGGATTACATGCATGCACCACCATGCCCAGGTAA",
+    "amino_acids": "MSQIQTILMPQPPEWLGLHACTTMPR",
+    "full_sequence_templates": {
+      "T2-ONT-tagged": 4
+    },
+    "full_sequence_Q10_templates": {
+      "T2-ONT-tagged": 4
+    },
+    "witnesses": [
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "fe98fcb4-e64f-4e30-bced-519bb2a189ae_0",
+          0
+        ],
+        "minimum_quality": 15,
+        "source_query_interval": [
+          1925,
+          2006
+        ],
+        "start_context": "AGGTAGATGTCCCAG",
+        "start_placement": [
+          "chr2",
+          84414536,
+          "+"
+        ],
+        "nucleotide_interval": [
+          192,
+          273
+        ],
+        "junction_interval": [
+          194,
+          196
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "963a7293-8efc-42ff-b58d-c2c79fbd8f74_0",
+          0
+        ],
+        "minimum_quality": 32,
+        "source_query_interval": [
+          1069,
+          1150
+        ],
+        "start_context": "AGGTAGATGTCCCAG",
+        "start_placement": [
+          "chr2",
+          84414536,
+          "+"
+        ],
+        "nucleotide_interval": [
+          144,
+          225
+        ],
+        "junction_interval": [
+          146,
+          148
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "ef0ee09d-4eb9-4e0a-a7c9-a3029d73478a_0",
+          0
+        ],
+        "minimum_quality": 30,
+        "source_query_interval": [
+          1076,
+          1157
+        ],
+        "start_context": "AGGTAGATGTCCCAG",
+        "start_placement": [
+          "chr2",
+          84414536,
+          "+"
+        ],
+        "nucleotide_interval": [
+          144,
+          225
+        ],
+        "junction_interval": [
+          146,
+          148
+        ],
+        "coding_relation": "spans_both_flanks"
+      },
+      {
+        "source": "T2-ONT-tagged",
+        "identity": [
+          "",
+          "e98e0495-cb46-489c-8e6f-78f93adaf1c8_0",
+          0
+        ],
+        "minimum_quality": 25,
+        "source_query_interval": [
+          956,
+          1037
+        ],
+        "start_context": "AGGTAGATGTCCCAG",
+        "start_placement": [
+          "chr2",
+          84414536,
+          "+"
+        ],
+        "nucleotide_interval": [
+          205,
+          286
+        ],
+        "junction_interval": [
+          207,
+          209
+        ],
+        "coding_relation": "spans_both_flanks"
+      }
+    ],
+    "library_cell_umi_support": {
+      "T2-ONT-tagged": {
+        "unit": "cell_umi_label",
+        "segment_ids": [
+          [
+            "",
+            "963a7293-8efc-42ff-b58d-c2c79fbd8f74_0",
+            0
+          ],
+          [
+            "",
+            "e98e0495-cb46-489c-8e6f-78f93adaf1c8_0",
+            0
+          ],
+          [
+            "",
+            "ef0ee09d-4eb9-4e0a-a7c9-a3029d73478a_0",
+            0
+          ],
+          [
+            "",
+            "fe98fcb4-e64f-4e30-bced-519bb2a189ae_0",
+            0
+          ]
+        ],
+        "observed_labels": 3,
+        "unresolved_segments": 0,
+        "unknown_library_segments": 4,
+        "all_segments_labeled": true,
+        "complete_label_count": null,
+        "independent_molecules": null,
+        "status_counts": {
+          "resolved_label": 4
+        }
+      }
+    },
+    "Q10_library_cell_umi_support": {
+      "T2-ONT-tagged": {
+        "unit": "cell_umi_label",
+        "segment_ids": [
+          [
+            "",
+            "963a7293-8efc-42ff-b58d-c2c79fbd8f74_0",
+            0
+          ],
+          [
+            "",
+            "e98e0495-cb46-489c-8e6f-78f93adaf1c8_0",
+            0
+          ],
+          [
+            "",
+            "ef0ee09d-4eb9-4e0a-a7c9-a3029d73478a_0",
+            0
+          ],
+          [
+            "",
+            "fe98fcb4-e64f-4e30-bced-519bb2a189ae_0",
+            0
+          ]
+        ],
+        "observed_labels": 3,
+        "unresolved_segments": 0,
+        "unknown_library_segments": 4,
+        "all_segments_labeled": true,
+        "complete_label_count": null,
+        "independent_molecules": null,
+        "status_counts": {
+          "resolved_label": 4
+        }
+      }
+    },
+    "coding_relations": [
+      "spans_both_flanks"
+    ],
+    "initiation_observed": false,
+    "translation_observed": false
+  }
+]

@@ -13,7 +13,7 @@ reads around a variant without downloading an entire BAM.
 python -m pip install osteosarc
 ```
 
-Requires Python 3.10+ and Linux or macOS. Read extraction also needs
+Requires Python 3.9+ and Linux or macOS. Read extraction also needs
 `samtools` on PATH; see the [read extraction guide](https://iskandr.github.io/osteosarc/reads/).
 
 ## Find samples and sequencing files

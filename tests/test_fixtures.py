@@ -105,7 +105,7 @@ def test_panels_are_offline_copies():
     assert any(key.startswith("NTF3-") for key in panel)
     panel.clear()
     assert load_panel("vaccine-loci-v1")
-    assert load_panel("sv-regressions-v1")["SV0461"]["kind"] == "unresolved"
+    assert load_panel("sv-regressions-v1")["SV0461"]["kind"] == "sv"
 
 
 def test_streamed_records_and_regions_match_materialized_selection(bam):

@@ -50,6 +50,59 @@ Overlapping intervals are queried as a union. Original duplicate records,
 flags, qualities, and tags are retained. No quality or allele filter is applied
 by default. An empty result is valid; an empty region list is an error.
 
+## Generate a panel for every sample
+
+This writes one indexed BAM per registry-linked RNA-seq BAM product for every
+sample on GRCh38. Each BAM contains the union of the nominated loci; products
+from the same specimen stay separate. Install SAMtools first.
+
+```python
+import json
+import shutil
+from pathlib import Path
+
+from osteosarc import Dataset
+
+data = Dataset.sync("panel-v1")  # Reuses this pinned snapshot on later runs
+variants = [v for v in data.variants(status="ready")
+            if v.gene in {"NTF3", "MAP2"} and v.assembly == "GRCh38"]
+regions = [v.region(padding=500) for v in variants]
+assert regions, "No eligible variants in this snapshot"
+
+for sample in data.specimens:
+    sources = data.assets_for_sample(
+        sample["sample_id"], kind="alignment", format="bam", assay="rna-seq",
+    )
+    for source in sources:
+        if data.inspect_alignment(source).assembly != "GRCh38":
+            print("Skipping incompatible or unresolved assembly:", source.key)
+            continue
+        subset = data.extract_reads(source, regions, fetch_pairs=True)
+        output = Path("panel") / sample["sample_id"] / source.id
+        output.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(subset.path, output / "reads.bam")
+        shutil.copyfile(subset.index_path, output / "reads.bam.bai")
+        (output / "receipt.json").write_text(json.dumps(subset.receipt, indent=2))
+        print(sample["sample_id"], source.key, output)
+```
+
+For explicit loci, replace the `variants`/`regions` lines with:
+
+```python
+from osteosarc import Region
+
+regions = [Region.from_samtools(locus, assembly="GRCh38") for locus in [
+    "chr2:165658600-165659700",
+    "chr12:5439800-5440900",
+]]
+```
+
+Remove `assay="rna-seq"` to include the other BAM assays. GRCh37 products need
+their own verified GRCh37 coordinates. Samples without matching BAM products
+have no output. Extraction is indexed and cached; paired mates can lie outside
+the loci. No template sampling or allele filtering is applied. For compact,
+versioned regression fixtures with explicit witnesses, use [fixture recipes](fixtures.md).
+
 ## Filter reads or recover mates
 
 ```python

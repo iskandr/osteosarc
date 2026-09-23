@@ -73,8 +73,8 @@ that ambiguously maps to different binary records. It is not the default.
 
 `load_panel("vaccine-loci-v1")` supplies the pinned historical vaccine alleles;
 consumers retain their own reference/correction policies. `sv-regressions-v1`
-lists shared SV targets with unresolved states until exact reviewed event
-selectors are supplied. A target name alone is never an acquisition selector.
+pins historical RNA events and the additional 2026-09-23 research panel, retaining
+original VCF anchors beside explicitly converted interbase boundaries. A target name alone is never an acquisition selector.
 
 ```sh
 osteosarc fixtures panel vaccine-loci-v1

@@ -182,7 +182,7 @@ def pack_bundle(selection, destination, *, header_policy="full", size_budget=DEF
             exported = _write_bam(path, exported, records, counts)
             write_json(header_path, header)
             manifest["sources"][sid] = dict(identity=selection.recipe["sources"][sid], bam=stem + ".bam",
-                index=stem + ".bam.bai", original_header=stem + ".header.json", exported_header=exported,
+                index=stem + ".bam.bai", original_header=stem + ".header.json", header_sha256=stable_id(exported),
                 records=dict(sorted(counts.items())), record_multiset_sha256=stable_id(dict(counts)),
                 record_count=sum(counts.values()))
         return _finish(work, manifest, size_budget)
@@ -267,7 +267,7 @@ def verify_bundle(directory, *, sha256=None):
     needed_sources = {m["source"] for m in manifest["members"].values() if m["status"] not in ("unresolved", "omitted")}
     if set(manifest["sources"]) != needed_sources:
         raise IntegrityError("Bundle source set differs from selected members")
-    source_records, source_files = {}, {"recipe.json", "acquisition.json"}
+    source_records, source_headers, source_files = {}, {}, {"recipe.json", "acquisition.json"}
     for sid, source in manifest["sources"].items():
         if source["identity"] != recipe["sources"][sid]:
             raise IntegrityError(f"Bundle source identity differs from recipe: {sid}")
@@ -279,8 +279,15 @@ def verify_bundle(directory, *, sha256=None):
         if record_multiset(path) != counts:
             raise IntegrityError(f"Source record multiset/multiplicity differs: {sid}")
         with pysam.AlignmentFile(path) as bam:
-            if bam.header.to_dict() != source["exported_header"]:
+            exported_header = bam.header.to_dict()
+            # 0.2.2 stored the full header; newer writers store its digest.
+            expected_digest = source.get("header_sha256")
+            if expected_digest is None and "exported_header" in source:
+                expected_digest = stable_id(source["exported_header"])
+            if (stable_id(exported_header) != expected_digest
+                    or ("exported_header" in source and exported_header != source["exported_header"])):
                 raise IntegrityError(f"Exported header differs: {sid}")
+            source_headers[sid] = exported_header
         original = json.loads(safe_path(root, source["original_header"]).read_text())
         source_records[sid] = list(read_records(path))
         expected_header = (compact_header(original, source_records[sid]) if manifest["header_policy"] == "compact" else original)
@@ -290,7 +297,7 @@ def verify_bundle(directory, *, sha256=None):
             expected_header["HD"].pop(key, None)
         # pysam omits empty header sections.
         expected_header = {k: v for k, v in expected_header.items() if v}
-        if expected_header != source["exported_header"]:
+        if expected_header != exported_header:
             raise IntegrityError(f"Source header semantics differ: {sid}")
         union = Counter()
         for member in manifest["members"].values():
@@ -334,7 +341,7 @@ def verify_bundle(directory, *, sha256=None):
             for key, count in member["records"].items():
                 expected[by_id[key].read.to_string()] += count
             with pysam.AlignmentFile(path, "r") as sam:
-                if sam.header.to_dict() != manifest["sources"][member["source"]]["exported_header"]:
+                if sam.header.to_dict() != source_headers[member["source"]]:
                     raise IntegrityError(f"SAM export header differs: {name}")
                 if Counter(r.to_string() for r in sam) != expected:
                     raise IntegrityError(f"SAM export record multiset differs: {name}")
@@ -379,17 +386,19 @@ def export_bundle(directory, destination, *, members=None, format="bam", size_bu
                 continue
             source = manifest["sources"][member["source"]]
             records = list(read_records(safe_path(root, source["bam"])))
+            with pysam.AlignmentFile(safe_path(root, source["bam"])) as bam:
+                header = bam.header.to_dict()
             relative = f"members/{name}.{format}"
             target = safe_path(work, relative)
             if target.exists():
                 raise FileExistsError(target)
             if format == "bam":
-                _write_bam(target, source["exported_header"], records, member["records"])
+                _write_bam(target, header, records, member["records"])
                 manifest["exports"][name] = dict(format=format, path=relative, index=relative + ".bai", fidelity=RECORD_ENCODING)
             else:
                 by_id = {r.digest: r for r in records}
-                text = str(pysam.AlignmentHeader.from_dict(source["exported_header"]))
-                ordered = sorted(member["records"], key=lambda k: _record_order(by_id[k], len(source["exported_header"]["SQ"])))
+                text = str(pysam.AlignmentHeader.from_dict(header))
+                ordered = sorted(member["records"], key=lambda k: _record_order(by_id[k], len(header["SQ"])))
                 text += "".join((by_id[key].read.to_string() + "\n") * member["records"][key] for key in ordered)
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(gzip.compress(text.encode(), mtime=0) if format == "sam.gz" else text.encode())
@@ -456,3 +465,9 @@ def generate_bundle(recipe, destination, *, sources=None, cache=None, dataset=No
     for sid, receipt in archive_receipts.items():
         selection.receipts[sid]["archive_acquisition"] = receipt
     return pack_bundle(selection, destination, **pack_options)
+
+
+def generate_panel(recipe_path, destination, *, sources=(), cache=None):
+    """Generate a shared JSON panel from CLI-style ID=LOCAL_BAM overrides."""
+    inputs = dict(item.split("=", 1) for item in sources)
+    return generate_bundle(json.loads(Path(recipe_path).read_text()), destination, sources=inputs, cache=cache)
