@@ -88,6 +88,7 @@ def parser():
     reads.add_argument("--min-mapq", type=int, default=0)
     reads.add_argument("--exclude-flags", type=lambda s: int(s, 0), default=0)
     reads.add_argument("--fetch-pairs", action="store_true", help="Also retrieve paired mates outside the regions")
+    reads.add_argument("--recover-linked", action="store_true", help="Bounded mate and SA-linked recovery")
     discover = commands.add_parser("discover", help="Explicitly list a live S3 prefix")
     discover.add_argument("prefix")
     discover.add_argument("--refresh", action="store_true")
@@ -199,7 +200,8 @@ def main(argv=None):
                                                reference_length=args.reference_length) for r in args.regions]
                 subset = dataset.extract_reads(args.asset, regions, reference=args.reference, index=args.index,
                                                filters=ReadFilter(args.min_mapq, args.exclude_flags),
-                                               fetch_pairs=args.fetch_pairs)
+                                               fetch_pairs=args.fetch_pairs,
+                                               recovery={} if args.recover_linked else None)
                 value = dict(path=str(subset.path), index=str(subset.index_path), receipt=subset.receipt)
         print(json.dumps(value, indent=2, default=lambda x: asdict(x)))
         return 0

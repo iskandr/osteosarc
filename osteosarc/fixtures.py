@@ -298,6 +298,16 @@ def select_fixtures(recipe, sources):
         regions = resolve_regions([Region(**r) for r in member["regions"]], headers[sid]) if member.get("regions") else ()
         context = resolve_regions([Region(**r) for r in member["context_regions"]], headers[sid]) if member.get("context_regions") else ()
         counts, reasons, status = select_fixture_records(records[sid], policy, regions=regions, context_regions=context)
+        acquisition = receipts[sid]
+        if member.get("retain_partners") and acquisition.get("scope") == "bounded_mate_SA_context":
+            templates = {r.template for r in records[sid] if r.digest in counts}
+            available = Counter(r.digest for r in records[sid])
+            for r in records[sid]:
+                why = set(acquisition["reasons"].get(r.digest, [])) & {"paired mate", "SA-linked partner"}
+                if r.template in templates and why:
+                    counts[r.digest] = available[r.digest]
+                    reasons[r.digest] = sorted(set(reasons.get(r.digest, [])) | why)
         members[name] = dict(source=sid, target=member["target"], records=dict(sorted(counts.items())),
+                             acquisition_status=acquisition.get("status", "available-input"),
                              reasons=reasons, status=status, record_count=sum(counts.values()))
     return FixtureSelection(recipe, members, headers, records, receipts)

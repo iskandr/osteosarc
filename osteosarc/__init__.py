@@ -27,13 +27,15 @@ from .reads import (
     subset_templates,
 )
 from .records import RECORD_ENCODING, bam_record_digests, read_records, record_multiset
+from .recovery import RecoveryPolicy, recover_reads
 from .timeline import Event, Timeline
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 __all__ = [
     "FixtureSelection", "load_panel", "select_fixture_records", "select_fixtures", "validate_recipe",
     "RECORD_ENCODING", "bam_record_digests", "read_records", "record_multiset",
+    "RecoveryPolicy", "recover_reads",
     "AlignmentInfo", "Asset", "Assets", "CORRECTIONS", "Cache", "Change", "CoordinateError", "Correction",
     "CurationWarning", "Dataset", "Event", "IntegrityError", "TIMELINE_SOURCES", "Timeline", "glob",
     "OfflineError", "OsteosarcError", "ReadFilter", "ReadSubset", "Receipt", "Region",
