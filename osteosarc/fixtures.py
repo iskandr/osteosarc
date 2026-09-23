@@ -26,12 +26,18 @@ def _count(value, label):
 
 def validate_recipe(recipe):
     """Validate and copy a v1 recipe; coordinates and evidence must be explicit."""
+    if not isinstance(recipe, dict):
+        raise SchemaError("A fixture recipe must be an object")
     recipe = copy.deepcopy(recipe)
-    if recipe.get("schema_version") != 1 or not recipe.get("id"):
+    if (type(recipe.get("schema_version")) is not int or recipe["schema_version"] != 1
+            or not isinstance(recipe.get("id"), str) or not recipe["id"]):
         raise SchemaError("Expected a named fixture recipe with schema_version=1")
     for key in ("targets", "sources", "members"):
         if not isinstance(recipe.get(key), dict):
             raise SchemaError(f"Recipe requires a {key} mapping")
+        if any(not isinstance(name, str) or not name or not isinstance(value, dict)
+               for name, value in recipe[key].items()):
+            raise SchemaError(f"Recipe {key} must map nonempty names to objects")
     for name, target in recipe["targets"].items():
         kind = target.get("kind")
         if kind == "unresolved":
@@ -47,7 +53,10 @@ def validate_recipe(recipe):
             if target["position"] == 0 or any(not target.get(k) for k in ("ref", "alt")):
                 raise SchemaError("Small variants require position >= 1 and explicit alleles")
         elif kind == "sv":
-            if target.get("coordinates") != "zero-based-interbase" or len(target.get("breakends", [])) < 2:
+            if (target.get("coordinates") != "zero-based-interbase"
+                    or not isinstance(target.get("breakends"), list)
+                    or len(target["breakends"]) < 2
+                    or any(not isinstance(end, dict) for end in target["breakends"])):
                 raise SchemaError("SVs require at least two explicit interbase breakends")
             for end in target["breakends"]:
                 _count(end.get("position"), "breakend position")
@@ -56,43 +65,68 @@ def validate_recipe(recipe):
         else:
             raise SchemaError(f"Unknown target kind: {kind}")
     for name, source in recipe["sources"].items():
-        if not source.get("identity") or not source.get("assembly"):
+        if (not isinstance(source.get("identity"), dict) or not source["identity"]
+                or not source.get("assembly")):
             raise SchemaError(f"Source {name} requires identity and assembly")
         for field in ("sample", "library", "product"):
             if field not in source:
                 raise SchemaError(f"Source {name} must declare {field} (null if unresolved)")
     for name, member in recipe["members"].items():
-        if member.get("target") not in recipe["targets"] or member.get("source") not in recipe["sources"]:
+        if (not isinstance(member.get("target"), str) or not isinstance(member.get("source"), str)
+                or member["target"] not in recipe["targets"] or member["source"] not in recipe["sources"]):
             raise SchemaError(f"Member {name} refers to an unknown target/source")
         policy = member.get("policy", {})
-        if policy.get("version") != 1 or policy.get("kind") not in (
-                "regional", "exact", "witnesses", "stratified", "empty", "omitted"):
+        if (not isinstance(policy, dict) or type(policy.get("version")) is not int
+                or policy["version"] != 1 or policy.get("kind") not in (
+                    "regional", "exact", "witnesses", "stratified", "empty", "omitted")):
             raise SchemaError(f"Unknown selection policy for {name}")
         if policy["kind"] == "omitted" and not policy.get("reason"):
             raise SchemaError("An omission must state its reason")
         if "cap" in policy:
             _count(policy["cap"], "cap")
+        if not isinstance(policy.get("strata", {}), dict):
+            raise SchemaError("Stratum caps must be a mapping")
         for n in policy.get("strata", {}).values():
             _count(n, "stratum cap")
+        if policy.get("duplicate_policy", "preserve") not in ("preserve", "identical-record-once"):
+            raise SchemaError("Unknown duplicate policy")
         if policy["kind"] == "exact":
             if policy.get("encoding", RECORD_ENCODING) not in (RECORD_ENCODING, "sam-text-v1"):
                 raise SchemaError("Unsupported record identity encoding")
-            for checksum, n in policy.get("records", {}).items():
-                if len(checksum) != 64 or any(c not in "0123456789abcdef" for c in checksum):
+            if not isinstance(policy.get("records"), dict):
+                raise SchemaError("Exact selection requires an explicit records mapping (empty if intentional)")
+            for checksum, n in policy["records"].items():
+                if (not isinstance(checksum, str) or len(checksum) != 64
+                        or any(c not in "0123456789abcdef" for c in checksum)):
                     raise SchemaError("Invalid record checksum")
                 _count(n, "record multiplicity")
                 if not n:
                     raise SchemaError("Record multiplicity must be positive")
-        for assignment in policy.get("assignments", []):
-            if not assignment.get("reason") or not assignment.get("producer", {}).get("name") or not assignment["producer"].get("version"):
+        assignments = policy.get("assignments", [])
+        if not isinstance(assignments, list) or any(not isinstance(a, dict) for a in assignments):
+            raise SchemaError("Evidence assignments must be a list of objects")
+        for assignment in assignments:
+            if (not assignment.get("reason") or not isinstance(assignment.get("producer"), dict)
+                    or not assignment["producer"].get("name") or not assignment["producer"].get("version")):
                 raise SchemaError("Witness/stratum assignments require reason and producer name/version")
             selector = assignment.get("selector", {})
-            if not selector.get("qname") or "rg" not in selector:
+            if (not isinstance(selector, dict) or not isinstance(selector.get("qname"), str)
+                    or not selector["qname"] or "rg" not in selector):
                 raise SchemaError("Witness selectors require qname and explicit rg (null if absent)")
+            if selector["rg"] is not None and not isinstance(selector["rg"], str):
+                raise SchemaError("Witness read groups must be strings or null")
+            if "required" in assignment and type(assignment["required"]) is not bool:
+                raise SchemaError("Witness required must be a boolean")
             if selector.get("segment") not in (None, 0, 64, 128, 192):
                 raise SchemaError("Segment is the original FLAG & 0xc0")
-        for region in member.get("regions", []) + member.get("context_regions", []):
-            Region(**region)
+        for field in ("regions", "context_regions"):
+            if not isinstance(member.get(field, []), list):
+                raise SchemaError(f"{field} must be a list of region objects")
+            for region in member.get(field, []):
+                try:
+                    Region(**region)
+                except (TypeError, ValueError) as error:
+                    raise SchemaError(f"Invalid {field} in member {name}: {error}") from error
         if policy["kind"] == "regional" and not member.get("regions"):
             raise SchemaError("Regional selection requires explicit bounded regions")
     return recipe
@@ -141,6 +175,10 @@ def select_fixture_records(records, policy, *, regions=(), context_regions=()):
     refer to the same source records. Required witnesses bypass sampling caps.
     A cap limits optional templates, never records belonging to a kept template.
     """
+    # Public callers may pass read_records() directly. Selection revisits the
+    # input for witnesses, strata and context, so consume an iterator only once.
+    records = tuple(records)
+    regions, context_regions = tuple(regions), tuple(context_regions)
     available = Counter(r.digest for r in records)
     reasons = defaultdict(set)
     kind = policy["kind"]
@@ -222,7 +260,7 @@ def select_fixtures(recipe, sources):
         policy = member["policy"]
         target = recipe["targets"][member["target"]]
         if target["kind"] == "unresolved" or policy["kind"] == "omitted":
-            members[name] = dict(source=sid, target=member["target"], records={}, reasons={},
+            members[name] = dict(source=sid, target=member["target"], records={}, reasons={}, record_count=0,
                                  status="unresolved" if target["kind"] == "unresolved" else "omitted",
                                  explanation=target.get("reason", policy.get("reason")))
             continue
@@ -231,7 +269,17 @@ def select_fixtures(recipe, sources):
             path = Path(value.path if isinstance(value, ReadSubset) else value)
             expected = recipe["sources"][sid].get("archive_sha256")
             before = digest(path)
-            if expected and before != expected:
+            if isinstance(value, ReadSubset):
+                request = value.receipt.get("request", {})
+                request = request.get("seed", request)
+                acquired_source = request.get("source", "")
+                declared = recipe["sources"][sid]["identity"]
+                if acquired_source.startswith(("https://", "http://")):
+                    if declared.get("url") and declared["url"] != acquired_source:
+                        raise IntegrityError(f"Acquired source identity differs: {sid}")
+                elif expected and request.get("source_sha256") != expected:
+                    raise IntegrityError(f"Acquired archive source checksum differs: {sid}")
+            elif expected and before != expected:
                 raise IntegrityError(f"Archive checksum mismatch: {sid}")
             if isinstance(value, ReadSubset) and value.receipt.get("files", {}).get("reads.bam") != before:
                 raise IntegrityError(f"Acquired BAM checksum mismatch: {sid}")

@@ -106,3 +106,58 @@ def test_panels_are_offline_copies():
     panel.clear()
     assert load_panel("vaccine-loci-v1")
     assert load_panel("sv-regressions-v1")["SV0461"]["kind"] == "unresolved"
+
+
+def test_streamed_records_and_regions_match_materialized_selection(bam):
+    from osteosarc import Region
+    records = list(read_records(bam))
+    regions = [Region("chr1", 90, 160, "GRCh38")]
+    context = [Region("chr1", 1000, 1040, "GRCh38")]
+    policy = dict(kind="regional", version=1, cap=2)
+    expected = select_fixture_records(records, policy, regions=regions, context_regions=context)
+    actual = select_fixture_records(read_records(bam), policy, regions=iter(regions), context_regions=iter(context))
+    assert actual == expected
+    assert sum(actual[0].values()) > 1
+
+
+@pytest.mark.parametrize("path,value", [
+    (("schema_version",), True),
+    (("targets", "snv"), None),
+    (("sources", "rna", "identity"), "not-an-object"),
+    (("members", "alt", "source"), ["rna"]),
+    (("members", "alt", "policy"), None),
+    (("members", "alt", "policy", "records"), None),
+    (("members", "alt", "policy", "strata"), []),
+    (("members", "alt", "policy", "assignments"), [None]),
+    (("members", "alt", "regions"), None),
+])
+def test_malformed_recipes_fail_before_reading_sources(bam, path, value):
+    from osteosarc import SchemaError
+    recipe = recipe_for(bam)
+    parent = recipe
+    for key in path[:-1]:
+        parent = parent[key]
+    parent[path[-1]] = value
+    with pytest.raises(SchemaError):
+        select_fixtures(recipe, {})
+
+
+def test_exact_selection_requires_an_explicit_record_mapping(bam):
+    from osteosarc import SchemaError
+    recipe = recipe_for(bam)
+    del recipe["members"]["alt"]["policy"]["records"]
+    with pytest.raises(SchemaError, match="explicit records"):
+        select_fixtures(recipe, {"rna": bam})
+
+
+def test_equivalent_acquired_archive_and_direct_input_agree(bam, tmp_path):
+    from osteosarc import Region, digest, extract_reads
+    recipe = recipe_for(bam)
+    recipe["sources"]["rna"]["archive_sha256"] = digest(bam)
+    direct = select_fixtures(recipe, {"rna": bam})
+    subset = extract_reads(bam, [Region("chr1", 0, 2000, "GRCh38")], cache=tmp_path / "cache")
+    acquired = select_fixtures(recipe, {"rna": subset})
+    assert acquired.members == direct.members
+    subset.receipt["request"]["source"] = "https://example.test/different-source.bam"
+    with pytest.raises(IntegrityError, match="source identity"):
+        select_fixtures(recipe, {"rna": subset})
