@@ -16,6 +16,7 @@ nav:
       - Find files and tables: explore.md
       - Select variants and peptides: variants.md
       - Extract reads: reads.md
+      - Build read fixtures: fixtures.md
       - Browse the timeline: timeline.md
       - Use other libraries: consumers.md
       - Check MAP2 against reads: tour.md

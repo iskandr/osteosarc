@@ -607,6 +607,15 @@ class Dataset:
             kwargs["index"] = str(index_path)
         return extract_reads(asset, regions, cache=self.cache, snapshot_id=self.id, **kwargs)
 
+    def select_fixtures(self, recipe, sources):
+        """Execute a pinned fixture recipe on explicitly supplied local inputs.
+
+        Membership and reasons are identical to osteosarc.select_fixtures.
+        The snapshot does not override the recipe's historical source identity.
+        """
+        from .fixtures import select_fixtures
+        return select_fixtures(recipe, sources)
+
     def open_variants(self, asset):
         """Download one VCF/BCF and its listed index, returning pysam.VariantFile.
 

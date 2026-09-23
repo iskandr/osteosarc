@@ -34,7 +34,8 @@ show that the records match.
 
 `subset_templates` samples without using allele support or quality. It does not
 reproduce Isovar's alternate-read enrichment or another project's fixture
-selection policy.
+selection policy. Use [fixture recipes](fixtures.md) to freeze evidence assignments,
+exact record multiplicity, controls and assembly context explicitly.
 
 ## Review corrections
 

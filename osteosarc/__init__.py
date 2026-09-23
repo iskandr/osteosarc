@@ -6,6 +6,13 @@ from .curation import CORRECTIONS, Change, Correction, CurationWarning, glob
 from .dataset import Dataset
 from .discovery import list_bucket
 from .errors import CoordinateError, IntegrityError, OfflineError, OsteosarcError, SchemaError
+from .fixtures import (
+    FixtureSelection,
+    load_panel,
+    select_fixture_records,
+    select_fixtures,
+    validate_recipe,
+)
 from .models import Asset, Assets, Region, SampleClaim, Variant, Variants
 from .parsing import Table, parse_file, parse_table, parse_variant_index, parse_variants
 from .reads import (
@@ -19,11 +26,14 @@ from .reads import (
     resolve_regions,
     subset_templates,
 )
+from .records import RECORD_ENCODING, bam_record_digests, read_records, record_multiset
 from .timeline import Event, Timeline
 
-__version__ = "0.1.4"
+__version__ = "0.2.0"
 
 __all__ = [
+    "FixtureSelection", "load_panel", "select_fixture_records", "select_fixtures", "validate_recipe",
+    "RECORD_ENCODING", "bam_record_digests", "read_records", "record_multiset",
     "AlignmentInfo", "Asset", "Assets", "CORRECTIONS", "Cache", "Change", "CoordinateError", "Correction",
     "CurationWarning", "Dataset", "Event", "IntegrityError", "TIMELINE_SOURCES", "Timeline", "glob",
     "OfflineError", "OsteosarcError", "ReadFilter", "ReadSubset", "Receipt", "Region",
