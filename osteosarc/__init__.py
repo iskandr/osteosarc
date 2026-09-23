@@ -1,5 +1,17 @@
 """Reproducible access to osteosarc.com. Importing performs no network I/O."""
 
+from .bundles import (
+    compact_header,
+    export_bundle,
+    generate_bundle,
+    list_bundle,
+    pack_bundle,
+    safe_path,
+    verify_bundle,
+    verify_digest,
+    verify_gzip_digests,
+    verify_manifest_files,
+)
 from .cache import Cache, Receipt, digest
 from .catalog import SNAPSHOT_SOURCES, TABLE_SOURCES, TIMELINE_SOURCES
 from .curation import CORRECTIONS, Change, Correction, CurationWarning, glob
@@ -30,12 +42,14 @@ from .records import RECORD_ENCODING, bam_record_digests, read_records, record_m
 from .recovery import RecoveryPolicy, recover_reads
 from .timeline import Event, Timeline
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 __all__ = [
     "FixtureSelection", "load_panel", "select_fixture_records", "select_fixtures", "validate_recipe",
     "RECORD_ENCODING", "bam_record_digests", "read_records", "record_multiset",
     "RecoveryPolicy", "recover_reads",
+    "compact_header", "export_bundle", "generate_bundle", "list_bundle", "pack_bundle",
+    "safe_path", "verify_bundle", "verify_digest", "verify_gzip_digests", "verify_manifest_files",
     "AlignmentInfo", "Asset", "Assets", "CORRECTIONS", "Cache", "Change", "CoordinateError", "Correction",
     "CurationWarning", "Dataset", "Event", "IntegrityError", "TIMELINE_SOURCES", "Timeline", "glob",
     "OfflineError", "OsteosarcError", "ReadFilter", "ReadSubset", "Receipt", "Region",

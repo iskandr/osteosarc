@@ -607,6 +607,11 @@ class Dataset:
             kwargs["index"] = str(index_path)
         return extract_reads(asset, regions, cache=self.cache, snapshot_id=self.id, **kwargs)
 
+    def generate_bundle(self, recipe, destination, **kwargs):
+        """Generate a fixture bundle with this snapshot's verified source assets."""
+        from .bundles import generate_bundle
+        return generate_bundle(recipe, destination, dataset=self, **kwargs)
+
     def select_fixtures(self, recipe, sources):
         """Execute a pinned fixture recipe on explicitly supplied local inputs.
 
