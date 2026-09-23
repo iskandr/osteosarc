@@ -42,7 +42,7 @@ from .records import RECORD_ENCODING, bam_record_digests, read_records, record_m
 from .recovery import RecoveryPolicy, recover_reads
 from .timeline import Event, Timeline
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 __all__ = [
     "FixtureSelection", "load_panel", "select_fixture_records", "select_fixtures", "validate_recipe",

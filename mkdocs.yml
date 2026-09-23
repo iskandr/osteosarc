@@ -26,6 +26,7 @@ nav:
       - Source corrections: curation.md
   - Development:
       - Migrate existing code: migration.md
+      - Fixture adoption: fixture-migration.md
       - Testing: validation.md
 markdown_extensions:
   - admonition

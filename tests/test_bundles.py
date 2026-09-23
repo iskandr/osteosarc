@@ -112,7 +112,9 @@ def test_compact_keeps_verified_assembly_and_full_header_provenance(bam, tmp_pat
     from osteosarc import Region, resolve_regions
     manifest = generate_bundle(bundle_recipe(bam), tmp_path / "bundle", sources={"rna": bam}, header_policy="compact")
     source = manifest["sources"]["rna"]
-    assert resolve_regions([Region("chr1", 100, 150, "GRCh38")], source["exported_header"])
+    import pysam
+    with pysam.AlignmentFile(tmp_path / "bundle" / source["bam"]) as inp:
+        assert resolve_regions([Region("chr1", 100, 150, "GRCh38")], inp.header.to_dict())
     assert (tmp_path / "bundle" / source["original_header"]).is_file()
     verify_bundle(tmp_path / "bundle")
 
@@ -290,3 +292,17 @@ def test_dataset_acquisition_accepts_identity_without_url(bam, dataset, tmp_path
     acquired = json.loads((tmp_path / "bundle/acquisition.json").read_text())["rna"]
     assert acquired["request"]["source"] == asset.url
     assert acquired["request"]["snapshot_id"] == dataset.id
+
+
+def test_frozen_additional_sv_panel_generates_offline(tmp_path):
+    import osteosarc
+    recipe = json.loads((Path(osteosarc.__file__).parent / "data/additional_sv_recipe.json").read_text())
+    root = Path(__file__).parent / "data/additional_svs"
+    sources = {sid: root / (sid + ".bam") for sid in recipe["sources"]}
+    manifest = generate_bundle(recipe, tmp_path / "additional", sources=sources, size_budget=4_000_000)
+    assert len(manifest["members"]) == 24
+    assert sum(s["record_count"] for s in manifest["sources"].values()) == 251
+    assert {m["target"] for m in manifest["members"].values()} == {"SV0055", "SV0175", "SV0402", "SV0461", "SV0499"}
+    assert manifest["total_size_bytes"] < 4_000_000
+    exported = export_bundle(tmp_path / "additional", tmp_path / "exported", members=["SV0461/T1-PacBio"])
+    assert exported["exports"]["SV0461/T1-PacBio"]["format"] == "bam"

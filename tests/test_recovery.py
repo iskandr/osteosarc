@@ -49,7 +49,7 @@ def test_bounded_recovery_keeps_original_records_duplicates_and_context(split_ba
     recovered = extract_reads(split_bam, regions, cache=cache, recovery=RecoveryPolicy())
     assert regional.receipt["records"] == 5
     assert recovered.receipt["records"] == 7
-    assert record_multiset(recovered.path) <= record_multiset(split_bam)
+    assert not (record_multiset(recovered.path) - record_multiset(split_bam))
     with recovered.open() as bam:
         reads = list(bam)
     assert Counter(r.query_name for r in reads)["split"] == 4
@@ -181,7 +181,7 @@ def test_interruption_reuses_only_verified_acquisitions(split_bam, tmp_path, mon
     monkeypatch.setattr(recovery, "extract_reads", original)
     result = extract_reads(split_bam, regions, cache=tmp_path / "cache", recovery=RecoveryPolicy())
     assert result.receipt["records"] == 7
-    assert record_multiset(result.path) <= record_multiset(split_bam)
+    assert not (record_multiset(result.path) - record_multiset(split_bam))
 
 
 def test_missing_index_never_falls_back_to_scan(split_bam, tmp_path):

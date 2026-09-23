@@ -5,7 +5,7 @@ class OsteosarcError(Exception):
     """Base exception for dataset operations."""
 
 
-class IntegrityError(OsteosarcError):
+class IntegrityError(OsteosarcError, ValueError):
     """Cached bytes or source claims do not match the recorded receipt."""
 
 
