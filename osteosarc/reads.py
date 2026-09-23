@@ -108,11 +108,16 @@ class ReadFilter:
     require_flags: int = 0
     barcodes: tuple[str, ...] = ()
     barcode_tag: str = "CB"
+    query_names: tuple[str, ...] = ()
 
     def __post_init__(self):
         # One barcode may be given as a string; never split it into characters.
         barcodes = (self.barcodes,) if isinstance(self.barcodes, str) else tuple(self.barcodes)
         object.__setattr__(self, "barcodes", barcodes)
+        names = (self.query_names,) if isinstance(self.query_names, str) else tuple(self.query_names)
+        if any(not isinstance(name, str) or not re.fullmatch(r"[!-?A-~]{1,254}", name) for name in names):
+            raise ValueError("Invalid SAM query name")
+        object.__setattr__(self, "query_names", tuple(sorted(set(names))))
         if not 0 <= self.min_mapq <= 255 or self.exclude_flags < 0 or self.require_flags < 0:
             raise ValueError("Invalid MAPQ or SAM flags")
         if len(self.barcode_tag) != 2 or not self.barcode_tag.isalnum():
@@ -225,6 +230,8 @@ def require_samtools(*, header_only=False, fetch_pairs=False, filters=None):
             needed.append("--fetch-pairs")
         if filters is not None and filters.barcodes:
             needed.append("-D")
+        if filters is not None and filters.query_names:
+            needed.append("-N")
     missing = [flag for flag in needed if not re.search(r"(?<![\w-])" + re.escape(flag) + r"(?![\w-])", help_text)]
     if missing:
         raise OsteosarcError("samtools view lacks required options: " + ", ".join(missing)
@@ -419,6 +426,10 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
                 barcodes = work / "barcodes.txt"
                 barcodes.write_text("\n".join(sorted(set(filters.barcodes))) + "\n")
                 command += ["-D", filters.barcode_tag + ":" + str(barcodes)]
+            if filters.query_names:
+                names = work / "query-names.txt"
+                names.write_text("\n".join(filters.query_names) + "\n")
+                command += ["-N", str(names)]
             command += [location, str(local_index)]
             if max_records is None:
                 _run(command, timeout)
