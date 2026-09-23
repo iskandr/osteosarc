@@ -85,3 +85,37 @@ The CLI prints the same membership and reasons as the standalone and Dataset
 APIs. Constructors in `tests/conftest.py` and `tests/test_fixtures.py` exercise
 source/RG collisions, duplicates, required controls, contexts, empty selections,
 missing witnesses, float precision and API/CLI conformance without network.
+
+## Bounded partner recovery
+
+```python
+from osteosarc import RecoveryPolicy, extract_reads
+
+subset = extract_reads(source, seed_and_context_regions, cache=cache,
+                       recovery=RecoveryPolicy(max_rounds=4, max_intervals=128,
+                                               max_bases=1_000_000,
+                                               max_records=100_000))
+```
+
+The seed union preserves every available record. Distant mate/SA windows retain
+only matching source/RG/segment observations; SA requires matching position,
+strand, CIGAR and MAPQ, plus NM when present. Hard clipping, absent SEQ/QUAL,
+secondary/supplementary flags and tags are unchanged. Duplicate counts use the
+maximum occurrence count across indexed queries, never a set or a sum of repeated
+retrievals. No query synthesizes a missing partner or reverse-complement read.
+
+The receipt records visited intervals, requested leads, missing/conflicting
+partners, malformed SA, missing sequence, ambiguous placement, repeated/cyclic
+leads, and acquisition limits. `complete_template` is always false. Even a fully
+resolved SA graph may omit unreported alignments. Missing indexes fail without a
+scan fallback. Interval/round limits produce an explicit truncated receipt;
+record overflow fails instead of publishing a partial successful artifact.
+Changed sources/headers/indexes fail across steps. Interrupted runs reuse only
+verified intermediate extractions.
+
+A member can set `retain_partners: true` to retain recovered mates/split records
+for its selected templates, carrying the recovery reasons. `acquisition_status`
+is separate from selection status: zero retained records in bounded or truncated
+input is not evidence of zero support in the source. CLI extraction also supports
+`reads --recover-linked`. The existing `fetch_pairs` behavior remains unchanged;
+choose a recovery policy instead of combining those options.

@@ -261,7 +261,7 @@ def inspect_alignment(source, *, cache=None, snapshot_id=None, timeout=600):
 
 
 def extract_reads(source, regions, *, cache=None, index=None, filters=None, reference=None,
-                  fetch_pairs=False, snapshot_id=None, timeout=600):
+                  fetch_pairs=False, snapshot_id=None, timeout=600, recovery=None):
     """Fetch the indexed union of regions, retaining original record multiplicity.
 
     source can be an Asset, local BAM/CRAM, or HTTP(S) alignment URL. An index
@@ -276,6 +276,11 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
     without rechecking the remote object. New requests check remote identity
     before and after extraction and retain that identity in their receipt.
     """
+    if recovery is not None:
+        from .recovery import recover_reads
+        return recover_reads(source, regions, policy=recovery, cache=cache, index=index,
+                             filters=filters, reference=reference, fetch_pairs=fetch_pairs,
+                             snapshot_id=snapshot_id, timeout=timeout)
     import pysam
     cache = cache if isinstance(cache, Cache) else Cache(cache)
     filters = filters or ReadFilter()
