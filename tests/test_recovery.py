@@ -209,3 +209,58 @@ def test_recipe_partner_retention_has_effect(split_bam, tmp_path):
     assert linked["record_count"] == 4
     assert linked["acquisition_status"] == "bounded"
     assert any("SA-linked partner" in reasons for reasons in linked["reasons"].values())
+
+
+@pytest.mark.parametrize("wrong_rg", [False, True])
+def test_dense_partner_window_filters_names_before_cap(split_bam, tmp_path, wrong_rg):
+    from osteosarc import ReadFilter
+    path = tmp_path / "dense.bam"
+    with pysam.AlignmentFile(split_bam) as original:
+        header = original.header
+        seed = next(original)
+        partners = [r for r in original if r.reference_id == 1 and r.reference_start == 500]
+    with pysam.AlignmentFile(path, "wb", header=header) as out:
+        out.write(seed)
+        # Preserve original context, including a name that has no partner.
+        context = pysam.AlignedSegment.fromstring(seed.to_string(), header)
+        context.query_name = "context"
+        context.set_tag("SA", None)
+        out.write(context)
+        for r in partners:
+            if (r.get_tag("RG") == "b") == wrong_rg:
+                out.write(r)
+        for i in range(100):
+            background = pysam.AlignedSegment.fromstring(partners[0].to_string(), header)
+            background.query_name = f"background-{i}"
+            out.write(background)
+    pysam.index(str(path))
+    result = extract_reads(path, [Region("chr1", 100, 110, "GRCh38")], cache=tmp_path / "cache",
+                           filters=ReadFilter(min_mapq=20, barcodes="shared-cell"),
+                           recovery=RecoveryPolicy(mates=False, max_records=4))
+    with result.open() as bam:
+        actual = list(bam)
+    assert [r.query_name for r in actual].count("split") == (1 if wrong_rg else 2)
+    assert [r.query_name for r in actual].count("context") == 1
+    assert all(r.get_tag("RG") == "a" for r in actual)
+    assert bool(result.receipt["unresolved"]) == wrong_rg
+    assert not result.receipt["limits"]
+    assert not (record_multiset(result.path) - record_multiset(path))
+    filters = result.receipt["acquisition"][1]["request"]["filters"]
+    assert filters["query_names"] == ["context", "split"]
+    assert filters["min_mapq"] == 20 and filters["barcodes"] == ["shared-cell"]
+
+
+def test_missing_query_name_is_context_not_a_partner_identity(split_bam, tmp_path):
+    path = tmp_path / "nameless.bam"
+    with pysam.AlignmentFile(split_bam) as original:
+        header = original.header
+        seed = next(original)
+    seed.query_name = "*"
+    with pysam.AlignmentFile(path, "wb", header=header) as out:
+        out.write(seed)
+    pysam.index(str(path))
+    result = extract_reads(path, [Region("chr1", 100, 110, "GRCh38")], cache=tmp_path / "cache",
+                           recovery=RecoveryPolicy())
+    assert record_multiset(result.path) == record_multiset(path)
+    assert len(result.receipt["acquisition"]) == 1
+    assert any("missing QNAME" in item["reason"] for item in result.receipt["observations"])

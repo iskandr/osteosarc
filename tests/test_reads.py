@@ -190,6 +190,7 @@ def test_a_single_barcode_string_is_not_split_into_characters():
     (b"--no-PG -M -X", {"fetch_pairs": True}, "--fetch-pairs"),
     (b"--no-PG -M", {}, "-X"),
     (b"--no-PG -M -X", {"filters": ReadFilter(barcodes=("A",))}, "-D"),
+    (b"--no-PG -M -X", {"filters": ReadFilter(query_names=("q",))}, "-N"),
 ])
 def test_missing_samtools_options_fail_before_any_acquisition(dataset, monkeypatch, help_text, options, missing):
     from subprocess import CompletedProcess
@@ -227,3 +228,22 @@ def test_variant_selection_produces_the_same_complete_regional_records(dataset, 
         dataset.extract_reads(source, selected.regions(), variants=selected)
     with pytest.raises(CoordinateError, match="nonempty"):
         dataset.extract_reads(source, variants=[])
+
+
+@pytest.mark.parametrize("names", [("bad name",), ("bad\tname",), ("bad\nname",), ("",), ("@bad",), (123,), ("x" * 255,)])
+def test_invalid_query_name_filters(names):
+    with pytest.raises(ValueError, match="query name"):
+        ReadFilter(query_names=names)
+
+
+def test_query_name_filter_is_canonical_and_scopes_cache(bam, tmp_path):
+    regions = [Region("chr1", 100, 160, "GRCh38")]
+    all_reads = extract_reads(bam, regions, cache=tmp_path)
+    name = records(all_reads.path)[0].split("\t")[0]
+    chosen = extract_reads(bam, regions, cache=tmp_path, filters=ReadFilter(query_names=name))
+    assert Counter(records(chosen.path)) == Counter(r for r in records(all_reads.path) if r.split("\t")[0] == name)
+    assert chosen.path != all_reads.path
+    assert extract_reads(bam, regions, cache=tmp_path, filters=ReadFilter(query_names=[name, name])).path == chosen.path
+    assert ReadFilter(query_names=["b", "a", "a"]).query_names == ("a", "b")
+    absent = extract_reads(bam, regions, cache=tmp_path, filters=ReadFilter(query_names="absent"))
+    assert absent.receipt["records"] == 0

@@ -5,7 +5,7 @@
 Install `osteosarc` and put `samtools` on PATH. SAMtools 1.21 has been
 tested. Header inspection requires `view --no-PG`; extraction also requires
 `-M` and `-X`. Paired-mate extraction needs `--fetch-pairs`, and barcode
-filtering needs `-D`. These capabilities are checked before acquisition, with
+filtering needs `-D`; query-name filtering and bounded partner recovery need `-N`. These capabilities are checked before acquisition, with
 an error explaining how to upgrade. Cached reads can be reopened without
 SAMtools.
 
@@ -165,3 +165,20 @@ print(fixture.path, fixture.receipt["records"])
 Sampling chooses templates by `(read group, query name)` without using alleles
 or quality, and keeps their available regional records. The receipt marks the
 result as sampled. Use unsampled reads to estimate VAF.
+
+
+## Bound partner acquisition at dense loci
+
+`recover_reads` keeps every seed/context record allowed by the requested filters.
+For subsequent indexed partner windows it first selects the seed query names
+with [SAMtools `view -N`](https://www.htslib.org/doc/samtools-view.html), then
+applies the record cap. Unrelated names at dense loci cannot exhaust that cap.
+All seed names are selected in every round so a later lead can reuse records
+from an already visited window. Source, read group, segment, strand and exact
+mate/SA placement checks still determine which acquired records are retained.
+A shared query name alone never establishes template identity.
+
+Explicit acquisition can also use `ReadFilter(query_names=("read-a", "read-b"))`.
+An empty tuple leaves names unrestricted. Other filters still apply, and the
+canonical name set is part of the cache receipt. Caps still count acquired
+records with matching names, including records rejected by later RG/SA checks.
