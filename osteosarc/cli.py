@@ -99,6 +99,22 @@ def parser():
     select.add_argument("--source", action="append", default=[], metavar="ID=LOCAL_BAM")
     panel = actions.add_parser("panel", help="Print a shipped named target panel")
     panel.add_argument("name")
+    for name in ("generate", "pack"):
+        command = actions.add_parser(name, help="Select and publish a portable bundle")
+        command.add_argument("recipe")
+        command.add_argument("output")
+        command.add_argument("--source", action="append", default=[], metavar="ID=LOCAL_BAM")
+        command.add_argument("--header-policy", choices=("full", "compact"), default="full")
+        command.add_argument("--size-budget", type=int, default=64 * 1024 * 1024)
+    for name in ("verify", "list", "export"):
+        command = actions.add_parser(name, help="Work with a bundle entirely offline")
+        command.add_argument("bundle")
+        if name == "export":
+            command.add_argument("output")
+            command.add_argument("--member", action="append")
+            command.add_argument("--format", choices=("bam", "sam", "sam.gz"), default="bam")
+        if name == "verify":
+            command.add_argument("--sha256", help="Pinned manifest digest")
     return root
 
 
@@ -119,11 +135,28 @@ def main(argv=None):
             from .fixtures import load_panel, select_fixtures
             if args.fixture_command == "panel":
                 value = load_panel(args.name)
-            else:
+            elif args.fixture_command in ("select", "generate", "pack"):
                 from pathlib import Path
+
+                from .bundles import generate_bundle, pack_bundle
                 recipe = json.loads(Path(args.recipe).read_text())
                 sources = dict(item.split("=", 1) for item in args.source)
-                value = select_fixtures(recipe, sources).manifest
+                if args.fixture_command == "select":
+                    value = select_fixtures(recipe, sources).manifest
+                elif args.fixture_command == "generate":
+                    value = generate_bundle(recipe, args.output, sources=sources, cache=cache,
+                                            header_policy=args.header_policy, size_budget=args.size_budget)
+                else:
+                    value = pack_bundle(select_fixtures(recipe, sources), args.output,
+                                        header_policy=args.header_policy, size_budget=args.size_budget)
+            else:
+                from .bundles import export_bundle, list_bundle, verify_bundle
+                if args.fixture_command == "verify":
+                    value = verify_bundle(args.bundle, sha256=args.sha256)
+                elif args.fixture_command == "list":
+                    value = list_bundle(args.bundle)
+                else:
+                    value = export_bundle(args.bundle, args.output, members=args.member, format=args.format)
         elif args.command == "sync":
             sources = pinned_sources(args.source_revision) if args.source_revision else None
             dataset = Dataset.sync(args.snapshot, cache=cache, refresh=args.refresh, sources=sources,

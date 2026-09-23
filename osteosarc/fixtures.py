@@ -267,7 +267,7 @@ def select_fixtures(recipe, sources):
         if sid not in records:
             value = sources[sid]
             path = Path(value.path if isinstance(value, ReadSubset) else value)
-            expected = recipe["sources"][sid].get("archive_sha256")
+            expected = recipe["sources"][sid].get("archive_sha256") or recipe["sources"][sid].get("archive", {}).get("sha256")
             before = digest(path)
             if isinstance(value, ReadSubset):
                 request = value.receipt.get("request", {})

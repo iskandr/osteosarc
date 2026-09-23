@@ -124,3 +124,65 @@ is separate from selection status: zero retained records in bounded or truncated
 input is not evidence of zero support in the source. CLI extraction also supports
 `reads --recover-linked`. The existing `fetch_pairs` behavior remains unchanged;
 choose a recovery policy instead of combining those options.
+
+## Portable bundles
+
+`generate_bundle(recipe, destination, sources=..., cache=...)` acquires declared
+inputs, selects, and publishes a self-contained directory. `pack_bundle(selection,
+destination)` starts from an existing selection. Destinations must be new.
+`Dataset.generate_bundle` also checks source identities against its snapshot.
+
+A source may declare a small historical `archive` with `url`, `sha256`, and
+`size_bytes`, or `identity.url`, `index` and bounded `regions` for live indexed
+acquisition. Member regions are the fallback acquisition union. Source
+`acquisition` holds explicit filters/recovery settings. Explicit local `sources`
+are verified against any declared archive hash. Interrupted extraction can reuse
+the existing verified Cache derivatives. Normal installation never acquires data.
+Indexed acquisition preserves declared inventory size and modification metadata;
+the Dataset API also accepts an identity containing only a snapshot key or ID.
+
+The bundle stores a shared source record pool, indexed BAMs, full original headers,
+recipe, acquisition receipts, source/sample/library/product identities, member
+multiplicity and reasons, tool versions, parent lineage, and file hashes/sizes.
+`redistribution` in the recipe carries source-license/citation information; absent
+license information remains unresolved. Remote HTTP identity is preserved as HTTP
+evidence, separate from archive or full-file SHA256. Historical receipt paths are
+audit strings, never dependencies for offline verification or export.
+
+`header_policy="full"` is the default. Compact mode keeps every SQ (including
+assembly-identifying contigs), source comments, retained RG/SM/LB metadata, and
+required PG ancestry. When producer lineage is unresolved it retains all PGs.
+Neither mode invents missing source metadata. Sorting only updates HD sort fields;
+the full original header remains archived. This avoids weakening assembly guards
+for downstream offline use.
+
+`verify_bundle(directory, sha256=pinned_manifest_hash)` checks all files, the
+recipe digest, source/member record multisets and index enumeration. Pin the
+manifest hash when consuming an external release; internal consistency checks
+alone are not an authenticity signature. `record_multiset` separately supports
+lossless equivalence comparisons across compression/tool versions. Exact BAM
+byte reproducibility requires the same recorded pysam/HTSlib toolchain.
+
+`export_bundle(bundle, destination, members=[...])` adds named, coordinate-sorted,
+indexed BAM exports, retaining the self-contained source pool and provenance.
+`format="sam"`/`"sam.gz"` explicitly requests legacy SAM-text fidelity. Empty
+members export valid empty indexed BAMs. Unresolved/omitted members stay declared
+without fabricated data. The default size budget is 64 MiB including metadata;
+set a smaller `size_budget` for a consumer's package. Publication is atomic only
+after verification, and existing destinations are refused.
+Exporting an exported bundle is supported: each request replaces the named export
+set in the new destination, so changing format leaves no stale export files.
+SAM exports use coordinate order, consistent with their headers. Verification
+checks member counts/status and SAM field multisets as well as BAM identities.
+
+```sh
+osteosarc --offline fixtures generate recipe.json bundle --source rna=archive.bam
+osteosarc fixtures verify bundle
+osteosarc fixtures list bundle
+osteosarc fixtures export bundle exported --member example
+```
+
+The constructors in `tests/test_bundles.py` demonstrate generation, packing,
+export and verification in a fresh offline directory after deleting the input
+BAM. Corrupt records, missing duplicates, nested members, recipe changes, swapped
+indexes, unsafe paths and size-budget failures are separate regressions.
