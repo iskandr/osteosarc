@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from threading import Event, Timer
 from urllib.parse import urlsplit
 
 from .cache import (
@@ -149,6 +150,54 @@ def _run(command, timeout):
     return subprocess.run(command, check=True, capture_output=True, timeout=timeout)
 
 
+def _run_bounded(command, output, max_records, timeout):
+    """Stop indexed acquisition on overflow; never publish a partial BAM."""
+    import pysam
+    command = list(command)
+    command[command.index("-o") + 1] = "-"
+    expired = Event()
+    with tempfile.TemporaryFile() as stderr:
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=stderr)
+
+        def expire():
+            expired.set()
+            process.kill()
+
+        timer = Timer(timeout, expire)
+        timer.daemon = True
+        timer.start()
+        try:
+            with pysam.AlignmentFile(process.stdout, "rb") as bam:
+                with pysam.AlignmentFile(output, "wb", template=bam) as out:
+                    for count, read in enumerate(bam, 1):
+                        if count > max_records:
+                            raise IntegrityError("Acquisition exceeds record limit")
+                        out.write(read)
+            returncode = process.wait()
+            if returncode:
+                stderr.seek(0)
+                raise subprocess.CalledProcessError(returncode, command, stderr=stderr.read())
+        except Exception as error:
+            if not isinstance(error, (IntegrityError, subprocess.CalledProcessError)):
+                # Reap early command failures before choosing the error to report.
+                # The timer still bounds a process blocked after malformed output.
+                process.wait()
+            if expired.is_set():
+                raise subprocess.TimeoutExpired(command, timeout) from error
+            if process.poll() not in (None, 0) and not isinstance(error, (IntegrityError, subprocess.CalledProcessError)):
+                stderr.seek(0)
+                raise subprocess.CalledProcessError(process.returncode, command, stderr=stderr.read()) from error
+            raise
+        finally:
+            timer.cancel()
+            if process.poll() is None:
+                process.kill()
+            process.wait()
+            process.stdout.close()
+        if expired.is_set():
+            raise subprocess.TimeoutExpired(command, timeout)
+
+
 def _samtools_version():
     # Distribution build flags can contain non-UTF-8 bytes after the version.
     return _run(["samtools", "--version"], 30).stdout.splitlines()[0].decode("utf-8", errors="replace")
@@ -261,7 +310,8 @@ def inspect_alignment(source, *, cache=None, snapshot_id=None, timeout=600):
 
 
 def extract_reads(source, regions, *, cache=None, index=None, filters=None, reference=None,
-                  fetch_pairs=False, snapshot_id=None, timeout=600, recovery=None):
+                  fetch_pairs=False, snapshot_id=None, timeout=600, recovery=None,
+                  max_records=None):
     """Fetch the indexed union of regions, retaining original record multiplicity.
 
     source can be an Asset, local BAM/CRAM, or HTTP(S) alignment URL. An index
@@ -275,8 +325,13 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
     Cached results are immutable snapshot derivatives; they are verified offline
     without rechecking the remote object. New requests check remote identity
     before and after extraction and retain that identity in their receipt.
+    max_records stops acquisition on overflow and discards the partial output.
     """
+    if max_records is not None and (type(max_records) is not int or max_records < 1):
+        raise ValueError("max_records must be a positive integer")
     if recovery is not None:
+        if max_records is not None:
+            raise ValueError("Use RecoveryPolicy.max_records with recovery")
         from .recovery import recover_reads
         return recover_reads(source, regions, policy=recovery, cache=cache, index=index,
                              filters=filters, reference=reference, fetch_pairs=fetch_pairs,
@@ -320,6 +375,8 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
                    reference_sha256=cache.file_digest(reference) if reference else None,
                    reference_index_sha256=cache.file_digest(str(reference) + ".fai") if reference else None)
     # JSON normalization makes tuples and serialized lists compare identically.
+    if max_records is not None:
+        request["max_records"] = max_records
     request = json.loads(json.dumps(request))
     directory = cache.workspace / "derived" / stable_id(request)
     with file_lock(cache.workspace / "locks" / (directory.name + ".lock")):
@@ -362,7 +419,10 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
                 barcodes.write_text("\n".join(sorted(set(filters.barcodes))) + "\n")
                 command += ["-D", filters.barcode_tag + ":" + str(barcodes)]
             command += [location, str(local_index)]
-            _run(command, timeout)
+            if max_records is None:
+                _run(command, timeout)
+            else:
+                _run_bounded(command, output, max_records, timeout)
             _run(["samtools", "quickcheck", "-v", str(output)], min(timeout, 60))
             with pysam.AlignmentFile(output) as bam:
                 count = sum(1 for _ in bam)

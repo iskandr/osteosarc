@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import os
 import tempfile
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass
 
 from .cache import Cache, digest, file_lock, stable_id, write_json
-from .errors import IntegrityError
+from .errors import CoordinateError, IntegrityError
 from .models import Region
-from .reads import _cached_subset, extract_reads
-from .records import read_records
+from .reads import _cached_subset, extract_reads, inspect_alignment, resolve_regions
+from .records import read_records, record_multiset
 
 
 @dataclass(frozen=True)
@@ -31,6 +31,9 @@ class RecoveryPolicy:
     max_records: int = 100_000
 
     def __post_init__(self):
+        for name in ("mates", "supplementary"):
+            if type(getattr(self, name)) is not bool:
+                raise ValueError(f"{name} must be a boolean")
         for name in ("max_rounds", "max_intervals", "max_bases", "max_records"):
             if type(getattr(self, name)) is not int or getattr(self, name) < 1:
                 raise ValueError(f"{name} must be a positive integer")
@@ -95,7 +98,15 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
     cache = cache if isinstance(cache, Cache) else Cache(cache)
     if kwargs.pop("fetch_pairs", False):
         raise ValueError("Choose RecoveryPolicy.mates instead of combining fetch_pairs with recovery")
-    seed = extract_reads(source, regions, cache=cache, **kwargs)
+    regions = tuple(regions)
+    if not regions or not all(isinstance(r, Region) for r in regions):
+        raise CoordinateError("Provide a nonempty sequence of Region objects")
+    info = inspect_alignment(source, cache=cache, snapshot_id=kwargs.get("snapshot_id"),
+                             timeout=kwargs.get("timeout", 600))
+    resolved = resolve_regions(regions, info.header)
+    if len(resolved) > policy.max_intervals or sum(r.end - r.start for r in resolved) > policy.max_bases:
+        raise IntegrityError("Seed acquisition exceeds recovery interval/base limit")
+    seed = extract_reads(source, regions, cache=cache, max_records=policy.max_records, **kwargs)
     request = dict(schema_version=1, operation="recover_reads", seed=seed.receipt["request"],
                    seed_files=seed.receipt["files"], recovery=asdict(policy))
     directory = cache.workspace / "derived" / stable_id(request)
@@ -108,6 +119,21 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
         seed_records = list(read_records(seed.path))
         counts = Counter(r.digest for r in seed_records)
         records = {r.digest: r for r in seed_records}
+        # An earlier query can contain a partner whose pointer is discovered later.
+        # Keep bounded candidates even when they are not selected for the output.
+        candidates, candidate_counts = defaultdict(dict), counts.copy()
+
+        def add_candidates(acquired):
+            for record in acquired:
+                read = record.read
+                key = (record.template, record.segment, read.reference_name, read.reference_start, read.is_reverse)
+                candidates[key][record.digest] = record
+
+        def matching_candidates(lead):
+            key = ((lead["rg"], lead["qname"]), lead["segment"], lead["contig"], lead["start"], lead["reverse"])
+            return [r for r in candidates.get(key, {}).values() if _matches(r, lead)]
+
+        add_candidates(seed_records)
         reasons = {key: {"seed/context region"} for key in records}
         visited = [dict(r, round=0) for r in seed.receipt["resolved_regions"]]
         bases = sum(r["end"] - r["start"] for r in visited)
@@ -126,7 +152,8 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
                     receipt["request"]["source_sha256"], receipt["request"]["index_sha256"],
                     (receipt.get("index_receipt") or {}).get("sha256")]
 
-        for round_number in range(1, policy.max_rounds + 2):
+        round_number = 1
+        while True:
             leads = {}
             for key in sorted(records.keys() - handled_records):
                 outgoing, issues = _leads(records[key], policy)
@@ -145,10 +172,12 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
             # Already present seed/partner records satisfy pointers without queries.
             pending = {}
             for identity, lead in sorted(leads.items()):
-                matches = [r for r in records.values() if _matches(r, lead)]
+                matches = matching_candidates(lead)
                 if matches:
                     for r in matches:
-                        reasons[r.digest].add("paired mate" if lead["kind"] == "mate" else "SA-linked partner")
+                        records[r.digest] = r
+                        counts[r.digest] = candidate_counts[r.digest]
+                        reasons.setdefault(r.digest, set()).add("paired mate" if lead["kind"] == "mate" else "SA-linked partner")
                     handled_leads.add(identity)
                     if len(matches) > 1:
                         problems[identity] = dict(lead=identity, reason="multiple matching placements")
@@ -181,7 +210,7 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
             if not intervals:
                 continue
             partner_regions = [Region(c, start, end, assembly, lengths[c]) for c, start, end in sorted(intervals)]
-            subset = extract_reads(source, partner_regions, cache=cache, **kwargs)
+            subset = extract_reads(source, partner_regions, cache=cache, max_records=policy.max_records, **kwargs)
             if source_identity(subset.receipt) != source_identity(seed.receipt):
                 raise IntegrityError("Alignment/header/index changed across recovery acquisitions")
             receipts.append(subset.receipt)
@@ -189,14 +218,16 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
             bases += len(intervals)
             visited.extend(dict(asdict(r), round=round_number) for r in partner_regions)
             fetched = list(read_records(subset.path))
-            if len(fetched) > policy.max_records:
-                raise IntegrityError("Partner acquisition exceeds recovery record limit")
+            candidate_counts |= Counter(r.digest for r in fetched)
+            if sum(candidate_counts.values()) > policy.max_records:
+                raise IntegrityError("Acquired candidates exceed recovery record limit")
+            add_candidates(fetched)
             found = Counter()
             found_records = {}
             for identity, lead in pending.items():
-                matches = [r for r in fetched if _matches(r, lead)]
+                matches = matching_candidates(lead)
                 if matches:
-                    multiplicities = Counter(r.digest for r in matches)
+                    multiplicities = Counter({r.digest: candidate_counts[r.digest] for r in matches})
                     found |= multiplicities  # union, not sum across overlapping pointers
                     found_records.update((r.digest, r) for r in matches)
                     for r in matches:
@@ -210,6 +241,7 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
                 raise IntegrityError("Retained records exceed recovery record limit")
             counts |= found
             records.update(found_records)
+            round_number += 1
         directory.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(dir=directory.parent, prefix=".recovery-") as temporary:
             from pathlib import Path
@@ -222,6 +254,8 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
                 for key in ordered:
                     for _ in range(counts[key]):
                         out.write(records[key].read)
+            if record_multiset(output) != counts:
+                raise IntegrityError("Recovery changed original BAM records")
             pysam.index(str(output))
             receipt = dict(request=request, files={name: digest(work / name) for name in ("reads.bam", "reads.bam.bai")},
                            records=sum(counts.values()), scope="bounded_mate_SA_context", complete_template=False,

@@ -80,6 +80,68 @@ def test_record_limit_fails_instead_of_publishing_partial_success(split_bam, tmp
     with pytest.raises(IntegrityError, match="limit"):
         extract_reads(split_bam, [Region("chr1", 100, 150, "GRCh38")], cache=tmp_path / "cache",
                       recovery=RecoveryPolicy(max_records=2))
+    assert not list((Cache(tmp_path / "cache").workspace / "derived").glob("*/reads.bam"))
+
+
+@pytest.mark.parametrize("policy,regions", [
+    (RecoveryPolicy(max_bases=10), [Region("chr1", 0, 1000, "GRCh38")]),
+    (RecoveryPolicy(max_intervals=1), [Region("chr1", 0, 10, "GRCh38"), Region("chr2", 0, 10, "GRCh38")]),
+])
+def test_seed_limits_checked_before_extraction(split_bam, tmp_path, monkeypatch, policy, regions):
+    import osteosarc.recovery as recovery
+    monkeypatch.setattr(recovery, "extract_reads", lambda *a, **k: pytest.fail("acquired over-limit seed"))
+    with pytest.raises(IntegrityError, match="interval/base limit"):
+        extract_reads(split_bam, iter(regions), cache=tmp_path / "cache", recovery=policy)
+
+
+def test_later_lead_reuses_candidate_in_visited_window(split_bam, tmp_path):
+    path = tmp_path / "recursive.bam"
+    with pysam.AlignmentFile(split_bam) as original:
+        header = original.header
+    with pysam.AlignmentFile(path, "wb", header=header) as out:
+        for pos, flag, cigar, mate, sa in [
+            (100, 65, "10M", 500, None),
+            (500, 129, "10M", 100, "chr1,501,+,5S5M,60,0;"),
+            (500, 2177, "5S5M", 100, None),
+            (500, 2177, "5S5M", 100, None),
+        ]:
+            r = pysam.AlignedSegment(header)
+            r.query_name, r.flag, r.reference_id, r.reference_start = "q", flag, 0, pos
+            r.cigarstring, r.mapping_quality, r.query_sequence = cigar, 60, "ACGTACGTAA"
+            r.next_reference_id, r.next_reference_start = 0, mate
+            r.set_tag("RG", "a")
+            if sa:
+                r.set_tag("SA", sa)
+            out.write(r)
+    pysam.index(str(path))
+    result = extract_reads(path, [Region("chr1", 100, 110, "GRCh38")], cache=tmp_path / "cache",
+                           recovery=RecoveryPolicy(max_rounds=1))
+    assert record_multiset(result.path) == record_multiset(path)
+    assert len(result.receipt["acquisition"]) == 2
+    assert not result.receipt["unresolved"]
+    assert any("SA-linked partner" in values for values in result.receipt["reasons"].values())
+
+
+def test_candidate_limit_counts_unselected_records(split_bam, tmp_path):
+    # The seed is five records; the first partner window also sees another RG.
+    with pytest.raises(IntegrityError, match="candidates exceed"):
+        extract_reads(split_bam, [Region("chr1", 100, 150, "GRCh38")], cache=tmp_path / "cache",
+                      recovery=RecoveryPolicy(max_records=7))
+
+
+def test_bounded_process_timeout_and_failure_cleanup(tmp_path):
+    import subprocess
+    import sys
+
+    from osteosarc.reads import _run_bounded
+    output = tmp_path / "out.bam"
+    with pytest.raises(subprocess.TimeoutExpired):
+        _run_bounded([sys.executable, "-c", "import time; time.sleep(10)", "-o", str(output)],
+                     output, 2, 0.1)
+    with pytest.raises(subprocess.CalledProcessError) as error:
+        _run_bounded([sys.executable, "-c", "import sys; sys.stderr.write('source failed'); sys.exit(2)",
+                      "-o", str(output)], output, 2, 2)
+    assert b"source failed" in error.value.stderr
 
 
 def test_changed_source_across_acquisitions_fails(split_bam, tmp_path, monkeypatch):

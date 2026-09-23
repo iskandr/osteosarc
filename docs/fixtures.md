@@ -110,6 +110,11 @@ leads, and acquisition limits. `complete_template` is always false. Even a fully
 resolved SA graph may omit unreported alignments. Missing indexes fail without a
 scan fallback. Interval/round limits produce an explicit truncated receipt;
 record overflow fails instead of publishing a partial successful artifact.
+Seed interval/base limits are checked against the resolved union before read
+extraction. The record budget covers every acquired candidate, including records
+that do not match a partner pointer; extraction stops on overflow. Previously
+fetched candidates remain available when a later mate or SA link points into an
+already visited window, without an additional query.
 Changed sources/headers/indexes fail across steps. Interrupted runs reuse only
 verified intermediate extractions.
 
