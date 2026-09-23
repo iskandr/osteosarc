@@ -134,10 +134,14 @@ def validate_recipe(recipe):
 
 def load_panel(name):
     """Load a shipped named target panel without network or downstream imports."""
+    if name == "sv-interest-v1":
+        from .sv_interest import load_sv_interest
+
+        return load_sv_interest()["targets"]
     path = Path(__file__).with_name("data") / "panels.json"
     panels = json.loads(path.read_text())
     if name not in panels:
-        raise KeyError(f"Unknown panel {name!r}; available: {', '.join(sorted(panels))}")
+        raise KeyError(f"Unknown panel {name!r}; available: {', '.join(sorted([*panels, 'sv-interest-v1']))}")
     return copy.deepcopy(panels[name])
 
 

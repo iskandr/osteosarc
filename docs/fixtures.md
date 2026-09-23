@@ -71,6 +71,13 @@ that ambiguously maps to different binary records. It is not the default.
 
 ## Named panels and CLI
 
+`load_panel("sv-interest-v1")` retains all 637 nominations in the September 22,
+2026 SV audit, including gene-to-intergenic candidates, RNA-only nominations,
+single breakends and entries with no recovered protein. It is a broader
+discovery set than the compact regression panel. `load_sv_interest()` returns
+the same targets with the snapshot's source URLs and checksums. See the
+[SV interest catalogue](sv-interest.md) for evidence and coordinate semantics.
+
 `load_panel("vaccine-loci-v1")` supplies the pinned historical vaccine alleles;
 consumers retain their own reference/correction policies. `sv-regressions-v1`
 pins historical RNA events and the additional 2026-09-23 research panel, retaining
