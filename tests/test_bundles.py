@@ -155,3 +155,138 @@ def test_compact_retains_pg_ancestry_and_unresolved_metadata():
     assert compact["CO"] == header["CO"]
     r.set_tag("PG", None)
     assert compact_header(header, [FixtureRecord(r, "digest")])["PG"] == header["PG"]
+
+
+@pytest.mark.parametrize("format", ["sam", "sam.gz"])
+def test_sam_exports_are_coordinate_sorted_and_indexable(bam, tmp_path, format):
+    import pysam
+    source = tmp_path / "bundle"
+    generate_bundle(bundle_recipe(bam), source, sources={"rna": bam})
+    dest = tmp_path / "export"
+    export_bundle(source, dest, format=format)
+    converted = tmp_path / "converted.bam"
+    with pysam.AlignmentFile(dest / ("members/duplicates." + format), "r") as sam:
+        assert sam.header.to_dict()["HD"]["SO"] == "coordinate"
+        with pysam.AlignmentFile(converted, "wb", template=sam) as out:
+            positions = []
+            for read in sam:
+                positions.append((read.reference_id, read.reference_start))
+                out.write(read)
+    assert positions == sorted(positions)
+    pysam.index(str(converted))
+
+
+def test_reexport_replaces_export_set_without_stale_files(bam, tmp_path):
+    source = tmp_path / "bundle"
+    generate_bundle(bundle_recipe(bam), source, sources={"rna": bam})
+    first, second, third = [tmp_path / name for name in ("first", "second", "third")]
+    export_bundle(source, first)
+    export_bundle(first, second, members=["duplicates", "duplicates"])
+    assert record_multiset(first / "members/duplicates.bam") == record_multiset(second / "members/duplicates.bam")
+    changed = export_bundle(second, third, format="sam.gz")
+    assert sorted(p.name for p in (third / "members").iterdir()) == ["duplicates.sam.gz"]
+    assert changed["parent"]["manifest_sha256"] == digest(second / "manifest.json")
+    verify_bundle(third)
+    with pytest.raises(FileExistsError):
+        export_bundle(first, second)
+
+
+@pytest.mark.parametrize("corruption", ["record", "format"])
+def test_sam_export_semantics_checked_after_relisting_bytes(bam, tmp_path, corruption):
+    source, dest = tmp_path / "bundle", tmp_path / "export"
+    generate_bundle(bundle_recipe(bam), source, sources={"rna": bam})
+    manifest = export_bundle(source, dest, format="sam")
+    if corruption == "format":
+        manifest["exports"]["duplicates"]["format"] = "unknown"
+    else:
+        name = "members/duplicates.sam"
+        path = dest / name
+        path.write_text(path.read_text().replace("repeated", "modified", 1))
+        manifest["files"][name] = dict(sha256=digest(path), size_bytes=path.stat().st_size)
+        manifest["total_size_bytes"] = sum(v["size_bytes"] for v in manifest["files"].values())
+    (dest / "manifest.json").write_text(json.dumps(manifest))
+    with pytest.raises(IntegrityError, match="SAM export record|Unsupported export format"):
+        verify_bundle(dest)
+
+
+def test_exact_pins_remain_required_when_context_is_declared(bam, tmp_path):
+    recipe = bundle_recipe(bam)
+    recipe["members"]["duplicates"]["context_regions"] = [dict(contig="chr1", start=100, end=1100, assembly="GRCh38")]
+    selection = select_fixtures(recipe, {"rna": bam})
+    member = selection.members["duplicates"]
+    key = next(iter(member["records"]))
+    member["record_count"] -= member["records"].pop(key)
+    member["reasons"].pop(key)
+    with pytest.raises(IntegrityError, match="pinned exact recipe"):
+        pack_bundle(selection, tmp_path / "invalid")
+    assert not (tmp_path / "invalid").exists()
+
+
+@pytest.mark.parametrize("field,value", [("record_count", 999), ("record_count", True),
+                                        ("status", "empty"), ("status", "omitted"), ("status", "unknown")])
+def test_member_counts_and_status_are_verified(bam, tmp_path, field, value):
+    directory = tmp_path / "bundle"
+    manifest = generate_bundle(bundle_recipe(bam), directory, sources={"rna": bam})
+    manifest["members"]["duplicates"][field] = value
+    (directory / "manifest.json").write_text(json.dumps(manifest))
+    with pytest.raises(IntegrityError, match="count|status"):
+        list_bundle(directory)
+
+
+def test_unavailable_exact_member_stays_explicit_without_fabricated_records(bam, tmp_path):
+    recipe = bundle_recipe(bam)
+    recipe["targets"]["snv"] = dict(kind="unresolved", reason="No resolved coordinates")
+    directory = tmp_path / "bundle"
+    manifest = generate_bundle(recipe, directory)
+    assert manifest["members"]["duplicates"]["record_count"] == 0
+    assert not manifest["sources"]
+    assert not export_bundle(directory, tmp_path / "export")["exports"]
+
+
+@pytest.mark.parametrize("url", ["https://example.test/source.bam", "https://example.test/alignment"])
+def test_direct_acquisition_preserves_inventory_size_pin(bam, tmp_path, monkeypatch, url):
+    import osteosarc.reads as reads
+    recipe = bundle_recipe(bam)
+    source = recipe["sources"]["rna"]
+    source["identity"]["url"] = url
+    source.pop("archive_sha256")
+    source["identity"]["size"] = bam.stat().st_size + 100
+    source["index"] = str(bam) + ".bai"
+    source["regions"] = [dict(contig="chr1", start=100, end=1100, assembly="GRCh38")]
+    monkeypatch.setattr(reads, "_remote_identity", lambda *a: {"content-length": str(bam.stat().st_size)})
+    original = reads._run
+    url = source["identity"]["url"]
+
+    def local_transport(command, timeout):
+        return original([str(bam) if arg == url else arg for arg in command], timeout)
+
+    monkeypatch.setattr(reads, "_run", local_transport)
+    with pytest.raises(IntegrityError, match="pinned inventory"):
+        generate_bundle(recipe, tmp_path / "rejected", cache=tmp_path / "cache")
+    assert not (tmp_path / "rejected").exists()
+    source["identity"]["size"] = bam.stat().st_size
+    generate_bundle(recipe, tmp_path / "accepted", cache=tmp_path / "cache")
+    acquired = json.loads((tmp_path / "accepted/acquisition.json").read_text())["rna"]
+    assert acquired["request"]["source_size"] == bam.stat().st_size
+
+
+@pytest.mark.parametrize("lookup", ["key", "id"])
+def test_dataset_acquisition_accepts_identity_without_url(bam, dataset, tmp_path, monkeypatch, lookup):
+    import osteosarc.reads as reads
+    dataset.cache.offline = False
+    asset = next(a for a in dataset.assets if a.format == "bam")
+    recipe = bundle_recipe(bam)
+    source = recipe["sources"]["rna"]
+    source.pop("archive_sha256")
+    source["identity"] = {lookup: getattr(asset, lookup)}
+    source["index"] = str(bam) + ".bai"
+    source["regions"] = [dict(contig="chr1", start=100, end=1100, assembly="GRCh38")]
+    monkeypatch.setattr(reads, "_remote_identity", lambda *a: {"content-length": str(asset.size) if asset.size is not None else None})
+    original = reads._run
+    monkeypatch.setattr(reads, "_run", lambda command, timeout: original(
+        [str(bam) if arg == asset.url else arg for arg in command], timeout))
+    manifest = dataset.generate_bundle(recipe, tmp_path / "bundle")
+    assert manifest["members"]["duplicates"]["records"] == dict(record_multiset(bam))
+    acquired = json.loads((tmp_path / "bundle/acquisition.json").read_text())["rna"]
+    assert acquired["request"]["source"] == asset.url
+    assert acquired["request"]["snapshot_id"] == dataset.id

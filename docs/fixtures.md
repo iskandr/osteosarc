@@ -138,6 +138,8 @@ acquisition. Member regions are the fallback acquisition union. Source
 `acquisition` holds explicit filters/recovery settings. Explicit local `sources`
 are verified against any declared archive hash. Interrupted extraction can reuse
 the existing verified Cache derivatives. Normal installation never acquires data.
+Indexed acquisition preserves declared inventory size and modification metadata;
+the Dataset API also accepts an identity containing only a snapshot key or ID.
 
 The bundle stores a shared source record pool, indexed BAMs, full original headers,
 recipe, acquisition receipts, source/sample/library/product identities, member
@@ -168,6 +170,10 @@ members export valid empty indexed BAMs. Unresolved/omitted members stay declare
 without fabricated data. The default size budget is 64 MiB including metadata;
 set a smaller `size_budget` for a consumer's package. Publication is atomic only
 after verification, and existing destinations are refused.
+Exporting an exported bundle is supported: each request replaces the named export
+set in the new destination, so changing format leaves no stale export files.
+SAM exports use coordinate order, consistent with their headers. Verification
+checks member counts/status and SAM field multisets as well as BAM identities.
 
 ```sh
 osteosarc --offline fixtures generate recipe.json bundle --source rna=archive.bam

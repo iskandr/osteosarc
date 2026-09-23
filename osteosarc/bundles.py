@@ -11,11 +11,12 @@ import tempfile
 from collections import Counter
 from contextlib import contextmanager
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from .cache import Cache, digest, file_lock, stable_id, write_json
-from .errors import IntegrityError
+from .errors import IntegrityError, SchemaError
 from .fixtures import select_fixtures, validate_recipe
-from .models import Region
+from .models import Asset, Region
 from .reads import extract_reads
 from .records import RECORD_ENCODING, read_records, record_multiset
 
@@ -113,8 +114,7 @@ def _write_bam(path, header, records, counts):
     by_id = {r.digest: r for r in records}
     if missing := Counter(counts) - Counter(r.digest for r in records):
         raise IntegrityError(f"Missing export record occurrences: {dict(missing)}")
-    ordered = sorted(counts, key=lambda k: (by_id[k].read.reference_id if by_id[k].read.reference_id >= 0 else len(header["SQ"]),
-                                           by_id[k].read.reference_start, k))
+    ordered = sorted(counts, key=lambda k: _record_order(by_id[k], len(header["SQ"])))
     path.parent.mkdir(parents=True, exist_ok=True)
     with pysam.AlignmentFile(path, "wb", header=header) as out:
         for key in ordered:
@@ -125,6 +125,12 @@ def _write_bam(path, header, records, counts):
         raise IntegrityError("BAM export changed original record bytes/multiplicity")
     with pysam.AlignmentFile(path) as bam:
         return bam.header.to_dict()
+
+
+def _record_order(record, reference_count):
+    read = record.read
+    return (read.reference_id if read.reference_id >= 0 else reference_count,
+            read.reference_start, record.digest)
 
 
 def _inventory(work):
@@ -194,6 +200,37 @@ def _verify_index(path, index):
         raise IntegrityError(f"Invalid fixture BAM/index {path.name}: {error}") from error
 
 
+def _verified_counts(value, label):
+    if not isinstance(value, dict) or any(
+            not isinstance(key, str) or len(key) != 64 or any(c not in "0123456789abcdef" for c in key)
+            or type(count) is not int or count < 1 for key, count in value.items()):
+        raise IntegrityError(f"Invalid record multiset: {label}")
+    return Counter(value)
+
+
+def _verify_member(name, member, declared, recipe):
+    counts = _verified_counts(member.get("records"), name)
+    if type(member.get("record_count")) is not int or member["record_count"] != sum(counts.values()):
+        raise IntegrityError(f"Member record count differs: {name}")
+    if member.get("source") != declared["source"] or member.get("target") != declared["target"]:
+        raise IntegrityError(f"Member target/source differs: {name}")
+    reasons = member.get("reasons")
+    if (not isinstance(reasons, dict) or set(reasons) != set(counts)
+            or any(not isinstance(values, list) or not values or any(not isinstance(v, str) or not v for v in values)
+                   for values in reasons.values())):
+        raise IntegrityError(f"Member reasons differ from records: {name}")
+    kind, status = declared["policy"]["kind"], member.get("status")
+    unavailable = ("unresolved" if recipe["targets"][declared["target"]]["kind"] == "unresolved"
+                   else "omitted" if kind == "omitted" else None)
+    if unavailable:
+        if status != unavailable or counts:
+            raise IntegrityError(f"Unavailable member status/records differ: {name}")
+    elif (status not in ("selected", "empty", "truncated") or (status == "empty" and counts)
+          or (status == "selected" and not counts) or (kind == "empty" and (status != "empty" or counts))):
+        raise IntegrityError(f"Member status/records differ: {name}")
+    return counts
+
+
 def verify_bundle(directory, *, sha256=None):
     """Verify bytes, recipe/membership, original record multiplicity and indexes offline.
 
@@ -218,28 +255,35 @@ def verify_bundle(directory, *, sha256=None):
         raise IntegrityError("Bundle recipe digest mismatch")
     if set(manifest["members"]) != set(recipe["members"]):
         raise IntegrityError("Bundle member set differs from recipe")
+    for name, member in manifest["members"].items():
+        _verify_member(name, member, recipe["members"][name], recipe)
     if manifest.get("record_encoding") != RECORD_ENCODING:
         raise IntegrityError("Unsupported record identity encoding")
+    if manifest.get("header_policy") not in ("full", "compact"):
+        raise IntegrityError("Unsupported header policy")
     total = sum(p.stat().st_size for p in root.rglob("*") if p.is_file())
     if total > manifest["size_budget_bytes"] or sum(f["size_bytes"] for f in files.values()) != manifest["total_size_bytes"]:
         raise IntegrityError("Bundle size budget or total differs")
     needed_sources = {m["source"] for m in manifest["members"].values() if m["status"] not in ("unresolved", "omitted")}
     if set(manifest["sources"]) != needed_sources:
         raise IntegrityError("Bundle source set differs from selected members")
+    source_records, source_files = {}, {"recipe.json", "acquisition.json"}
     for sid, source in manifest["sources"].items():
         if source["identity"] != recipe["sources"][sid]:
             raise IntegrityError(f"Bundle source identity differs from recipe: {sid}")
-        counts = Counter(source["records"])
-        if sum(counts.values()) != source["record_count"] or stable_id(dict(counts)) != source["record_multiset_sha256"]:
+        counts = _verified_counts(source["records"], sid)
+        if type(source["record_count"]) is not int or sum(counts.values()) != source["record_count"] or stable_id(dict(counts)) != source["record_multiset_sha256"]:
             raise IntegrityError(f"Source multiset/count digest mismatch: {sid}")
         path, index = safe_path(root, source["bam"]), safe_path(root, source["index"])
+        source_files.update(source[k] for k in ("bam", "index", "original_header"))
         if record_multiset(path) != counts:
             raise IntegrityError(f"Source record multiset/multiplicity differs: {sid}")
         with pysam.AlignmentFile(path) as bam:
             if bam.header.to_dict() != source["exported_header"]:
                 raise IntegrityError(f"Exported header differs: {sid}")
         original = json.loads(safe_path(root, source["original_header"]).read_text())
-        expected_header = (compact_header(original, list(read_records(path))) if manifest["header_policy"] == "compact" else original)
+        source_records[sid] = list(read_records(path))
+        expected_header = (compact_header(original, source_records[sid]) if manifest["header_policy"] == "compact" else original)
         expected_header = copy.deepcopy(expected_header)
         expected_header.setdefault("HD", {})["SO"] = "coordinate"
         for key in ("SS", "GO"):
@@ -257,22 +301,43 @@ def verify_bundle(directory, *, sha256=None):
         _verify_index(path, index)
     for name, member in manifest["members"].items():
         declared = recipe["members"][name]
-        if member["source"] != declared["source"] or member["target"] != declared["target"]:
-            raise IntegrityError(f"Member target/source differs: {name}")
-        if set(member["reasons"]) != set(member["records"]):
-            raise IntegrityError(f"Member reasons differ from records: {name}")
-        if declared["policy"]["kind"] == "exact" and declared["policy"].get("encoding", RECORD_ENCODING) == RECORD_ENCODING and not declared.get("context_regions") and not declared.get("retain_partners"):
+        if member["status"] in ("unresolved", "omitted"):
+            continue
+        if declared["policy"]["kind"] == "exact" and declared["policy"].get("encoding", RECORD_ENCODING) == RECORD_ENCODING:
             expected = Counter(declared["policy"].get("records", {}))
             if declared["policy"].get("duplicate_policy") == "identical-record-once":
                 expected = Counter(dict.fromkeys(expected, 1))
-            if Counter(member["records"]) != expected:
+            if expected - Counter(member["records"]) or (not declared.get("context_regions") and not declared.get("retain_partners") and Counter(member["records"]) != expected):
                 raise IntegrityError(f"Member differs from pinned exact recipe: {name}")
+    exported_files = set()
     for name, exported in manifest.get("exports", {}).items():
+        if name not in manifest["members"] or manifest["members"][name]["status"] in ("unresolved", "omitted"):
+            raise IntegrityError(f"Export has no available member: {name}")
+        if exported.get("format") not in ("bam", "sam", "sam.gz"):
+            raise IntegrityError(f"Unsupported export format: {name}")
+        expected_fidelity = RECORD_ENCODING if exported["format"] == "bam" else "sam-text-v1"
+        if exported.get("fidelity") != expected_fidelity:
+            raise IntegrityError(f"Export fidelity differs: {name}")
+        names = [exported[k] for k in ("path", "index") if k in exported]
+        if any(n in source_files or n in exported_files or n not in files for n in names):
+            raise IntegrityError(f"Export file overlaps or is unlisted: {name}")
+        exported_files.update(names)
         path = safe_path(root, exported["path"])
         if exported["format"] == "bam":
             if record_multiset(path) != Counter(manifest["members"][name]["records"]):
                 raise IntegrityError(f"Export record multiset differs: {name}")
             _verify_index(path, safe_path(root, exported["index"]))
+        else:
+            member = manifest["members"][name]
+            by_id = {r.digest: r for r in source_records[member["source"]]}
+            expected = Counter()
+            for key, count in member["records"].items():
+                expected[by_id[key].read.to_string()] += count
+            with pysam.AlignmentFile(path, "r") as sam:
+                if sam.header.to_dict() != manifest["sources"][member["source"]]["exported_header"]:
+                    raise IntegrityError(f"SAM export header differs: {name}")
+                if Counter(r.to_string() for r in sam) != expected:
+                    raise IntegrityError(f"SAM export record multiset differs: {name}")
     return manifest
 
 
@@ -293,13 +358,20 @@ def export_bundle(directory, destination, *, members=None, format="bam", size_bu
         raise ValueError("Export format must be bam, sam or sam.gz")
     root = Path(directory)
     original = verify_bundle(root)
-    members = sorted(original["members"] if members is None else members)
+    members = sorted(set(original["members"] if members is None else members))
+    if missing := set(members) - original["members"].keys():
+        raise KeyError(f"Unknown bundle members: {sorted(missing)}")
+    old_exports = {item[key] for item in original.get("exports", {}).values()
+                   for key in ("path", "index") if key in item}
     with _publication(destination) as work:
         for filename in original["files"]:
+            if filename in old_exports:
+                continue
             target = safe_path(work, filename)
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(safe_path(root, filename), target)
         manifest = copy.deepcopy(original)
+        manifest["exports"] = {}
         manifest["parent"] = dict(manifest_sha256=digest(root / "manifest.json"), parent=original.get("parent"))
         for name in members:
             member = manifest["members"][name]
@@ -317,7 +389,8 @@ def export_bundle(directory, destination, *, members=None, format="bam", size_bu
             else:
                 by_id = {r.digest: r for r in records}
                 text = str(pysam.AlignmentHeader.from_dict(source["exported_header"]))
-                text += "".join((by_id[key].read.to_string() + "\n") * n for key, n in sorted(member["records"].items()))
+                ordered = sorted(member["records"], key=lambda k: _record_order(by_id[k], len(source["exported_header"]["SQ"])))
+                text += "".join((by_id[key].read.to_string() + "\n") * member["records"][key] for key in ordered)
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(gzip.compress(text.encode(), mtime=0) if format == "sam.gz" else text.encode())
                 manifest["exports"][name] = dict(format=format, path=relative, fidelity="sam-text-v1")
@@ -356,15 +429,28 @@ def generate_bundle(recipe, destination, *, sources=None, cache=None, dataset=No
                 from .reads import ReadFilter
                 options["filters"] = ReadFilter(**options["filters"])
             if dataset is None:
-                inputs[sid] = extract_reads(source["identity"]["url"], regions, cache=cache,
+                identity = source["identity"]
+                if not identity.get("url"):
+                    raise SchemaError(f"Source {sid} requires identity.url without a Dataset")
+                url = identity["url"]
+                inferred_format = "cram" if Path(urlsplit(url).path).suffix.lower() == ".cram" else "bam"
+                asset = Asset(id=identity.get("id", stable_id(url)), key=identity.get("key", url), url=url,
+                              kind="alignment", format=identity.get("format", inferred_format),
+                              size=identity.get("size"), modified=identity.get("modified"),
+                              index_urls=tuple(identity.get("index_urls", ())))
+                inputs[sid] = extract_reads(asset, regions, cache=cache,
                                             index=source.get("index"), snapshot_id=source.get("snapshot_id"), **options)
             else:
-                asset = dataset.asset(source["identity"].get("key", source["identity"]["url"]))
+                identity = source["identity"]
+                lookup = identity["key"] if "key" in identity else identity.get("url", identity.get("id"))
+                asset = dataset.asset(lookup)
                 for key in ("id", "key", "url", "size", "modified"):
                     if key in source["identity"] and getattr(asset, key) != source["identity"][key]:
                         raise IntegrityError(f"Snapshot source identity changed: {sid}/{key}")
                 if source.get("snapshot_id", dataset.id) != dataset.id:
                     raise IntegrityError(f"Snapshot identity differs: {sid}")
+                if source.get("index") is not None:
+                    options["index"] = source["index"]
                 inputs[sid] = dataset.extract_reads(asset, regions, **options)
     selection = select_fixtures(recipe, inputs)
     for sid, receipt in archive_receipts.items():
