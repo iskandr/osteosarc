@@ -5,12 +5,12 @@ from __future__ import annotations
 import os
 import tempfile
 from collections import Counter, defaultdict
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 
 from .cache import Cache, digest, file_lock, stable_id, write_json
 from .errors import CoordinateError, IntegrityError
 from .models import Region
-from .reads import _cached_subset, extract_reads, inspect_alignment, resolve_regions
+from .reads import ReadFilter, _cached_subset, extract_reads, inspect_alignment, resolve_regions
 from .records import read_records, record_multiset
 
 
@@ -41,6 +41,8 @@ class RecoveryPolicy:
 
 def _leads(record, policy):
     r = record.read
+    if r.query_name in (None, "*"):
+        return [], [dict(record=record.digest, reason="missing QNAME; partner identity unavailable")]
     base = dict(rg=record.template[0], qname=r.query_name)
     leads, problems = [], []
     if r.query_sequence is None:
@@ -90,6 +92,8 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
     cap, missing sequence and repeated/cyclic pointer in its receipt. A changed
     source/index fails rather than mixing acquisitions. Cache hits resume only
     verified complete intermediates. Seed record overflow fails explicitly.
+    Partner windows select all seed QNAMEs before applying the record cap;
+    source/RG/segment/placement matching still determines retained partners.
     """
     import pysam
     policy = policy or RecoveryPolicy()
@@ -107,7 +111,7 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
     if len(resolved) > policy.max_intervals or sum(r.end - r.start for r in resolved) > policy.max_bases:
         raise IntegrityError("Seed acquisition exceeds recovery interval/base limit")
     seed = extract_reads(source, regions, cache=cache, max_records=policy.max_records, **kwargs)
-    request = dict(schema_version=1, operation="recover_reads", seed=seed.receipt["request"],
+    request = dict(schema_version=2, operation="recover_reads", seed=seed.receipt["request"],
                    seed_files=seed.receipt["files"], recovery=asdict(policy))
     directory = cache.workspace / "derived" / stable_id(request)
     with file_lock(cache.workspace / "locks" / (directory.name + ".lock")):
@@ -117,6 +121,13 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
             header = bam.header.to_dict()
         lengths = {s["SN"]: s["LN"] for s in header["SQ"]}
         seed_records = list(read_records(seed.path))
+        # Every recursively recovered mate/SA partner has a seed QNAME. Include
+        # all seed names in every round so later leads can reuse a visited window.
+        # Exact RG/segment/placement matching below remains authoritative.
+        partner_kwargs = dict(kwargs, filters=replace(
+            kwargs.get("filters") or ReadFilter(),
+            query_names=tuple(sorted({r.read.query_name for r in seed_records
+                                      if r.read.query_name not in (None, "*")}))))
         counts = Counter(r.digest for r in seed_records)
         records = {r.digest: r for r in seed_records}
         # An earlier query can contain a partner whose pointer is discovered later.
@@ -211,7 +222,8 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
             if not intervals:
                 continue
             partner_regions = [Region(c, start, end, assembly, lengths[c]) for c, start, end in sorted(intervals)]
-            subset = extract_reads(source, partner_regions, cache=cache, max_records=policy.max_records, **kwargs)
+            subset = extract_reads(source, partner_regions, cache=cache, max_records=policy.max_records,
+                                   **partner_kwargs)
             if source_identity(subset.receipt) != source_identity(seed.receipt):
                 raise IntegrityError("Alignment/header/index changed across recovery acquisitions")
             receipts.append(subset.receipt)
