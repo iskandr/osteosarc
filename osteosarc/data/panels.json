@@ -1,0 +1,728 @@
+{
+  "sv-regressions-v1": {
+    "GABBR1-SLC29A1": {
+      "kind": "unresolved",
+      "reason": "Pinned event and original-record selectors are required from the consumer recipe; the label alone is not a selector."
+    },
+    "OTUD7A-FMN1": {
+      "kind": "unresolved",
+      "reason": "Pinned event and original-record selectors are required from the consumer recipe; the label alone is not a selector."
+    },
+    "PARD3B-CDKN2B": {
+      "kind": "unresolved",
+      "reason": "Pinned event and original-record selectors are required from the consumer recipe; the label alone is not a selector."
+    },
+    "SV0055": {
+      "kind": "unresolved",
+      "reason": "Pinned event and original-record selectors are required from the consumer recipe; the label alone is not a selector."
+    },
+    "SV0175": {
+      "kind": "unresolved",
+      "reason": "Pinned event and original-record selectors are required from the consumer recipe; the label alone is not a selector."
+    },
+    "SV0402": {
+      "kind": "unresolved",
+      "reason": "Pinned event and original-record selectors are required from the consumer recipe; the label alone is not a selector."
+    },
+    "SV0461": {
+      "kind": "unresolved",
+      "reason": "Pinned event and original-record selectors are required from the consumer recipe; the label alone is not a selector."
+    },
+    "SV0499": {
+      "kind": "unresolved",
+      "reason": "Pinned event and original-record selectors are required from the consumer recipe; the label alone is not a selector."
+    }
+  },
+  "vaccine-loci-v1": {
+    "ABCF2-chr7-151218156-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chr7",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 151218156,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "ADGRF5-chr6-46856758-GRCh38": {
+      "alt": "C",
+      "assembly": "GRCh38",
+      "contig": "chr6",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 46856758,
+      "ref": "T",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "ATRX-chrX-77599465-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chrX",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 77599465,
+      "ref": "C",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "BMP1-chr8-22192067-GRCh38": {
+      "alt": "A",
+      "assembly": "GRCh38",
+      "contig": "chr8",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 22192067,
+      "ref": "T",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "BTD-chr3-15645183-GRCh38": {
+      "alt": "G",
+      "assembly": "GRCh38",
+      "contig": "chr3",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 15645183,
+      "ref": "T",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "CD109-chr6-73818405-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chr6",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 73818405,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "CDC40-chr6-110228838-GRCh38": {
+      "alt": "C",
+      "assembly": "GRCh38",
+      "contig": "chr6",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 110228838,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "CENPL-chr1-173811223-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chr1",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 173811223,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "CUL9-chr6-43186384-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chr6",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 43186384,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "DIAPH1-chr5-141526090-GRCh38": {
+      "alt": "A",
+      "assembly": "GRCh38",
+      "contig": "chr5",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 141526090,
+      "ref": "C",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "DYNC1H1-chr14-101980529-GRCh38": {
+      "alt": "A",
+      "assembly": "GRCh38",
+      "contig": "chr14",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 101980529,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "DYNC1H1-chr14-102030200-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chr14",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 102030200,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "EPG5-chr18-45925851-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chr18",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 45925851,
+      "ref": "C",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "EXOC4-chr7-133274996-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chr7",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 133274996,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "F8-chrX-154930861-GRCh38": {
+      "alt": "G",
+      "assembly": "GRCh38",
+      "contig": "chrX",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 154930861,
+      "ref": "T",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "FBXO33-chr14-39431722-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chr14",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 39431722,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "GLIS3-chr9-3856149-GRCh38": {
+      "alt": "C",
+      "assembly": "GRCh38",
+      "contig": "chr9",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 3856149,
+      "ref": "CTGATGTGG",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "H1_2-chr6-26055824-GRCh38": {
+      "alt": "A",
+      "assembly": "GRCh38",
+      "contig": "chr6",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 26055824,
+      "ref": "ACCTTGGGCTTAGCGG",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "KDM3B-chr5-138391529-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chr5",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 138391529,
+      "ref": "C",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "KIF1C-chr17-5007293-GRCh38": {
+      "alt": "A",
+      "assembly": "GRCh38",
+      "contig": "chr17",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 5007293,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "KRT18-chr12-52951767-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chr12",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 52951767,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "MAP2-chr2-209694768-GRCh38": {
+      "alt": "C",
+      "assembly": "GRCh38",
+      "contig": "chr2",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 209694768,
+      "ref": "CCTGGGCTACTGTGTGTTCAATA",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "MT_ND5-chrM-12994-GRCh37": {
+      "alt": "A",
+      "assembly": "GRCh37",
+      "contig": "chrM",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 12995,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh37",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "MT_ND5-chrM-12994-GRCh38": {
+      "alt": "A",
+      "assembly": "GRCh38",
+      "contig": "chrM",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 12994,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "MYO15B-chr17-75589953-GRCh38": {
+      "alt": "G",
+      "assembly": "GRCh38",
+      "contig": "chr17",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 75589953,
+      "ref": "GC",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "MYO9A-chr15-71994488-GRCh38": {
+      "alt": "A",
+      "assembly": "GRCh38",
+      "contig": "chr15",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 71994488,
+      "ref": "T",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "NAV2-chr11-20080142-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chr11",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 20080142,
+      "ref": "C",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "NME1-chr17-51154443-GRCh38": {
+      "alt": "A",
+      "assembly": "GRCh38",
+      "contig": "chr17",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 51154443,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "NR2F2-chr15-96332299-GRCh37": {
+      "alt": "T",
+      "assembly": "GRCh37",
+      "contig": "chr15",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 96875528,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh37",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "NR2F2-chr15-96332299-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chr15",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 96332299,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "NTF3-chr12-5494381-GRCh38": {
+      "alt": "G",
+      "assembly": "GRCh38",
+      "contig": "chr12",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 5494381,
+      "ref": "A",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "PIP5K1A-chr1-151242178-GRCh38": {
+      "alt": "A",
+      "assembly": "GRCh38",
+      "contig": "chr1",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 151242178,
+      "ref": "AG",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "PRICKLE2-chr3-64198863-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chr3",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 64198863,
+      "ref": "C",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "PTH1R-chr3-46898732-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chr3",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 46898732,
+      "ref": "A",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "RNF213-chr17-80327830-GRCh38": {
+      "alt": "A",
+      "assembly": "GRCh38",
+      "contig": "chr17",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 80327830,
+      "ref": "ATAC",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "ROBO2-chr3-77607853-GRCh38": {
+      "alt": "A",
+      "assembly": "GRCh38",
+      "contig": "chr3",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 77607853,
+      "ref": "C",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "SLC25A12-chr2-171813470-GRCh38": {
+      "alt": "G",
+      "assembly": "GRCh38",
+      "contig": "chr2",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 171813470,
+      "ref": "A",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "SMC5-chr9-70298024-GRCh38": {
+      "alt": "A",
+      "assembly": "GRCh38",
+      "contig": "chr9",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 70298024,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "TECPR1-chr7-98241127-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chr7",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 98241127,
+      "ref": "TG",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "TMRO-chr9-97910412-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chr9",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 97910412,
+      "ref": "C",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "VPS13B-chr8-99861923-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chr8",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 99861923,
+      "ref": "C",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "VPS72-chr1-151185547-GRCh38": {
+      "alt": "C",
+      "assembly": "GRCh38",
+      "contig": "chr1",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 151185547,
+      "ref": "T",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "WWC1-chr5-168399513-GRCh38": {
+      "alt": "G",
+      "assembly": "GRCh38",
+      "contig": "chr5",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 168399513,
+      "ref": "T",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "ZNF436-chr1-23362762-GRCh38": {
+      "alt": "C",
+      "assembly": "GRCh38",
+      "contig": "chr1",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 23362762,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "ZNF674-chrX-46501045-GRCh38": {
+      "alt": "A",
+      "assembly": "GRCh38",
+      "contig": "chrX",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 46501045,
+      "ref": "G",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    },
+    "ZNF764-chr16-30557995-GRCh38": {
+      "alt": "T",
+      "assembly": "GRCh38",
+      "contig": "chr16",
+      "coordinates": "one-based",
+      "kind": "small_variant",
+      "position": 30557995,
+      "ref": "C",
+      "reference": {
+        "assembly": "GRCh38",
+        "path": "tests/data/osteosarc/expansion/corpus/manifest.json",
+        "revision": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+        "source": "openvax/isovar"
+      }
+    }
+  }
+}

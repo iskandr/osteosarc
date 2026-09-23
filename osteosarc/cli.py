@@ -91,6 +91,13 @@ def parser():
     discover = commands.add_parser("discover", help="Explicitly list a live S3 prefix")
     discover.add_argument("prefix")
     discover.add_argument("--refresh", action="store_true")
+    fixtures = commands.add_parser("fixtures", help="Execute pinned read-fixture recipes")
+    actions = fixtures.add_subparsers(dest="fixture_command", required=True)
+    select = actions.add_parser("select", help="Return record membership and inclusion reasons")
+    select.add_argument("recipe")
+    select.add_argument("--source", action="append", default=[], metavar="ID=LOCAL_BAM")
+    panel = actions.add_parser("panel", help="Print a shipped named target panel")
+    panel.add_argument("name")
     return root
 
 
@@ -107,7 +114,16 @@ def main(argv=None):
     args = parser().parse_args(argv)
     cache = Cache(args.cache, offline=args.offline)
     try:
-        if args.command == "sync":
+        if args.command == "fixtures":
+            from .fixtures import load_panel, select_fixtures
+            if args.fixture_command == "panel":
+                value = load_panel(args.name)
+            else:
+                from pathlib import Path
+                recipe = json.loads(Path(args.recipe).read_text())
+                sources = dict(item.split("=", 1) for item in args.source)
+                value = select_fixtures(recipe, sources).manifest
+        elif args.command == "sync":
             sources = pinned_sources(args.source_revision) if args.source_revision else None
             dataset = Dataset.sync(args.snapshot, cache=cache, refresh=args.refresh, sources=sources,
                                    corrections=not args.no_corrections)
