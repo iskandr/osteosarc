@@ -1,6 +1,6 @@
 """Drive one pinned panel through the real Isovar/Topiary/Vaxrank CLIs offline.
 
-python scripts/check_fixture_consumers.py --isovar /checkout --topiary /checkout --vaxrank /checkout
+python -m scripts.check_fixture_consumers --isovar /checkout --topiary /checkout --vaxrank /checkout
 This is an explicit adoption check, not a dependency of ordinary Osteosarc tests.
 """
 

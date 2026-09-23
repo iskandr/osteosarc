@@ -306,3 +306,21 @@ def test_frozen_additional_sv_panel_generates_offline(tmp_path):
     assert manifest["total_size_bytes"] < 4_000_000
     exported = export_bundle(tmp_path / "additional", tmp_path / "exported", members=["SV0461/T1-PacBio"])
     assert exported["exports"]["SV0461/T1-PacBio"]["format"] == "bam"
+
+
+def test_legacy_full_header_bundles_remain_readable_and_exportable(bam, tmp_path):
+    import pysam
+    directory = tmp_path / "legacy"
+    manifest = generate_bundle(bundle_recipe(bam), directory, sources={"rna": bam})
+    source = manifest["sources"]["rna"]
+    with pysam.AlignmentFile(directory / source["bam"]) as inp:
+        source["exported_header"] = inp.header.to_dict()
+    del source["header_sha256"]
+    (directory / "manifest.json").write_text(json.dumps(manifest))
+    assert verify_bundle(directory)["members"] == manifest["members"]
+    exported = export_bundle(directory, tmp_path / "export", format="sam")
+    assert exported["members"] == manifest["members"]
+    source["exported_header"]["HD"]["SO"] = "unsorted"
+    (directory / "manifest.json").write_text(json.dumps(manifest))
+    with pytest.raises(IntegrityError, match="Exported header differs"):
+        verify_bundle(directory)

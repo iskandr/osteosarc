@@ -20,7 +20,7 @@ import pysam
 
 from . import Asset, Dataset, Region, SampleClaim, digest, extract_reads
 from . import __version__ as osteosarc_version
-from .bundles import safe_path
+from .bundles import DEFAULT_SIZE_BUDGET, safe_path
 
 
 def record_digest(read, *, text_only=False):
@@ -85,6 +85,8 @@ def write_cohort(root, cohort, records, recipe):
     path = safe_path(root, cohort["path"])
     path.parent.mkdir(parents=True, exist_ok=True)
     if cohort["format"] == "fusion":
+        if len(records) != len(cohort["record_metadata"]):
+            raise ValueError("Fusion record metadata count differs: " + cohort["path"])
         data = json.loads((recipe / "fusion" / path.name.removesuffix(".gz")).read_text())
         data["original_records"] = [dict(sam=r.to_string(), **metadata)
                                     for r, metadata in zip(records, cohort["record_metadata"])]
@@ -152,6 +154,9 @@ def update_manifests(root):
 
 
 def generate_cohort_bundle(recipe, cache, output):
+    recipe, output = Path(recipe), Path(output)
+    if output.exists() or output.is_symlink():
+        raise FileExistsError(output)
     plan = json.loads(gzip.decompress((recipe / "selection.json.gz").read_bytes()))
     catalog = json.loads((recipe / "catalog.json").read_text())
     if catalog["snapshot"]["id"] != plan["snapshot_id"] or catalog["corrections"] is not False:
@@ -209,7 +214,9 @@ def generate_cohort_bundle(recipe, cache, output):
                         archive.writestr(info, path.read_bytes())
             if staged.stat().st_size > plan.get("size_budget_bytes", 64 * 1024 * 1024):
                 raise ValueError("Cohort bundle exceeds size budget")
-            staged.replace(output)
+            # Same-filesystem hard linking publishes atomically and exclusively,
+            # including when another writer creates output during acquisition.
+            os.link(staged, output)
         print("Wrote %s (%d bytes)" % (output, output.stat().st_size), flush=True)
 
 
@@ -220,6 +227,8 @@ def _extract_bundle(archive, destination):
     if destination.is_symlink() or not destination.is_dir() or any(destination.iterdir()):
         raise ValueError("Bundle destination must be an empty, real directory")
     with zipfile.ZipFile(archive) as source:
+        if sum(info.file_size for info in source.infolist()) > DEFAULT_SIZE_BUDGET:
+            raise ValueError(f"Bundle exceeds {DEFAULT_SIZE_BUDGET} byte size budget")
         names = source.namelist()
         if len(names) != len(set(names)):
             raise ValueError("Duplicate bundle member")

@@ -44,7 +44,7 @@ network connections disabled, and compare full membership, reasons, source and
 header identities:
 
 ```sh
-python scripts/check_fixture_consumers.py --isovar /path/to/isovar \
+python -m scripts.check_fixture_consumers --isovar /path/to/isovar \
   --topiary /path/to/topiary --vaxrank /path/to/vaxrank
 ```
 

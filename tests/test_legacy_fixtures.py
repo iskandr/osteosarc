@@ -1,8 +1,12 @@
+import gzip
+import json
+import zipfile
 from collections import Counter
 
 import pysam
 import pytest
 
+from osteosarc import cohort_bundle
 from osteosarc import legacy_fixtures as legacy
 from osteosarc.cohort_bundle import record_digest, retrieval_regions, select_records
 
@@ -41,3 +45,55 @@ def test_cohort_float_identity_and_exact_multiplicity(bam):
     cohort = dict(path="all.bam", format="bam", records=[record_digest(r) for r in records])
     selected = select_records(ReadSubset(bam, Path(str(bam) + ".bai"), {}), cohort)
     assert [record_digest(r) for r in selected] == cohort["records"]
+
+
+def test_cohort_size_budget_includes_manifest_before_extraction(tmp_path, monkeypatch):
+    archive, destination = tmp_path / "bundle.zip", tmp_path / "out"
+    destination.mkdir()
+    monkeypatch.setattr(cohort_bundle, "DEFAULT_SIZE_BUDGET", 1024)
+    with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as out:
+        out.writestr("bundle.json", json.dumps(dict(schema_version=1, files={}, padding="x" * 1200)))
+    with pytest.raises(ValueError, match="size budget"):
+        cohort_bundle.extract_bundle(archive, destination)
+    assert not list(destination.iterdir())
+
+
+@pytest.mark.parametrize("symlink", [False, True])
+def test_cohort_existing_output_refused_before_acquisition(tmp_path, symlink):
+    output = tmp_path / "existing.zip"
+    if symlink:
+        output.symlink_to(tmp_path / "missing-target")
+    else:
+        output.write_text("preserved")
+    with pytest.raises(FileExistsError):
+        cohort_bundle.generate_cohort_bundle(tmp_path / "missing-recipe", None, output)
+    assert output.is_symlink() if symlink else output.read_text() == "preserved"
+
+
+def test_cohort_publication_never_overwrites_concurrent_output(tmp_path, monkeypatch):
+    recipe = tmp_path / "recipe"
+    recipe.mkdir()
+    (recipe / "support").mkdir()
+    (recipe / "support/data.txt").write_text("original")
+    (recipe / "selection.json.gz").write_bytes(gzip.compress(json.dumps(dict(snapshot_id="snapshot", cohorts=[])).encode()))
+    (recipe / "catalog.json").write_text(json.dumps(dict(snapshot=dict(id="snapshot"), corrections=False, variants={})))
+    # Exercise publication independently of the historical manifest format.
+    monkeypatch.setattr(cohort_bundle, "update_manifests", lambda root: None)
+    output = tmp_path / "output.zip"
+    link = cohort_bundle.os.link
+
+    def concurrent_writer(staged, target):
+        target.write_text("another writer")
+        return link(staged, target)
+
+    monkeypatch.setattr(cohort_bundle.os, "link", concurrent_writer)
+    with pytest.raises(FileExistsError):
+        cohort_bundle.generate_cohort_bundle(recipe, None, output)
+    assert output.read_text() == "another writer"
+
+
+def test_fusion_metadata_mismatch_does_not_silently_drop_records(tmp_path):
+    cohort = dict(path="fusion.json.gz", format="fusion", record_metadata=[{}])
+    with pytest.raises(ValueError, match="metadata count differs"):
+        cohort_bundle.write_cohort(tmp_path, cohort, [None, None], tmp_path / "missing-recipe")
+    assert not (tmp_path / "fusion.json.gz").exists()

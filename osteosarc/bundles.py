@@ -267,7 +267,7 @@ def verify_bundle(directory, *, sha256=None):
     needed_sources = {m["source"] for m in manifest["members"].values() if m["status"] not in ("unresolved", "omitted")}
     if set(manifest["sources"]) != needed_sources:
         raise IntegrityError("Bundle source set differs from selected members")
-    source_records, source_files = {}, {"recipe.json", "acquisition.json"}
+    source_records, source_headers, source_files = {}, {}, {"recipe.json", "acquisition.json"}
     for sid, source in manifest["sources"].items():
         if source["identity"] != recipe["sources"][sid]:
             raise IntegrityError(f"Bundle source identity differs from recipe: {sid}")
@@ -280,8 +280,14 @@ def verify_bundle(directory, *, sha256=None):
             raise IntegrityError(f"Source record multiset/multiplicity differs: {sid}")
         with pysam.AlignmentFile(path) as bam:
             exported_header = bam.header.to_dict()
-            if stable_id(exported_header) != source["header_sha256"]:
+            # 0.2.2 stored the full header; newer writers store its digest.
+            expected_digest = source.get("header_sha256")
+            if expected_digest is None and "exported_header" in source:
+                expected_digest = stable_id(source["exported_header"])
+            if (stable_id(exported_header) != expected_digest
+                    or ("exported_header" in source and exported_header != source["exported_header"])):
                 raise IntegrityError(f"Exported header differs: {sid}")
+            source_headers[sid] = exported_header
         original = json.loads(safe_path(root, source["original_header"]).read_text())
         source_records[sid] = list(read_records(path))
         expected_header = (compact_header(original, source_records[sid]) if manifest["header_policy"] == "compact" else original)
@@ -335,7 +341,7 @@ def verify_bundle(directory, *, sha256=None):
             for key, count in member["records"].items():
                 expected[by_id[key].read.to_string()] += count
             with pysam.AlignmentFile(path, "r") as sam:
-                if sam.header.to_dict() != manifest["sources"][member["source"]]["exported_header"]:
+                if sam.header.to_dict() != source_headers[member["source"]]:
                     raise IntegrityError(f"SAM export header differs: {name}")
                 if Counter(r.to_string() for r in sam) != expected:
                     raise IntegrityError(f"SAM export record multiset differs: {name}")
