@@ -196,6 +196,7 @@ def _run_bounded(command, output, max_records, timeout):
             process.stdout.close()
         if expired.is_set():
             raise subprocess.TimeoutExpired(command, timeout)
+    return command
 
 
 def _samtools_version():
@@ -422,7 +423,7 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
             if max_records is None:
                 _run(command, timeout)
             else:
-                _run_bounded(command, output, max_records, timeout)
+                command = _run_bounded(command, output, max_records, timeout)
             _run(["samtools", "quickcheck", "-v", str(output)], min(timeout, 60))
             with pysam.AlignmentFile(output) as bam:
                 count = sum(1 for _ in bam)

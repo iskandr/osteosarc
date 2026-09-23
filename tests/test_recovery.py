@@ -144,7 +144,8 @@ def test_bounded_process_timeout_and_failure_cleanup(tmp_path):
     assert b"source failed" in error.value.stderr
 
 
-def test_changed_source_across_acquisitions_fails(split_bam, tmp_path, monkeypatch):
+@pytest.mark.parametrize("field", ["source_sha256", "reference_sha256", "reference_index_sha256"])
+def test_changed_source_across_acquisitions_fails(split_bam, tmp_path, monkeypatch, field):
     import osteosarc.recovery as recovery
     original = recovery.extract_reads
     calls = []
@@ -153,7 +154,7 @@ def test_changed_source_across_acquisitions_fails(split_bam, tmp_path, monkeypat
         result = original(*args, **kwargs)
         calls.append(result)
         if len(calls) > 1:
-            result.receipt["request"]["source_sha256"] = "changed-source"
+            result.receipt["request"][field] = "changed-source"
         return result
 
     monkeypatch.setattr(recovery, "extract_reads", changed)

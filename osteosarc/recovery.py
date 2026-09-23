@@ -150,6 +150,7 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
             # Header and index content are checked as well as remote HTTP identity.
             return [receipt["remote_identity"], receipt["header_receipt"]["files"],
                     receipt["request"]["source_sha256"], receipt["request"]["index_sha256"],
+                    receipt["request"]["reference_sha256"], receipt["request"]["reference_index_sha256"],
                     (receipt.get("index_receipt") or {}).get("sha256")]
 
         round_number = 1
