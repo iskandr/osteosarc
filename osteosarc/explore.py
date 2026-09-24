@@ -110,8 +110,8 @@ def specimen_view(data, sample_id, *, days=7, width=None):
     return "\n".join(lines)
 
 
-def assets_view(data, *, limit=40, width=None, **filters):
-    selected = data.assets.select(**filters)
+def assets_view(data, *, limit=40, width=None, sample=None, **filters):
+    selected = data.assets_for_sample(sample, **filters) if sample else data.assets.select(**filters)
     rows = [dict(key=a.key, kind=a.kind, size=f"{a.size / 1e9:.2f} GB" if a.size else "",
                  timepoint=_text(a.values("timepoint")), assay=_text(a.values("assay")),
                  tissue=_text(a.values("tissue")), provider=_text(a.values("provider")),
@@ -274,7 +274,7 @@ class Explorer(cmd.Cmd):
         self._print(specimen_view(self.data, arg.strip(), width=self.width))
 
     def do_assets(self, arg):
-        """assets [key=value ...] -- e.g. assets kind=alignment timepoint=T1 assay=rna-seq."""
+        """assets [key=value ...] -- e.g. assets sample=T1_tumor kind=alignment assay=rna-seq."""
         self._print(assets_view(self.data, width=self.width, **options(shlex.split(arg))))
 
     def do_variants(self, arg):

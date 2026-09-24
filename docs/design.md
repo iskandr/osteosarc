@@ -105,8 +105,7 @@ acquisition date matters.
 
 Datacache downloads and verifies files, retries transient failures, and
 publishes complete files atomically. Osteosarc adds per-URL locks, immutable
-snapshot receipts, and MD5 checks where the source supplies them. Existing
-0.1.0 snapshots and cached reads remain usable without conversion.
+snapshot receipts, and MD5 checks where the source supplies them.
 
 HTTP headers are checked before and after downloads when the server supports
 HEAD. Regional BAM/CRAM access uses SAMtools; its indexes use datacache and

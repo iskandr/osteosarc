@@ -100,12 +100,12 @@ def test_cli_reports_and_strict_mode(dataset, capsys):
     # The fixture excerpt lacks most corrected records, so they are stale here,
     # and a drift check fails even when this run does not apply corrections.
     with pytest.warns(CurationWarning):
-        assert main(["--cache", root, "curation", "fixture", "--strict"]) == 1
+        assert main(["--cache", root, "curation", "--snapshot", "fixture", "--strict"]) == 1
     assert "stale corrections" in capsys.readouterr().err
-    assert main(["--cache", root, "--no-corrections", "curation", "fixture", "--strict"]) == 1
+    assert main(["--cache", root, "--no-corrections", "curation", "--snapshot", "fixture", "--strict"]) == 1
     report = json.loads(capsys.readouterr().out)
     assert {r["status"] for r in report["corrections"]} == {"disabled"}
-    assert main(["--cache", root, "--no-corrections", "curation", "fixture"]) == 0
+    assert main(["--cache", root, "--no-corrections", "curation", "--snapshot", "fixture"]) == 0
 
 
 def test_normal_and_blood_are_one_tissue():

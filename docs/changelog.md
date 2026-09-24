@@ -5,6 +5,12 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.4.0 (2026-09-24)
+
+- Removed the CLI's positional snapshot argument (`osteosarc samples baseline`);
+  choose a snapshot with `--snapshot`. Removed the empty `[reads]` install extra.
+- The explorer's `assets` command accepts `sample=`, as in `assets sample=T1_tumor`.
+
 ## 0.3.0 (2026-09-24)
 
 - Snapshots are indexed by download date, and the most recent is the default
@@ -17,7 +23,7 @@ snapshot (by name or download date) for reproducible analyses. Full release note
   one exactly by name or ID prefix. Offline, `sync()` builds a snapshot from sources
   already in the cache.
 - Named snapshots keep working. The CLI's leading snapshot argument
-  (`osteosarc samples baseline`) still works but is deprecated in favor of `--snapshot`.
+  (`osteosarc samples baseline`) is deprecated in favor of `--snapshot`.
 - The documentation no longer uses a `baseline` snapshot name.
 
 ## 0.2.6 (2026-09-24)

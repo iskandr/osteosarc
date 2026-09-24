@@ -43,7 +43,7 @@ from .recovery import RecoveryPolicy, recover_reads
 from .sv_interest import load_sv_interest
 from .timeline import Event, Timeline
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 __all__ = [
     "load_sv_interest",

@@ -25,12 +25,10 @@ def parser():
                       help="Use the published sources unchanged (see osteosarc.curation)")
     commands = root.add_subparsers(dest="command", required=True)
     # Commands that read a snapshot take --snapshot; the newest is the default.
-    # A leading positional snapshot name is still accepted but deprecated.
     snapshot = argparse.ArgumentParser(add_help=False)
     snapshot.add_argument("--snapshot", help="A UTC download date, month or year for the newest snapshot "
                                              "downloaded then (2026-09-24, 2026-09), or a snapshot name or ID "
                                              "prefix (default: the most recent; see snapshots)")
-    legacy = dict(nargs="?", help=argparse.SUPPRESS)
 
     def data_command(name, **kwargs):
         return commands.add_parser(name, parents=[snapshot], **kwargs)
@@ -42,7 +40,6 @@ def parser():
     snapshots = commands.add_parser("snapshots", help="Saved snapshots by download date; the newest is the default")
     snapshots.add_argument("--json", action="store_true")
     assets = data_command("assets", help="List objects without downloading their data")
-    assets.add_argument("legacy_snapshot", **legacy)
     assets.add_argument("--sample", help="Only files linked to this specimen, such as T0_tumor (see samples)")
     for field in ("kind", "format", "prefix", "contains", "timepoint", "assay", "platform", "tissue", "provider", "library"):
         assets.add_argument("--" + field)
@@ -50,17 +47,14 @@ def parser():
     assets.add_argument("--include-inferred", action="store_true")
     assets.add_argument("--limit", type=int, default=50)
     variants = data_command("variants", help="List source-reported variant entries")
-    variants.add_argument("legacy_snapshot", **legacy)
     variants.add_argument("--set", choices=("site", "all", "vaccine"), default="site")
     for field in ("gene", "vaccine", "pipeline", "status"):
         variants.add_argument("--" + field)
     variants.add_argument("--vaccine-source", choices=("overlap", "source_variants"), default="overlap")
     curation = data_command("curation", help="Report corrections and unrecognized source labels")
-    curation.add_argument("legacy_snapshot", **legacy)
     curation.add_argument("--strict", action="store_true",
                           help="Exit 1 if any correction is stale or any source label is unrecognized")
     timeline = data_command("timeline", help="ASCII timeline of every dated source (or --list)")
-    timeline.add_argument("legacy_snapshot", **legacy)
     timeline.add_argument("--since", help="YYYY, YYYY-MM or YYYY-MM-DD")
     timeline.add_argument("--until")
     timeline.add_argument("--lane", help="Only lanes whose name contains this text")
@@ -69,29 +63,22 @@ def parser():
     timeline.add_argument("--list", action="store_true", help="One line per event instead of a chart")
     timeline.add_argument("--json", action="store_true", help="Event records as JSON")
     around = data_command("on", help="Events within some days of a date")
-    around.add_argument("legacy_snapshot", **legacy)
     around.add_argument("date")
     around.add_argument("--days", type=int, default=7)
     specimens = data_command("specimens", help="Specimen registry, or one specimen's details")
-    specimens.add_argument("legacy_snapshot", **legacy)
     specimens.add_argument("sample_id", nargs="?")
     specimens.add_argument("--json", action="store_true")
-    explore = data_command("explore", help="Interactive terminal explorer")
-    explore.add_argument("legacy_snapshot", **legacy)
+    data_command("explore", help="Interactive terminal explorer")
     samples = data_command("samples", help="Readable specimen and sequencing overview")
-    samples.add_argument("legacy_snapshot", **legacy)
     samples.add_argument("--timepoint")
     samples.add_argument("--tissue")
     samples.add_argument("--json", action="store_true", help="Original source-attributed sample claims")
     for name, description in (("timepoints", "Published timepoint and date pairs"),
                               ("vaccines", "Vaccine-overlap rows with ELISPOT results")):
-        command = data_command(name, help=description)
-        command.add_argument("legacy_snapshot", **legacy)
+        data_command(name, help=description)
     table = data_command("table", help="Parse a named site table or bucket table")
-    table.add_argument("legacy_snapshot", **legacy)
     table.add_argument("asset")
     download = data_command("download", help="Explicitly fetch one full data object")
-    download.add_argument("legacy_snapshot", **legacy)
     download.add_argument("asset")
     download.add_argument("--refresh", action="store_true")
     reads = data_command("reads", help="Extract reads around variants or regions to a cached BAM")
@@ -165,29 +152,11 @@ def read_targets(dataset, args):
                          for r in args.regions], padding=args.padding)
 
 
-def snapshot_selector(args, cache):
-    """Dataset.open's name and date for --snapshot or the deprecated leading snapshot name."""
-    legacy, saved = getattr(args, "legacy_snapshot", None), None
-
-    def is_saved(name):
-        nonlocal saved
-        saved = saved if saved is not None else {r["name"] for r in Dataset.snapshots(cache=cache)}
-        return name in saved
-    # specimens [SNAPSHOT] [SAMPLE_ID] and reads [SNAPSHOT] ASSET [REGIONS] need the saved
-    # names to tell the forms apart; snapshot names never contain '/', file keys do.
-    if args.command == "specimens" and legacy and args.sample_id is None and not is_saved(legacy):
-        args.sample_id, legacy = legacy, None
-    if args.command == "reads" and args.regions and (
-            is_saved(args.asset) or ("/" not in args.asset and "/" in args.regions[0])):
-        legacy, args.asset, args.regions = args.asset, args.regions[0], args.regions[1:]
-    if legacy is None:
-        dated = args.snapshot is not None and DATE_SELECTOR.fullmatch(args.snapshot)
-        return dict(date=args.snapshot) if dated else dict(name=args.snapshot)
-    if args.snapshot is not None:
-        raise ValueError("Give the snapshot once, with --snapshot")
-    print(f"osteosarc: a leading snapshot argument is deprecated; use --snapshot {legacy}, "
-          "or leave it out to use the most recent snapshot", file=sys.stderr)
-    return dict(name=legacy)
+def snapshot_selector(args):
+    """Dataset.open's arguments for --snapshot: a download date, or a name or ID prefix."""
+    if args.snapshot is not None and DATE_SELECTOR.fullmatch(args.snapshot):
+        return dict(date=args.snapshot)
+    return dict(name=args.snapshot)
 
 
 def snapshots_view(rows):
@@ -255,7 +224,7 @@ def main(argv=None):
             # Listing and parsing pinned metadata remain offline automatically;
             # commands that acquire new bytes opt in unless --offline is set.
             online = args.command in ("download", "table", "reads") and not args.offline
-            dataset = Dataset.open(**snapshot_selector(args, cache), cache=cache, offline=not online,
+            dataset = Dataset.open(**snapshot_selector(args), cache=cache, offline=not online,
                                    corrections=not args.no_corrections)
             if args.command == "assets":
                 filters = {name: getattr(args, name) for name in

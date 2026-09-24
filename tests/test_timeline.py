@@ -107,13 +107,13 @@ def test_views_and_interactive_explorer(dataset):
 
 def test_cli_timeline_specimens_and_on(dataset, capsys):
     root = str(dataset.cache.root)
-    assert main(["--cache", root, "timeline", "fixture", "--since", "2024", "--until", "2025", "--width", "90"]) == 0
+    assert main(["--cache", root, "timeline", "--snapshot", "fixture", "--since", "2024", "--until", "2025", "--width", "90"]) == 0
     assert "Time points" in capsys.readouterr().out
-    assert main(["--cache", root, "timeline", "fixture", "--lane", "MRD", "--json"]) == 0
+    assert main(["--cache", root, "timeline", "--snapshot", "fixture", "--lane", "MRD", "--json"]) == 0
     assert all(e["category"] == "MRD" for e in json.loads(capsys.readouterr().out))
-    assert main(["--cache", root, "on", "fixture", "2025-01-28", "--days", "0"]) == 0
+    assert main(["--cache", root, "on", "--snapshot", "fixture", "2025-01-28", "--days", "0"]) == 0
     assert "T2" in capsys.readouterr().out
-    assert main(["--cache", root, "specimens", "fixture", "T3_tumor"]) == 0
+    assert main(["--cache", root, "specimens", "--snapshot", "fixture", "T3_tumor"]) == 0
     assert "MSKCC" in capsys.readouterr().out
 
 
@@ -154,7 +154,7 @@ def test_invalid_dates_are_clear_errors_everywhere(dataset, capsys):
             dataset.timeline.select(since=bad)
         with pytest.raises(ValueError):
             dataset.timeline.around(bad)
-    assert main(["--cache", str(dataset.cache.root), "timeline", "fixture", "--since", "2024/06"]) == 1
+    assert main(["--cache", str(dataset.cache.root), "timeline", "--snapshot", "fixture", "--since", "2024/06"]) == 1
     assert "Expected a date" in capsys.readouterr().err
     output = io.StringIO()
     session = io.StringIO("zoom 2024-05 2024-09\nzoom June\nzoom 2024-13\nevents Proton\nquit\n")
@@ -209,9 +209,9 @@ def test_sample_overview_keeps_full_assay_labels_and_filters(dataset, capsys):
     for assay in specimen["assays"]:
         assert assay in text
     assert dataset.describe_samples(timepoint="missing") == "(no matching samples)"
-    assert main(["--cache", str(dataset.cache.root), "samples", "fixture", "--timepoint", "T1", "--tissue", "tumor"]) == 0
+    assert main(["--cache", str(dataset.cache.root), "samples", "--snapshot", "fixture", "--timepoint", "T1", "--tissue", "tumor"]) == 0
     assert "T1_tumor" in capsys.readouterr().out
-    assert main(["--cache", str(dataset.cache.root), "samples", "fixture", "--json"]) == 0
+    assert main(["--cache", str(dataset.cache.root), "samples", "--snapshot", "fixture", "--json"]) == 0
     assert json.loads(capsys.readouterr().out) == list(dataset.samples)
 
 
