@@ -135,27 +135,32 @@ def pinned_sources(revision):
 
 
 def read_targets(dataset, args):
-    """Regions or catalogue variants for the reads command, as Dataset.extract_reads takes them."""
+    """Parse the reads command's regions or catalogue variants; Dataset.extract_reads checks the rest."""
+    if args.variant and (args.regions or args.assembly or args.reference_length):
+        raise ValueError("Supply either regions (with --assembly) or --variant, not both; "
+                         "variants carry their own assembly")
     if args.variant:
-        if args.regions or args.assembly or args.reference_length:
-            raise ValueError("Supply either regions or --variant, not both; variants carry their own assembly")
-        selected = dataset.variants("all", ids=args.variant)
-        missing = sorted(set(args.variant) - {v.id for v in selected})
+        variants = dataset.variants("all", ids=args.variant)
+        missing = sorted(set(args.variant) - {v.id for v in variants})
         if missing:
-            raise ValueError(f"Unknown variant ID(s): {', '.join(missing)}; list them with `osteosarc variants`")
-        return dict(variants=selected, padding=args.padding)
-    if not args.regions:
-        raise ValueError("Supply contig:start-end regions or --variant ID")
-    if args.assembly is None:
+            raise ValueError(f"Unknown variant ID(s): {', '.join(missing)}; "
+                             f"list them with `osteosarc variants {args.snapshot} --set all`")
+        return dict(variants=variants, padding=args.padding)
+    if args.regions and args.assembly is None:
         raise ValueError("--assembly is required with explicit regions")
-    if args.padding:
-        raise ValueError("--padding applies to --variant; widen explicit regions instead")
     return dict(regions=[Region.from_samtools(r, assembly=args.assembly, reference_length=args.reference_length)
-                         for r in args.regions])
+                         for r in args.regions], padding=args.padding)
 
 
 def main(argv=None):
-    args = parser().parse_args(argv)
+    root = parser()
+    args, extra = root.parse_known_args(argv)
+    # Before Python 3.13, argparse binds the optional regions positional before any
+    # option, so regions written after an option arrive here as extra arguments.
+    if extra and (args.command != "reads" or any(item.startswith("-") for item in extra)):
+        root.error(f"unrecognized arguments: {' '.join(extra)}")
+    if extra:
+        args.regions = [*args.regions, *extra]
     cache = Cache(args.cache, offline=args.offline)
     try:
         if args.command == "fixtures":
