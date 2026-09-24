@@ -142,23 +142,38 @@ def test_cli_reads_accepts_catalogue_variants(dataset, capsys, monkeypatch, tmp_
     # The same selection through Python yields the same padded one-based regions.
     assert call["variants"].regions(padding=100) == dataset.variants(ids=ids).regions(padding=100)
 
-    assert main(["--cache", root, "reads", "fixture", source, "chr14:101980529-101980530",
-                 "--assembly", "GRCh38"]) == 0
-    capsys.readouterr()
-    assert [(r.contig, r.start, r.end, r.assembly) for r in calls.pop()["regions"]] == [
-        ("chr14", 101980528, 101980530, "GRCh38")]
+    expected = [("chr14", 101980528, 101980530, "GRCh38"), ("chr14", 101980599, 101980600, "GRCh38")]
+    # Regions may precede or follow options, as with argparse on every supported Python.
+    for arguments in (["chr14:101980529-101980530", "chr14:101980600-101980600", "--assembly", "GRCh38"],
+                      ["--assembly", "GRCh38", "chr14:101980529-101980530", "chr14:101980600-101980600"],
+                      ["chr14:101980529-101980530", "--min-mapq", "0", "--assembly", "GRCh38",
+                       "chr14:101980600-101980600"]):
+        assert main(["--cache", root, "reads", "fixture", source, *arguments]) == 0
+        capsys.readouterr()
+        assert [(r.contig, r.start, r.end, r.assembly) for r in calls.pop()["regions"]] == expected
 
     for arguments, message in [
         (["--variant", "NOT-A-VARIANT"], "Unknown variant ID"),
-        (["chr14:1-2", "--variant", ids[0]], "either regions or --variant"),
-        (["--variant", ids[0], "--assembly", "GRCh38"], "either regions or --variant"),
+        (["chr14:1-2", "--variant", ids[0]], "either regions (with --assembly) or --variant"),
+        (["--variant", ids[0], "chr14:1-2"], "either regions (with --assembly) or --variant"),
+        (["--variant", ids[0], "--assembly", "GRCh38"], "either regions (with --assembly) or --variant"),
         (["chr14:1-2"], "--assembly is required"),
-        (["chr14:1-2", "--assembly", "GRCh38", "--padding", "5"], "--padding applies to --variant"),
-        ([], "Supply contig:start-end regions or --variant"),
     ]:
         assert main(["--cache", root, "reads", "fixture", source, *arguments]) == 1
         assert message in capsys.readouterr().err
     assert not calls
+    # Dataset.extract_reads enforces the remaining rules, with the same messages as in Python.
+    monkeypatch.undo()
+    for arguments, message in [
+        (["chr14:1-2", "--assembly", "GRCh38", "--padding", "5"], "padding requires variants"),
+        ([], "nonempty sequence of regions or ready variants"),
+    ]:
+        assert main(["--cache", root, "reads", "fixture", source, *arguments]) == 1
+        assert message in capsys.readouterr().err
+    with pytest.raises(SystemExit):
+        main(["--cache", root, "reads", "fixture", source, "--bogus"])
+    with pytest.raises(SystemExit):
+        main(["--cache", root, "variants", "fixture", "extra"])
 
 
 def test_acquired_data_remains_pinned_after_url_refresh(dataset, tmp_path):
