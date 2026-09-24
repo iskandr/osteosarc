@@ -1,10 +1,14 @@
 # OpenVax fixture adoption
 
-The common APIs are introduced by PRs [#22](https://github.com/iskandr/osteosarc/pull/22),
-[#23](https://github.com/iskandr/osteosarc/pull/23), and
-[#24](https://github.com/iskandr/osteosarc/pull/24). Consumer adoption requires the
-Osteosarc 0.2.3 release; preparing these PRs does not claim that a release exists.
-The scientific baseline stays separate from the mechanics migration.
+Isovar, Topiary, Vaxrank and Varcode share Osteosarc's fixture recipes, selection,
+bundles and verification instead of maintaining their own. The shared APIs arrived
+in Osteosarc 0.2.0 to 0.2.3 (PRs [#22](https://github.com/iskandr/osteosarc/pull/22)
+to [#25](https://github.com/iskandr/osteosarc/pull/25)). The consumers adopted them
+on 2026-09-23: [Isovar #351](https://github.com/openvax/isovar/pull/351),
+[Topiary #380](https://github.com/openvax/topiary/pull/380),
+[Vaxrank #503](https://github.com/openvax/vaxrank/pull/503) and
+[Varcode #489](https://github.com/openvax/varcode/pull/489). The scientific baseline
+stays separate from the mechanics migration.
 
 ## Inventory and ownership
 
@@ -17,7 +21,7 @@ The scientific baseline stays separate from the mechanics migration.
 | Topiary compact Sid, indels, regional RNA overlays, all-variant audit, shared NTF3 | `regional_corpus.generate_regional_corpus`, `fixture_assets.fixture_paths` | Selection declaration, annotations, translation/prediction/ranking expectations |
 | Vaxrank 58 exact cohorts (49 vaccine-locus retrieval cases plus context/ranking/SV) | `cohort_bundle` pinning, selection, header checks, nested manifests, packing and loading | Checked-in cohort recipe, reference/prediction metadata and ranking tests |
 | Vaxrank regional corpus and reporting analyses | Existing `extract_reads` acquisition; source-specific selection declarations | Library grouping, independent quality/orientation audit and reports |
-| Varcode historical snapshot and source VCF fixtures | Optional current adapter pin 0.2.3; existing `Dataset`/`Cache` | Original historical export version, alleles, VCF event definitions and protein tests; no BAM dependency added to ordinary tests |
+| Varcode historical snapshot and source VCF fixtures | Optional current adapter; existing `Dataset`/`Cache` | Original historical export version, alleles, VCF event definitions and protein tests; no BAM dependency added to ordinary tests |
 
 The historical adapters keep distinct reviewed transport formats, with explicit
 SAM-text fidelity where appropriate. There are no runtime imports of Isovar,
@@ -67,18 +71,18 @@ OTUD7A/FMN1 RNA event definitions. Source-call disagreements and complex-cluster
 relationships remain in original records. Shared reads and repeated candidate
 matches never imply independent molecules.
 
-## Release and distribution gates
+## Releases and distribution
 
-Every consumer PR bumps its own version and pins Osteosarc 0.2.3 deliberately.
-Existing exact 0.1.x installation pins change; recorded historical data versions
-and source/correction/reference identities do not. Isovar's offline fixture API
-is shared on Python 3.9 as well; Osteosarc's Python 3.9 suite is tested explicitly.
-Varcode keeps the current adapter optional and the historical collector's exact
+Each consumer pins its Osteosarc version deliberately and bumps its own version when
+that pin changes. Recorded historical data versions and source, correction and
+reference identities do not change with the pin. Isovar's offline fixture API also
+runs on Python 3.9, and Osteosarc's Python 3.9 suite is tested explicitly. Varcode
+keeps the current adapter optional and the historical collector's exact
 old-version requirement separate.
 
-Before merging consumer adoption, release Osteosarc 0.2.3, run each consumer's
-lint/test gates, and inspect real sdists/wheels for fixture membership and size.
-Isovar and Vaxrank's built-distribution regressions exercise original-read loading
-outside their checkouts. No fixtures are acquired during package installation.
-Consumer scientific rebaselines require separate review, even when acquisition
-or regeneration succeeds.
+Before changing a pin, run each consumer's lint and test gates and inspect real
+sdists and wheels for fixture membership and size. Isovar and Vaxrank's
+built-distribution regressions exercise original-read loading outside their
+checkouts. No fixtures are acquired during package installation. Consumer
+scientific rebaselines require separate review, even when acquisition or
+regeneration succeeds.

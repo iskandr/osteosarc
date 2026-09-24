@@ -1,11 +1,32 @@
 # osteosarc
 
-Python tools for working with the public [osteosarc.com](https://osteosarc.com/data/)
-dataset. Find sequencing files, look up variants and vaccine peptides, and fetch
-reads around a variant without downloading an entire BAM.
+Python library and command-line tool for the public [osteosarc.com](https://osteosarc.com/data/)
+dataset: one patient's osteosarcoma sequencing, variant calls, cancer vaccines and
+clinical history. Find files, select variants and vaccine peptides, and fetch reads
+around a variant without downloading an entire BAM.
 
 [Documentation](https://iskandr.github.io/osteosarc/) ·
-[Examples for Varcode, Isovar, Topiary, and Vaxrank](https://iskandr.github.io/osteosarc/consumers/)
+[Key concepts](https://iskandr.github.io/osteosarc/concepts/) ·
+[Command line](https://iskandr.github.io/osteosarc/cli/) ·
+[Python API](https://iskandr.github.io/osteosarc/api/) ·
+[Changelog](https://iskandr.github.io/osteosarc/changelog/)
+
+## Features
+
+- **Browse without downloading.** Search nearly 400,000 files by sample, timepoint and
+  assay: bulk and single-cell RNA, exome, genome, Oxford Nanopore and PacBio.
+- **Variants and vaccine peptides.** Catalogue variants with checked genomic alleles,
+  read counts, pipeline detections, vaccine peptides and ELISPOT results.
+- **Reads around a variant.** Indexed queries copy only the reads you need from a
+  remote BAM into a cached, indexed local BAM.
+- **Corrected by default.** 32 documented, evidence-backed fixes to the published
+  data, such as the MAP2 vaccine target's allele. Every load rechecks them, and you
+  can turn them off.
+- **Clinical timeline.** Treatments, procedures, imaging, MRD and lab results as a
+  text chart or in an interactive terminal explorer.
+- **Reproducible.** Named metadata snapshots with SHA-256 receipts reopen offline.
+- **OpenVax integration.** Adapters for Varcode, Isovar, Topiary and Vaxrank,
+  versioned read-fixture recipes, and a catalogue of 637 structural-variant candidates.
 
 ## Install
 
@@ -13,106 +34,64 @@ reads around a variant without downloading an entire BAM.
 python -m pip install osteosarc
 ```
 
-Requires Python 3.9+ and Linux or macOS. Read extraction also needs
-`samtools` on PATH; see the [read extraction guide](https://iskandr.github.io/osteosarc/reads/).
+Requires Python 3.9+ on Linux or macOS. Fetching reads also needs
+[SAMtools](https://www.htslib.org/) on PATH.
 
-## Find samples and sequencing files
+## Quickstart
 
 ```python
 from osteosarc import Dataset
 
-data = Dataset.sync("baseline")
+data = Dataset.sync("baseline")  # Save about 57 MB of metadata as "baseline"
 print(data.describe_samples())
-```
 
-`baseline` is a name you choose for the local metadata snapshot. The first sync
-fetches about 57 MB; sequencing files stay remote until requested.
-
-`T0_tumor` is the primary tumor specimen from the **T0 collection timepoint**
-(2022-12-16). `T0_blood` is blood from that same timepoint. Sample type is the
-`tissue` field; sequencing assay is a separate choice:
-
-| Data available for `T0_tumor` | Assay filter |
-| --- | --- |
-| Bulk RNA sequencing | `rna-seq` |
-| Bulk whole-exome DNA sequencing | `wes` |
-| Bulk whole-genome DNA sequencing | `wgs` |
-
-Find its bulk RNA alignments:
-
-```python
 rna = data.assets_for_sample("T0_tumor", kind="alignment", assay="rna-seq")
-for asset in rna:
-    print(asset.key)
-```
-
-`rna-seq` means **bulk RNA**; `scrna-seq` means **single-cell RNA**. A specimen
-can have both, as `T1_tumor` does. `platform="ont"` or `"pacbio"` selects a
-sequencing technology separately. See [sample IDs and assay names](https://iskandr.github.io/osteosarc/explore/)
-for the full vocabulary and platform availability.
-
-## Select variants
-
-```python
 targets = data.variants(gene="DYNC1H1", status="ready")
-for variant in targets:
-    print(variant.id, variant.allele)
-```
 
-Variant `status` describes whether its genomic allele is usable. `ready` means
-one consistent chromosome, position, REF and ALT, with literal DNA bases.
-Read support, somatic status and protein effects need separate analysis.
-Omit the filter to include unresolved entries; see [all statuses](https://iskandr.github.io/osteosarc/variants/#variant-status).
-Alleles are `(chromosome, one-based position, REF, ALT)`.
-
-## Fetch reads around those variants
-
-```python
-source = rna[
-    "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"
-]
+source = rna["rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"]
 reads = data.extract_reads(source, variants=targets, padding=100)
 print(reads.path)  # Local indexed BAM
 ```
 
-This retrieves overlapping reads from the chosen BAM and checks its assembly.
-Use [Isovar](https://iskandr.github.io/osteosarc/consumers/#isovar) to classify
-reference- and alternate-supporting reads.
+Later, `Dataset.open("baseline")` reopens the snapshot without a network connection.
+[Get started](https://iskandr.github.io/osteosarc/) explains each step.
 
-Downloads use datacache and the shared OpenVax cache. The same extraction
-request reuses its cached result. To reopen the snapshot offline:
-
-```python
-data = Dataset.open("baseline")
-```
-
-Use `offline=False` to acquire more data. Set `OSTEOSARC_CACHE` for a separate
-cache directory. To refresh metadata, choose a new snapshot name with
-`Dataset.sync("next-snapshot", refresh=True)`.
-
-## Use the command line
+The same workflow from the terminal:
 
 ```sh
 osteosarc sync baseline
 osteosarc samples baseline
-osteosarc variants baseline --gene MAP2
-osteosarc timeline baseline --since 2024-05 --until 2024-09
+osteosarc assets baseline --sample T0_tumor --kind alignment --assay rna-seq
+osteosarc variants baseline --gene DYNC1H1 --status ready
+osteosarc reads baseline rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam --variant DYNC1H1-chr14-101980529 --padding 100
 osteosarc explore baseline
 ```
 
-The explorer lets you browse specimens, files, variants, and the timeline.
-Type `help` for commands and `quit` to leave.
+`osteosarc explore` opens an interactive browser for specimens, files, variants and
+the timeline. Type `help` for commands and `quit` to leave.
 
-## About the data
+## Guides
 
-Documented source corrections are applied by default. Use
-`Dataset.open("baseline", corrections=False)` to inspect the published values.
-See [corrections](https://iskandr.github.io/osteosarc/curation/) for
-the changes and their evidence.
+| I want to… | Read |
+| --- | --- |
+| Understand sample IDs, variant status, coordinates and corrections | [Key concepts](https://iskandr.github.io/osteosarc/concepts/) |
+| Find RNA, DNA, single-cell or long-read files and read tables | [Find samples and files](https://iskandr.github.io/osteosarc/explore/) |
+| Get alleles, read counts or vaccine peptides | [Select variants](https://iskandr.github.io/osteosarc/variants/) |
+| Fetch, filter or pair reads by variant or region | [Extract reads](https://iskandr.github.io/osteosarc/reads/) |
+| Browse treatments, specimens, MRD and labs | [Browse the timeline](https://iskandr.github.io/osteosarc/timeline/) |
+| Pass data to Varcode, Isovar, Topiary or Vaxrank | [Use other libraries](https://iskandr.github.io/osteosarc/consumers/) |
+| Build small, verifiable test BAMs | [Read fixtures](https://iskandr.github.io/osteosarc/fixtures/) |
+| Explore candidate structural variants | [SV interest catalogue](https://iskandr.github.io/osteosarc/sv-interest/) |
+
+## Data, license and citation
+
+Osteosarc applies [source corrections](https://iskandr.github.io/osteosarc/curation/)
+by default. Use `Dataset.open("baseline", corrections=False)` or
+`osteosarc --no-corrections` to see the published values.
 
 Code is Apache-2.0. The dataset is listed as CC0-1.0 in the
 [AWS Open Data Registry](https://registry.opendata.aws/sid-osteosarc/).
-Cite the dataset and access date when using it.
+Cite the dataset and your access date when using it.
 
 ## Development
 
@@ -122,4 +101,5 @@ ruff check osteosarc tests scripts
 python -m pytest -q
 ```
 
-See [testing](https://iskandr.github.io/osteosarc/validation/) for build and live-example checks.
+See [testing](https://iskandr.github.io/osteosarc/validation/) for documentation
+builds and live-example checks.

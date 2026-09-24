@@ -31,9 +31,12 @@ python scripts/check_docs.py
 python scripts/check_docs.py docs/reads.md
 ```
 
-The script executes Python blocks in page order and runs `osteosarc` commands.
-Install and development commands are listed without execution. It uses a
-temporary cache by default; `--cache DIR` reuses an existing one.
+The script checks `README.md` and every page in the `mkdocs.yml` nav, so a new
+page is covered as soon as it is published. It executes each page's Python blocks
+in order, then runs its `osteosarc` commands. Install and development commands are
+listed without execution. A block preceded by `<!-- docs-check: skip (reason) -->`
+is reported as skipped. The script uses a temporary cache by default;
+`--cache DIR` reuses an existing one.
 
 Live examples need network access and SAMtools. The library examples also need
 the consumer packages and an indexed Ensembl 95 human reference. Start with
@@ -84,3 +87,7 @@ All 32 correction rules pass: 29 apply and three are fixed upstream. There are
 no unrecognized labels. The historical snapshot above still passes with its
 original IDs and 182 entries. See [source corrections](curation.md) for how the
 updated entries and their counts are handled.
+
+A fresh snapshot on 2026-09-24 matched these results: 395,541 assets, 181
+entries (179 ready), 29 applied and three fixed-upstream corrections, no
+unrecognized labels, and 21 specimens. The timeline had 788 events.

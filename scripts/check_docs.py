@@ -1,4 +1,4 @@
-"""Run every example in README.md and docs/*.md against the live public sources.
+"""Run every example in README.md and the mkdocs nav pages against the live public sources.
 
     python scripts/check_docs.py                      # all pages, fresh temporary cache
     python scripts/check_docs.py --cache DIR docs/tour.md
@@ -23,9 +23,9 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PAGES = ["README.md", "docs/index.md", "docs/tour.md", "docs/explore.md", "docs/variants.md",
-         "docs/timeline.md", "docs/reads.md", "docs/consumers.md", "docs/curation.md", "docs/api.md",
-         "docs/migration.md", "docs/design.md", "docs/validation.md"]
+# README first (it creates the snapshot the pages reuse), then every published page.
+PAGES = ["README.md", *(f"docs/{page}" for page in
+                        re.findall(r":\s*(\S+\.md)\s*$", (ROOT / "mkdocs.yml").read_text(), re.M))]
 FENCE = re.compile(r"^```(\w*)\s*$")
 SKIP = re.compile(r"<!--\s*docs-check:\s*skip\b(.*?)-->")
 

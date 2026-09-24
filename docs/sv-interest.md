@@ -1,19 +1,24 @@
-# Shared SV interest catalogue
+# SV interest catalogue
+
+The SV interest catalogue lists **637 structural-variant nominations** from the
+September 22, 2026 source audit, with their original calls, breakend geometry,
+gene annotation, expression and RNA evidence. It ships with the package and loads
+offline:
 
 ```python
 from osteosarc import load_panel, load_sv_interest
 
-catalogue = load_sv_interest()          # offline; includes source pins
-targets = load_panel("sv-interest-v1")  # same targets for fixture recipes
+catalogue = load_sv_interest()          # Targets plus source pins
+targets = load_panel("sv-interest-v1")  # The same targets, for fixture recipes
 macrod2 = targets["SV0203"]
+print(len(targets), macrod2["kind"])
 ```
 
-The versioned catalogue retains **637 nominations** from the September 22,
-2026 source audit. It includes the displayed ESVEE/PURPLE/LINX PASS table,
-focused DRAGEN calls, CTAT long-read calls and focal RNA definitions. It is not
-an exhaustive scan of every DRAGEN call or every possible RNA junction.
-Membership is a nomination for investigation, not vaccine admission or proof
-of translation. No entry is removed for missing RNA, annotation or an ORF.
+The catalogue includes the displayed ESVEE/PURPLE/LINX PASS table, focused DRAGEN
+calls, CTAT long-read calls and focal RNA definitions. It is not an exhaustive scan
+of every DRAGEN call or every possible RNA junction. Membership is a nomination
+for investigation, not vaccine admission or proof of translation. No entry is
+removed for missing RNA, annotation or an ORF.
 
 The expressed-gene-to-intergenic set includes MACROD2 (SV0203), ITGBL1 (SV0089),
 ZYG11B (SV0085), RERG (SV0078), PHACTR1 (SV0368), TFDP2 (SV0381), TENM1

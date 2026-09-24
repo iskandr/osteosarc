@@ -1,5 +1,5 @@
 site_name: Osteosarc
-site_description: Find files, select variants, and fetch sequencing reads from osteosarc.com.
+site_description: Python library and CLI for the osteosarc.com dataset. Find files, select variants and vaccine peptides, and fetch sequencing reads.
 site_url: https://iskandr.github.io/osteosarc/
 repo_url: https://github.com/iskandr/osteosarc
 edit_uri: edit/main/docs/
@@ -11,24 +11,29 @@ theme:
   highlightjs: true
   hljs_languages: [python, bash]
 nav:
-  - Get started: index.md
-  - Examples:
-      - Find files and tables: explore.md
+  - Home: index.md
+  - Key concepts: concepts.md
+  - Guides:
+      - Find samples and files: explore.md
       - Select variants and peptides: variants.md
       - Extract reads: reads.md
-      - Build read fixtures: fixtures.md
-      - SV interest catalogue: sv-interest.md
       - Browse the timeline: timeline.md
+      - Command line: cli.md
       - Use other libraries: consumers.md
-      - Check MAP2 against reads: tour.md
+      - "Worked example: MAP2": tour.md
+  - Fixtures and SVs:
+      - Read fixtures and bundles: fixtures.md
+      - SV interest catalogue: sv-interest.md
+      - OpenVax fixture adoption: fixture-migration.md
+      - Replace download helpers: migration.md
   - Reference:
-      - API: api.md
+      - Python API: api.md
       - Snapshots and cache: design.md
       - Source corrections: curation.md
-  - Development:
-      - Migrate existing code: migration.md
-      - Fixture adoption: fixture-migration.md
-      - Testing: validation.md
+      - Testing and data checks: validation.md
+      - Changelog: changelog.md
+validation:
+  anchors: warn
 markdown_extensions:
   - admonition
   - tables
