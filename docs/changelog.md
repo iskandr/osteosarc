@@ -5,17 +5,24 @@ your version with `python -m pip show osteosarc`. Pin both the package version a
 snapshot name for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
-## 0.2.5 (unreleased)
+## 0.2.6 (2026-09-24)
+
+- Reorganized documentation with [key concepts](concepts.md), a
+  [command-line guide](cli.md), a complete [API reference](api.md) and this
+  changelog. The README is a shorter landing page that lists the main features
+  ([#32](https://github.com/iskandr/osteosarc/issues/32)).
+- The documentation example checker covers every published page and the strict
+  build validates anchors ([#31](https://github.com/iskandr/osteosarc/issues/31)).
+
+## 0.2.5 (2026-09-24)
 
 - The [SV interest catalogue](sv-interest.md): 637 structural-variant nominations with
   original calls, breakend geometry, Ensembl 115 annotation, T2 expression and
   scoped RNA evidence. It loads offline with `load_sv_interest()` or
   `load_panel("sv-interest-v1")` ([#29](https://github.com/iskandr/osteosarc/pull/29)).
-- The command line can now run the whole quickstart: `assets --sample`, `reads --variant ID --padding N`
-  and `--version` ([#30](https://github.com/iskandr/osteosarc/issues/30)).
-- Reorganized documentation with [key concepts](concepts.md), a
-  [command-line guide](cli.md), a complete [API reference](api.md) and this
-  changelog ([#32](https://github.com/iskandr/osteosarc/issues/32)).
+- The command line can now run the whole quickstart: `assets --sample`,
+  `reads --variant ID --padding N` and `--version`
+  ([#33](https://github.com/iskandr/osteosarc/pull/33)).
 
 ## 0.2.4 (2026-09-23)
 
