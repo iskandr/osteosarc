@@ -1,11 +1,11 @@
-"""Run every example in README.md and docs/*.md against the live public sources.
+"""Run every example in README.md and the mkdocs nav pages against the live public sources.
 
     python scripts/check_docs.py                      # all pages, fresh temporary cache
     python scripts/check_docs.py --cache DIR docs/tour.md
 
 Python blocks on one page share a namespace, in order, as a reader would run
 them. Shell blocks run their `osteosarc` lines (interactive commands receive
-"quit"). Install, clone and development commands are listed but not run; CI
+"quit"; a trailing space-separated `> FILE` redirect is honored). Install, clone and development commands are listed but not run; CI
 covers the development commands. A block preceded by
 `<!-- docs-check: skip (reason) -->` is reported as skipped.
 """
@@ -23,9 +23,16 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PAGES = ["README.md", "docs/index.md", "docs/tour.md", "docs/explore.md", "docs/variants.md",
-         "docs/timeline.md", "docs/reads.md", "docs/consumers.md", "docs/curation.md", "docs/api.md",
-         "docs/migration.md", "docs/design.md", "docs/validation.md"]
+
+
+def nav_pages():
+    """Every page in the mkdocs nav, in order, with or without a title."""
+    nav = re.search(r"^nav:\n((?:[ \t]+.*\n|\n)*)", (ROOT / "mkdocs.yml").read_text(), re.M)[1]
+    return [f"docs/{page}" for page in re.findall(r"^\s*-\s*(?:.*:\s*)?(\S+\.md)\s*$", nav, re.M)]
+
+
+# README first (it creates the snapshot the pages reuse), then every published page.
+PAGES = ["README.md", *nav_pages()]
 FENCE = re.compile(r"^```(\w*)\s*$")
 SKIP = re.compile(r"<!--\s*docs-check:\s*skip\b(.*?)-->")
 
@@ -93,10 +100,16 @@ def run_shell(block, env, cwd, timeout):
             outcomes.append(dict(command=command, status="not run"))
             continue
         started = time.time()
+        # Only a final ` > FILE` is honored; other redirections reach the command and fail.
+        redirect = re.fullmatch(r"(.*?)\s+>\s+([^\s>]+)", command)
+        arguments = shlex.split(redirect[1] if redirect else command)
+        redirect = redirect and redirect[2]
         try:
-            process = subprocess.run(shlex.split(command), env=env, cwd=cwd, input="quit\n",
+            process = subprocess.run(arguments, env=env, cwd=cwd, input="quit\n",
                                      capture_output=True, text=True, timeout=timeout)
             status = "ok" if process.returncode == 0 else "failed"
+            if redirect and status == "ok":
+                (Path(cwd) / redirect).write_text(process.stdout)
             error = "" if status == "ok" else (process.stderr or process.stdout)[-1500:]
         except subprocess.TimeoutExpired:
             status, error = "failed", "timed out"

@@ -1,7 +1,8 @@
-# Find files and read tables
+# Find samples, files and tables
 
-Create a snapshot with `Dataset.sync("baseline")` first, as shown in
-[Get started](index.md). The examples below use that saved snapshot.
+Browse the dataset's specimens and select sequencing files by sample, assay,
+platform or path, without downloading them. Then download and read tables.
+The examples use the `baseline` snapshot from [Get started](index.md#get-started).
 
 ## Browse samples and sequencing types
 
@@ -99,6 +100,13 @@ inspect an alignment's header if you need its instrument platform.
 remain available through `data.assets`. To search all samples at a timepoint,
 use `data.assets.select(timepoint="T2", assay="rna-seq")`.
 
+The command line takes the same filters and prints JSON:
+
+```sh
+osteosarc assets baseline --sample T1_tumor --kind alignment --assay scrna-seq --platform ont
+osteosarc assets baseline --timepoint T2 --assay rna-seq --limit 5
+```
+
 ## Find other file types
 
 ```python
@@ -116,7 +124,7 @@ Use an exact key when choosing an alignment for [read extraction](reads.md):
 
 ```python
 source = data.asset(
-    "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.bam"
+    "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"
 )
 print(source.index_urls)
 ```

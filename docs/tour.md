@@ -2,7 +2,8 @@
 
 The website's MAP2 vaccine target differs from the complex allele reported by
 Tempus and CeGaT. This example compares both sequences against T1 tumor WGS
-reads. It requires `osteosarc` and `samtools`.
+reads. It requires `osteosarc` and `samtools`, and shows how to check any
+[source correction](curation.md) against the original data.
 
 ## Compare the alleles
 

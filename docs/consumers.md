@@ -1,7 +1,9 @@
 # Use other libraries
 
-These examples use the `baseline` snapshot from [Get started](index.md).
-Install the libraries you want to use. The Isovar examples also need an
+Pass variants, reads and reports to the OpenVax libraries: Varcode for variant
+effects, Isovar for RNA evidence and protein sequences, Topiary for predictions
+and Vaxrank for vaccine ranking. These examples use the `baseline` snapshot from
+[Get started](index.md#get-started). Install the libraries you want to use. The Isovar examples also need an
 indexed human Ensembl 95 reference:
 
 ```sh
@@ -77,7 +79,7 @@ from isovar import ReadCollector
 from pyensembl import EnsemblRelease
 
 source = data.asset(
-    "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.bam"
+    "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"
 )
 one = data.variants(ids=["DYNC1H1-chr14-101980529"], status="ready")
 native = one.to_varcode(genome=EnsemblRelease(95))
@@ -106,7 +108,7 @@ For a read corpus, inspect the reference and request paired mates when needed:
 from osteosarc import Region
 
 source = data.asset(
-    "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.bam"
+    "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"
 )
 info = data.inspect_alignment(source)
 if info.assembly == "GRCh38":
@@ -155,5 +157,6 @@ if rsem:
 Cached paths retain their file suffixes for format detection. Header-only
 reports remain empty reports.
 
-See [migration](migration.md) to replace existing download helpers and
+For reproducible test data, use [read fixtures](fixtures.md). See
+[migration](migration.md) to replace existing download helpers and
 [testing](validation.md) for integration coverage.

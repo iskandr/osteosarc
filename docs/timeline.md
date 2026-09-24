@@ -1,6 +1,8 @@
 # Browse the timeline and specimens
 
-These examples use the `baseline` snapshot from [Get started](index.md).
+See treatments, procedures, imaging, specimens, MRD and lab results on one
+timeline, and look up each specimen's files. These examples use the `baseline`
+snapshot from [Get started](index.md#get-started).
 
 ## View events around a date
 
@@ -94,7 +96,8 @@ osteosarc> quit
 ```
 
 `zoom` and `only` persist until `reset`. Type `help` for all commands.
-Add `--json` to the `timeline` CLI command for machine-readable events.
+Add `--json` to the `timeline` CLI command for machine-readable events. The
+[command-line guide](cli.md#interactive-explorer) lists every explorer command.
 
 ## Sources
 
