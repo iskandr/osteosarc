@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "osteosarc"
-version = "0.3.0"
+version = "0.4.0"
 description = "Reproducible access to the public osteosarc.com dataset"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -34,8 +34,6 @@ Issues = "https://github.com/iskandr/osteosarc/issues"
 Dataset = "https://osteosarc.com/data/"
 
 [project.optional-dependencies]
-# Compatibility with existing installs of osteosarc[reads].
-reads = []
 test = ["pytest>=8", "ruff>=0.9", "build>=1"]
 docs = ["mkdocs>=1.6,<2"]
 

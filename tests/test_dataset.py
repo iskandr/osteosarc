@@ -95,9 +95,9 @@ def test_reopen_is_offline_and_uses_pinned_receipts(dataset):
 
 
 def test_snapshot_and_cli_use_same_selection(dataset, capsys):
-    assert main(["--cache", str(dataset.cache.root), "variants", "fixture", "--gene", "SMC5"]) == 0
+    assert main(["--cache", str(dataset.cache.root), "variants", "--snapshot", "fixture", "--gene", "SMC5"]) == 0
     assert json.loads(capsys.readouterr().out)[0]["id"] == dataset.variants(gene="SMC5")[0].id
-    assert main(["--cache", str(dataset.cache.root), "assets", "fixture", "--kind", "alignment", "--limit", "1"]) == 0
+    assert main(["--cache", str(dataset.cache.root), "assets", "--snapshot", "fixture", "--kind", "alignment", "--limit", "1"]) == 0
     result = json.loads(capsys.readouterr().out)
     assert result["total"] == 3
     assert len(result["assets"]) == 1
@@ -112,14 +112,14 @@ def test_cli_version_and_sample_assets_match_the_api(dataset, capsys):
     assert exited.value.code == 0
     assert capsys.readouterr().out.strip() == f"osteosarc {osteosarc.__version__}"
     root = str(dataset.cache.root)
-    assert main(["--cache", root, "assets", "fixture", "--sample", "T1_tumor", "--kind", "alignment"]) == 0
+    assert main(["--cache", root, "assets", "--snapshot", "fixture", "--sample", "T1_tumor", "--kind", "alignment"]) == 0
     result = json.loads(capsys.readouterr().out)
     expected = dataset.assets_for_sample("T1_tumor", kind="alignment")
     assert result["total"] == len(expected) == 1
     assert [a["key"] for a in result["assets"]] == [a.key for a in expected]
-    assert main(["--cache", root, "assets", "fixture", "--sample", "T1_tumor", "--assay", "wgs"]) == 0
+    assert main(["--cache", root, "assets", "--snapshot", "fixture", "--sample", "T1_tumor", "--assay", "wgs"]) == 0
     assert json.loads(capsys.readouterr().out)["total"] == 0
-    assert main(["--cache", root, "assets", "fixture", "--sample", "T9_tumor"]) == 1
+    assert main(["--cache", root, "assets", "--snapshot", "fixture", "--sample", "T9_tumor"]) == 1
     assert "Unknown sample" in capsys.readouterr().err
 
 
@@ -133,7 +133,7 @@ def test_cli_reads_accepts_catalogue_variants(dataset, capsys, monkeypatch, tmp_
     monkeypatch.setattr(Dataset, "extract_reads", extract_reads)
     root, source = str(dataset.cache.root), dataset.assets.select(format="bam")[0].key
     ids = ["DYNC1H1-chr14-101980529", "SMC5-chr9-70298024"]
-    command = ["--cache", root, "reads", "fixture", source, "--variant", ids[0], "--variant", ids[1]]
+    command = ["--cache", root, "reads", "--snapshot", "fixture", source, "--variant", ids[0], "--variant", ids[1]]
     assert main(command + ["--padding", "100"]) == 0
     assert json.loads(capsys.readouterr().out)["path"] == str(tmp_path / "reads.bam")
     call = calls.pop()
@@ -148,7 +148,7 @@ def test_cli_reads_accepts_catalogue_variants(dataset, capsys, monkeypatch, tmp_
                       ["--assembly", "GRCh38", "chr14:101980529-101980530", "chr14:101980600-101980600"],
                       ["chr14:101980529-101980530", "--min-mapq", "0", "--assembly", "GRCh38",
                        "chr14:101980600-101980600"]):
-        assert main(["--cache", root, "reads", "fixture", source, *arguments]) == 0
+        assert main(["--cache", root, "reads", "--snapshot", "fixture", source, *arguments]) == 0
         capsys.readouterr()
         assert [(r.contig, r.start, r.end, r.assembly) for r in calls.pop()["regions"]] == expected
 
@@ -159,7 +159,7 @@ def test_cli_reads_accepts_catalogue_variants(dataset, capsys, monkeypatch, tmp_
         (["--variant", ids[0], "--assembly", "GRCh38"], "either regions (with --assembly) or --variant"),
         (["chr14:1-2"], "--assembly is required"),
     ]:
-        assert main(["--cache", root, "reads", "fixture", source, *arguments]) == 1
+        assert main(["--cache", root, "reads", "--snapshot", "fixture", source, *arguments]) == 1
         assert message in capsys.readouterr().err
     assert not calls
     # Dataset.extract_reads enforces the remaining rules, with the same messages as in Python.
@@ -168,12 +168,12 @@ def test_cli_reads_accepts_catalogue_variants(dataset, capsys, monkeypatch, tmp_
         (["chr14:1-2", "--assembly", "GRCh38", "--padding", "5"], "padding requires variants"),
         ([], "nonempty sequence of regions or ready variants"),
     ]:
-        assert main(["--cache", root, "reads", "fixture", source, *arguments]) == 1
+        assert main(["--cache", root, "reads", "--snapshot", "fixture", source, *arguments]) == 1
         assert message in capsys.readouterr().err
     with pytest.raises(SystemExit):
-        main(["--cache", root, "reads", "fixture", source, "--bogus"])
+        main(["--cache", root, "reads", "--snapshot", "fixture", source, "--bogus"])
     with pytest.raises(SystemExit):
-        main(["--cache", root, "variants", "fixture", "extra"])
+        main(["--cache", root, "variants", "--snapshot", "fixture", "extra"])
 
 
 def test_acquired_data_remains_pinned_after_url_refresh(dataset, tmp_path):
@@ -358,7 +358,7 @@ def test_dated_sync_reuses_today_and_open_uses_the_newest(source_cache, tmp_path
         assert Dataset.open(cache=source_cache).name == "named"
 
 
-def test_cli_uses_the_newest_snapshot_and_accepts_the_old_positional_form(source_cache, capsys, monkeypatch):
+def test_cli_uses_the_newest_snapshot_unless_one_is_chosen(source_cache, capsys, monkeypatch):
     root = str(source_cache.root)
     cli = ["--offline", "--cache", root]
     assert main([*cli, "snapshots"]) == 0
@@ -376,43 +376,42 @@ def test_cli_uses_the_newest_snapshot_and_accepts_the_old_positional_form(source
     assert [r["name"] for r in json.loads(capsys.readouterr().out)] == ["older", day]
 
     expected = [v.id for v in Dataset.open(cache=source_cache).variants(gene="SMC5")]
-    for arguments in (["variants", "--gene", "SMC5"], ["variants", "--snapshot", day, "--gene", "SMC5"],
-                      ["variants", "--snapshot", day[:7], "--gene", "SMC5"],
-                      ["variants", "--snapshot", "older", "--gene", "SMC5"], ["variants", "older", "--gene", "SMC5"]):
-        assert main([*cli, *arguments]) == 0
-        captured = capsys.readouterr()
-        assert [v["id"] for v in json.loads(captured.out)] == expected
-        assert ("deprecated" in captured.err) == (arguments[1] == "older")
-    assert main([*cli, "variants", "older", "--snapshot", "older"]) == 1
-    assert "once" in capsys.readouterr().err
+    for snapshot in ([], ["--snapshot", day], ["--snapshot", day[:7]], ["--snapshot", "older"]):
+        assert main([*cli, "variants", *snapshot, "--gene", "SMC5"]) == 0
+        assert [v["id"] for v in json.loads(capsys.readouterr().out)] == expected
     assert main([*cli, "variants", "--snapshot", "missing"]) == 1
     assert "No snapshot named 'missing'" in capsys.readouterr().err
     assert main([*cli, "variants", "--snapshot", "1999"]) == 1
     assert "No snapshot downloaded in 1999" in capsys.readouterr().err
+    with pytest.raises(SystemExit):
+        main([*cli, "variants", "older"])  # A snapshot is chosen only with --snapshot
+    capsys.readouterr()
 
-    # specimens and reads tell the old and new forms apart by the saved names.
-    assert main([*cli, "specimens", "T2_tumor"]) == 0
-    assert capsys.readouterr().out.startswith("T2_tumor")
-    assert main([*cli, "specimens", "older", "T2_tumor"]) == 0
+    assert main([*cli, "specimens", "T2_tumor", "--snapshot", day]) == 0
     assert capsys.readouterr().out.startswith("T2_tumor")
     assert main([*cli, "on", "2025-01-28", "--days", "1"]) == 0
-    assert main([*cli, "on", "older", "2025-01-28", "--days", "1"]) == 0
     capsys.readouterr()
 
     from osteosarc import ReadSubset
     calls = []
 
     def extract_reads(self, asset, regions=None, **kwargs):
-        calls.append((self.name, asset, regions, kwargs.get("variants")))
+        calls.append((self.name, asset))
         return ReadSubset(source_cache.root / "reads.bam", source_cache.root / "reads.bam.bai", {})
     monkeypatch.setattr(Dataset, "extract_reads", extract_reads)
     key = Dataset.open(cache=source_cache).assets.select(format="bam")[0].key
     for arguments, snapshot in (([key, "--variant", "SMC5-chr9-70298024"], "older"),
-                                ([day, key, "--variant", "SMC5-chr9-70298024"], day),
-                                ([day, key, "chr9:70298024-70298024", "--assembly", "GRCh38"], day)):
+                                # A date-shaped value is a download date: the newest that day.
+                                ([key, "--variant", "SMC5-chr9-70298024", "--snapshot", day], "older")):
         assert main([*cli, "reads", *arguments]) == 0
         capsys.readouterr()
-        name, asset, regions, variants = calls.pop()
-        assert (name, asset) == (snapshot, key)
+        assert calls.pop() == (snapshot, key)
     assert main([*cli, "reads", "--snapshot", day, key, "--variant", "MISSING"]) == 1
     assert f"variants --set all --snapshot {day}" in capsys.readouterr().err
+
+
+def test_explorer_lists_a_samples_files(dataset):
+    from osteosarc.explore import assets_view
+    shown = assets_view(dataset, sample="T1_tumor", kind="alignment", width=200)
+    assert shown.startswith(f"{len(dataset.assets_for_sample('T1_tumor', kind='alignment'))} assets")
+    assert dataset.assets_for_sample("T1_tumor", kind="alignment")[0].key in shown

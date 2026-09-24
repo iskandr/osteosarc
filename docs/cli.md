@@ -45,8 +45,7 @@ osteosarc variants --gene MAP2 --snapshot 2026-09
 ```
 
 `curation --strict` exits nonzero if a correction no longer matches its source or
-a source label is unrecognized. The older form with the snapshot name first, as in
-`osteosarc samples baseline`, still works but is deprecated.
+a source label is unrecognized.
 
 ## Browse samples, files and variants
 

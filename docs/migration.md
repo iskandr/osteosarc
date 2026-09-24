@@ -7,8 +7,7 @@ settings.
 ## Replace one operation at a time
 
 Install `osteosarc` normally: pysam and datacache are standard dependencies.
-The older `[reads]` extra remains accepted for compatibility. The CLI now
-prints a sample overview by default; use `samples --json` for its original
+`osteosarc samples` prints a sample overview; `samples --json` prints the original
 source-attributed claims.
 
 | Existing code | Replacement |
