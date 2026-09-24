@@ -97,7 +97,7 @@ def test_reopen_is_offline_and_uses_pinned_receipts(dataset):
 def test_snapshot_and_cli_use_same_selection(dataset, capsys):
     assert main(["--cache", str(dataset.cache.root), "variants", "--snapshot", "fixture", "--gene", "SMC5"]) == 0
     assert json.loads(capsys.readouterr().out)[0]["id"] == dataset.variants(gene="SMC5")[0].id
-    assert main(["--cache", str(dataset.cache.root), "assets", "--snapshot", "fixture", "--kind", "alignment", "--limit", "1"]) == 0
+    assert main(["--cache", str(dataset.cache.root), "assets", "--snapshot", "fixture", "--kind", "alignment", "--limit", "1", "--json"]) == 0
     result = json.loads(capsys.readouterr().out)
     assert result["total"] == 3
     assert len(result["assets"]) == 1
@@ -112,13 +112,26 @@ def test_cli_version_and_sample_assets_match_the_api(dataset, capsys):
     assert exited.value.code == 0
     assert capsys.readouterr().out.strip() == f"osteosarc {osteosarc.__version__}"
     root = str(dataset.cache.root)
-    assert main(["--cache", root, "assets", "--snapshot", "fixture", "--sample", "T1_tumor", "--kind", "alignment"]) == 0
+    assert main(["--cache", root, "assets", "--snapshot", "fixture", "--sample", "T1_tumor", "--kind", "alignment",
+                 "--json"]) == 0
     result = json.loads(capsys.readouterr().out)
     expected = dataset.assets_for_sample("T1_tumor", kind="alignment")
     assert result["total"] == len(expected) == 1
     assert [a["key"] for a in result["assets"]] == [a.key for a in expected]
-    assert main(["--cache", root, "assets", "--snapshot", "fixture", "--sample", "T1_tumor", "--assay", "wgs"]) == 0
+    assert main(["--cache", root, "assets", "--snapshot", "fixture", "--sample", "T1_tumor", "--assay", "wgs",
+                 "--json"]) == 0
     assert json.loads(capsys.readouterr().out)["total"] == 0
+    # Without --json, a readable table with the complete key.
+    assert main(["--cache", root, "assets", "--snapshot", "fixture", "--sample", "T1_tumor", "--kind", "alignment"]) == 0
+    text = capsys.readouterr().out
+    assert text.startswith("1 files") and expected[0].key in text and "rna-seq" in text
+    assert main(["--cache", root, "assets", "--snapshot", "fixture", "--kind", "alignment", "--limit", "1"]) == 0
+    assert "... 2 more" in (text := capsys.readouterr().out) and "--limit N" in text
+    # Registry labels and unknown values are errors, not empty selections.
+    assert main(["--cache", root, "assets", "--snapshot", "fixture", "--assay", "scRNA_ONT"]) == 1
+    assert "select assay 'scrna-seq' with platform 'ont'" in capsys.readouterr().err
+    assert main(["--cache", root, "assets", "--snapshot", "fixture", "--platform", "nanopore"]) == 1
+    assert "choose from: illumina, ont, pacbio" in capsys.readouterr().err
     assert main(["--cache", root, "assets", "--snapshot", "fixture", "--sample", "T9_tumor"]) == 1
     assert "Unknown sample" in capsys.readouterr().err
 
@@ -410,8 +423,24 @@ def test_cli_uses_the_newest_snapshot_unless_one_is_chosen(source_cache, capsys,
     assert f"variants --set all --snapshot {day}" in capsys.readouterr().err
 
 
-def test_explorer_lists_a_samples_files(dataset):
+def test_explorer_lists_a_samples_files_with_complete_keys(dataset):
     from osteosarc.explore import assets_view
-    shown = assets_view(dataset, sample="T1_tumor", kind="alignment", width=200)
-    assert shown.startswith(f"{len(dataset.assets_for_sample('T1_tumor', kind='alignment'))} assets")
-    assert dataset.assets_for_sample("T1_tumor", kind="alignment")[0].key in shown
+    expected = dataset.assets_for_sample("T1_tumor", kind="alignment")
+    shown = assets_view(dataset, sample="T1_tumor", kind="alignment", width=40)
+    assert shown.startswith(f"{len(expected)} files")
+    assert expected[0].key in shown  # Never truncated, even when narrower than the key
+    assert "limit=N" not in shown
+    assert "limit=N" in assets_view(dataset, kind="alignment", limit=1)
+
+
+def test_asset_filters_reject_labels_and_values_no_source_uses(dataset):
+    from osteosarc import Asset, Assets, SampleClaim
+    with pytest.raises(ValueError, match="registry label; select assay 'rna-seq'"):
+        dataset.assets.select(assay="RNA")
+    with pytest.raises(ValueError, match="Unknown tissue 'normal'"):
+        dataset.assets.select(tissue="normal")
+    assert len(dataset.assets.select(assay="cite-seq")) == 0  # Known but absent: simply empty
+    # A value outside the vocabulary that the data does use still selects it.
+    marrow = Assets([Asset("x", "x.bam", "https://example.test/x.bam", "alignment", "bam",
+                           claims=(SampleClaim("bams", tissue="marrow"),))])
+    assert len(marrow.select(tissue="marrow")) == 1

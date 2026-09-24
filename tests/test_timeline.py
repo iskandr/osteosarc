@@ -201,16 +201,26 @@ def test_table_limits_are_validated():
         table(rows, ("a",), limit=-2)
 
 
-def test_sample_overview_keeps_full_assay_labels_and_filters(dataset, capsys):
+def test_sample_overview_shows_filter_names_and_filters_by_assay(dataset, capsys):
+    from osteosarc.explore import sequencing
+    assert sequencing(["PacBio", "RNA", "WES", "WGS", "scRNA", "scRNA_ONT"]) == "rna-seq; wes; wgs; scrna-seq (ont, pacbio)"
+    assert sequencing(["CITE", "New label"]) == "cite-seq; New label"
     text = dataset.describe_samples(timepoint="T1", tissue="tumor", width=80)
     assert "T1_tumor" in text and "T0_tumor" not in text and "T1_blood" not in text
     assert "sequencing" in text and "FASTQ_folders" in text
     specimen = next(r for r in dataset.specimens if r["sample_id"] == "T1_tumor")
-    for assay in specimen["assays"]:
-        assert assay in text
+    assert sequencing(specimen["assays"]) in dataset.describe_samples(timepoint="T1", tissue="tumor", width=200)
     assert dataset.describe_samples(timepoint="missing") == "(no matching samples)"
+    with_rna = [r["sample_id"] for r in dataset.specimens if "RNA" in r["assays"]]
+    assert with_rna and all(s in dataset.describe_samples(assay="rna-seq") for s in with_rna)
+    assert dataset.describe_samples(assay="cite-seq", platform="pacbio") == "(no matching samples)"
+    with pytest.raises(ValueError, match="registry label"):
+        dataset.describe_samples(assay="scRNA_ONT")
     assert main(["--cache", str(dataset.cache.root), "samples", "--snapshot", "fixture", "--timepoint", "T1", "--tissue", "tumor"]) == 0
     assert "T1_tumor" in capsys.readouterr().out
+    assert main(["--cache", str(dataset.cache.root), "samples", "--snapshot", "fixture", "--assay", "rna-seq"]) == 0
+    shown = capsys.readouterr().out
+    assert all(s in shown for s in with_rna)
     assert main(["--cache", str(dataset.cache.root), "samples", "--snapshot", "fixture", "--json"]) == 0
     assert json.loads(capsys.readouterr().out) == list(dataset.samples)
 

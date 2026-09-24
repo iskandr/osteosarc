@@ -6,6 +6,7 @@ import re
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
 
+from .curation import check_filter
 from .errors import CoordinateError
 
 
@@ -174,6 +175,9 @@ class Assets(Collection):
         """
         filters = dict(timepoint=timepoint, assay=assay, platform=platform,
                        tissue=tissue, provider=provider, library=library)
+        for name in ("assay", "platform", "tissue"):
+            check_filter(name, filters[name], lambda name=name: {
+                v for a in self for v in a.values(name, include_inferred=True)})
 
         def match(asset):
             if any(value is not None and getattr(asset, name) != value

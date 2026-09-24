@@ -36,7 +36,7 @@ See [Snapshots and cache](design.md).
 | Call / property | Returns / behavior |
 | --- | --- |
 | `data.assets`, `data.samples`, `data.timepoints` | All assets, source-attributed sample claims, published dates |
-| `data.describe_samples(timepoint=None, tissue=None, width=None)` | Readable sample and sequencing overview |
+| `data.describe_samples(timepoint=None, tissue=None, assay=None, platform=None, width=None)` | Readable sample and sequencing overview, with sequencing shown as filter names |
 | `data.assets_for_sample(sample_id, **filters)` | Registry-linked alignments and files in the sample's FASTQ folders |
 | `data.asset(key_or_id)` | Resolve exactly one key, URL, asset ID, or named resource |
 | `data.download(asset, refresh=False, verify_size=True)` | Fetch one complete object, bind bytes to the snapshot, return Path |
@@ -52,7 +52,9 @@ See [Snapshots and cache](design.md).
 | `parse_table(text, delimiter="\t", strict=True)` | Parse CSV/TSV; opt into `strict=False` to retain ragged rows |
 | `parse_file(path, format=None)` | Parse a local JSON, CSV, TSV or FASTA file |
 
-Asset selections accept `include_conflicts` and `include_inferred` opt-ins.
+Asset selections accept `include_conflicts` and `include_inferred` opt-ins. An
+assay, platform or tissue that no file uses raises `ValueError` listing the valid
+values; a registry label such as `scRNA_ONT` names the filters to use instead.
 The named tables are `vafs`, `vaf_columns`, `snv_top`, `dna_fusions`, and
 `rna_fusions`. Other tables use exact asset keys or Asset instances.
 See [Find samples and files](explore.md).

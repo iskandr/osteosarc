@@ -52,6 +52,11 @@ ASSAYS = {"RNA": ("rna-seq", None), "WGS": ("wgs", None), "WES": ("wes", None),
           "Tumor scRNA": ("scrna-seq", None), "Blood scRNA": ("scrna-seq", None),
           "CITE": ("cite-seq", None)}
 
+#: Filter values for asset metadata, in display order.
+ASSAY_NAMES = ("rna-seq", "wes", "wgs", "scrna-seq", "cite-seq")
+PLATFORM_NAMES = ("illumina", "ont", "pacbio")
+TISSUE_NAMES = ("tumor", "blood", "organoid")
+
 #: Viewer labels that name a more specific assay than their category.
 #: CITE-seq libraries are filed under the viewer's "Blood scRNA" category.
 LABEL_ASSAYS = {"CITE": "cite-seq"}
@@ -75,6 +80,26 @@ TISSUES = {"tumor": "tumor", "blood": "blood", "normal": "blood", "normal (blood
 PIPELINES = ("BG 2024", "DRAGEN", "LENS 2022", "LENS 2024", "Mutect2 2024", "Mutect2 2025",
              "Natera 2022", "Tempus 2022", "oncoanalyser", "pVACtools 2025")
 VACCINES = ("CeGaT", "Cure 2024", "JLF V1", "JLF V2", "JLF V3", "mRNA")
+
+
+def check_filter(name, value, present=frozenset):
+    """Reject an assay, platform or tissue filter that matches nothing it could.
+
+    present returns the values the data actually uses, for labels outside the
+    vocabulary; it is only called for an unknown value. A registry label such
+    as scRNA_ONT names the assay and platform to use instead.
+    """
+    known = dict(assay=ASSAY_NAMES, platform=PLATFORM_NAMES, tissue=TISSUE_NAMES)[name]
+    if value is None or value in known:
+        return
+    choices = sorted(set(known) | set(present()))
+    if value in choices:
+        return
+    if name == "assay" and value in ASSAYS:
+        assay, platform = ASSAYS[value]
+        raise ValueError(f"{value!r} is a registry label; select assay {assay!r}"
+                         + (f" with platform {platform!r}" if platform else ""))
+    raise ValueError(f"Unknown {name} {value!r}; choose from: {', '.join(choices)}")
 
 
 def normalize_provider(value):
