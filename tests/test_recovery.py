@@ -264,3 +264,96 @@ def test_missing_query_name_is_context_not_a_partner_identity(split_bam, tmp_pat
     assert record_multiset(result.path) == record_multiset(path)
     assert len(result.receipt["acquisition"]) == 1
     assert any("missing QNAME" in item["reason"] for item in result.receipt["observations"])
+
+
+def _time_out_partner_queries(monkeypatch, error):
+    """Let seed extractions run, and fail every partner query (those select seed names) with error."""
+    import osteosarc.recovery as recovery
+    from osteosarc.reads import extract_reads as original
+
+    def extract(*args, **kwargs):
+        if kwargs.get("filters") is not None and kwargs["filters"].query_names:
+            raise error
+        return original(*args, **kwargs)
+    monkeypatch.setattr(recovery, "extract_reads", extract)
+    return original
+
+
+def test_partner_timeout_keeps_verified_seed_evidence_when_allowed(split_bam, tmp_path, monkeypatch):
+    import subprocess
+    from pathlib import Path
+
+    import osteosarc.reads as reads
+    regions = [Region("chr1", 100, 150, "GRCh38")]
+    cache = Cache(tmp_path / "cache", offline=True)
+    seed = extract_reads(split_bam, regions, cache=cache)
+    timeout = subprocess.TimeoutExpired(["samtools", "view"], 7)
+    original = _time_out_partner_queries(monkeypatch, timeout)
+    with pytest.raises(subprocess.TimeoutExpired):  # The default still fails
+        extract_reads(split_bam, regions, cache=cache, recovery=RecoveryPolicy())
+
+    partial = extract_reads(split_bam, regions, cache=cache, recovery=RecoveryPolicy(on_timeout="incomplete"))
+    receipt = partial.receipt
+    assert receipt["status"] == "incomplete" and receipt["complete_template"] is False
+    assert record_multiset(partial.path) == record_multiset(seed.path)  # Every seed record, exactly
+    [failed] = receipt["failed_queries"]
+    assert failed["error"] == "timeout" and failed["round"] == 1 and failed["regions"]
+    assert set(failed["leads"]) <= set(receipt["unresolved"])
+    assert all(receipt["unresolved"][lead] == "partner query timed out" for lead in failed["leads"])
+    assert len(receipt["acquisition"]) == 1  # Only the verified seed acquisition
+    derived = Path(cache.workspace) / "derived"
+    assert not list(derived.glob(".recovery-*")) and not list(derived.glob(".reads-*"))
+    # The incomplete result is reproducible and verified, but never a cache hit for the full request.
+    again = extract_reads(split_bam, regions, cache=cache, recovery=RecoveryPolicy(on_timeout="incomplete"))
+    assert again.path == partial.path and again.receipt == receipt
+
+    # A retry resumes from the verified seed: only partner queries run again.
+    monkeypatch.setattr("osteosarc.recovery.extract_reads", original)
+    commands, run_bounded = [], reads._run_bounded
+    monkeypatch.setattr(reads, "_run_bounded", lambda *a, **k: commands.append(a) or run_bounded(*a, **k))
+    complete = extract_reads(split_bam, regions, cache=cache, recovery=RecoveryPolicy(on_timeout="incomplete"))
+    assert complete.receipt["status"] == "bounded" and complete.receipt["records"] == 7
+    assert "failed_queries" not in complete.receipt and complete.path != partial.path
+    fresh_commands = len(commands)
+    commands.clear()
+    extract_reads(split_bam, regions, cache=Cache(tmp_path / "fresh", offline=True), recovery=RecoveryPolicy())
+    assert fresh_commands == len(commands) - 1  # The seed query was not repeated
+    assert extract_reads(split_bam, regions, cache=cache, recovery=RecoveryPolicy()).path == complete.path
+
+
+def test_partner_timeouts_are_distinct_from_changed_or_corrupt_sources(split_bam, tmp_path, monkeypatch):
+    import requests
+
+    from osteosarc import OsteosarcError
+    regions = [Region("chr1", 100, 150, "GRCh38")]
+    allow = RecoveryPolicy(on_timeout="incomplete")
+    with pytest.raises(ValueError, match="on_timeout"):
+        RecoveryPolicy(on_timeout="partial")
+    # A remote HEAD request that times out counts as a timeout.
+    head = OsteosarcError("Cannot inspect source")
+    head.__cause__ = requests.Timeout("read timed out")
+    _time_out_partner_queries(monkeypatch, head)
+    assert extract_reads(split_bam, regions, cache=tmp_path / "a", recovery=allow).receipt["status"] == "incomplete"
+    for error in (IntegrityError("Remote alignment changed during extraction"), OsteosarcError("Cannot inspect source")):
+        _time_out_partner_queries(monkeypatch, error)
+        with pytest.raises(type(error)):
+            extract_reads(split_bam, regions, cache=tmp_path / "b", recovery=allow)
+
+
+def test_fixture_bundles_record_an_incomplete_acquisition(split_bam, tmp_path, monkeypatch):
+    import subprocess
+
+    from osteosarc import generate_bundle, verify_bundle
+    _time_out_partner_queries(monkeypatch, subprocess.TimeoutExpired(["samtools", "view"], 7))
+    recipe = dict(schema_version=1, id="split", targets={"sv": dict(
+        kind="sv", assembly="GRCh38", reference={"assembly": "GRCh38"}, coordinates="zero-based-interbase",
+        breakends=[dict(contig="chr1", position=110, orientation="+"), dict(contig="chr2", position=500, orientation="+")])},
+        sources={"rna": dict(identity={"url": str(split_bam)}, assembly="GRCh38", sample=None, library=None,
+                             product=None, acquisition={"recovery": {"on_timeout": "incomplete"}})},
+        members={"split": dict(source="rna", target="sv", retain_partners=True,
+                               policy=dict(kind="regional", version=1),
+                               regions=[dict(contig="chr1", start=100, end=110, assembly="GRCh38")])})
+    generate_bundle(recipe, tmp_path / "bundle", cache=Cache(tmp_path / "cache", offline=True))
+    member = verify_bundle(tmp_path / "bundle")["members"]["split"]
+    assert member["acquisition_status"] == "incomplete"
+    assert member["record_count"] == 2  # Seed records only; unavailable partners are not zero support

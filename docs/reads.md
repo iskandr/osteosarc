@@ -126,6 +126,16 @@ fails instead of publishing a partial result. Missing indexes fail without falli
 back to a full scan, and a source that changes between steps fails. An
 interrupted run reuses only verified intermediate extractions.
 
+A slow remote partner query can time out after the seed reads were verified. By
+default that fails the whole request. With `RecoveryPolicy(on_timeout="incomplete")`,
+you get the verified seed records and any partners already matched, in a result
+whose receipt has `status="incomplete"`. Its `failed_queries` names the query that
+timed out, and its leads are listed under `unresolved` as "partner query timed out".
+Nothing from the failed query is kept, and an unavailable partner is never counted
+as absent support. The incomplete result is stored apart from complete results, so
+calling again retries the query and resumes from the verified extractions. Source
+changes and corrupt data still fail.
+
 At dense loci, partner windows first select the seed query names with
 [SAMtools `view -N`](https://www.htslib.org/doc/samtools-view.html) and only then
 apply the record cap, so unrelated reads can't exhaust it. The cap still counts

@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import tempfile
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass, replace
 
 from .cache import Cache, digest, file_lock, stable_id, write_json
-from .errors import CoordinateError, IntegrityError
+from .errors import CoordinateError, IntegrityError, OsteosarcError
 from .models import Region
 from .reads import ReadFilter, _cached_subset, extract_reads, inspect_alignment, resolve_regions
 from .records import read_records, record_multiset
@@ -21,6 +22,11 @@ class RecoveryPolicy:
     All available seed/context records survive. Added windows contribute only
     actually matched partners. No full-file scan, synthetic sequence, trimming
     or completeness claim is made, even when every SA pointer was resolved.
+
+    on_timeout="incomplete" keeps the verified seed and the partners already
+    matched when a later partner query times out, instead of failing. The
+    result's receipt has status "incomplete" and names the failed query; it is
+    stored apart from complete results, so the next call retries the query.
     """
 
     mates: bool = True
@@ -29,8 +35,11 @@ class RecoveryPolicy:
     max_intervals: int = 128
     max_bases: int = 1_000_000
     max_records: int = 100_000
+    on_timeout: str = "fail"
 
     def __post_init__(self):
+        if self.on_timeout not in ("fail", "incomplete"):
+            raise ValueError("on_timeout must be 'fail' or 'incomplete'")
         for name in ("mates", "supplementary"):
             if type(getattr(self, name)) is not bool:
                 raise ValueError(f"{name} must be a boolean")
@@ -85,6 +94,13 @@ def _matches(record, lead):
             and (not r.has_tag("NM") or r.get_tag("NM") == lead["nm"]))
 
 
+def _timed_out(error):
+    """A partner query that ran out of time, as opposed to a changed or corrupt source."""
+    import requests
+    return isinstance(error, subprocess.TimeoutExpired) or (
+        isinstance(error, OsteosarcError) and isinstance(error.__cause__, requests.Timeout))
+
+
 def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
     """Extend extract_reads with bounded, source/RG/segment-scoped partner recovery.
 
@@ -94,6 +110,7 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
     verified complete intermediates. Seed record overflow fails explicitly.
     Partner windows select all seed QNAMEs before applying the record cap;
     source/RG/segment/placement matching still determines retained partners.
+    A partner-query timeout fails unless policy.on_timeout is "incomplete".
     """
     import pysam
     policy = policy or RecoveryPolicy()
@@ -112,7 +129,8 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
         raise IntegrityError("Seed acquisition exceeds recovery interval/base limit")
     seed = extract_reads(source, regions, cache=cache, max_records=policy.max_records, **kwargs)
     request = dict(schema_version=2, operation="recover_reads", seed=seed.receipt["request"],
-                   seed_files=seed.receipt["files"], recovery=asdict(policy))
+                   seed_files=seed.receipt["files"],
+                   recovery={k: v for k, v in asdict(policy).items() if k != "on_timeout"})
     directory = cache.workspace / "derived" / stable_id(request)
     with file_lock(cache.workspace / "locks" / (directory.name + ".lock")):
         if cached := _cached_subset(directory, request):
@@ -154,7 +172,7 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
         receipts = [seed.receipt]
         requested, unresolved, problems, repeated = {}, {}, {}, set()
         handled_records, handled_leads = set(), set()
-        limits = set()
+        limits, failed_queries = set(), []
         assembly = seed.receipt["resolved_regions"][0]["assembly"]
 
         def source_identity(receipt):
@@ -222,8 +240,20 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
             if not intervals:
                 continue
             partner_regions = [Region(c, start, end, assembly, lengths[c]) for c, start, end in sorted(intervals)]
-            subset = extract_reads(source, partner_regions, cache=cache, max_records=policy.max_records,
-                                   **partner_kwargs)
+            try:
+                subset = extract_reads(source, partner_regions, cache=cache, max_records=policy.max_records,
+                                       **partner_kwargs)
+            except (subprocess.TimeoutExpired, OsteosarcError) as error:
+                if policy.on_timeout != "incomplete" or not _timed_out(error):
+                    raise
+                # Nothing from the failed query is kept; its leads stay unresolved.
+                waiting = sorted(i for i in pending if i not in unresolved)
+                for identity in waiting:
+                    unresolved[identity] = "partner query timed out"
+                failed_queries.append(dict(round=round_number, error="timeout",
+                                           timeout_seconds=kwargs.get("timeout", 600),
+                                           regions=[asdict(r) for r in partner_regions], leads=waiting))
+                break
             if source_identity(subset.receipt) != source_identity(seed.receipt):
                 raise IntegrityError("Alignment/header/index changed across recovery acquisitions")
             receipts.append(subset.receipt)
@@ -255,6 +285,13 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
             counts |= found
             records.update(found_records)
             round_number += 1
+        if failed_queries:
+            # Kept apart from the complete result, so a later call retries the query and
+            # resumes from the verified extractions already in the cache.
+            directory = directory.parent / stable_id(dict(
+                request, incomplete=dict(acquired=[r["files"] for r in receipts], failed=failed_queries)))
+            if cached := _cached_subset(directory, request):
+                return cached
         directory.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(dir=directory.parent, prefix=".recovery-") as temporary:
             from pathlib import Path
@@ -272,11 +309,14 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
             pysam.index(str(output))
             receipt = dict(request=request, files={name: digest(work / name) for name in ("reads.bam", "reads.bam.bai")},
                            records=sum(counts.values()), scope="bounded_mate_SA_context", complete_template=False,
-                           status="truncated" if limits else "bounded", acquisition=receipts,
+                           status="incomplete" if failed_queries else "truncated" if limits else "bounded",
+                           acquisition=receipts,
                            requested_leads=requested, visited_intervals=visited, unresolved=unresolved,
                            observations=list(problems.values()), repeated_or_cyclic_leads=sorted(repeated),
                            limits=sorted(limits), reasons={k: sorted(v) for k, v in sorted(reasons.items())},
                            pysam_version=pysam.__version__)
+            if failed_queries:
+                receipt["failed_queries"] = failed_queries
             write_json(work / "receipt.json", receipt)
             os.replace(work, directory)
         return _cached_subset(directory, request)
