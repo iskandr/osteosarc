@@ -5,6 +5,15 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.6.0 (2026-09-24)
+
+- `RecoveryPolicy(on_timeout="incomplete")` keeps the verified seed reads and
+  partners already matched when a later partner query times out, instead of
+  failing. The receipt says `status="incomplete"` and names the failed query; a
+  later call retries it and resumes from verified extractions. Fixture recipes can
+  request this through a source's `acquisition`, and bundles record the
+  `incomplete` acquisition ([#28](https://github.com/iskandr/osteosarc/issues/28)).
+
 ## 0.5.0 (2026-09-24)
 
 - The CLI is easier to explore with ([#38](https://github.com/iskandr/osteosarc/issues/38)):

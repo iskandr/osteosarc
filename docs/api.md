@@ -85,7 +85,8 @@ Region(contig, start, end, assembly, reference_length=None)
 ReadFilter(min_mapq=0, exclude_flags=0, require_flags=0,
            barcodes=(), barcode_tag="CB", query_names=())
 RecoveryPolicy(mates=True, supplementary=True, max_rounds=4,
-               max_intervals=128, max_bases=1_000_000, max_records=100_000)
+               max_intervals=128, max_bases=1_000_000, max_records=100_000,
+               on_timeout="fail")
 ```
 
 | Call | Returns / behavior |

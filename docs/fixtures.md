@@ -190,7 +190,10 @@ A member can set `retain_partners: true` to keep recovered mates and split
 records for its selected templates, carrying the recovery reasons. This needs a
 source acquired with a [`RecoveryPolicy`](reads.md#recover-mates-and-split-alignments).
 `acquisition_status` is separate from selection status: zero retained records in
-bounded or truncated input is not evidence of zero support in the source.
+bounded, truncated or incomplete input is not evidence of zero support in the
+source. A source's `acquisition` can set `{"recovery": {"on_timeout": "incomplete"}}`
+so that a partner-query timeout yields an `incomplete` acquisition instead of
+failing the bundle.
 
 ## Portable bundles
 
