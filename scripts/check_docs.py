@@ -5,7 +5,7 @@
 
 Python blocks on one page share a namespace, in order, as a reader would run
 them. Shell blocks run their `osteosarc` lines (interactive commands receive
-"quit"). Install, clone and development commands are listed but not run; CI
+"quit"; a trailing `> FILE` redirect is honored). Install, clone and development commands are listed but not run; CI
 covers the development commands. A block preceded by
 `<!-- docs-check: skip (reason) -->` is reported as skipped.
 """
@@ -93,10 +93,15 @@ def run_shell(block, env, cwd, timeout):
             outcomes.append(dict(command=command, status="not run"))
             continue
         started = time.time()
+        arguments, redirect = shlex.split(command), None
+        if len(arguments) > 2 and arguments[-2] == ">":
+            arguments, redirect = arguments[:-2], arguments[-1]
         try:
-            process = subprocess.run(shlex.split(command), env=env, cwd=cwd, input="quit\n",
+            process = subprocess.run(arguments, env=env, cwd=cwd, input="quit\n",
                                      capture_output=True, text=True, timeout=timeout)
             status = "ok" if process.returncode == 0 else "failed"
+            if redirect and status == "ok":
+                (Path(cwd) / redirect).write_text(process.stdout)
             error = "" if status == "ok" else (process.stderr or process.stdout)[-1500:]
         except subprocess.TimeoutExpired:
             status, error = "failed", "timed out"

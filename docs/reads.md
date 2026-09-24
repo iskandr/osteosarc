@@ -182,8 +182,11 @@ with explicit witnesses and controls, use [fixture recipes](fixtures.md).
 
 This writes one indexed BAM per registry-linked RNA-seq BAM product for every
 sample on GRCh38. Each BAM contains the union of the nominated loci; products
-from the same specimen stay separate.
+from the same specimen stay separate. It queries every RNA-seq BAM, so expect it
+to take an hour or more; each extraction accepts a longer `timeout=` in seconds
+(default 600) for slow remote queries.
 
+<!-- docs-check: skip (batch job over every RNA-seq BAM; takes over an hour) -->
 ```python
 import json
 import shutil
@@ -202,6 +205,9 @@ for sample in data.specimens:
         sample["sample_id"], kind="alignment", format="bam", assay="rna-seq",
     )
     for source in sources:
+        if not source.index_urls:
+            print("Skipping alignment published without an index:", source.key)
+            continue
         if data.inspect_alignment(source).assembly != "GRCh38":
             print("Skipping incompatible or unresolved assembly:", source.key)
             continue
@@ -226,6 +232,7 @@ regions = [Region.from_samtools(locus, assembly="GRCh38") for locus in [
 ```
 
 Remove `assay="rna-seq"` to include the other BAM assays. GRCh37 products need
-their own verified GRCh37 coordinates. Samples without matching BAM products
-have no output. Extraction is indexed and cached; paired mates can lie outside
+their own verified GRCh37 coordinates. Some vendor BAMs are published without an
+index; extraction never falls back to downloading them whole, so the loop skips
+them. Samples without matching BAM products have no output. Extraction is indexed and cached; paired mates can lie outside
 the loci. No template sampling or allele filtering is applied.
