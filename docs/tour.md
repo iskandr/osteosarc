@@ -10,8 +10,8 @@ reads. It requires `osteosarc` and `samtools`, and shows how to check any
 ```python
 from osteosarc import Dataset
 
-data = Dataset.sync("baseline")
-raw = Dataset.open("baseline", corrections=False)
+data = Dataset.sync()
+raw = Dataset.open(corrections=False)
 variant = data.variants()["MAP2-chr2-209694768"]
 print("Published:", raw.variants()[variant.id].allele)
 print("Corrected:", variant.allele)

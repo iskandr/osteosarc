@@ -140,7 +140,8 @@ def corrections_view(data, *, width=None):
 
 
 def summary_view(data):
-    lines = [f"snapshot {data.manifest['name']} ({data.id[:12]})"]
+    downloaded = data.downloaded[:16].replace("T", " ")
+    lines = [f"snapshot {data.name} ({data.id[:12]}), downloaded {downloaded} UTC"]
     statuses = Counter(r["status"] for r in data.corrections)
     lines.append("corrections: " + ", ".join(f"{n} {s}" for s, n in sorted(statuses.items())))
     try:

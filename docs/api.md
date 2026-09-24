@@ -16,9 +16,10 @@ you use. The guides show each call in context; this page lists them by task.
 
 | Call | Returns / behavior |
 | --- | --- |
-| `Dataset.sync(name, cache=None, refresh=False, sources=None, corrections=True)` | Create a named metadata snapshot; repeated unchanged names reopen it |
-| `Dataset.open(name, cache=None, offline=True, corrections=True)` | Verify and reopen a saved snapshot; `corrections=False` or a list of `Correction`s |
-| `data.id`, `data.receipts()` | Snapshot identity and source receipts |
+| `Dataset.sync(name=None, cache=None, refresh=False, sources=None, corrections=True)` | Save the website's metadata as a snapshot named by UTC date (or `name`); reopens today's or an existing named one unless `refresh=True` |
+| `Dataset.open(name=None, cache=None, offline=True, corrections=True)` | Verify and reopen the most recent snapshot, or one chosen by name, UTC download date or month, or ID prefix; `corrections=False` or a list of `Correction`s |
+| `Dataset.snapshots(cache=None)` | Table of saved snapshots, newest download first: `name`, `downloaded`, `created`, `id` |
+| `data.id`, `data.name`, `data.downloaded`, `data.receipts()` | Snapshot content identity, name, latest source download time, and source receipts |
 | `data.source_path(name)` | Verified local metadata path |
 | `Cache(root=None, offline=False, timeout=600)` | Shared local object cache |
 | `cache.fetch(url, refresh=False, sha256=None, md5=None, size=None, max_bytes=None)` | Verified download `Receipt` |

@@ -5,16 +5,25 @@ links to its full guide.
 
 ## Snapshots
 
-A snapshot is a named local copy of the dataset's metadata. The metadata lists
-files, variants, samples, vaccines and timeline sources, with SHA-256 receipts.
-`Dataset.sync("baseline")` creates one, and `Dataset.open("baseline")` reopens it
-offline. Sequencing files stay remote until you request them. Pass `offline=False`
-to allow new downloads.
+The osteosarc.com website changes: files are added, variants are renamed and
+records are corrected. A snapshot is a local copy of its metadata as downloaded on
+one date: the file listing, variants, samples, vaccines and timeline sources, with
+SHA-256 receipts. A snapshot never changes, so your results don't shift under you,
+and it works offline. Sequencing files stay remote until you request them.
 
-A snapshot never changes. To pick up newer website data, sync under a new name
-with `refresh=True`, as in `Dataset.sync("next", refresh=True)`.
-Files are stored in a shared OpenVax cache, so other tools can reuse them.
-See [Snapshots and cache](design.md).
+- `Dataset.sync()` saves today's metadata as a snapshot named by the UTC date, such
+  as `2026-09-24`. Running it again that day reopens it. `refresh=True` downloads a
+  new one.
+- `Dataset.open()` reopens the most recently downloaded snapshot, offline. Pass
+  `offline=False` to allow new downloads.
+- `Dataset.snapshots()` lists them. `Dataset.open("2026-09")` picks the newest
+  snapshot downloaded in a month; a day, a year, an exact name or an ID prefix also
+  work.
+
+On the command line, `osteosarc sync` and `osteosarc snapshots` do the same, and every
+other command takes `--snapshot`. Each snapshot's content ID (`data.id`) is recorded in
+every read extraction and fixture bundle made from it. Files are stored in a shared
+OpenVax cache, so other tools can reuse them. See [Snapshots and cache](design.md).
 
 ## Samples, timepoints and assays
 

@@ -1,15 +1,15 @@
 # Select variants and vaccine peptides
 
 Select catalogue variants by gene, vaccine, pipeline or status, then get their
-alleles, read counts and vaccine peptides. These examples use the `baseline`
-snapshot from [Get started](index.md#get-started).
+alleles, read counts and vaccine peptides. The examples open your most recent snapshot;
+see [Get started](index.md#get-started) to save one.
 
 ## Select variants
 
 ```python
 from osteosarc import Dataset
 
-data = Dataset.open("baseline")
+data = Dataset.open()
 site = data.variants()
 vaccine_targets = data.variants("vaccine", status="ready")
 dynein = site.select(gene="DYNC1H1", status="ready")
@@ -24,8 +24,8 @@ to include additional count-export and source-JSON entries.
 From the command line:
 
 ```sh
-osteosarc variants baseline --gene DYNC1H1 --status ready
-osteosarc variants baseline --set vaccine --vaccine mRNA
+osteosarc variants --gene DYNC1H1 --status ready
+osteosarc variants --set vaccine --vaccine mRNA
 ```
 
 ## Get an allele and its read-extraction region
@@ -108,7 +108,7 @@ An untested assay or missing response is not a negative result.
 ## Open a VCF
 
 ```python
-data = Dataset.open("baseline", offline=False)
+data = Dataset.open(offline=False)
 calls = data.assets.select(kind="variants", format="vcf")
 if calls:
     with data.open_variants(calls[0]) as vcf:

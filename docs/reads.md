@@ -2,7 +2,7 @@
 
 Fetch the reads around selected variants or regions from a remote BAM into a
 cached, indexed local BAM, without downloading the whole file. These examples
-use the `baseline` snapshot from [Get started](index.md#get-started).
+open your most recent snapshot; see [Get started](index.md#get-started).
 
 ## Requirements
 
@@ -18,7 +18,7 @@ to upgrade. Cached reads can be reopened without SAMtools.
 ```python
 from osteosarc import Dataset
 
-data = Dataset.open("baseline", offline=False)
+data = Dataset.open(offline=False)
 source = data.asset(
     "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"
 )
@@ -35,7 +35,7 @@ or `data.assets.select(...)`.
 The command line takes the same variant IDs and returns the same cached BAM:
 
 ```sh
-osteosarc reads baseline rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam --variant DYNC1H1-chr14-101980529 --padding 100
+osteosarc reads rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam --variant DYNC1H1-chr14-101980529 --padding 100
 ```
 
 ## Specify coordinates
@@ -57,7 +57,7 @@ region = Region.from_samtools("chr14:101980529-101980530", assembly="GRCh38")
 ```
 
 ```sh
-osteosarc reads baseline rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam chr14:101980529-101980530 --assembly GRCh38
+osteosarc reads rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam chr14:101980529-101980530 --assembly GRCh38
 ```
 
 Overlapping intervals are queried as a union. Original duplicate records,
@@ -153,7 +153,7 @@ with an existing `.fai` index.
 ## Reuse the result offline
 
 ```python
-offline = Dataset.open("baseline")
+offline = Dataset.open()
 assert offline.extract_reads(source, regions).path == subset.path
 ```
 

@@ -40,7 +40,7 @@ is reported as skipped. The script uses a temporary cache by default;
 
 Live examples need network access and SAMtools. The library examples also need
 the consumer packages and an indexed Ensembl 95 human reference. Start with
-`README.md` or `docs/index.md` to create the `baseline` snapshot when running
+`README.md` or `docs/index.md` to create a snapshot when running
 selected pages against an empty cache.
 
 The weekly `drift` workflow checks live sources for stale corrections and
@@ -51,14 +51,14 @@ unrecognized labels, then executes the documentation examples.
 ```python
 from osteosarc import Dataset, Region
 
-data = Dataset.sync("smoke")
+data = Dataset.sync()
 source = data.asset(
     "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.bam"
 )
 regions = [Region("chr14", 101980528, 101980530, "GRCh38")]
 subset = data.extract_reads(source, regions, timeout=180)
 print(subset.receipt["records"])
-assert Dataset.open("smoke").extract_reads(source, regions).path == subset.path
+assert Dataset.open().extract_reads(source, regions).path == subset.path
 ```
 
 On 2026-09-18, this returned 3,788 records in a 144,646-byte indexed BAM.

@@ -50,11 +50,39 @@ def _check_inventory_time(asset, receipt):
             "create a new snapshot to use the current object")
 
 
+DATE_SELECTOR = re.compile(r"\d{4}(-\d{2}(-\d{2})?)?")
+
+
+def choose_snapshot(rows, selector=None):
+    """Name of the snapshot a selector refers to, given rows newest first.
+
+    None selects the newest. Otherwise an exact name wins, then the newest
+    snapshot downloaded in a UTC year, month or day, then a unique ID prefix.
+    """
+    rows = list(rows)
+    if not rows:
+        raise FileNotFoundError("No saved snapshots; run Dataset.sync() or `osteosarc sync` first")
+    if selector is None:
+        return rows[0]["name"]
+    matches = [r for r in rows if r["name"] == selector]
+    if not matches and DATE_SELECTOR.fullmatch(selector):
+        matches = [r for r in rows if (r["downloaded"] or "").startswith(selector)]
+    if not matches and len(selector) >= 6:
+        matches = [r for r in rows if r["id"].startswith(selector.lower())]
+        if len({r["id"] for r in matches}) > 1:
+            raise FileNotFoundError(f"Snapshot ID prefix {selector!r} is ambiguous")
+    if not matches:
+        raise FileNotFoundError(f"No snapshot matches {selector!r}; saved: "
+                                + ", ".join(r["name"] for r in rows))
+    return matches[0]["name"]
+
+
 class Dataset:
     """A pinned set of metadata receipts plus lazily parsed public resources.
 
-    Use Dataset.sync(name) explicitly to acquire metadata, then Dataset.open
-    to reopen it offline. Full data objects are downloaded only on request.
+    Use Dataset.sync() explicitly to acquire metadata, then Dataset.open()
+    to reopen the most recent snapshot offline. Full data objects are
+    downloaded only on request.
 
     corrections=True applies the verified corrections in osteosarc.curation;
     False uses the published sources unchanged; a sequence supplies your own.
@@ -84,14 +112,50 @@ class Dataset:
         return cache.workspace / "snapshots" / (name + ".json")
 
     @classmethod
-    def sync(cls, name, *, cache=None, refresh=False, sources=None, corrections=True):
-        """Create a named snapshot, acquiring metadata only (~57 MB currently).
+    def snapshots(cls, *, cache=None):
+        """Saved snapshots, most recently downloaded first.
 
-        Existing names cannot be overwritten. refresh=True fetches new source
-        bytes for a NEW snapshot. sources may override endpoint URLs (for a
-        pinned public source-repository commit or an internal mirror).
+        ``downloaded`` is the UTC time of the snapshot's latest source download.
+        It can precede ``created`` when a named snapshot reused cached sources.
+        """
+        cache = cache if isinstance(cache, Cache) else Cache(cache, offline=True)
+        rows = []
+        for path in (cache.workspace / "snapshots").glob("*.json"):
+            manifest = json.loads(path.read_text())
+            downloaded = max((r["retrieved_at"] for r in manifest["sources"].values()),
+                             default=manifest.get("created_at"))
+            rows.append(dict(name=path.stem, downloaded=downloaded,
+                             created=manifest.get("created_at"), id=manifest["id"]))
+        rows.sort(key=lambda r: (r["downloaded"] or "", r["created"] or "", r["name"]), reverse=True)
+        return Table(rows, columns=["name", "downloaded", "created", "id"])
+
+    @classmethod
+    def sync(cls, name=None, *, cache=None, refresh=False, sources=None, corrections=True):
+        """Save the website's current metadata as a snapshot (~57 MB currently).
+
+        Without a name, the snapshot is named by its UTC download date, such as
+        2026-09-24. Calling sync() again that day reopens it; refresh=True
+        downloads another (2026-09-24.2). A named snapshot is created once:
+        repeating the name reopens it, and refresh=True fetches new source bytes
+        for a new name. sources may override endpoint URLs (for a pinned public
+        source-repository commit or an internal mirror).
         """
         cache = cache if isinstance(cache, Cache) else Cache(cache)
+        if name is None:
+            with file_lock(cache.workspace / "snapshots" / ".dated.lock"):
+                today = datetime.now(timezone.utc).date().isoformat()
+                taken = {r["name"] for r in cls.snapshots(cache=cache)}
+                dated = [n for n in taken if n == today or re.fullmatch(re.escape(today) + r"\.\d+", n)]
+                if dated and not refresh and not sources:
+                    newest = next(r["name"] for r in cls.snapshots(cache=cache) if r["name"] in dated)
+                    return cls.open(newest, cache=cache, offline=cache.offline, corrections=corrections)
+                name = today if today not in taken else next(
+                    f"{today}.{n}" for n in range(2, len(taken) + 3) if f"{today}.{n}" not in taken)
+                return cls._create(name, cache, refresh=True, sources=sources, corrections=corrections)
+        return cls._create(name, cache, refresh=refresh, sources=sources, corrections=corrections)
+
+    @classmethod
+    def _create(cls, name, cache, *, refresh, sources, corrections):
         path = cls._snapshot_path(cache, name)
         with file_lock(path.with_suffix(".lock")):
             if path.exists():
@@ -116,14 +180,31 @@ class Dataset:
             return dataset
 
     @classmethod
-    def open(cls, name, *, cache=None, offline=True, corrections=True):
-        """Open a saved snapshot; offline by default, including later downloads."""
+    def open(cls, name=None, *, cache=None, offline=True, corrections=True):
+        """Open a saved snapshot, the most recently downloaded by default.
+
+        name may be an exact snapshot name; a year, month or day (2026,
+        2026-09, 2026-09-24) for the newest snapshot downloaded then (UTC); or
+        an ID prefix of at least six characters. Offline by default, including
+        later downloads.
+        """
         if isinstance(cache, Cache):
             cache = Cache(cache.root, offline=offline, timeout=cache.timeout)
         else:
             cache = Cache(cache, offline=offline)
+        if name is None or not cls._snapshot_path(cache, name).exists():
+            name = choose_snapshot(cls.snapshots(cache=cache), name)
         path = cls._snapshot_path(cache, name)
         return cls(cache, json.loads(path.read_text()), corrections=corrections)
+
+    @property
+    def name(self):
+        return self.manifest["name"]
+
+    @property
+    def downloaded(self):
+        """UTC time of this snapshot's latest source download."""
+        return max(r["retrieved_at"] for r in self.manifest["sources"].values())
 
     @property
     def id(self):

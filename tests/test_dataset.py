@@ -270,3 +270,127 @@ def test_mirrored_site_tables_stay_pinned(tmp_path):
     data = Dataset.sync("mirrored", cache=cache, sources={"vafs": mirror})
     assert data.asset("vafs").url == mirror
     assert len(data.table("vafs")) == len(data.vafs) > 0   # offline: the pinned copy, not a download
+
+
+def test_choose_snapshot_prefers_names_then_download_dates_then_ids():
+    from osteosarc.dataset import choose_snapshot
+    rows = [dict(name="2026-10-02", downloaded="2026-10-02T09:00:00+00:00", id="c" * 64),
+            dict(name="2026-09-24.2", downloaded="2026-09-24T18:00:00+00:00", id="b" * 64),
+            dict(name="2026-09-24", downloaded="2026-09-24T08:00:00+00:00", id="a" * 64),
+            dict(name="baseline", downloaded="2026-09-18T16:07:17+00:00", id="a" * 64)]
+    assert choose_snapshot(rows) == "2026-10-02"
+    assert choose_snapshot(rows, "2026-09-24") == "2026-09-24"  # An exact name wins
+    assert choose_snapshot(rows, "2026-09") == "2026-09-24.2"  # Newest download that month
+    assert choose_snapshot(rows, "2026-09-18") == "baseline"  # Dates are download dates
+    assert choose_snapshot(rows, "2026") == "2026-10-02"
+    assert choose_snapshot(rows, "bbbbbb") == "2026-09-24.2"
+    assert choose_snapshot(rows, "AAAAAA") == "2026-09-24"  # Same content: the newest name
+    for selector in ("2025", "zzzzzz", "bbb", "2026-9"):
+        with pytest.raises(FileNotFoundError, match="No snapshot matches"):
+            choose_snapshot(rows, selector)
+    with pytest.raises(FileNotFoundError, match="osteosarc sync"):
+        choose_snapshot([])
+    ambiguous = [dict(rows[0], id="abcdef" + "0" * 58), dict(rows[1], id="abcdef" + "1" * 58)]
+    with pytest.raises(FileNotFoundError, match="ambiguous"):
+        choose_snapshot(ambiguous, "abcdef")
+
+
+@pytest.fixture
+def dated_cache(tmp_path, monkeypatch):
+    """An offline cache of fixture sources, a controllable clock, and sync without network."""
+    from datetime import datetime, timedelta, timezone
+
+    from conftest import DATA, FILES
+
+    from osteosarc import SNAPSHOT_SOURCES, TIMELINE_SOURCES, Cache
+    cache = Cache(tmp_path / "cache", offline=True)
+    for key, name in FILES.items():
+        cache.import_file(DATA / name, {**SNAPSHOT_SOURCES, **TIMELINE_SOURCES}[key])
+    fetch = Cache.fetch
+    monkeypatch.setattr(Cache, "fetch", lambda self, url, refresh=False, **kw: fetch(self, url, **kw))
+    ticks = iter(range(10_000))
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return datetime(2026, 9, 24, 12, tzinfo=timezone.utc) + timedelta(minutes=next(ticks))
+    monkeypatch.setattr("osteosarc.dataset.datetime", Clock)
+    return cache
+
+
+def test_dated_sync_reuses_today_and_open_uses_the_newest(dated_cache, tmp_path):
+    from osteosarc import Cache
+    with pytest.raises(FileNotFoundError, match="No saved snapshots"):
+        Dataset.open(cache=dated_cache)
+    named = Dataset.sync("named", cache=dated_cache)
+    first = Dataset.sync(cache=dated_cache)
+    assert first.name == "2026-09-24"
+    assert Dataset.sync(cache=dated_cache).name == "2026-09-24"  # Same day: reopened
+    second = Dataset.sync(cache=dated_cache, refresh=True)
+    assert second.name == "2026-09-24.2" and second.id == first.id
+    rows = list(Dataset.snapshots(cache=dated_cache))
+    assert {r["name"] for r in rows} == {"2026-09-24", "2026-09-24.2", "named"}
+    assert rows[0]["downloaded"] == first.downloaded  # Downloads, not creation, order snapshots
+    assert rows[0]["name"] == "2026-09-24.2"  # Ties go to the newest creation
+    assert Dataset.open(cache=dated_cache).name == "2026-09-24.2"
+    assert Dataset.open("2026-09-24", cache=dated_cache).name == "2026-09-24"
+    assert Dataset.open(first.downloaded[:7], cache=dated_cache).name == "2026-09-24.2"
+    assert Dataset.open(first.id[:8], cache=dated_cache).name == "2026-09-24.2"
+    assert Dataset.open("named", cache=dated_cache).name == named.name
+    with pytest.raises(FileNotFoundError, match="saved: 2026-09-24.2"):
+        Dataset.open("missing", cache=dated_cache)
+    assert Dataset.open(cache=dated_cache).cache.offline
+    assert list(Dataset.snapshots(cache=Cache(tmp_path / "empty"))) == []
+
+
+def test_cli_uses_the_newest_snapshot_and_accepts_the_old_positional_form(dated_cache, capsys, monkeypatch):
+    root = str(dated_cache.root)
+    assert main(["--cache", root, "snapshots"]) == 0
+    assert "No saved snapshots" in capsys.readouterr().out
+    assert main(["--cache", root, "sync"]) == 0
+    assert json.loads(capsys.readouterr().out)["snapshot"] == "2026-09-24"
+    assert main(["--cache", root, "sync", "older"]) == 0
+    capsys.readouterr()
+    assert main(["--cache", root, "snapshots"]) == 0
+    listing = capsys.readouterr().out
+    assert "2026-09-24" in listing and "older" in listing and "Commands use older" in listing
+    assert main(["--cache", root, "snapshots", "--json"]) == 0
+    assert [r["name"] for r in json.loads(capsys.readouterr().out)] == ["older", "2026-09-24"]
+
+    expected = [v["id"] for v in json.loads(json.dumps(Dataset.open(cache=dated_cache).variants(gene="SMC5").to_records()))]
+    for arguments in (["variants", "--gene", "SMC5"], ["variants", "--snapshot", "2026-09-24", "--gene", "SMC5"],
+                      ["variants", "older", "--gene", "SMC5"]):
+        assert main(["--cache", root, *arguments]) == 0
+        captured = capsys.readouterr()
+        assert [v["id"] for v in json.loads(captured.out)] == expected
+        assert ("deprecated" in captured.err) == (arguments[1] == "older")
+    assert main(["--cache", root, "variants", "older", "--snapshot", "older"]) == 1
+    assert "once" in capsys.readouterr().err
+    assert main(["--cache", root, "variants", "--snapshot", "missing"]) == 1
+    assert "No snapshot matches 'missing'" in capsys.readouterr().err
+
+    # specimens and reads tell the old and new forms apart by the saved names.
+    assert main(["--cache", root, "specimens", "T2_tumor"]) == 0
+    assert capsys.readouterr().out.startswith("T2_tumor")
+    assert main(["--cache", root, "specimens", "older", "T2_tumor"]) == 0
+    assert capsys.readouterr().out.startswith("T2_tumor")
+    assert main(["--cache", root, "on", "2025-01-28", "--days", "1"]) == 0
+    assert main(["--cache", root, "on", "older", "2025-01-28", "--days", "1"]) == 0
+    capsys.readouterr()
+
+    from osteosarc import ReadSubset
+    calls = []
+
+    def extract_reads(self, asset, regions=None, **kwargs):
+        calls.append((self.name, asset, regions, kwargs.get("variants")))
+        return ReadSubset(dated_cache.root / "reads.bam", dated_cache.root / "reads.bam.bai", {})
+    monkeypatch.setattr(Dataset, "extract_reads", extract_reads)
+    key = Dataset.open(cache=dated_cache).assets.select(format="bam")[0].key
+    for arguments, snapshot in ([key, "--variant", "SMC5-chr9-70298024"], "older"), \
+                               (["2026-09-24", key, "--variant", "SMC5-chr9-70298024"], "2026-09-24"), \
+                               (["2026-09-24", key, "chr9:70298024-70298024", "--assembly", "GRCh38"], "2026-09-24"):
+        assert main(["--cache", root, "reads", *arguments]) == 0
+        capsys.readouterr()
+        name, asset, regions, variants = calls.pop()
+        assert (name, asset) == (snapshot, key)
+        assert [v.id for v in variants or ()] == (["SMC5-chr9-70298024"] if variants else [])
