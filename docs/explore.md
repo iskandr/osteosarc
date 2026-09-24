@@ -2,7 +2,7 @@
 
 Browse the dataset's specimens and select sequencing files by sample, assay,
 platform or path, without downloading them. Then download and read tables.
-The examples use the `baseline` snapshot from [Get started](index.md).
+The examples use the `baseline` snapshot from [Get started](index.md#get-started).
 
 ## Browse samples and sequencing types
 

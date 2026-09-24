@@ -2,7 +2,7 @@
 
 Fetch the reads around selected variants or regions from a remote BAM into a
 cached, indexed local BAM, without downloading the whole file. These examples
-use the `baseline` snapshot from [Get started](index.md).
+use the `baseline` snapshot from [Get started](index.md#get-started).
 
 ## Requirements
 

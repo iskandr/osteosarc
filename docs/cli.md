@@ -4,6 +4,8 @@ The `osteosarc` command calls the same `Dataset` API as Python, so both produce
 the same selections and share one cache. Commands that list data print JSON;
 `samples`, `specimens`, `timeline` and `on` print readable text. Run
 `osteosarc --help` or `osteosarc COMMAND --help` for every option.
+`assets --sample`, `reads --variant` and `--version` are new in 0.2.5; see the
+[changelog](changelog.md).
 
 ## Global options
 
@@ -72,11 +74,12 @@ parses a named table (`vafs`, `vaf_columns`, `snv_top`, `dna_fusions`,
 
 ```sh
 osteosarc reads baseline rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam --variant DYNC1H1-chr14-101980529 --padding 100
-osteosarc reads baseline rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam chr14:101980429-101980630 --assembly GRCh38 --min-mapq 20 --exclude-flags 0x500
+osteosarc reads baseline rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam chr14:101980429-101980629 --assembly GRCh38 --min-mapq 20 --exclude-flags 0x500
 ```
 
 Give catalogue variants with `--variant` (repeat it for several) and optional
-`--padding`, or give `contig:start-end` regions with `--assembly`. Regions are
+`--padding`, or give `contig:start-end` regions with `--assembly`. The two commands
+above request the same bases. Regions are
 **one-based and inclusive**, like SAMtools. The command prints the local BAM path,
 its index and the receipt.
 

@@ -20,12 +20,12 @@ nav:
       - Browse the timeline: timeline.md
       - Command line: cli.md
       - Use other libraries: consumers.md
+      - Replace download helpers: migration.md
       - "Worked example: MAP2": tour.md
   - Fixtures and SVs:
       - Read fixtures and bundles: fixtures.md
       - SV interest catalogue: sv-interest.md
       - OpenVax fixture adoption: fixture-migration.md
-      - Replace download helpers: migration.md
   - Reference:
       - Python API: api.md
       - Snapshots and cache: design.md

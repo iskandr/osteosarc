@@ -21,14 +21,16 @@ errors in it. It fetches only the sequencing reads you ask for.
     Osteosarc applies 32 documented, evidence-backed [corrections](curation.md)
     to the published data. For example, it replaces the MAP2 vaccine target's
     allele with the complex event that Tempus and CeGaT report and that the
-    [tumor reads support](tour.md). Each load rechecks every
-    correction against the live sources. Pass `corrections=False` to
+    [tumor reads support](tour.md). Each load checks every correction against
+    the snapshot's source records. Pass `corrections=False` to
     `Dataset.open`, or use `osteosarc --no-corrections`, to see the published values.
 
 New to the dataset? Read [Key concepts](concepts.md) for sample IDs, variant
 statuses and coordinate conventions.
 
-## Install
+## Get started
+
+### Install
 
 ```sh
 python -m pip install osteosarc
@@ -37,7 +39,7 @@ python -m pip install osteosarc
 You need Python 3.9+ on Linux or macOS. Read extraction also requires
 `samtools` on PATH; see [requirements](reads.md#requirements).
 
-## 1. Save the metadata
+### 1. Save the metadata
 
 ```python
 from osteosarc import Dataset
@@ -48,7 +50,7 @@ data = Dataset.sync("baseline")
 This downloads about 57 MB of metadata into a local cache and leaves the sequencing
 files remote. `baseline` is your name for this snapshot.
 
-## 2. Choose a sample and assay
+### 2. Choose a sample and assay
 
 ```python
 print(data.describe_samples())
@@ -73,7 +75,7 @@ has both. Single-cell data can also be selected by platform, such as
 `platform="ont"` or `platform="pacbio"`. See [Find samples and files](explore.md)
 for more filters and the full assay vocabulary.
 
-## 3. Select variants
+### 3. Select variants
 
 ```python
 targets = data.variants(gene="DYNC1H1", status="ready")
@@ -87,7 +89,7 @@ not establish read support, somatic status or a protein effect. Omit the
 filter to include unresolved entries; see [all statuses](variants.md#variant-status).
 The allele tuple is `(chromosome, one-based position, REF, ALT)`.
 
-## 4. Fetch reads for those variants
+### 4. Fetch reads for those variants
 
 ```python
 source = rna["rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"]
@@ -100,7 +102,7 @@ reads, without downloading the whole file. [Isovar](consumers.md#isovar) can
 classify which reads support the reference or alternate allele. Repeating the
 same request reuses the cached result.
 
-## 5. Pick up where you left off
+### 5. Pick up where you left off
 
 ```python
 data = Dataset.open("baseline")  # Opens offline

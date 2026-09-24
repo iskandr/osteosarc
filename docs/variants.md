@@ -2,7 +2,7 @@
 
 Select catalogue variants by gene, vaccine, pipeline or status, then get their
 alleles, read counts and vaccine peptides. These examples use the `baseline`
-snapshot from [Get started](index.md).
+snapshot from [Get started](index.md#get-started).
 
 ## Select variants
 
@@ -156,7 +156,7 @@ retired ID, the upstream commit and the identity caveat. Osteosarc corrects the
 outdated location label without creating an allele for the retired entry.
 
 Three different statuses appear here. `variant.status` describes allele
-usability, as in the table above. The `status` column of `data.corrections`
+usability, as listed under [Variant status](#variant-status). The `status` column of `data.corrections`
 describes whether a correction applied. The nested `allele_resolution["status"]`
 describes the evidence review's outcome.
 

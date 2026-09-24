@@ -11,7 +11,8 @@ files, variants, samples, vaccines and timeline sources, with SHA-256 receipts.
 offline. Sequencing files stay remote until you request them. Pass `offline=False`
 to allow new downloads.
 
-A snapshot never changes. To pick up newer website data, sync under a new name.
+A snapshot never changes. To pick up newer website data, sync under a new name
+with `refresh=True`, as in `Dataset.sync("next", refresh=True)`.
 Files are stored in a shared OpenVax cache, so other tools can reuse them.
 See [Snapshots and cache](design.md).
 

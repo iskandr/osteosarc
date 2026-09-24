@@ -151,10 +151,13 @@ The historical consumer formats live in their own modules:
 
 ## Errors and limitations
 
-All errors derive from `OsteosarcError`. `OfflineError` means requested bytes have
-not been acquired. `IntegrityError` means receipt, checksum, or source identity
-disagrees. `SchemaError` signals an incompatible source schema or recipe.
-`CoordinateError` rejects unresolved or incompatible coordinate requests.
+Osteosarc's own errors derive from `OsteosarcError`. `OfflineError` means requested
+bytes have not been acquired. `IntegrityError` means receipt, checksum, or source
+identity disagrees. `SchemaError` signals an incompatible source schema or recipe.
+`CoordinateError` rejects unresolved or incompatible coordinate requests. The last
+three are also `ValueError`s. Unknown keys, samples and variant IDs raise
+`KeyError`, other invalid arguments raise `ValueError`, and reusing a snapshot name
+with `refresh=True` raises `FileExistsError`.
 Failed external commands raise `subprocess.CalledProcessError` with captured
 diagnostic output; callers can record it in acquisition manifests.
 

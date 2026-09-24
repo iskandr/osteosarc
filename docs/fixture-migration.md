@@ -1,7 +1,8 @@
 # OpenVax fixture adoption
 
-Isovar, Topiary, Vaxrank and Varcode share Osteosarc's fixture recipes, selection,
-bundles and verification instead of maintaining their own. The shared APIs arrived
+Isovar, Topiary and Vaxrank share Osteosarc's fixture recipes, selection, bundles
+and verification instead of maintaining their own. Varcode uses only the optional
+snapshot adapter and `Dataset`/`Cache`, without BAM fixtures. The shared APIs arrived
 in Osteosarc 0.2.0 to 0.2.3 (PRs [#22](https://github.com/iskandr/osteosarc/pull/22)
 to [#25](https://github.com/iskandr/osteosarc/pull/25)). The consumers adopted them
 on 2026-09-23: [Isovar #351](https://github.com/openvax/isovar/pull/351),

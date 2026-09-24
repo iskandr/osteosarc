@@ -1,7 +1,7 @@
 # Changelog
 
 Install or upgrade with `python -m pip install --upgrade osteosarc`, and check
-your version with `osteosarc --version`. Pin both the package version and your
+your version with `python -m pip show osteosarc`. Pin both the package version and your
 snapshot name for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 

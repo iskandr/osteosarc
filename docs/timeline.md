@@ -2,7 +2,7 @@
 
 See treatments, procedures, imaging, specimens, MRD and lab results on one
 timeline, and look up each specimen's files. These examples use the `baseline`
-snapshot from [Get started](index.md).
+snapshot from [Get started](index.md#get-started).
 
 ## View events around a date
 

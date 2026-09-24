@@ -5,7 +5,7 @@
 
 Python blocks on one page share a namespace, in order, as a reader would run
 them. Shell blocks run their `osteosarc` lines (interactive commands receive
-"quit"; a trailing `> FILE` redirect is honored). Install, clone and development commands are listed but not run; CI
+"quit"; a trailing space-separated `> FILE` redirect is honored). Install, clone and development commands are listed but not run; CI
 covers the development commands. A block preceded by
 `<!-- docs-check: skip (reason) -->` is reported as skipped.
 """
@@ -23,9 +23,16 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def nav_pages():
+    """Every page in the mkdocs nav, in order, with or without a title."""
+    nav = re.search(r"^nav:\n((?:[ \t]+.*\n|\n)*)", (ROOT / "mkdocs.yml").read_text(), re.M)[1]
+    return [f"docs/{page}" for page in re.findall(r"^\s*-\s*(?:.*:\s*)?(\S+\.md)\s*$", nav, re.M)]
+
+
 # README first (it creates the snapshot the pages reuse), then every published page.
-PAGES = ["README.md", *(f"docs/{page}" for page in
-                        re.findall(r":\s*(\S+\.md)\s*$", (ROOT / "mkdocs.yml").read_text(), re.M))]
+PAGES = ["README.md", *nav_pages()]
 FENCE = re.compile(r"^```(\w*)\s*$")
 SKIP = re.compile(r"<!--\s*docs-check:\s*skip\b(.*?)-->")
 
@@ -93,9 +100,10 @@ def run_shell(block, env, cwd, timeout):
             outcomes.append(dict(command=command, status="not run"))
             continue
         started = time.time()
-        arguments, redirect = shlex.split(command), None
-        if len(arguments) > 2 and arguments[-2] == ">":
-            arguments, redirect = arguments[:-2], arguments[-1]
+        # Only a final ` > FILE` is honored; other redirections reach the command and fail.
+        redirect = re.fullmatch(r"(.*?)\s+>\s+([^\s>]+)", command)
+        arguments = shlex.split(redirect[1] if redirect else command)
+        redirect = redirect and redirect[2]
         try:
             process = subprocess.run(arguments, env=env, cwd=cwd, input="quit\n",
                                      capture_output=True, text=True, timeout=timeout)

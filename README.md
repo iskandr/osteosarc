@@ -20,8 +20,8 @@ around a variant without downloading an entire BAM.
 - **Reads around a variant.** Indexed queries copy only the reads you need from a
   remote BAM into a cached, indexed local BAM.
 - **Corrected by default.** 32 documented, evidence-backed fixes to the published
-  data, such as the MAP2 vaccine target's allele. Every load rechecks them, and you
-  can turn them off.
+  data, such as the MAP2 vaccine target's allele. Every load checks them against
+  the snapshot's sources, and you can turn them off.
 - **Clinical timeline.** Treatments, procedures, imaging, MRD and lab results as a
   text chart or in an interactive terminal explorer.
 - **Reproducible.** Named metadata snapshots with SHA-256 receipts reopen offline.
@@ -54,7 +54,7 @@ print(reads.path)  # Local indexed BAM
 ```
 
 Later, `Dataset.open("baseline")` reopens the snapshot without a network connection.
-[Get started](https://iskandr.github.io/osteosarc/) explains each step.
+[Get started](https://iskandr.github.io/osteosarc/#get-started) explains each step.
 
 The same workflow from the terminal:
 
@@ -63,7 +63,7 @@ osteosarc sync baseline
 osteosarc samples baseline
 osteosarc assets baseline --sample T0_tumor --kind alignment --assay rna-seq
 osteosarc variants baseline --gene DYNC1H1 --status ready
-osteosarc reads baseline rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam --variant DYNC1H1-chr14-101980529 --padding 100
+osteosarc reads baseline rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam --variant DYNC1H1-chr14-101980529 --variant DYNC1H1-chr14-102030200 --padding 100
 osteosarc explore baseline
 ```
 

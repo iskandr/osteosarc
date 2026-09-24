@@ -3,7 +3,7 @@
 Pass variants, reads and reports to the OpenVax libraries: Varcode for variant
 effects, Isovar for RNA evidence and protein sequences, Topiary for predictions
 and Vaxrank for vaccine ranking. These examples use the `baseline` snapshot from
-[Get started](index.md). Install the libraries you want to use. The Isovar examples also need an
+[Get started](index.md#get-started). Install the libraries you want to use. The Isovar examples also need an
 indexed human Ensembl 95 reference:
 
 ```sh
