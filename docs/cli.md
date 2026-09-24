@@ -35,9 +35,10 @@ date, such as `2026-09-24`; repeating it the same day reopens that snapshot.
 under a name you choose. `--source-revision COMMIT` pins the site's GitLab sources
 to one commit. `snapshots` lists what you have, newest first, and names the default.
 
-Every other command uses the most recent snapshot. Pick another with `--snapshot`:
-an exact name, a UTC download year, month or day (`--snapshot 2026-09` opens the
-newest from September 2026), or an ID prefix:
+Every other command uses the most recent snapshot. Pick another with `--snapshot`.
+A date, month or year means a UTC download date: `--snapshot 2026-09` opens the
+newest snapshot downloaded in September 2026. Any other value is an exact snapshot
+name or an ID prefix, which pin one snapshot exactly:
 
 ```sh
 osteosarc variants --gene MAP2 --snapshot 2026-09

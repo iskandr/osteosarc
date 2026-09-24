@@ -8,7 +8,7 @@ from dataclasses import asdict
 
 from . import __version__
 from .cache import Cache
-from .dataset import Dataset
+from .dataset import DATE_SELECTOR, Dataset
 from .discovery import list_bucket
 from .errors import OsteosarcError
 from .models import Region
@@ -27,8 +27,9 @@ def parser():
     # Commands that read a snapshot take --snapshot; the newest is the default.
     # A leading positional snapshot name is still accepted but deprecated.
     snapshot = argparse.ArgumentParser(add_help=False)
-    snapshot.add_argument("--snapshot", help="Snapshot name, download date or month (2026-09-24, 2026-09), "
-                                             "or ID prefix (default: the most recent; see snapshots)")
+    snapshot.add_argument("--snapshot", help="A UTC download date, month or year for the newest snapshot "
+                                             "downloaded then (2026-09-24, 2026-09), or a snapshot name or ID "
+                                             "prefix (default: the most recent; see snapshots)")
     legacy = dict(nargs="?", help=argparse.SUPPRESS)
 
     def data_command(name, **kwargs):
@@ -155,7 +156,8 @@ def read_targets(dataset, args):
         missing = sorted(set(args.variant) - {v.id for v in variants})
         if missing:
             raise ValueError(f"Unknown variant ID(s): {', '.join(missing)}; "
-                             "list them with `osteosarc variants --set all`")
+                             "list them with `osteosarc variants --set all"
+                             + (f" --snapshot {args.snapshot}" if args.snapshot else "") + "`")
         return dict(variants=variants, padding=args.padding)
     if args.regions and args.assembly is None:
         raise ValueError("--assembly is required with explicit regions")
@@ -164,7 +166,7 @@ def read_targets(dataset, args):
 
 
 def snapshot_selector(args, cache):
-    """The --snapshot value, also accepting the deprecated leading positional snapshot name."""
+    """Dataset.open's name and date for --snapshot or the deprecated leading snapshot name."""
     legacy, saved = getattr(args, "legacy_snapshot", None), None
 
     def is_saved(name):
@@ -179,12 +181,13 @@ def snapshot_selector(args, cache):
             is_saved(args.asset) or ("/" not in args.asset and "/" in args.regions[0])):
         legacy, args.asset, args.regions = args.asset, args.regions[0], args.regions[1:]
     if legacy is None:
-        return args.snapshot
+        dated = args.snapshot is not None and DATE_SELECTOR.fullmatch(args.snapshot)
+        return dict(date=args.snapshot) if dated else dict(name=args.snapshot)
     if args.snapshot is not None:
         raise ValueError("Give the snapshot once, with --snapshot")
     print(f"osteosarc: a leading snapshot argument is deprecated; use --snapshot {legacy}, "
           "or leave it out to use the most recent snapshot", file=sys.stderr)
-    return legacy
+    return dict(name=legacy)
 
 
 def snapshots_view(rows):
@@ -252,7 +255,7 @@ def main(argv=None):
             # Listing and parsing pinned metadata remain offline automatically;
             # commands that acquire new bytes opt in unless --offline is set.
             online = args.command in ("download", "table", "reads") and not args.offline
-            dataset = Dataset.open(snapshot_selector(args, cache), cache=cache, offline=not online,
+            dataset = Dataset.open(**snapshot_selector(args, cache), cache=cache, offline=not online,
                                    corrections=not args.no_corrections)
             if args.command == "assets":
                 filters = {name: getattr(args, name) for name in

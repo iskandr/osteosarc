@@ -112,8 +112,9 @@ print(counts.rows[:2])
 ```
 
 The website changes over time; your snapshot doesn't. Run `Dataset.sync(refresh=True)`
-on a later day to save a new one, and `Dataset.snapshots()` to list them. Pass a
-name, download date or month, such as `Dataset.open("2026-09")`, to reopen an older one.
+on a later day to save a new one, and `Dataset.snapshots()` to list them.
+`Dataset.open(date="2026-09")` reopens the newest from that month, and
+`Dataset.open(name)` reopens one exactly.
 Use `offline=False` when you want to download additional files or extract new reads.
 See [snapshots and cache](design.md) for details.
 
@@ -128,5 +129,5 @@ osteosarc explore
 ```
 
 Every command uses your most recent snapshot; `osteosarc snapshots` lists them, and
-`--snapshot 2026-09` picks another. Type `help` in the explorer for commands and
+`--snapshot 2026-09` picks the newest from that month. Type `help` in the explorer for commands and
 `quit` to exit. The [command-line guide](cli.md) lists every command.

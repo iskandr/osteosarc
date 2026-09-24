@@ -59,8 +59,8 @@ near the variants are downloaded, into a small indexed BAM in your local cache.
 
 Later, `Dataset.open()` reopens your most recent snapshot without a network
 connection. The website changes over time, so snapshots are saved by download date:
-`osteosarc snapshots` lists them, and `Dataset.open("2026-09")` or
-`--snapshot 2026-09` picks an older one.
+`osteosarc snapshots` lists them, and `Dataset.open(date="2026-09")` or
+`--snapshot 2026-09` picks the newest from that month.
 [Get started](https://iskandr.github.io/osteosarc/#get-started) explains each step.
 
 The same workflow from the terminal:

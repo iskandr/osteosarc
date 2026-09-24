@@ -28,17 +28,18 @@ for row in Dataset.snapshots():
 same = Dataset.open(data.name)
 ```
 
-`Dataset.snapshots()` lists snapshots newest first by download time. `open()` and
-the CLI's `--snapshot` accept:
+`Dataset.snapshots()` lists snapshots newest first by download time.
 
-| Selector | Opens |
-| --- | --- |
-| Nothing | The most recently downloaded snapshot |
-| An exact name, such as `2026-09-24.2` | That snapshot |
-| A UTC year, month or day, such as `2026-09` | The newest snapshot downloaded then |
-| Six or more characters of a snapshot ID | The snapshot with that content |
+| Python | CLI | Opens |
+| --- | --- | --- |
+| `Dataset.open()` | (nothing) | The most recently downloaded snapshot |
+| `Dataset.open(date="2026-09")` | `--snapshot 2026-09` | The newest snapshot downloaded in that UTC year, month or day |
+| `Dataset.open("2026-09-24.2")` | `--snapshot 2026-09-24.2` | The snapshot with that exact name |
+| `Dataset.open("4b07fd4b")` | `--snapshot 4b07fd4b` | The snapshot whose ID starts with six or more given characters |
 
-`osteosarc snapshots` prints the same list and names the default. A snapshot's
+A name or ID pins one snapshot exactly; a missing name is an error, never read as
+a date. On the command line, a value shaped like a date always means a download
+date. `osteosarc snapshots` prints the same list and names the default. A snapshot's
 `downloaded` time is its latest source download, which is earlier than its creation
 if it reused cached sources.
 

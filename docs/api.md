@@ -17,7 +17,7 @@ you use. The guides show each call in context; this page lists them by task.
 | Call | Returns / behavior |
 | --- | --- |
 | `Dataset.sync(name=None, cache=None, refresh=False, sources=None, corrections=True)` | Save the website's metadata as a snapshot named by UTC date (or `name`); reopens today's or an existing named one unless `refresh=True` |
-| `Dataset.open(name=None, cache=None, offline=True, corrections=True)` | Verify and reopen the most recent snapshot, or one chosen by name, UTC download date or month, or ID prefix; `corrections=False` or a list of `Correction`s |
+| `Dataset.open(name=None, date=None, cache=None, offline=True, corrections=True)` | Verify and reopen the most recent snapshot, one with an exact name or ID prefix, or the newest downloaded on a UTC `date` (`2026-09-24`, `2026-09`, `2026`); `corrections=False` or a list of `Correction`s |
 | `Dataset.snapshots(cache=None)` | Table of saved snapshots, newest download first: `name`, `downloaded`, `created`, `id` |
 | `data.id`, `data.name`, `data.downloaded`, `data.receipts()` | Snapshot content identity, name, latest source download time, and source receipts |
 | `data.source_path(name)` | Verified local metadata path |

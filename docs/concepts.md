@@ -16,9 +16,9 @@ and it works offline. Sequencing files stay remote until you request them.
   new one.
 - `Dataset.open()` reopens the most recently downloaded snapshot, offline. Pass
   `offline=False` to allow new downloads.
-- `Dataset.snapshots()` lists them. `Dataset.open("2026-09")` picks the newest
-  snapshot downloaded in a month; a day, a year, an exact name or an ID prefix also
-  work.
+- `Dataset.snapshots()` lists them. `Dataset.open(date="2026-09")` picks the
+  newest snapshot downloaded in a month, day or year. `Dataset.open(name)` opens
+  one exactly, by name or ID prefix.
 
 On the command line, `osteosarc sync` and `osteosarc snapshots` do the same, and every
 other command takes `--snapshot`. Each snapshot's content ID (`data.id`) is recorded in

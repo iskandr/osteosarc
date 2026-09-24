@@ -11,9 +11,11 @@ snapshot (by name or download date) for reproducible analyses. Full release note
   ([#35](https://github.com/iskandr/osteosarc/issues/35)). `Dataset.sync()` and
   `osteosarc sync` need no name: they save a snapshot named by the UTC date and
   reopen it for the rest of that day. `Dataset.open()` and every CLI command use the
-  newest snapshot. `Dataset.snapshots()` and `osteosarc snapshots` list them, and
-  `Dataset.open("2026-09")` or `--snapshot 2026-09` picks one by name, download
-  date or month, or ID prefix.
+  newest snapshot. `Dataset.snapshots()` and `osteosarc snapshots` list them.
+  `Dataset.open(date="2026-09")` or `--snapshot 2026-09` picks the newest from a
+  download date, month or year, and `Dataset.open(name)` or `--snapshot NAME` picks
+  one exactly by name or ID prefix. Offline, `sync()` builds a snapshot from sources
+  already in the cache.
 - Named snapshots keep working. The CLI's leading snapshot argument
   (`osteosarc samples baseline`) still works but is deprecated in favor of `--snapshot`.
 - The documentation no longer uses a `baseline` snapshot name.
