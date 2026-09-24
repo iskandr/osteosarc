@@ -28,6 +28,12 @@ print(subset.path, subset.receipt["records"])
 The result is a local indexed BAM. The extractor checks the source assembly,
 downloads the index, and retrieves the requested regions without a full-BAM scan.
 
+The command line takes the same variant IDs and returns the same cached BAM:
+
+```sh
+osteosarc reads baseline rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.bam --variant DYNC1H1-chr14-101980529 --padding 100
+```
+
 ## Specify coordinates
 
 ```python

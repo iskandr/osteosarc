@@ -105,6 +105,62 @@ def test_snapshot_and_cli_use_same_selection(dataset, capsys):
         Dataset.sync("fixture", cache=dataset.cache, refresh=True)
 
 
+def test_cli_version_and_sample_assets_match_the_api(dataset, capsys):
+    import osteosarc
+    with pytest.raises(SystemExit) as exited:
+        main(["--version"])
+    assert exited.value.code == 0
+    assert capsys.readouterr().out.strip() == f"osteosarc {osteosarc.__version__}"
+    root = str(dataset.cache.root)
+    assert main(["--cache", root, "assets", "fixture", "--sample", "T1_tumor", "--kind", "alignment"]) == 0
+    result = json.loads(capsys.readouterr().out)
+    expected = dataset.assets_for_sample("T1_tumor", kind="alignment")
+    assert result["total"] == len(expected) == 1
+    assert [a["key"] for a in result["assets"]] == [a.key for a in expected]
+    assert main(["--cache", root, "assets", "fixture", "--sample", "T1_tumor", "--assay", "wgs"]) == 0
+    assert json.loads(capsys.readouterr().out)["total"] == 0
+    assert main(["--cache", root, "assets", "fixture", "--sample", "T9_tumor"]) == 1
+    assert "Unknown sample" in capsys.readouterr().err
+
+
+def test_cli_reads_accepts_catalogue_variants(dataset, capsys, monkeypatch, tmp_path):
+    from osteosarc import ReadSubset
+    calls = []
+
+    def extract_reads(self, asset, regions=None, **kwargs):
+        calls.append(dict(asset=asset, regions=regions, **kwargs))
+        return ReadSubset(tmp_path / "reads.bam", tmp_path / "reads.bam.bai", {"records": 0})
+    monkeypatch.setattr(Dataset, "extract_reads", extract_reads)
+    root, source = str(dataset.cache.root), dataset.assets.select(format="bam")[0].key
+    ids = ["DYNC1H1-chr14-101980529", "SMC5-chr9-70298024"]
+    command = ["--cache", root, "reads", "fixture", source, "--variant", ids[0], "--variant", ids[1]]
+    assert main(command + ["--padding", "100"]) == 0
+    assert json.loads(capsys.readouterr().out)["path"] == str(tmp_path / "reads.bam")
+    call = calls.pop()
+    assert [v.id for v in call["variants"]] == sorted(ids)
+    assert call["regions"] is None and call["padding"] == 100
+    # The same selection through Python yields the same padded one-based regions.
+    assert call["variants"].regions(padding=100) == dataset.variants(ids=ids).regions(padding=100)
+
+    assert main(["--cache", root, "reads", "fixture", source, "chr14:101980529-101980530",
+                 "--assembly", "GRCh38"]) == 0
+    capsys.readouterr()
+    assert [(r.contig, r.start, r.end, r.assembly) for r in calls.pop()["regions"]] == [
+        ("chr14", 101980528, 101980530, "GRCh38")]
+
+    for arguments, message in [
+        (["--variant", "NOT-A-VARIANT"], "Unknown variant ID"),
+        (["chr14:1-2", "--variant", ids[0]], "either regions or --variant"),
+        (["--variant", ids[0], "--assembly", "GRCh38"], "either regions or --variant"),
+        (["chr14:1-2"], "--assembly is required"),
+        (["chr14:1-2", "--assembly", "GRCh38", "--padding", "5"], "--padding applies to --variant"),
+        ([], "Supply contig:start-end regions or --variant"),
+    ]:
+        assert main(["--cache", root, "reads", "fixture", source, *arguments]) == 1
+        assert message in capsys.readouterr().err
+    assert not calls
+
+
 def test_acquired_data_remains_pinned_after_url_refresh(dataset, tmp_path):
     from osteosarc import Asset
     url = "https://example.test/results.tsv"
