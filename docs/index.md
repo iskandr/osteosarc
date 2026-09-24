@@ -44,11 +44,12 @@ You need Python 3.9+ on Linux or macOS. Read extraction also requires
 ```python
 from osteosarc import Dataset
 
-data = Dataset.sync("baseline")
+data = Dataset.sync()
 ```
 
-This downloads about 57 MB of metadata into a local cache and leaves the sequencing
-files remote. `baseline` is your name for this snapshot.
+This downloads about 57 MB of the website's metadata into a local cache, as a
+snapshot named by today's date (UTC), and leaves the sequencing files remote.
+Running it again the same day reopens that snapshot.
 
 ### 2. Choose a sample and assay
 
@@ -105,23 +106,28 @@ same request reuses the cached result.
 ### 5. Pick up where you left off
 
 ```python
-data = Dataset.open("baseline")  # Opens offline
+data = Dataset.open()  # Your most recent snapshot, offline
 counts = data.table("vafs").select(gene="SMC5")
 print(counts.rows[:2])
 ```
 
+The website changes over time; your snapshot doesn't. Run `Dataset.sync(refresh=True)`
+on a later day to save a new one, and `Dataset.snapshots()` to list them.
+`Dataset.open(date="2026-09")` reopens the newest from that month, and
+`Dataset.open(name)` reopens one exactly.
 Use `offline=False` when you want to download additional files or extract new reads.
-See [snapshots and cache](design.md) to change the cache directory or refresh data.
+See [snapshots and cache](design.md) for details.
 
 ## Prefer the terminal?
 
 ```sh
-osteosarc sync baseline
-osteosarc samples baseline
-osteosarc assets baseline --sample T0_tumor --kind alignment --assay rna-seq
-osteosarc variants baseline --gene SMC5
-osteosarc explore baseline
+osteosarc sync
+osteosarc samples
+osteosarc assets --sample T0_tumor --kind alignment --assay rna-seq
+osteosarc variants --gene SMC5
+osteosarc explore
 ```
 
-Type `help` in the explorer for commands and `quit` to exit. The
-[command-line guide](cli.md) lists every command.
+Every command uses your most recent snapshot; `osteosarc snapshots` lists them, and
+`--snapshot 2026-09` picks the newest from that month. Type `help` in the explorer for commands and
+`quit` to exit. The [command-line guide](cli.md) lists every command.

@@ -4,12 +4,12 @@ The `osteosarc` command calls the same `Dataset` API as Python, so both produce
 the same selections and share one cache. Commands that list data print JSON;
 `samples`, `specimens`, `timeline` and `on` print readable text. Run
 `osteosarc --help` or `osteosarc COMMAND --help` for every option.
-`assets --sample`, `reads --variant` and `--version` are new in 0.2.5; see the
-[changelog](changelog.md).
+Every command uses your most recent snapshot unless you pass `--snapshot`.
+See the [changelog](changelog.md) for when each option arrived.
 
 ## Global options
 
-Global options go before the command, as in `osteosarc --offline variants baseline`.
+Global options go before the command, as in `osteosarc --offline variants`.
 
 | Option | Effect |
 | --- | --- |
@@ -21,30 +21,44 @@ Global options go before the command, as in `osteosarc --offline variants baseli
 Listing commands never download data. `download`, `table` and `reads` fetch what
 they need unless `--offline` is set.
 
-## Create and check a snapshot
+## Snapshots
 
 ```sh
-osteosarc sync baseline
-osteosarc curation baseline --strict
+osteosarc sync
+osteosarc snapshots
+osteosarc curation --strict
 ```
 
-`sync` saves the website's metadata under a name you choose; repeating it reopens
-the saved snapshot. Add `--refresh` with a new name to pick up newer data, or
-`--source-revision COMMIT` to pin the site's GitLab sources to one commit.
+`sync` saves the website's current metadata as a snapshot named by today's UTC
+date, such as `2026-09-24`; repeating it the same day reopens that snapshot.
+`--refresh` downloads a new one (`2026-09-24.2`), and `sync NAME` saves a snapshot
+under a name you choose. `--source-revision COMMIT` pins the site's GitLab sources
+to one commit. `snapshots` lists what you have, newest first, and names the default.
+
+Every other command uses the most recent snapshot. Pick another with `--snapshot`.
+A date, month or year means a UTC download date: `--snapshot 2026-09` opens the
+newest snapshot downloaded in September 2026. Any other value is an exact snapshot
+name or an ID prefix, which pin one snapshot exactly:
+
+```sh
+osteosarc variants --gene MAP2 --snapshot 2026-09
+```
+
 `curation --strict` exits nonzero if a correction no longer matches its source or
-a source label is unrecognized.
+a source label is unrecognized. The older form with the snapshot name first, as in
+`osteosarc samples baseline`, still works but is deprecated.
 
 ## Browse samples, files and variants
 
 ```sh
-osteosarc samples baseline --timepoint T0
-osteosarc specimens baseline T2_tumor
-osteosarc assets baseline --sample T0_tumor --kind alignment --assay rna-seq
-osteosarc assets baseline --timepoint T2 --assay rna-seq --limit 5
-osteosarc variants baseline --gene MAP2
-osteosarc variants baseline --set vaccine --status ready
-osteosarc vaccines baseline
-osteosarc timepoints baseline
+osteosarc samples --timepoint T0
+osteosarc specimens T2_tumor
+osteosarc assets --sample T0_tumor --kind alignment --assay rna-seq
+osteosarc assets --timepoint T2 --assay rna-seq --limit 5
+osteosarc variants --gene MAP2
+osteosarc variants --set vaccine --status ready
+osteosarc vaccines
+osteosarc timepoints
 ```
 
 | Command | Prints |
@@ -62,8 +76,8 @@ what the filters mean.
 ## Download files and tables
 
 ```sh
-osteosarc download baseline snv_top
-osteosarc table baseline vaf_columns
+osteosarc download snv_top
+osteosarc table vaf_columns
 ```
 
 `download` fetches one complete file into the cache and prints its path. `table`
@@ -73,8 +87,8 @@ parses a named table (`vafs`, `vaf_columns`, `snv_top`, `dna_fusions`,
 ## Fetch reads
 
 ```sh
-osteosarc reads baseline rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam --variant DYNC1H1-chr14-101980529 --padding 100
-osteosarc reads baseline rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam chr14:101980429-101980629 --assembly GRCh38 --min-mapq 20 --exclude-flags 0x500
+osteosarc reads rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam --variant DYNC1H1-chr14-101980529 --padding 100
+osteosarc reads rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam chr14:101980429-101980629 --assembly GRCh38 --min-mapq 20 --exclude-flags 0x500
 ```
 
 Give catalogue variants with `--variant` (repeat it for several) and optional
@@ -97,9 +111,9 @@ See [Extract reads](reads.md) for requirements and caching.
 ## Browse the timeline
 
 ```sh
-osteosarc timeline baseline --since 2024-05 --until 2024-09
-osteosarc timeline baseline --lane MRD --since 2025 --list
-osteosarc on baseline 2025-01-28 --days 5
+osteosarc timeline --since 2024-05 --until 2024-09
+osteosarc timeline --lane MRD --since 2025 --list
+osteosarc on 2025-01-28 --days 5
 ```
 
 `timeline` draws a text chart; `--list` prints one line per event and `--json`
@@ -109,7 +123,7 @@ prints event records. Filter with `--since`, `--until`, `--lane` and `--contains
 ## Interactive explorer
 
 ```sh
-osteosarc explore baseline
+osteosarc explore
 ```
 
 The explorer opens with a snapshot summary. Its commands:

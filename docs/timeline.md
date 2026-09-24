@@ -1,15 +1,15 @@
 # Browse the timeline and specimens
 
 See treatments, procedures, imaging, specimens, MRD and lab results on one
-timeline, and look up each specimen's files. These examples use the `baseline`
-snapshot from [Get started](index.md#get-started).
+timeline, and look up each specimen's files. The examples open your most recent snapshot;
+see [Get started](index.md#get-started) to save one.
 
 ## View events around a date
 
 ```python
 from osteosarc import Dataset
 
-data = Dataset.open("baseline")
+data = Dataset.open()
 print(data.timeline.around("2025-01-28", days=5).listing())
 ```
 
@@ -75,11 +75,11 @@ is the reported limit, not a measured concentration.
 ## Use the terminal
 
 ```sh
-osteosarc timeline baseline --since 2024-05 --until 2024-09
-osteosarc timeline baseline --lane MRD --since 2025
-osteosarc on baseline 2025-01-28 --days 5
-osteosarc specimens baseline T2_tumor
-osteosarc explore baseline
+osteosarc timeline --since 2024-05 --until 2024-09
+osteosarc timeline --lane MRD --since 2025
+osteosarc on 2025-01-28 --days 5
+osteosarc specimens T2_tumor
+osteosarc explore
 ```
 
 Inside the explorer:

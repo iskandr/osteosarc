@@ -8,8 +8,8 @@ inspect each change, disable corrections, or supply your own.
 ```python
 from osteosarc import Dataset
 
-data = Dataset.open("baseline")
-raw = Dataset.open("baseline", corrections=False)
+data = Dataset.open()
+raw = Dataset.open(corrections=False)
 map2 = data.variants()["MAP2-chr2-209694768"]
 print("Corrected:", map2.allele)
 print("Published:", raw.variants()[map2.id].allele)
@@ -58,8 +58,8 @@ When upstream renames or removes records, a correction can recognize a reviewed
 source layout. Exactly one layout must match; an unknown or mixed layout is stale.
 
 ```sh
-osteosarc curation baseline --strict
-osteosarc --no-corrections variants baseline --gene MAP2
+osteosarc curation --strict
+osteosarc --no-corrections variants --gene MAP2
 ```
 
 `--strict` exits nonzero for stale corrections or unrecognized source labels.
@@ -80,7 +80,7 @@ mine = Correction(
     (Change("bucket", {"key": glob("kamil/blood/output/*CITE*/outs/*.bam")}),),
     evidence=("internal QC log 2026-09",), verified="2026-09-18",
 )
-data = Dataset.open("baseline", corrections=[*CORRECTIONS, mine])
+data = Dataset.open(corrections=[*CORRECTIONS, mine])
 ```
 
 `Change(source, match, expect={}, set={})` selects published records by exact

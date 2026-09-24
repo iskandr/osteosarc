@@ -15,8 +15,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -e .
-      - run: osteosarc --cache "$RUNNER_TEMP/cache" sync "drift-${{ github.run_id }}"
-      - run: osteosarc --cache "$RUNNER_TEMP/cache" curation "drift-${{ github.run_id }}" --strict
+      - run: osteosarc --cache "$RUNNER_TEMP/cache" sync
+      - run: osteosarc --cache "$RUNNER_TEMP/cache" curation --strict
 
   examples:
     runs-on: ubuntu-latest

@@ -1,9 +1,24 @@
 # Changelog
 
 Install or upgrade with `python -m pip install --upgrade osteosarc`, and check
-your version with `python -m pip show osteosarc`. Pin both the package version and your
-snapshot name for reproducible analyses. Full release notes are on
+your version with `osteosarc --version`. Pin both the package version and your
+snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
+
+## 0.3.0 (2026-09-24)
+
+- Snapshots are indexed by download date, and the most recent is the default
+  ([#35](https://github.com/iskandr/osteosarc/issues/35)). `Dataset.sync()` and
+  `osteosarc sync` need no name: they save a snapshot named by the UTC date and
+  reopen it for the rest of that day. `Dataset.open()` and every CLI command use the
+  newest snapshot. `Dataset.snapshots()` and `osteosarc snapshots` list them.
+  `Dataset.open(date="2026-09")` or `--snapshot 2026-09` picks the newest from a
+  download date, month or year, and `Dataset.open(name)` or `--snapshot NAME` picks
+  one exactly by name or ID prefix. Offline, `sync()` builds a snapshot from sources
+  already in the cache.
+- Named snapshots keep working. The CLI's leading snapshot argument
+  (`osteosarc samples baseline`) still works but is deprecated in favor of `--snapshot`.
+- The documentation no longer uses a `baseline` snapshot name.
 
 ## 0.2.6 (2026-09-24)
 

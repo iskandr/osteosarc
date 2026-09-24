@@ -2,14 +2,14 @@
 
 Browse the dataset's specimens and select sequencing files by sample, assay,
 platform or path, without downloading them. Then download and read tables.
-The examples use the `baseline` snapshot from [Get started](index.md#get-started).
+The examples open your most recent snapshot; see [Get started](index.md#get-started).
 
 ## Browse samples and sequencing types
 
 ```python
 from osteosarc import Dataset
 
-data = Dataset.open("baseline")
+data = Dataset.open()
 print(data.describe_samples())
 print(data.describe_samples(timepoint="T0", tissue="tumor"))
 ```
@@ -31,7 +31,7 @@ These fields describe different things:
 
 | Field | Example | Meaning |
 | --- | --- | --- |
-| Snapshot name | `baseline` | Your local name for saved metadata |
+| Snapshot | `2026-09-24` | When you downloaded the website's metadata, not a collection date |
 | Sample ID | `T0_tumor` | A biological specimen or fraction in the registry |
 | `timepoint` | `T0` | Collection timepoint; shared by tumor and blood specimens |
 | `tissue` | `tumor` | Sample type: `tumor`, `blood`, or `organoid` |
@@ -103,8 +103,8 @@ use `data.assets.select(timepoint="T2", assay="rna-seq")`.
 The command line takes the same filters and prints JSON:
 
 ```sh
-osteosarc assets baseline --sample T1_tumor --kind alignment --assay scrna-seq --platform ont
-osteosarc assets baseline --timepoint T2 --assay rna-seq --limit 5
+osteosarc assets --sample T1_tumor --kind alignment --assay scrna-seq --platform ont
+osteosarc assets --timepoint T2 --assay rna-seq --limit 5
 ```
 
 ## Find other file types
@@ -146,7 +146,7 @@ for biological samples and their associated files.
 ## Download and read a table
 
 ```python
-data = Dataset.open("baseline", offline=False)
+data = Dataset.open(offline=False)
 path = data.download("snv_top")
 table = data.table("snv_top")
 print(path, table.columns)

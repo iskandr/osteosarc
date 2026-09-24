@@ -29,7 +29,7 @@ from pathlib import Path
 
 from osteosarc import Dataset, verify_bundle
 
-data = Dataset.open("baseline", offline=False)
+data = Dataset.open(offline=False)
 source = data.asset("rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam")
 variant = data.variants()["DYNC1H1-chr14-101980529"]
 chrom, position, ref, alt = variant.allele

@@ -13,8 +13,8 @@ source-attributed claims.
 
 | Existing code | Replacement |
 | --- | --- |
-| Download website metadata and save checksums | `Dataset.sync(name)` |
-| Reopen pinned metadata | `Dataset.open(name)` |
+| Download website metadata and save checksums | `Dataset.sync()` |
+| Reopen pinned metadata | `Dataset.open()`, or `Dataset.open(name_or_id)` for one exact snapshot |
 | Parse the variant page and join count-export alleles | `data.variants()` |
 | Find files by assay, timepoint, or path | `data.assets.select(...)` |
 | Download and verify a whole file | `data.download(asset)` |

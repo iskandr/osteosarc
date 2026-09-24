@@ -8,7 +8,7 @@ from dataclasses import asdict
 
 from . import __version__
 from .cache import Cache
-from .dataset import Dataset
+from .dataset import DATE_SELECTOR, Dataset
 from .discovery import list_bucket
 from .errors import OsteosarcError
 from .models import Region
@@ -24,30 +24,43 @@ def parser():
     root.add_argument("--no-corrections", action="store_true",
                       help="Use the published sources unchanged (see osteosarc.curation)")
     commands = root.add_subparsers(dest="command", required=True)
-    sync = commands.add_parser("sync", help="Acquire metadata into a named snapshot")
-    sync.add_argument("snapshot")
-    sync.add_argument("--refresh", action="store_true")
+    # Commands that read a snapshot take --snapshot; the newest is the default.
+    # A leading positional snapshot name is still accepted but deprecated.
+    snapshot = argparse.ArgumentParser(add_help=False)
+    snapshot.add_argument("--snapshot", help="A UTC download date, month or year for the newest snapshot "
+                                             "downloaded then (2026-09-24, 2026-09), or a snapshot name or ID "
+                                             "prefix (default: the most recent; see snapshots)")
+    legacy = dict(nargs="?", help=argparse.SUPPRESS)
+
+    def data_command(name, **kwargs):
+        return commands.add_parser(name, parents=[snapshot], **kwargs)
+
+    sync = commands.add_parser("sync", help="Save the website's current metadata as a dated snapshot")
+    sync.add_argument("name", nargs="?", help="Optional name (default: today's UTC date)")
+    sync.add_argument("--refresh", action="store_true", help="Download again even if today's snapshot exists")
     sync.add_argument("--source-revision", help="Pin every public site-repository source to this commit")
-    assets = commands.add_parser("assets", help="List objects without downloading their data")
-    assets.add_argument("snapshot")
+    snapshots = commands.add_parser("snapshots", help="Saved snapshots by download date; the newest is the default")
+    snapshots.add_argument("--json", action="store_true")
+    assets = data_command("assets", help="List objects without downloading their data")
+    assets.add_argument("legacy_snapshot", **legacy)
     assets.add_argument("--sample", help="Only files linked to this specimen, such as T0_tumor (see samples)")
     for field in ("kind", "format", "prefix", "contains", "timepoint", "assay", "platform", "tissue", "provider", "library"):
         assets.add_argument("--" + field)
     assets.add_argument("--include-conflicts", action="store_true")
     assets.add_argument("--include-inferred", action="store_true")
     assets.add_argument("--limit", type=int, default=50)
-    variants = commands.add_parser("variants", help="List source-reported variant entries")
-    variants.add_argument("snapshot")
+    variants = data_command("variants", help="List source-reported variant entries")
+    variants.add_argument("legacy_snapshot", **legacy)
     variants.add_argument("--set", choices=("site", "all", "vaccine"), default="site")
     for field in ("gene", "vaccine", "pipeline", "status"):
         variants.add_argument("--" + field)
     variants.add_argument("--vaccine-source", choices=("overlap", "source_variants"), default="overlap")
-    curation = commands.add_parser("curation", help="Report corrections and unrecognized source labels")
-    curation.add_argument("snapshot")
+    curation = data_command("curation", help="Report corrections and unrecognized source labels")
+    curation.add_argument("legacy_snapshot", **legacy)
     curation.add_argument("--strict", action="store_true",
                           help="Exit 1 if any correction is stale or any source label is unrecognized")
-    timeline = commands.add_parser("timeline", help="ASCII timeline of every dated source (or --list)")
-    timeline.add_argument("snapshot")
+    timeline = data_command("timeline", help="ASCII timeline of every dated source (or --list)")
+    timeline.add_argument("legacy_snapshot", **legacy)
     timeline.add_argument("--since", help="YYYY, YYYY-MM or YYYY-MM-DD")
     timeline.add_argument("--until")
     timeline.add_argument("--lane", help="Only lanes whose name contains this text")
@@ -55,35 +68,34 @@ def parser():
     timeline.add_argument("--width", type=int)
     timeline.add_argument("--list", action="store_true", help="One line per event instead of a chart")
     timeline.add_argument("--json", action="store_true", help="Event records as JSON")
-    around = commands.add_parser("on", help="Events within some days of a date")
-    around.add_argument("snapshot")
+    around = data_command("on", help="Events within some days of a date")
+    around.add_argument("legacy_snapshot", **legacy)
     around.add_argument("date")
     around.add_argument("--days", type=int, default=7)
-    specimens = commands.add_parser("specimens", help="Specimen registry, or one specimen's details")
-    specimens.add_argument("snapshot")
+    specimens = data_command("specimens", help="Specimen registry, or one specimen's details")
+    specimens.add_argument("legacy_snapshot", **legacy)
     specimens.add_argument("sample_id", nargs="?")
     specimens.add_argument("--json", action="store_true")
-    explore = commands.add_parser("explore", help="Interactive terminal explorer")
-    explore.add_argument("snapshot")
-    samples = commands.add_parser("samples", help="Readable specimen and sequencing overview")
-    samples.add_argument("snapshot")
+    explore = data_command("explore", help="Interactive terminal explorer")
+    explore.add_argument("legacy_snapshot", **legacy)
+    samples = data_command("samples", help="Readable specimen and sequencing overview")
+    samples.add_argument("legacy_snapshot", **legacy)
     samples.add_argument("--timepoint")
     samples.add_argument("--tissue")
     samples.add_argument("--json", action="store_true", help="Original source-attributed sample claims")
     for name, description in (("timepoints", "Published timepoint and date pairs"),
                               ("vaccines", "Vaccine-overlap rows with ELISPOT results")):
-        command = commands.add_parser(name, help=description)
-        command.add_argument("snapshot")
-    table = commands.add_parser("table", help="Parse a named site table or bucket table")
-    table.add_argument("snapshot")
+        command = data_command(name, help=description)
+        command.add_argument("legacy_snapshot", **legacy)
+    table = data_command("table", help="Parse a named site table or bucket table")
+    table.add_argument("legacy_snapshot", **legacy)
     table.add_argument("asset")
-    download = commands.add_parser("download", help="Explicitly fetch one full data object")
-    download.add_argument("snapshot")
+    download = data_command("download", help="Explicitly fetch one full data object")
+    download.add_argument("legacy_snapshot", **legacy)
     download.add_argument("asset")
     download.add_argument("--refresh", action="store_true")
-    reads = commands.add_parser("reads", help="Extract reads around variants or regions to a cached BAM")
-    reads.add_argument("snapshot")
-    reads.add_argument("asset")
+    reads = data_command("reads", help="Extract reads around variants or regions to a cached BAM")
+    reads.add_argument("asset", help="File key, URL or asset ID of an indexed BAM/CRAM in the dataset")
     reads.add_argument("regions", nargs="*", help="contig:start-end, one-based inclusive (or use --variant)")
     reads.add_argument("--variant", action="append", default=[], metavar="ID",
                        help="Catalogue variant ID with a ready allele; repeat for several")
@@ -144,12 +156,48 @@ def read_targets(dataset, args):
         missing = sorted(set(args.variant) - {v.id for v in variants})
         if missing:
             raise ValueError(f"Unknown variant ID(s): {', '.join(missing)}; "
-                             f"list them with `osteosarc variants {args.snapshot} --set all`")
+                             "list them with `osteosarc variants --set all"
+                             + (f" --snapshot {args.snapshot}" if args.snapshot else "") + "`")
         return dict(variants=variants, padding=args.padding)
     if args.regions and args.assembly is None:
         raise ValueError("--assembly is required with explicit regions")
     return dict(regions=[Region.from_samtools(r, assembly=args.assembly, reference_length=args.reference_length)
                          for r in args.regions], padding=args.padding)
+
+
+def snapshot_selector(args, cache):
+    """Dataset.open's name and date for --snapshot or the deprecated leading snapshot name."""
+    legacy, saved = getattr(args, "legacy_snapshot", None), None
+
+    def is_saved(name):
+        nonlocal saved
+        saved = saved if saved is not None else {r["name"] for r in Dataset.snapshots(cache=cache)}
+        return name in saved
+    # specimens [SNAPSHOT] [SAMPLE_ID] and reads [SNAPSHOT] ASSET [REGIONS] need the saved
+    # names to tell the forms apart; snapshot names never contain '/', file keys do.
+    if args.command == "specimens" and legacy and args.sample_id is None and not is_saved(legacy):
+        args.sample_id, legacy = legacy, None
+    if args.command == "reads" and args.regions and (
+            is_saved(args.asset) or ("/" not in args.asset and "/" in args.regions[0])):
+        legacy, args.asset, args.regions = args.asset, args.regions[0], args.regions[1:]
+    if legacy is None:
+        dated = args.snapshot is not None and DATE_SELECTOR.fullmatch(args.snapshot)
+        return dict(date=args.snapshot) if dated else dict(name=args.snapshot)
+    if args.snapshot is not None:
+        raise ValueError("Give the snapshot once, with --snapshot")
+    print(f"osteosarc: a leading snapshot argument is deprecated; use --snapshot {legacy}, "
+          "or leave it out to use the most recent snapshot", file=sys.stderr)
+    return dict(name=legacy)
+
+
+def snapshots_view(rows):
+    if not rows:
+        return "No saved snapshots; run `osteosarc sync`."
+    from .explore import table
+    shown = [{"name": r["name"], "downloaded (UTC)": (r["downloaded"] or "")[:16].replace("T", " "),
+              "id": r["id"][:12]} for r in rows]
+    return (table(shown, ["name", "downloaded (UTC)", "id"])
+            + f"\n\nCommands use {rows[0]['name']} unless you pass --snapshot.")
 
 
 def main(argv=None):
@@ -191,17 +239,23 @@ def main(argv=None):
                     value = export_bundle(args.bundle, args.output, members=args.member, format=args.format)
         elif args.command == "sync":
             sources = pinned_sources(args.source_revision) if args.source_revision else None
-            dataset = Dataset.sync(args.snapshot, cache=cache, refresh=args.refresh, sources=sources,
+            dataset = Dataset.sync(args.name, cache=cache, refresh=args.refresh, sources=sources,
                                    corrections=not args.no_corrections)
-            value = dict(snapshot=dataset.manifest["name"], id=dataset.id,
+            value = dict(snapshot=dataset.name, id=dataset.id, downloaded=dataset.downloaded,
                          assets=len(dataset.assets), variants=len(dataset.variants()))
+        elif args.command == "snapshots":
+            rows = list(Dataset.snapshots(cache=cache))
+            if not args.json:
+                print(snapshots_view(rows))
+                return 0
+            value = rows
         elif args.command == "discover":
             value = list_bucket(cache, args.prefix, refresh=args.refresh)
         else:
             # Listing and parsing pinned metadata remain offline automatically;
             # commands that acquire new bytes opt in unless --offline is set.
             online = args.command in ("download", "table", "reads") and not args.offline
-            dataset = Dataset.open(args.snapshot, cache=cache, offline=not online,
+            dataset = Dataset.open(**snapshot_selector(args, cache), cache=cache, offline=not online,
                                    corrections=not args.no_corrections)
             if args.command == "assets":
                 filters = {name: getattr(args, name) for name in

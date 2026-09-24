@@ -24,7 +24,8 @@ around a variant without downloading an entire BAM.
   the snapshot's sources, and you can turn them off.
 - **Clinical timeline.** Treatments, procedures, imaging, MRD and lab results as a
   text chart or in an interactive terminal explorer.
-- **Reproducible.** Named metadata snapshots with SHA-256 receipts reopen offline.
+- **Reproducible.** Metadata snapshots, saved by download date with SHA-256 receipts,
+  reopen offline. The website changes; your results don't, until you sync again.
 - **OpenVax integration.** Adapters for Varcode, Isovar, Topiary and Vaxrank,
   versioned read-fixture recipes, and a catalogue of 637 structural-variant candidates.
 
@@ -42,7 +43,7 @@ Requires Python 3.9+ on Linux or macOS. Fetching reads also needs
 ```python
 from osteosarc import Dataset
 
-data = Dataset.sync("baseline")  # Save about 57 MB of metadata as "baseline"
+data = Dataset.sync()  # Save today's website metadata (about 57 MB)
 print(data.describe_samples())
 
 rna = data.assets_for_sample("T0_tumor", kind="alignment", assay="rna-seq")
@@ -53,18 +54,24 @@ reads = data.extract_reads(source, variants=targets, padding=100)
 print(reads.path)  # Local indexed BAM
 ```
 
-Later, `Dataset.open("baseline")` reopens the snapshot without a network connection.
+The BAM key is the file's path in the dataset's public S3 bucket. Only the reads
+near the variants are downloaded, into a small indexed BAM in your local cache.
+
+Later, `Dataset.open()` reopens your most recent snapshot without a network
+connection. The website changes over time, so snapshots are saved by download date:
+`osteosarc snapshots` lists them, and `Dataset.open(date="2026-09")` or
+`--snapshot 2026-09` picks the newest from that month.
 [Get started](https://iskandr.github.io/osteosarc/#get-started) explains each step.
 
 The same workflow from the terminal:
 
 ```sh
-osteosarc sync baseline
-osteosarc samples baseline
-osteosarc assets baseline --sample T0_tumor --kind alignment --assay rna-seq
-osteosarc variants baseline --gene DYNC1H1 --status ready
-osteosarc reads baseline rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam --variant DYNC1H1-chr14-101980529 --variant DYNC1H1-chr14-102030200 --padding 100
-osteosarc explore baseline
+osteosarc sync
+osteosarc samples
+osteosarc assets --sample T0_tumor --kind alignment --assay rna-seq
+osteosarc variants --gene DYNC1H1 --status ready
+osteosarc reads rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam --variant DYNC1H1-chr14-101980529 --variant DYNC1H1-chr14-102030200 --padding 100
+osteosarc explore
 ```
 
 `osteosarc explore` opens an interactive browser for specimens, files, variants and
@@ -86,7 +93,7 @@ the timeline. Type `help` for commands and `quit` to leave.
 ## Data, license and citation
 
 Osteosarc applies [source corrections](https://iskandr.github.io/osteosarc/curation/)
-by default. Use `Dataset.open("baseline", corrections=False)` or
+by default. Use `Dataset.open(corrections=False)` or
 `osteosarc --no-corrections` to see the published values.
 
 Code is Apache-2.0. The dataset is listed as CC0-1.0 in the

@@ -5,18 +5,43 @@
 ```python
 from osteosarc import Dataset
 
-data = Dataset.sync("baseline")
-print(data.id)
-data = Dataset.open("baseline")
+data = Dataset.sync()
+print(data.name, data.downloaded, data.id)
+data = Dataset.open()
 ```
 
-A snapshot records metadata URLs and SHA256 receipts. `sync` creates it;
-`open` verifies the saved files and defaults to offline operation. Reusing a
-name with `sync` reopens it without refreshing the sources.
+A snapshot records metadata URLs and SHA-256 receipts. `sync()` downloads the
+website's current metadata into a snapshot named by the UTC date, such as
+`2026-09-24`; running it again the same day reopens that snapshot. `open()` reopens
+the most recently downloaded snapshot, verifies its saved files, and defaults to
+offline operation.
 
-To permit additional downloads, use `Dataset.open("baseline", offline=False)`.
+To permit additional downloads, use `Dataset.open(offline=False)`.
 An uncached request while offline raises `OfflineError`; changed cached bytes
 raise `IntegrityError`.
+
+## List and choose snapshots
+
+```python
+for row in Dataset.snapshots():
+    print(row["name"], row["downloaded"], row["id"][:12])
+same = Dataset.open(data.name)
+```
+
+`Dataset.snapshots()` lists snapshots newest first by download time.
+
+| Python | CLI | Opens |
+| --- | --- | --- |
+| `Dataset.open()` | (nothing) | The most recently downloaded snapshot |
+| `Dataset.open(date="2026-09")` | `--snapshot 2026-09` | The newest snapshot downloaded in that UTC year, month or day |
+| `Dataset.open("2026-09-24.2")` | `--snapshot 2026-09-24.2` | The snapshot with that exact name |
+| `Dataset.open("4b07fd4b")` | `--snapshot 4b07fd4b` | The snapshot whose ID starts with six or more given characters |
+
+A name or ID pins one snapshot exactly; a missing name is an error, never read as
+a date. On the command line, a value shaped like a date always means a download
+date. `osteosarc snapshots` prints the same list and names the default. A snapshot's
+`downloaded` time is its latest source download, which is earlier than its creation
+if it reused cached sources.
 
 ## Choose a cache directory
 
@@ -43,14 +68,19 @@ extracted reads live under `osteosarc/` within that root.
 ## Refresh metadata
 
 ```python
-new_data = Dataset.sync("follow-up", refresh=True)
-print(new_data.receipts()["bucket"].sha256)
+new_data = Dataset.sync(refresh=True)
+print(new_data.name, new_data.receipts()["bucket"].sha256)
 ```
 
-Use a new name: existing snapshots cannot be overwritten. A file's first full
-download is bound to its snapshot, so refreshing the same URL elsewhere cannot
-replace those bytes. A snapshot cannot recover historical contents of a file
-that was never downloaded.
+`refresh=True` downloads the website's metadata again, even if a snapshot from
+today exists; a second snapshot on one day is named `2026-09-24.2`. Existing
+snapshots are never overwritten. A file's first full download is bound to its
+snapshot, so refreshing the same URL elsewhere cannot replace those bytes. A
+snapshot cannot recover historical contents of a file that was never downloaded.
+
+To label a snapshot for a project, pass a name, as in `Dataset.sync("paper-2026")`
+or `osteosarc sync paper-2026`. It is created once and reopened on later runs. A
+named snapshot reuses source bytes already in the cache unless `refresh=True`.
 
 The CLI's `sync --source-revision <commit>` pins GitLab source resources to a
 full commit. Site-served files have no equivalent versioning.
