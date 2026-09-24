@@ -12,18 +12,23 @@ from osteosarc import Dataset
 data = Dataset.open()
 print(data.describe_samples())
 print(data.describe_samples(timepoint="T0", tissue="tumor"))
+print(data.describe_samples(assay="scrna-seq", platform="ont"))
 ```
 
-The filtered overview in the checked 2026-09-18 snapshot is:
+The overview of single-cell Oxford Nanopore samples in the 2026-09-24 snapshot is:
 
 ```text
-sample    date        sequencing     BAMs  FASTQ_folders
---------  ----------  -------------  ----  -------------
-T0_tumor  2022-12-16  RNA; WES; WGS  10    9
+sample    date        sequencing                                  BAMs  FASTQ_folders
+--------  ----------  ------------------------------------------  ----  -------------
+T1_tumor  2024-06-06  rna-seq; wes; wgs; scrna-seq (ont, pacbio)  14    14
+T2_tumor  2025-01-28  rna-seq; wgs; scrna-seq (ont)               8     7
+T3_tumor  2025-04-17  scrna-seq (ont)                             2     5
 ```
 
-The sequencing column uses the registry's labels. BAM and FASTQ-folder counts
-count file products; several files can come from the same sequencing library.
+The sequencing column uses the assay and platform names that the file filters take.
+BAM and FASTQ-folder counts count file products; several files can come from the
+same sequencing library. From the command line, use `osteosarc samples`, with the
+same `--timepoint`, `--tissue`, `--assay` and `--platform` filters.
 
 ## Sample ID, timepoint, and sample type
 
@@ -77,6 +82,10 @@ pacbio_single_cell = single_cell.select(platform="pacbio")
 print(len(bulk), len(single_cell), len(ont_single_cell), len(pacbio_single_cell))
 ```
 
+The registry's own labels, which appear in the source records and in
+`osteosarc samples --json`, correspond to these filters. Passing a registry label as
+a filter raises an error that names the filters to use instead.
+
 | Registry label | API `assay` | Data |
 | --- | --- | --- |
 | `RNA` | `rna-seq` | Bulk RNA sequencing |
@@ -100,7 +109,8 @@ inspect an alignment's header if you need its instrument platform.
 remain available through `data.assets`. To search all samples at a timepoint,
 use `data.assets.select(timepoint="T2", assay="rna-seq")`.
 
-The command line takes the same filters and prints JSON:
+The command line takes the same filters and prints a table with each file's
+complete key, which is what `osteosarc reads` takes. Add `--json` for full records:
 
 ```sh
 osteosarc assets --sample T1_tumor --kind alignment --assay scrna-seq --platform ont

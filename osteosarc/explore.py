@@ -14,12 +14,16 @@ import shutil
 import textwrap
 from collections import Counter, defaultdict
 
+from .curation import ASSAY_NAMES, ASSAYS, check_filter
 from .errors import OsteosarcError
 from .timeline import _window
 
 
-def table(rows, columns, *, width=None, limit=None, wrap=False):
-    """Fixed-width text table; long cells are truncated to fit the terminal."""
+def table(rows, columns, *, width=None, limit=None, wrap=False, fixed=()):
+    """Fixed-width text table; long cells are truncated to fit the terminal.
+
+    Columns in fixed, such as file keys people copy, are never shortened.
+    """
     if limit is not None and (not isinstance(limit, int) or isinstance(limit, bool) or limit < 0):
         raise ValueError("limit must be a nonnegative integer")
     rows = list(rows)
@@ -28,14 +32,15 @@ def table(rows, columns, *, width=None, limit=None, wrap=False):
     widths = [max([len(c)] + [len(r[i]) for r in cells]) for i, c in enumerate(columns)]
     width = width or shutil.get_terminal_size((120, 24)).columns
     # Shrink the widest columns to fit, but never the first (identifying) column.
-    while sum(widths) + 2 * (len(widths) - 1) > width and max(widths[1:], default=0) > 12:
-        widest = max(range(1, len(widths)), key=widths.__getitem__)
+    shrinkable = [i for i in range(1, len(widths)) if columns[i] not in fixed]
+    while sum(widths) + 2 * (len(widths) - 1) > width and max((widths[i] for i in shrinkable), default=0) > 12:
+        widest = max(shrinkable, key=widths.__getitem__)
         widths[widest] -= 1
     line = "  ".join
     out = [line(c[:w].ljust(w) for c, w in zip(columns, widths)).rstrip(),
            line("-" * w for w in widths)]
     for row in cells:
-        parts = [textwrap.wrap(cell, width=w) or [""] if wrap else [cell[:w]]
+        parts = [textwrap.wrap(cell, width=w, break_on_hyphens=False) or [""] if wrap else [cell[:w]]
                  for cell, w in zip(row, widths)]
         for i in range(max(map(len, parts), default=0)):
             out.append(line((part[i] if i < len(part) else "").ljust(w)
@@ -53,26 +58,54 @@ def _text(value):
     return str(value)
 
 
-def samples_view(data, *, timepoint=None, tissue=None, width=None):
-    """Compact registry overview, with complete sequencing labels."""
-    rows = [dict(sample=r["sample_id"], date=r["date"], sequencing=_text(r["assays"]) or "unknown",
+def sequencing(labels):
+    """Registry sequencing labels as filter values, e.g. 'rna-seq; scrna-seq (ont, pacbio)'."""
+    platforms = defaultdict(set)
+    for label in labels:
+        assay, platform = ASSAYS.get(label, (label, None))
+        platforms[assay].update([platform] if platform else [])
+    order = {name: i for i, name in enumerate(ASSAY_NAMES)}
+    return "; ".join(assay + (f" ({', '.join(sorted(platforms[assay]))})" if platforms[assay] else "")
+                     for assay in sorted(platforms, key=lambda a: (order.get(a, len(order)), a)))
+
+
+def _has(labels, assay, platform):
+    pairs = [ASSAYS.get(label, (label, None)) for label in labels]
+    return any((assay is None or a == assay) and (platform is None or p == platform) for a, p in pairs)
+
+
+def _size(n):
+    if not n:
+        return ""
+    for unit, scale in (("GB", 1e9), ("MB", 1e6), ("KB", 1e3)):
+        if n >= scale:
+            return f"{n / scale:.1f} {unit}"
+    return f"{n} B"
+
+
+def samples_view(data, *, timepoint=None, tissue=None, assay=None, platform=None, width=None):
+    """Specimen overview; sequencing is shown with the assay and platform filter names."""
+    for name, value in (("tissue", tissue), ("assay", assay), ("platform", platform)):
+        check_filter(name, value)
+    rows = [dict(sample=r["sample_id"], date=r["date"], sequencing=sequencing(r["assays"]) or "unknown",
                  BAMs=len(r["assets"]), FASTQ_folders=len(r["fastq_folders"]))
             for r in data.specimens
             if (timepoint is None or r["timepoint"] == timepoint)
-            and (tissue is None or r["tissue"] == tissue)]
+            and (tissue is None or r["tissue"] == tissue)
+            and (assay is None and platform is None or _has(r["assays"], assay, platform))]
     if not rows:
         return "(no matching samples)"
     return table(rows, ("sample", "date", "sequencing", "BAMs", "FASTQ_folders"), width=width, wrap=True)
 
 
 def specimens_view(data, *, width=None):
-    rows = [dict(row, bams=len(row["assets"]), fastq_dirs=len(row["fastq_folders"]),
+    rows = [dict(row, assays=sequencing(row["assays"]), bams=len(row["assets"]), fastq_dirs=len(row["fastq_folders"]),
                  notes=("disagrees: " + ", ".join(sorted({d["field"] for d in row["disagreements"]}))
                         if row["disagreements"] else "") + (" corrected: " + ", ".join(row["corrections"])
                                                             if row["corrections"] else ""))
             for row in data.specimens]
     return table(rows, ("sample_id", "timepoint", "date", "tissue", "site", "specimen", "assays",
-                        "bams", "fastq_dirs", "notes"), width=width)
+                        "bams", "fastq_dirs", "notes"), width=width, wrap=True)
 
 
 def specimen_view(data, sample_id, *, days=7, width=None):
@@ -83,7 +116,7 @@ def specimen_view(data, sample_id, *, days=7, width=None):
     row = matches[0]
     lines = [f"{row['sample_id']}  {row['timepoint'] or '-'}  {row['date']}  {row['tissue']}  "
              f"{row['site']}  {row['specimen']}",
-             f"vendors: {_text(row['vendors']) or '-'}   assays: {_text(row['assays']) or '-'}"]
+             f"vendors: {_text(row['vendors']) or '-'}   assays: {sequencing(row['assays']) or '-'}"]
     for item in row["disagreements"]:
         lines.append(f"  ! {item['source']} gives {item['field']} {item['value']!r}")
     summaries = {r["id"]: r["summary"] for r in data.corrections} if row["corrections"] else {}
@@ -110,15 +143,17 @@ def specimen_view(data, sample_id, *, days=7, width=None):
     return "\n".join(lines)
 
 
-def assets_view(data, *, limit=40, width=None, sample=None, **filters):
+def assets_view(data, *, limit=40, width=None, more="Add limit=N to show more.", sample=None, **filters):
     selected = data.assets_for_sample(sample, **filters) if sample else data.assets.select(**filters)
-    rows = [dict(key=a.key, kind=a.kind, size=f"{a.size / 1e9:.2f} GB" if a.size else "",
-                 timepoint=_text(a.values("timepoint")), assay=_text(a.values("assay")),
+    rows = [dict(key=a.key, size=_size(a.size), timepoint=_text(a.values("timepoint")),
+                 assay=_text(a.values("assay")), platform=_text(a.values("platform")),
                  tissue=_text(a.values("tissue")), provider=_text(a.values("provider")),
                  notes=_text(a.metadata.get("corrections")))
             for a in selected]
-    return f"{len(selected)} assets\n" + table(rows, ("timepoint", "assay", "tissue", "provider", "size",
-                                                      "key", "notes"), width=width, limit=limit)
+    columns = ("timepoint", "tissue", "assay", "platform", "provider", "size",
+               *(("notes",) if any(r["notes"] for r in rows) else ()), "key")
+    shown = table(rows, columns, width=width, limit=limit, fixed=("key",))
+    return f"{len(selected)} files\n{shown}" + (f"\n{more}" if limit is not None and len(rows) > limit else "")
 
 
 def variants_view(data, *, width=None, limit=None, **filters):

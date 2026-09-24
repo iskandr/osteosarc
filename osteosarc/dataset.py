@@ -388,10 +388,15 @@ class Dataset:
             return path
         return object_key(path, self._download_header.get("download_base", BUCKET))
 
-    def describe_samples(self, *, timepoint=None, tissue=None, width=None):
-        """Readable specimen/sequence-type overview; no data acquisition."""
+    def describe_samples(self, *, timepoint=None, tissue=None, assay=None, platform=None, width=None):
+        """Readable specimen and sequencing overview; no data acquisition.
+
+        assay and platform keep specimens whose registry lists that sequencing,
+        using the same names as asset filters (rna-seq, scrna-seq, ont, ...).
+        """
         from .explore import samples_view
-        return samples_view(self, timepoint=timepoint, tissue=tissue, width=width)
+        return samples_view(self, timepoint=timepoint, tissue=tissue, assay=assay, platform=platform,
+                            width=width)
 
     def assets_for_sample(self, sample_id, **filters):
         """Registry-linked alignments and files under the specimen's FASTQ folders."""

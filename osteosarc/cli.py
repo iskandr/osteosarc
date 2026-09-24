@@ -45,7 +45,8 @@ def parser():
         assets.add_argument("--" + field)
     assets.add_argument("--include-conflicts", action="store_true")
     assets.add_argument("--include-inferred", action="store_true")
-    assets.add_argument("--limit", type=int, default=50)
+    assets.add_argument("--limit", type=int, default=50, help="Rows to show (default 50)")
+    assets.add_argument("--json", action="store_true", help="Full asset records as JSON")
     variants = data_command("variants", help="List source-reported variant entries")
     variants.add_argument("--set", choices=("site", "all", "vaccine"), default="site")
     for field in ("gene", "vaccine", "pipeline", "status"):
@@ -71,7 +72,9 @@ def parser():
     data_command("explore", help="Interactive terminal explorer")
     samples = data_command("samples", help="Readable specimen and sequencing overview")
     samples.add_argument("--timepoint")
-    samples.add_argument("--tissue")
+    samples.add_argument("--tissue", help="tumor, blood or organoid")
+    samples.add_argument("--assay", help="rna-seq, wes, wgs, scrna-seq or cite-seq")
+    samples.add_argument("--platform", help="illumina, ont or pacbio")
     samples.add_argument("--json", action="store_true", help="Original source-attributed sample claims")
     for name, description in (("timepoints", "Published timepoint and date pairs"),
                               ("vaccines", "Vaccine-overlap rows with ELISPOT results")):
@@ -229,10 +232,15 @@ def main(argv=None):
             if args.command == "assets":
                 filters = {name: getattr(args, name) for name in
                     ("kind", "format", "prefix", "contains", "timepoint", "assay", "platform", "tissue", "provider", "library", "include_conflicts", "include_inferred")}
-                selection = (dataset.assets_for_sample(args.sample, **filters) if args.sample
-                             else dataset.assets.select(**filters))
                 if args.limit < 0:
                     raise ValueError("--limit must be nonnegative")
+                if not args.json:
+                    from .explore import assets_view
+                    print(assets_view(dataset, limit=args.limit, sample=args.sample, **filters,
+                                      more="Use --limit N to show more, or --json for full records."))
+                    return 0
+                selection = (dataset.assets_for_sample(args.sample, **filters) if args.sample
+                             else dataset.assets.select(**filters))
                 value = dict(total=len(selection), assets=selection[:args.limit].to_records())
             elif args.command == "variants":
                 value = dataset.variants(**{name: getattr(args, name) for name in
@@ -272,11 +280,12 @@ def main(argv=None):
                     return 1
             elif args.command == "samples":
                 if args.json:
-                    if args.timepoint or args.tissue:
+                    if args.timepoint or args.tissue or args.assay or args.platform:
                         raise ValueError("--json returns original sample claims; filters apply to the specimen overview")
                     value = list(dataset.samples)
                 else:
-                    print(dataset.describe_samples(timepoint=args.timepoint, tissue=args.tissue))
+                    print(dataset.describe_samples(timepoint=args.timepoint, tissue=args.tissue,
+                                                   assay=args.assay, platform=args.platform))
                     return 0
             elif args.command in ("timepoints", "vaccines"):
                 value = list(getattr(dataset, args.command))

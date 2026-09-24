@@ -5,6 +5,20 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.5.0 (2026-09-24)
+
+- The CLI is easier to explore with ([#38](https://github.com/iskandr/osteosarc/issues/38)):
+  - `samples` and `specimens` show sequencing with the filter names, such as
+    `rna-seq; wes; wgs; scrna-seq (ont, pacbio)`.
+  - `samples --assay scrna-seq --platform ont` lists the samples with that sequencing;
+    `describe_samples()` takes the same filters.
+  - `assets` prints a table with complete file keys and a hint when rows are cut
+    off; `--json` prints the full records.
+  - Explorer tables never truncate file keys, and sizes read as KB, MB or GB.
+- An assay, platform or tissue filter that no file uses raises an error listing the
+  valid values, instead of an empty selection. A registry label such as
+  `scRNA_ONT` names the filters to use instead.
+
 ## 0.4.0 (2026-09-24)
 
 - Removed the CLI's positional snapshot argument (`osteosarc samples baseline`);

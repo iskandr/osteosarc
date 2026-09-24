@@ -50,10 +50,12 @@ a source label is unrecognized.
 ## Browse samples, files and variants
 
 ```sh
-osteosarc samples --timepoint T0
+osteosarc samples
+osteosarc samples --assay scrna-seq --platform ont
 osteosarc specimens T2_tumor
 osteosarc assets --sample T0_tumor --kind alignment --assay rna-seq
 osteosarc assets --timepoint T2 --assay rna-seq --limit 5
+osteosarc assets --sample T0_tumor --kind alignment --json
 osteosarc variants --gene MAP2
 osteosarc variants --set vaccine --status ready
 osteosarc vaccines
@@ -62,12 +64,19 @@ osteosarc timepoints
 
 | Command | Prints |
 | --- | --- |
-| `samples` | Specimens with their sequencing types and file counts; `--json` prints the original per-file sample claims |
+| `samples` | Specimens with their sequencing and file counts. Filter with `--timepoint`, `--tissue`, `--assay` and `--platform`; `--json` prints the original per-file sample claims |
 | `specimens [SAMPLE_ID]` | The specimen registry, or one specimen's files, corrections and nearby events |
-| `assets` | The total and the first `--limit` (default 50) matching files. Filter with `--sample`, `--kind`, `--format`, `--prefix`, `--contains`, `--timepoint`, `--assay`, `--platform`, `--tissue`, `--provider` and `--library` |
+| `assets` | A table of matching files with their complete keys: the total and the first `--limit` (default 50). Filter with `--sample`, `--kind`, `--format`, `--prefix`, `--contains`, `--timepoint`, `--assay`, `--platform`, `--tissue`, `--provider` and `--library`; `--json` prints full records |
 | `variants` | Catalogue entries. Choose `--set` `site` (default), `all` or `vaccine`, and filter with `--gene`, `--vaccine`, `--pipeline`, `--status` and `--vaccine-source` |
 | `vaccines` | Vaccine-overlap rows with ELISPOT results |
 | `timepoints` | Published timepoint and date pairs |
+
+The sequencing column of `samples` uses the same names as the filters:
+`rna-seq; wes; wgs; scrna-seq (ont, pacbio)` means bulk RNA, exome and genome data,
+plus single-cell RNA, some of it Oxford Nanopore or PacBio. `--assay scrna-seq`
+selects all of that single-cell data and `--platform ont` narrows it. An assay,
+platform or tissue that no file uses is an error listing the valid values, and a
+registry label such as `scRNA_ONT` names the filters to use instead.
 
 See [Find samples and files](explore.md) and [Select variants](variants.md) for
 what the filters mean.
