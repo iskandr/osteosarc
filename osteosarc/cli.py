@@ -6,6 +6,7 @@ import subprocess
 import sys
 from dataclasses import asdict
 
+from . import __version__
 from .cache import Cache
 from .dataset import Dataset
 from .discovery import list_bucket
@@ -15,7 +16,8 @@ from .reads import ReadFilter
 
 
 def parser():
-    root = argparse.ArgumentParser(description=__doc__)
+    root = argparse.ArgumentParser(prog="osteosarc", description=__doc__)
+    root.add_argument("--version", action="version", version=f"osteosarc {__version__}")
     root.add_argument("--cache", help="Cache root (default: OSTEOSARC_CACHE, else the shared OpenVax "
                                       "cache: OPENVAX_DATA_CACHE or the platform 'openvax' cache)")
     root.add_argument("--offline", action="store_true", help="Forbid any network acquisition")
@@ -28,6 +30,7 @@ def parser():
     sync.add_argument("--source-revision", help="Pin every public site-repository source to this commit")
     assets = commands.add_parser("assets", help="List objects without downloading their data")
     assets.add_argument("snapshot")
+    assets.add_argument("--sample", help="Only files linked to this specimen, such as T0_tumor (see samples)")
     for field in ("kind", "format", "prefix", "contains", "timepoint", "assay", "platform", "tissue", "provider", "library"):
         assets.add_argument("--" + field)
     assets.add_argument("--include-conflicts", action="store_true")
@@ -67,8 +70,9 @@ def parser():
     samples.add_argument("--timepoint")
     samples.add_argument("--tissue")
     samples.add_argument("--json", action="store_true", help="Original source-attributed sample claims")
-    for name in ("timepoints", "vaccines"):
-        command = commands.add_parser(name)
+    for name, description in (("timepoints", "Published timepoint and date pairs"),
+                              ("vaccines", "Vaccine-overlap rows with ELISPOT results")):
+        command = commands.add_parser(name, help=description)
         command.add_argument("snapshot")
     table = commands.add_parser("table", help="Parse a named site table or bucket table")
     table.add_argument("snapshot")
@@ -77,11 +81,14 @@ def parser():
     download.add_argument("snapshot")
     download.add_argument("asset")
     download.add_argument("--refresh", action="store_true")
-    reads = commands.add_parser("reads", help="Extract indexed regions to a cached BAM")
+    reads = commands.add_parser("reads", help="Extract reads around variants or regions to a cached BAM")
     reads.add_argument("snapshot")
     reads.add_argument("asset")
-    reads.add_argument("regions", nargs="+", help="contig:start-end, one-based inclusive")
-    reads.add_argument("--assembly", required=True)
+    reads.add_argument("regions", nargs="*", help="contig:start-end, one-based inclusive (or use --variant)")
+    reads.add_argument("--variant", action="append", default=[], metavar="ID",
+                       help="Catalogue variant ID with a ready allele; repeat for several")
+    reads.add_argument("--padding", type=int, default=0, help="Bases added on each side of each --variant")
+    reads.add_argument("--assembly", help="Assembly of explicit regions, such as GRCh38")
     reads.add_argument("--reference", help="Local indexed FASTA (required for CRAM)")
     reads.add_argument("--index", help="Explicit index path/URL when absent from catalog")
     reads.add_argument("--reference-length", type=int, help="Expected contig length (mitochondrial queries)")
@@ -127,8 +134,33 @@ def pinned_sources(revision):
             for key, url in {**SNAPSHOT_SOURCES, **TIMELINE_SOURCES}.items() if url.startswith(SOURCE_REPO)}
 
 
+def read_targets(dataset, args):
+    """Parse the reads command's regions or catalogue variants; Dataset.extract_reads checks the rest."""
+    if args.variant and (args.regions or args.assembly or args.reference_length):
+        raise ValueError("Supply either regions (with --assembly) or --variant, not both; "
+                         "variants carry their own assembly")
+    if args.variant:
+        variants = dataset.variants("all", ids=args.variant)
+        missing = sorted(set(args.variant) - {v.id for v in variants})
+        if missing:
+            raise ValueError(f"Unknown variant ID(s): {', '.join(missing)}; "
+                             f"list them with `osteosarc variants {args.snapshot} --set all`")
+        return dict(variants=variants, padding=args.padding)
+    if args.regions and args.assembly is None:
+        raise ValueError("--assembly is required with explicit regions")
+    return dict(regions=[Region.from_samtools(r, assembly=args.assembly, reference_length=args.reference_length)
+                         for r in args.regions], padding=args.padding)
+
+
 def main(argv=None):
-    args = parser().parse_args(argv)
+    root = parser()
+    args, extra = root.parse_known_args(argv)
+    # Before Python 3.13, argparse binds the optional regions positional before any
+    # option, so regions written after an option arrive here as extra arguments.
+    if extra and (args.command != "reads" or any(item.startswith("-") for item in extra)):
+        root.error(f"unrecognized arguments: {' '.join(extra)}")
+    if extra:
+        args.regions = [*args.regions, *extra]
     cache = Cache(args.cache, offline=args.offline)
     try:
         if args.command == "fixtures":
@@ -172,8 +204,10 @@ def main(argv=None):
             dataset = Dataset.open(args.snapshot, cache=cache, offline=not online,
                                    corrections=not args.no_corrections)
             if args.command == "assets":
-                selection = dataset.assets.select(**{name: getattr(args, name) for name in
-                    ("kind", "format", "prefix", "contains", "timepoint", "assay", "platform", "tissue", "provider", "library", "include_conflicts", "include_inferred")})
+                filters = {name: getattr(args, name) for name in
+                    ("kind", "format", "prefix", "contains", "timepoint", "assay", "platform", "tissue", "provider", "library", "include_conflicts", "include_inferred")}
+                selection = (dataset.assets_for_sample(args.sample, **filters) if args.sample
+                             else dataset.assets.select(**filters))
                 if args.limit < 0:
                     raise ValueError("--limit must be nonnegative")
                 value = dict(total=len(selection), assets=selection[:args.limit].to_records())
@@ -229,9 +263,8 @@ def main(argv=None):
                 parsed = dataset.parse(args.asset)
                 value = list(parsed) if hasattr(parsed, "rows") else parsed
             else:
-                regions = [Region.from_samtools(r, assembly=args.assembly,
-                                               reference_length=args.reference_length) for r in args.regions]
-                subset = dataset.extract_reads(args.asset, regions, reference=args.reference, index=args.index,
+                subset = dataset.extract_reads(args.asset, **read_targets(dataset, args),
+                                               reference=args.reference, index=args.index,
                                                filters=ReadFilter(args.min_mapq, args.exclude_flags),
                                                fetch_pairs=args.fetch_pairs,
                                                recovery={} if args.recover_linked else None)
