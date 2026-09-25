@@ -1,51 +1,45 @@
 # Replace existing download helpers
 
-Use the [library examples](consumers.md) for the API calls. Migrate acquisition
-separately from changes to reference releases, allele selection, or analysis
-settings.
+For projects that download osteosarc.com data with their own code. Switch the
+downloading first, and change references, allele selection or analysis settings in
+a separate step. The [library examples](consumers.md) show the calls.
 
 ## Replace one operation at a time
 
-Install `osteosarc` normally: pysam and datacache are standard dependencies.
-`osteosarc samples` prints a sample overview; `samples --json` prints the original
-source-attributed claims.
+`pip install osteosarc` brings pysam and datacache with it.
 
-| Existing code | Replacement |
+| Your code does | Use |
 | --- | --- |
 | Download website metadata and save checksums | `Dataset.sync()` |
 | Reopen pinned metadata | `Dataset.open()`, or `Dataset.open(name_or_id)` for one exact snapshot |
-| Parse the variant page and join count-export alleles | `data.variants()` |
+| Parse the variants page and read-count table | `data.variants()` |
 | Find files by assay, timepoint, or path | `data.assets.select(...)` |
 | Download and verify a whole file | `data.download(asset)` |
-| Survey an alignment's reference | `data.inspect_alignment(asset)` |
-| Fetch indexed regions and optional paired mates | `data.extract_reads(asset, regions, ...)` |
-| Construct native Varcode alleles | `variants.to_varcode(genome=...)` |
+| Check a BAM's genome build | `data.inspect_alignment(asset)` |
+| Fetch reads in regions, with mates | `data.extract_reads(asset, regions, ...)` |
+| Make Varcode variants | `variants.to_varcode(genome=...)` |
 
 ## Preserve the analysis
 
-Keep reference releases, transcript selection, structural-variant definitions,
-read filters, and scoring settings in the downstream project. Declare the
-assembly for custom-named references with `to_varcode(..., assembly="GRCh38")`.
+Your project keeps its reference releases, transcripts, SV definitions, read
+filters and scoring. For a reference with a custom name, pass
+`to_varcode(..., assembly="GRCh38")`.
 
-Before retiring an old extractor, compare complete SAM records, including tags
-and the number of occurrences of each record. Equal read counts alone do not
-show that the records match.
+Before dropping an old read extractor, compare whole records, tags included, and
+how many times each appears; matching read counts aren't enough.
 
-`subset_templates` samples without using allele support or quality. It does not
-reproduce Isovar's alternate-read enrichment or another project's fixture
-selection policy. Use [fixture recipes](fixtures.md) to freeze evidence assignments,
-exact record multiplicity, controls and assembly context explicitly.
+`subset_templates` picks reads at random, ignoring alleles and quality, so it won't
+reproduce hand-picked test reads. Use [fixture recipes](fixtures.md) for those.
 
 ## Review corrections
 
-Osteosarc applies [source corrections](curation.md) by default, including the
-MAP2 allele change and five relocated Tempus alleles. Open a snapshot with
-`corrections=False` when comparing against original published inputs. Review
-changes to biological expectations separately from the acquisition migration.
+Osteosarc applies [corrections](curation.md) by default, which changes some
+alleles. Open a snapshot with `corrections=False` to compare with results from the
+published values, and review any changed results separately.
 
 ## Reuse old downloads
 
-Use the shared `OPENVAX_DATA_CACHE` directory where possible. Import existing
-files with `Cache.import_file(path, original_url, sha256=...)`; see
-[snapshots and cache](design.md#import-a-file-you-already-downloaded).
-Keep the old manifests for their acquisition dates and provenance.
+Point `OPENVAX_DATA_CACHE` at a shared directory, and add files you already have
+with `Cache.import_file(path, original_url, sha256=...)` (see
+[snapshots and cache](design.md#import-a-file-you-already-downloaded)). Keep your old
+notes if you need the original download dates.

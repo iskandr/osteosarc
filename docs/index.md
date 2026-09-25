@@ -1,21 +1,21 @@
 # Osteosarc
 
 Osteosarc is a Python library and command-line tool for the public
-[osteosarc.com](https://osteosarc.com/data/) dataset. The dataset shares one
-patient's osteosarcoma sequencing, variant calls, cancer vaccine designs and
-clinical history. Osteosarc pins the metadata you use and corrects documented
-errors in it. It fetches only the sequencing reads you ask for.
+[osteosarc.com](https://osteosarc.com/data/) dataset: one patient's osteosarcoma
+sequencing, variant calls, cancer vaccines and clinical history. It keeps a fixed
+copy of the site's metadata so your results don't change under you, fixes known
+errors in it, and downloads only the reads you ask for.
 
 | You can… | Guide |
 | --- | --- |
 | Search nearly 400,000 files by sample, timepoint and assay without downloading them | [Find samples and files](explore.md) |
-| Select catalogue variants, read counts, vaccine peptides and ELISPOT results | [Select variants](variants.md) |
-| Fetch reads around variants or regions from remote BAMs into a cached local BAM | [Extract reads](reads.md) |
+| Get variants, read counts, vaccine peptides and ELISPOT results | [Select variants](variants.md) |
+| Copy the reads around variants out of remote BAMs, without downloading them whole | [Extract reads](reads.md) |
 | Browse treatments, specimens, MRD and lab results on a timeline | [Browse the timeline](timeline.md) |
 | Do all of this from a terminal or an interactive explorer | [Command line](cli.md) |
 | Pass data to Varcode, Isovar, Topiary or Vaxrank | [Use other libraries](consumers.md) |
-| Build small, verifiable test BAMs from pinned recipes | [Read fixtures](fixtures.md) |
-| Explore 637 candidate structural variants with their evidence | [SV interest catalogue](sv-interest.md) |
+| Build small, reproducible test BAMs | [Read fixtures](fixtures.md) |
+| Look through 637 candidate structural variants | [SV catalogue](sv-interest.md) |
 
 !!! note "Corrections are on by default"
     Osteosarc applies 32 documented, evidence-backed [corrections](curation.md)
@@ -25,8 +25,8 @@ errors in it. It fetches only the sequencing reads you ask for.
     the snapshot's source records. Pass `corrections=False` to
     `Dataset.open`, or use `osteosarc --no-corrections`, to see the published values.
 
-New to the dataset? Read [Key concepts](concepts.md) for sample IDs, variant
-statuses and coordinate conventions.
+New to the dataset? [Key concepts](concepts.md) explains where the data comes from,
+sample IDs, variant statuses and coordinates.
 
 ## Get started
 
@@ -36,8 +36,8 @@ statuses and coordinate conventions.
 python -m pip install osteosarc
 ```
 
-You need Python 3.9+ on Linux or macOS. Read extraction also requires
-`samtools` on PATH; see [requirements](reads.md#requirements).
+You need Python 3.9+ on Linux or macOS, and `samtools` on your PATH to fetch
+reads.
 
 ### 1. Save the metadata
 
@@ -47,9 +47,9 @@ from osteosarc import Dataset
 data = Dataset.sync()
 ```
 
-This downloads about 57 MB of the website's metadata into a local cache, as a
-snapshot named by today's date (UTC), and leaves the sequencing files remote.
-Running it again the same day reopens that snapshot.
+This downloads about 57 MB of the website's metadata, saved as a snapshot named
+by today's date (UTC). Sequencing files stay remote. Running it again the same day
+reuses the snapshot.
 
 ### 2. Choose a sample and assay
 
@@ -57,13 +57,12 @@ Running it again the same day reopens that snapshot.
 print(data.describe_samples())
 ```
 
-`T0_tumor` names the primary tumor specimen collected at **T0** (2022-12-16).
-`T0_blood` is blood from the same timepoint. These are sample IDs; `T0` alone
-is a collection timepoint. Sample type is the `tissue` field (`tumor`, `blood`,
-`organoid`). The sequencing assay is independent of both.
+`T0_tumor` is the primary tumor, collected at timepoint **T0** (2022-12-16), and
+`T0_blood` is blood from the same visit. The sample type is its `tissue` (`tumor`,
+`blood` or `organoid`), and what was sequenced is its `assay`.
 
-`T0_tumor` has **bulk RNA-seq, whole-exome DNA (WES), and whole-genome DNA
-(WGS)**. Choose `rna-seq`, `wes`, or `wgs` respectively:
+`T0_tumor` has **bulk RNA-seq, whole-exome (WES) and whole-genome (WGS)** data.
+Its bulk RNA alignments:
 
 ```python
 rna = data.assets_for_sample("T0_tumor", kind="alignment", assay="rna-seq")
@@ -71,9 +70,9 @@ for asset in rna:
     print(asset.key)
 ```
 
-`rna-seq` selects bulk RNA; `scrna-seq` selects single-cell RNA. `T1_tumor`
-has both. Single-cell data can also be selected by platform, such as
-`platform="ont"` or `platform="pacbio"`. See [Find samples and files](explore.md)
+`rna-seq` means bulk RNA and `scrna-seq` single-cell RNA; `T1_tumor` has both.
+You can also pick by platform, such as `platform="ont"` or `platform="pacbio"`. See
+[Find samples and files](explore.md)
 for more filters and the full assay vocabulary.
 
 ### 3. Select variants
@@ -84,11 +83,10 @@ for variant in targets:
     print(variant.id, variant.allele)
 ```
 
-Variant `status` describes genomic-allele usability. `ready` means one
-consistent chromosome, position, REF and ALT, with literal DNA bases. It does
-not establish read support, somatic status or a protein effect. Omit the
-filter to include unresolved entries; see [all statuses](variants.md#variant-status).
-The allele tuple is `(chromosome, one-based position, REF, ALT)`.
+`status="ready"` keeps variants with one usable allele, given as
+`(chromosome, one-based position, REF, ALT)`. It doesn't mean the variant has
+reads, is somatic or changes the protein. Leave it out to see every entry; see
+[all statuses](variants.md#variant-status).
 
 ### 4. Fetch reads for those variants
 
@@ -98,10 +96,9 @@ reads = data.extract_reads(source, variants=targets, padding=100)
 print(reads.path)
 ```
 
-This checks the alignment's assembly and produces an indexed BAM of overlapping
-reads, without downloading the whole file. [Isovar](consumers.md#isovar) can
-classify which reads support the reference or alternate allele. Repeating the
-same request reuses the cached result.
+This copies the reads around both variants into a small local BAM, after checking
+that the BAM and the variants use the same genome build. Asking again reuses the
+cached copy. [Isovar](consumers.md#isovar) can tell you which reads carry the variant.
 
 ### 5. Pick up where you left off
 
@@ -111,12 +108,11 @@ counts = data.table("vafs").select(gene="SMC5")
 print(counts.rows[:2])
 ```
 
-The website changes over time; your snapshot doesn't. Run `Dataset.sync(refresh=True)`
-on a later day to save a new one, and `Dataset.snapshots()` to list them.
-`Dataset.open(date="2026-09")` reopens the newest from that month, and
-`Dataset.open(name)` reopens one exactly.
-Use `offline=False` when you want to download additional files or extract new reads.
-See [snapshots and cache](design.md) for details.
+The website changes over time; your snapshot doesn't. Run `Dataset.sync()` on a
+later day to save a new one, and `Dataset.snapshots()` to list them.
+`Dataset.open(date="2026-09")` reopens the newest from that month. Pass
+`offline=False` to download more files or fetch new reads. See
+[snapshots and cache](design.md) for more.
 
 ## Prefer the terminal?
 
@@ -128,6 +124,6 @@ osteosarc variants --gene SMC5
 osteosarc explore
 ```
 
-Every command uses your most recent snapshot; `osteosarc snapshots` lists them, and
-`--snapshot 2026-09` picks the newest from that month. Type `help` in the explorer for commands and
-`quit` to exit. The [command-line guide](cli.md) lists every command.
+Every command uses your most recent snapshot; `--snapshot 2026-09` picks the newest
+from that month. In the explorer, type `help` for commands and `quit` to leave. The
+[command-line guide](cli.md) lists every command.

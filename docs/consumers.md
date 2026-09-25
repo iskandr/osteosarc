@@ -1,10 +1,10 @@
 # Use other libraries
 
 Pass variants, reads and reports to the OpenVax libraries: Varcode for variant
-effects, Isovar for RNA evidence and protein sequences, Topiary for predictions
-and Vaxrank for vaccine ranking. The examples open your most recent snapshot; see
-[Get started](index.md#get-started). Install the libraries you want to use. The Isovar examples also need an
-indexed human Ensembl 95 reference:
+effects, Isovar for RNA evidence and protein sequences, Topiary for epitope
+predictions and Vaxrank for vaccine ranking. Install the ones you need. The
+examples open your most recent snapshot (see [Get started](index.md#get-started)),
+and the Varcode and Isovar ones need the Ensembl 95 human annotation:
 
 ```sh
 pyensembl install --release 95 --species homo_sapiens
@@ -20,7 +20,7 @@ data = Dataset.open(offline=False)
 
 ## Varcode
 
-Convert selected alleles to native Varcode objects on your chosen reference:
+Turn variants into Varcode variants on the reference you choose:
 
 ```python
 from pyensembl import EnsemblRelease
@@ -31,16 +31,16 @@ for variant in native:
     print(variant, native.metadata[variant]["entries"][0]["id"])
 ```
 
-The adapter downloads no reference data. It preserves snapshot provenance and
-all source entries, including entries Varcode normalizes to the same allele.
-Unresolved alleles and assembly mismatches raise errors.
+This downloads no reference data. Every source entry is kept in the metadata, even
+when Varcode merges two entries into one variant. Unusable alleles and genome
+build mismatches raise an error.
 
 By default, Varcode converts `chr1` to `1` and `chrM` (or `M`) to `MT`.
 Use `variant.contig` for the annotation name and `variant.original_contig`
 for the source name. If several entries become one variant, all their names
 remain in `native.metadata[variant]["entries"]`.
 
-For a custom reference name, declare the assembly:
+For a reference with a custom name, say which build it is:
 
 ```python
 from pyensembl import Genome
@@ -50,11 +50,11 @@ genome = Genome(reference_name="GRCh38-osteosarc-six-transcript-subset",
 custom = selected.to_varcode(genome=genome, assembly="GRCh38")
 ```
 
-Conversion preserves the genome's cache identity. Annotation later requires
-the reference files, such as `subset.gtf` above, to be available and indexed.
+Annotating the variants later needs that reference's files, such as `subset.gtf`
+above, to be installed and indexed.
 
-If your GTF uses the source names exactly, such as `chrM`, disable both naming
-options to preserve prefixes and case:
+If your GTF uses the same chromosome names as the source, such as `chrM`, turn
+off both renaming options:
 
 ```python
 custom = selected.to_varcode(
@@ -63,16 +63,14 @@ custom = selected.to_varcode(
 )
 ```
 
-The result must still match `genome.contigs()`: PyEnsembl itself can normalize
-case while indexing a GTF.
-
-This conversion does not change assemblies or resolve every contig alias.
-Scaffolds such as `chrUn_KI270442v1` and accessions such as `NC_012920.1`
-remain unchanged; their names must match the annotation reference.
+The names must still match `genome.contigs()`; PyEnsembl can change their case when
+it indexes a GTF. Renaming never converts between genome builds, and names such as
+`chrUn_KI270442v1` or `NC_012920.1` are left as they are, so your reference must
+use them too.
 
 ## Isovar
 
-Extract reads and pass the resulting alignment handle to Isovar:
+Fetch the reads and hand the BAM to Isovar:
 
 ```python
 from isovar import ReadCollector
@@ -89,7 +87,7 @@ with subset.open() as bam:
     print(len(evidence.alt_reads), len(evidence.ref_reads))
 ```
 
-To run protein reconstruction on those inputs:
+To rebuild the mutant protein sequences:
 
 ```python
 from isovar import run_isovar
@@ -102,7 +100,7 @@ Set transcript and read-collection options in Isovar as usual.
 
 ## Vaxrank
 
-For a read corpus, inspect the reference and request paired mates when needed:
+Check the BAM's genome build, then fetch reads with their mates:
 
 ```python
 from osteosarc import Region
@@ -117,23 +115,22 @@ if info.assembly == "GRCh38":
     print(corpus.path, corpus.receipt["scope"])
 ```
 
-Pass the resulting reads through Isovar, then use Vaxrank's existing predictor
-and ranking configuration. See [read requirements](reads.md#requirements) for
-paired-mate support.
+Run the reads through Isovar, then rank with Vaxrank as usual. Fetching mates
+needs a recent SAMtools; see [requirements](reads.md#requirements).
 
-Fetch published peptides to compare with your results:
+Compare your ranking with the peptides that were actually used:
 
 ```python
 for peptide in data.vaccine_peptides("mRNA"):
     print(peptide["variant_id"], peptide["sequence"])
 ```
 
-When updating fixtures, review [source corrections](curation.md), especially
-MAP2's changed allele. Use `corrections=False` to reproduce the published inputs.
+[Corrections](curation.md) change some alleles, including a MAP2 vaccine target.
+Use `corrections=False` to reproduce results from the published values.
 
 ## Topiary
 
-Load a pVAC report from the cache:
+Load a pVACseq report:
 
 ```python
 from topiary import read_pvacseq
@@ -154,7 +151,8 @@ if rsem:
     expression = load_expression(data.download(rsem[0]))
 ```
 
-Cached paths retain their file suffixes for format detection. Header-only
+Downloaded files keep their original extensions, so format detection works.
+Header-only
 reports remain empty reports.
 
 For reproducible test data, use [read fixtures](fixtures.md). See

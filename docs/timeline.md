@@ -13,8 +13,8 @@ data = Dataset.open()
 print(data.timeline.around("2025-01-28", days=5).listing())
 ```
 
-The timeline combines treatments, procedures, imaging, pathology, sampling,
-MRD, and lab dates. Each event keeps its source record.
+The timeline puts treatments, procedures, imaging, pathology, sample collection,
+MRD and lab results on one axis. Each event keeps the record it came from.
 
 ## Draw a timeline
 
@@ -40,9 +40,9 @@ event = vaccines[0]
 print(event.date, event.precision, event.source, event.details)
 ```
 
-Filters accept dates as `YYYY`, `YYYY-MM`, or `YYYY-MM-DD`. Published date
-precision is preserved. Timepoints appear only where a source states them.
-Rows without readable dates are listed in `data.timeline.source["undated"]`.
+Dates can be `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. A date published as just a month
+stays a month. Events have a timepoint only where the site gives one. Rows with a
+date that can't be read are in `data.timeline.source["undated"]`.
 
 ## Find a specimen's files
 
@@ -56,8 +56,8 @@ print(t2["fastq_folders"][:3])
 print(t2["corrections"], t2["disagreements"])
 ```
 
-Specimen dates and sites are checked against other public sources. The rows
-record disagreements and any [corrections](curation.md) applied.
+Each specimen's date and site are checked against the site's other pages, and
+the row lists any disagreements and [corrections](curation.md).
 
 ## Read measurements
 
@@ -68,9 +68,9 @@ signatera = data.measurements.select(source="mrd", measurement="Signatera")
 print([(r["date"], r["kind"], r["value"]) for r in signatera.rows[-5:]])
 ```
 
-Values keep their raw strings and units. `kind` distinguishes `numeric`,
-`not_detected`, `below_loq`, `text`, and `missing`. For `below_loq`, the value
-is the reported limit, not a measured concentration.
+Values keep their published text and units. `kind` is `numeric`, `not_detected`,
+`below_loq`, `text` or `missing`; for `below_loq`, the value is the lab's reporting
+limit, not a measurement.
 
 ## Use the terminal
 
@@ -101,7 +101,7 @@ Add `--json` to the `timeline` CLI command for machine-readable events. The
 
 ## Sources
 
-Dates come from the site's event JSON and timeline sheet, specimen registry,
-T0–T3 summary, MRD records, flow-cytometry manifest, DICOM and pathology indexes,
-and lab and cytometry tables. Snapshots predating these sources need to be
-recreated under a new name to use the timeline.
+Dates come from the site's events and timeline sheet, specimen registry, T0–T3
+summary, MRD results, flow-cytometry list, imaging and pathology indexes, and lab
+and cytometry tables. A snapshot saved before the timeline existed can't show it;
+run `osteosarc sync --refresh` for a new one.

@@ -1,17 +1,15 @@
 # Extract reads
 
-Fetch the reads around selected variants or regions from a remote BAM into a
-cached, indexed local BAM, without downloading the whole file. These examples
-open your most recent snapshot; see [Get started](index.md#get-started).
+Copy just the reads around some variants or regions out of a remote BAM into a
+small local BAM, without downloading the whole file. The examples open your most
+recent snapshot; see [Get started](index.md#get-started).
 
 ## Requirements
 
-Install `osteosarc` and put `samtools` on PATH. SAMtools 1.21 has been
-tested. Header inspection requires `view --no-PG`; extraction also requires
-`-M` and `-X`. Paired-mate extraction needs `--fetch-pairs`, barcode filtering
-needs `-D`, and query-name filtering and bounded partner recovery need `-N`.
-These capabilities are checked before acquisition, with an error explaining how
-to upgrade. Cached reads can be reopened without SAMtools.
+You need `samtools` on your PATH; version 1.21 is tested. Osteosarc checks that
+your version supports what a request needs before downloading anything, and says
+how to upgrade if it doesn't. Reopening reads you already fetched doesn't need
+SAMtools.
 
 ## Fetch reads around a variant
 
@@ -27,12 +25,12 @@ subset = data.extract_reads(source, variants=targets, padding=100)
 print(subset.path, subset.receipt["records"])
 ```
 
-The result is a local indexed BAM. The extractor checks the source assembly,
-downloads the index, and retrieves the requested regions without a full-BAM scan.
-Choose a source with [`assets_for_sample`](explore.md#bulk-and-single-cell-data)
+You get a local indexed BAM. Osteosarc checks that the remote BAM uses the
+same genome build as the variants, downloads its index, and reads only the parts
+it needs. Pick a BAM with [`assets_for_sample`](explore.md#bulk-and-single-cell-data)
 or `data.assets.select(...)`.
 
-The command line takes the same variant IDs and returns the same cached BAM:
+The command line does the same and reuses the same cached result:
 
 ```sh
 osteosarc reads rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam --variant DYNC1H1-chr14-101980529 --padding 100
@@ -60,9 +58,9 @@ region = Region.from_samtools("chr14:101980529-101980530", assembly="GRCh38")
 osteosarc reads rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam chr14:101980529-101980530 --assembly GRCh38
 ```
 
-Overlapping intervals are queried as a union. Original duplicate records,
-flags, qualities, and tags are retained. No quality or allele filter is applied
-by default. An empty result is valid; an empty region list is an error.
+Overlapping regions are merged. Reads come back exactly as stored, including
+duplicates, flags, qualities and tags, with no filtering unless you ask for it.
+A region with no reads gives an empty BAM.
 
 ## Filter reads
 
@@ -75,24 +73,23 @@ filtered = data.extract_reads(
 )
 ```
 
-Here `0x100` excludes secondary alignments and `0x400` excludes duplicate-marked
-reads. `require_flags` keeps only reads with the given flags. To select cells,
-use `ReadFilter(barcodes=("cell-barcode",), barcode_tag="CB")`. To select
-templates by name, use `ReadFilter(query_names=("read-a", "read-b"))`; an empty
-tuple leaves names unrestricted. Filters are part of the cache identity, so
-each combination is cached separately.
+`0x100` drops secondary alignments and `0x400` drops reads marked as duplicates.
+`require_flags` keeps only reads with the given flags. To pick single cells, use
+`ReadFilter(barcodes=("cell-barcode",), barcode_tag="CB")`; to pick reads by
+name, `ReadFilter(query_names=("read-a", "read-b"))`. Each combination of
+filters is cached separately.
 
 ## Recover mates and split alignments
 
-`fetch_pairs=True` also retrieves paired mates outside the intervals. It does
-not recover supplementary (split) alignments:
+`fetch_pairs=True` also fetches each read's mate, even outside your regions. It
+doesn't fetch the other pieces of split reads:
 
 ```python
 paired = data.extract_reads(source, regions, fetch_pairs=True)
 ```
 
-To follow mate and supplementary-alignment (`SA`) links, pass a bounded
-`RecoveryPolicy` instead. It replaces `fetch_pairs`; combining them is an error:
+To follow both mates and split-read (`SA` tag) links, pass a `RecoveryPolicy`
+instead of `fetch_pairs`:
 
 ```python
 from osteosarc import RecoveryPolicy
@@ -101,47 +98,35 @@ linked = data.extract_reads(source, regions, recovery=RecoveryPolicy(max_rounds=
 print(linked.receipt["status"], linked.receipt["records"])
 ```
 
-`mates` and `supplementary` choose which links to follow; both default to true.
+`mates` and `supplementary` choose which links to follow (both on by default).
 The limits default to `max_rounds=4`, `max_intervals=128`, `max_bases=1_000_000`
-and `max_records=100_000`. The CLI equivalent is `reads --recover-linked`.
+and `max_records=100_000`. On the command line, use `reads --recover-linked`.
 
-Every available seed record is kept. Partner windows keep only records that
-match the seed's source, read group and segment. An `SA` partner must also match
-position, strand, CIGAR and MAPQ, plus NM when present. Records keep their hard
-clipping, flags, tags and any absent SEQ/QUAL. No query synthesizes a missing
-partner or a reverse-complement read. Duplicate counts use the maximum occurrence
-count across indexed queries, never a sum of repeated retrievals.
+How it works:
 
-Seed interval and base limits are checked against the resolved union before
-extraction. The record budget covers every acquired candidate, including records
-that match no partner pointer. A later link into an already visited window reuses
-the records fetched there without another query.
+- All reads in your regions are kept. Each link is then fetched from the same
+  BAM, and a partner is kept only if its read group, read name, mate and position
+  match the link exactly (for split reads, the strand, CIGAR and MAPQ too).
+- Nothing is invented: a partner that isn't found stays missing, and reads keep
+  their original clipping, flags and tags.
+- Hitting the round or interval limit gives a result marked `truncated`.
+  Exceeding `max_records` is an error, so you never get a silently partial BAM.
+- The receipt lists every region visited, every link followed, and every
+  partner that was missing, conflicting or out of bounds. `complete_template`
+  is always false: the BAM can't prove that no other pieces exist.
+- At busy loci, partner queries first filter by the names of your reads, so
+  unrelated reads don't use up `max_records`.
 
-The receipt records visited intervals, requested leads, missing or conflicting
-partners, malformed `SA` tags, missing sequence, ambiguous placement, repeated or
-cyclic leads, and the limits reached. `complete_template` is always false; even a
-fully resolved `SA` graph may omit unreported alignments. Reaching the interval or
-round limit produces an explicit `truncated` receipt. Exceeding the record budget
-fails instead of publishing a partial result. Missing indexes fail without falling
-back to a full scan, and a source that changes between steps fails. An
-interrupted run reuses only verified intermediate extractions.
+A remote partner query can time out after your own reads were already fetched.
+By default the whole request then fails. With
+`RecoveryPolicy(on_timeout="incomplete")` you get your reads and any partners
+already found instead, marked `status="incomplete"`. The receipt's
+`failed_queries` names the query that timed out, and its links are listed as
+unresolved. Calling again retries that query and reuses everything already
+fetched. A BAM that changed between queries is still an error.
 
-A slow remote partner query can time out after the seed reads were verified. By
-default that fails the whole request. With `RecoveryPolicy(on_timeout="incomplete")`,
-you get the verified seed records and any partners already matched, in a result
-whose receipt has `status="incomplete"`. Its `failed_queries` names the query that
-timed out, and its leads are listed under `unresolved` as "partner query timed out".
-Nothing from the failed query is kept, and an unavailable partner is never counted
-as absent support. The incomplete result is stored apart from complete results, so
-calling again retries the query and resumes from the verified extractions. Source
-changes and corrupt data still fail.
-
-At dense loci, partner windows first select the seed query names with
-[SAMtools `view -N`](https://www.htslib.org/doc/samtools-view.html) and only then
-apply the record cap, so unrelated reads can't exhaust it. The cap still counts
-matching names that later read-group or `SA` checks reject. A shared query name
-alone never establishes template identity. `recover_reads(source, regions,
-policy=...)` is the same operation for local files and URLs.
+`recover_reads(source, regions, policy=...)` does the same for local files and
+URLs.
 
 ## Check the alignment's reference
 
@@ -151,14 +136,15 @@ print(info.assembly)
 print(info.header["SQ"][:2])
 ```
 
-Inspection uses reference lengths in the header and does not require an index.
-An unresolved assembly is `None`. Extraction rejects assembly conflicts,
-ambiguous contigs, missing indexes, out-of-bounds regions, and headers too sparse
-to establish an assembly. Coordinates are never lifted over automatically.
+Osteosarc works out the genome build from the chromosome lengths in the BAM
+header, so it doesn't need the index for this. If it can't tell, `assembly` is
+`None`. A request fails, rather than guessing, when the builds don't match, a
+region falls off the end of a chromosome, or the BAM has no index. Coordinates
+are never converted between builds.
 
-GRCh37 mitochondrial queries need `Region(..., reference_length=...)` because
-hg19 and hs37d5 differ there. For CRAM, pass `reference="local-reference.fa"`
-with an existing `.fai` index.
+GRCh37 mitochondrial regions need `Region(..., reference_length=...)`, because
+hg19 and hs37d5 disagree on its length. For CRAM files, pass
+`reference="local-reference.fa"` with a `.fai` index next to it.
 
 ## Reuse the result offline
 
@@ -167,10 +153,10 @@ offline = Dataset.open()
 assert offline.extract_reads(source, regions).path == subset.path
 ```
 
-Results are cached by the request and source identity. Receipts record intervals,
-filters, checksums, source headers, tool versions, and record counts. New remote
-extractions check HTTP identity before and after the query; this is not a
-checksum of the entire remote BAM.
+Each result is cached by its request, and its receipt records the regions,
+filters, checksums, BAM header, tool versions and read count. For a remote BAM,
+Osteosarc checks the file's HTTP headers before and after reading, to catch a file
+that changes mid-download.
 
 ## Use a local BAM or sample a small fixture
 
@@ -183,18 +169,16 @@ fixture = subset_templates(regional, count=48, seed="fixture-v1")
 print(fixture.path, fixture.receipt["records"])
 ```
 
-Sampling chooses templates by `(read group, query name)` without using alleles
-or quality, and keeps their available regional records. The receipt marks the
-result as sampled. Use unsampled reads to estimate VAF. For versioned fixtures
-with explicit witnesses and controls, use [fixture recipes](fixtures.md).
+This picks 48 read pairs at random (reproducibly, from `seed`), ignoring alleles
+and quality, and keeps both mates. The receipt marks the result as sampled, so
+don't use it to estimate VAF. For test data with specific reads and controls, use
+[fixture recipes](fixtures.md).
 
 ## Generate a panel for every sample
 
-This writes one indexed BAM per registry-linked RNA-seq BAM product for every
-sample on GRCh38. Each BAM contains the union of the nominated loci; products
-from the same specimen stay separate. It queries every RNA-seq BAM, so expect it
-to take an hour or more; each extraction accepts a longer `timeout=` in seconds
-(default 600) for slow remote queries.
+This writes one indexed BAM, with mates, per RNA-seq BAM of every sample,
+covering the chosen loci. It queries every RNA-seq BAM, so expect it to take an hour
+or more; pass a longer `timeout=` (in seconds, default 600) for slow remote queries.
 
 <!-- docs-check: skip (batch job over every RNA-seq BAM; takes over an hour) -->
 ```python
@@ -230,7 +214,7 @@ for sample in data.specimens:
         print(sample["sample_id"], source.key, output)
 ```
 
-For explicit loci, replace the `variants`/`regions` lines with:
+To use your own loci, replace the `variants` and `regions` lines with:
 
 ```python
 from osteosarc import Region
@@ -241,8 +225,6 @@ regions = [Region.from_samtools(locus, assembly="GRCh38") for locus in [
 ]]
 ```
 
-Remove `assay="rna-seq"` to include the other BAM assays. GRCh37 products need
-their own verified GRCh37 coordinates. Some vendor BAMs are published without an
-index; extraction never falls back to downloading them whole, so the loop skips
-them. Samples without matching BAM products have no output. Extraction is indexed and cached; paired mates can lie outside
-the loci. No template sampling or allele filtering is applied.
+Remove `assay="rna-seq"` to include DNA and single-cell BAMs. GRCh37 BAMs need
+GRCh37 coordinates. Some vendor BAMs have no index, so the loop skips them rather
+than download them whole.

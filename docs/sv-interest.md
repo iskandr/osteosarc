@@ -1,81 +1,57 @@
-# SV interest catalogue
+# SV catalogue
 
-The SV interest catalogue lists **637 structural-variant nominations** from the
-September 22, 2026 source audit, with their original calls, breakend geometry,
-gene annotation, expression and RNA evidence. It ships with the package and loads
-offline:
+A list of 637 candidate structural variants (SVs) worth a closer look, with their
+calls, breakpoints, nearby genes, expression and RNA support. It ships with the
+package and loads without a network connection:
 
 ```python
 from osteosarc import load_panel, load_sv_interest
 
-catalogue = load_sv_interest()          # Targets plus source pins
-targets = load_panel("sv-interest-v1")  # The same targets, for fixture recipes
+catalogue = load_sv_interest()
+targets = load_panel("sv-interest-v1")  # The same entries, for fixture recipes
 macrod2 = targets["SV0203"]
 print(len(targets), macrod2["kind"])
 ```
 
-The catalogue includes the displayed ESVEE/PURPLE/LINX PASS table, focused DRAGEN
-calls, CTAT long-read calls and focal RNA definitions. It is not an exhaustive scan
-of every DRAGEN call or every possible RNA junction. Membership is a nomination
-for investigation, not vaccine admission or proof of translation. No entry is
-removed for missing RNA, annotation or an ORF.
+## Where the candidates come from
 
-The expressed-gene-to-intergenic set includes MACROD2 (SV0203), ITGBL1 (SV0089),
-ZYG11B (SV0085), RERG (SV0078), PHACTR1 (SV0368), TFDP2 (SV0381), TENM1
-(SV0281), GABBR1 (SV0111), IMMT (SV0499), KLF15 (SV0172) and KMT2C (SV0377).
-The previously investigated FOXO3, PARD3B, OTUD7A and TPST1 rearrangements and
-additional chr20/ATP8B5P/GABBR1 junctions are retained too.
+Every candidate comes from files on osteosarc.com or in its data bucket, collected
+on 2026-09-22:
 
-## Coordinates, aliases and evidence
+- 523 PASS calls from the oncoanalyser SV tables (ESVEE, PURPLE and LINX)
+- 32 DRAGEN SV calls
+- 78 long-read RNA fusions from the CTAT tables
+- 4 RNA events defined by hand
 
-Each target preserves its original one-based reported coordinates and original
-VCF alleles where available. Resolved targets provide zero-based interbase
-boundaries and the retained side of each breakend. Traversal orientation is
-not inferred from those sides: the original oriented hypotheses remain in a
-separate field. Single breakends and unresolved geometries use
-`kind="unresolved"` and retain their original call instead of fabricating a mate.
+`catalogue["sources"]` lists each input file with its URL and SHA-256 checksum.
 
-`adjacency_group_id` groups identical retained-flank geometry, including reverse
-traversals. It does not establish identical inserted alleles or independent
-mutations. Original calls retain sample-specific alleles and LINX complex-event
-membership. Neither aliases nor alternative ORFs should have their counts added.
+A candidate is on the list because it's worth investigating. That doesn't mean
+it's real, expressed or makes a protein, and no candidate was dropped for lacking
+RNA support or a gene. The list includes breaks that join an expressed gene to
+an intergenic region, such as MACROD2 (SV0203), ITGBL1 (SV0089) and KMT2C (SV0377).
 
-Gene annotation is pinned to Ensembl 115. Exact breakends may be intergenic
-even when a historical caller gives them a nearby gene name. The absence of an
-overlapping coding model is not a reason to exclude a target.
+## Reading an entry
 
-`gene_expression` contains January 2025 **T2 UCLA bulk RSEM** measurements
-matched by unique stable Ensembl gene ID, preserving the original versioned ID.
-It does not establish expression in T0, T1 or the organoid, or identify a mutant
-allele. TPM is a gene/transcript abundance measure, not protein abundance
-([RSEM documentation](https://deweylab.github.io/RSEM/rsem-calculate-expression.html)).
+- **Coordinates.** `original_coordinates` are the caller's one-based positions.
+  `breakends` are zero-based positions between bases. Single breakends and other
+  unclear shapes are `kind="unresolved"`, with the original call kept.
+- **Duplicates.** Entries with the same `adjacency_group_id` join the same two
+  ends, often reported by different callers. Don't add up their counts.
+- **Genes.** Genes come from Ensembl 115. A caller's gene name can be a nearby
+  gene rather than one the break falls in.
+- **Expression.** `gene_expression` is gene-level TPM from the T2 (January 2025)
+  bulk RNA-seq. It says how much the gene is expressed, not the fusion transcript.
+- **RNA support.** `rna_evidence` counts reads that cross each breakpoint in
+  RNA-seq BAMs from the bucket, one entry per BAM. Counts are reads, not molecules,
+  and a missing count means that BAM wasn't checked, not that it had no reads.
 
-`rna_evidence` keeps each product's sample, original source URL, completion
-status and separate split, splice-gap and deletion-gap counts. Incomplete
-products have missing counts, not zero. The eight completed broad regional
-extractions are bounded around nominated loci; they do not exhaustively test
-cryptic splicing away from a DNA breakpoint. Counts are scoped templates,
-not independent molecules or calibrated protein abundance. Exact DNA-allele
-checks with 20-base flanks remain separate from adjacency geometry.
+To rebuild and rank the proteins these SVs might make, use Isovar and Topiary.
 
-Isovar supplies reconstructed sequences, frames and complete-interval support;
-Topiary supplies the report/ranking policy. No protein hypothesis or biological
-likelihood is inferred by this data-access interface. Read-orientation flags
-describe processed input reads; they do not establish biological RNA strand
-or justify automatic rejection of reverse-complement-supported candidates.
+## Use it in fixtures
 
-## Reproducibility
-
-`catalogue["sources"]` records original source URLs, sizes and SHA-256 pins,
-including the DNA VCFs, call tables, Ensembl annotation and full gene-expression
-file. Every API call returns a fresh object; caller changes cannot mutate the
-packaged snapshot. Existing `sv-regressions-v1` and `vaccine-loci-v1` panels
-keep their established contents and policies.
+`load_panel("sv-interest-v1")` gives the same entries as fixture targets. Listing a
+target doesn't fetch any reads; write a [fixture recipe](fixtures.md) for that.
 
 ```sh
 osteosarc --offline fixtures panel sv-interest-v1 > targets.json
 ```
-
-Selection and bundle generation still require an explicit source-scoped fixture
-recipe. Merely listing a target does not create a BAM or claim that its reads
-have been acquired.

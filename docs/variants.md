@@ -1,7 +1,7 @@
 # Select variants and vaccine peptides
 
-Select catalogue variants by gene, vaccine, pipeline or status, then get their
-alleles, read counts and vaccine peptides. The examples open your most recent snapshot;
+Pick variants from the website's catalogue by gene, vaccine, pipeline or status,
+then get their alleles, read counts and vaccine peptides. The examples open your most recent snapshot;
 see [Get started](index.md#get-started) to save one.
 
 ## Select variants
@@ -17,9 +17,10 @@ for variant in dynein:
     print(variant.id, variant.allele)
 ```
 
-`site` includes all website entries, including unresolved alleles. The `vaccine`
-set selects entries with a positive site vaccine count. Use `data.variants("all")`
-to include additional count-export and source-JSON entries.
+`data.variants()` gives every variant on the website's variants page, including
+ones without a usable allele. `"vaccine"` gives the ones in at least one vaccine,
+and `"all"` adds entries that appear only in the site's read-count table or
+variant data file.
 
 From the command line:
 
@@ -37,38 +38,37 @@ print(variant.region(padding=100))
 regions = dynein.regions(padding=100)
 ```
 
-`region()` spans the anchored REF allele in zero-based, half-open coordinates.
-Pass the variants themselves to [read extraction](reads.md) to fetch their reads.
+`region()` covers the REF allele, in zero-based, half-open coordinates. To fetch
+reads, pass the variants straight to [read extraction](reads.md).
 
 ## Variant status
 
-`status` describes whether a catalogue entry has a usable genomic allele.
-It is independent of the sample, sequencing assay and measured read support.
+`status` says whether an entry has a usable genomic allele. It says nothing
+about samples or read support.
 
 | `variant.status` | Meaning |
 | --- | --- |
-| `ready` | One allele with literal DNA bases and consistent chromosome/position fields |
-| `missing_literal_allele` | No usable genomic allele was supplied |
-| `non_literal_allele` | REF or ALT contains a placeholder such as `dup` or `not_reported` |
-| `ambiguous_literal_allele` | Multiple candidate alleles were supplied for the same entry |
-| `conflicting_coordinates` | The index, count export or source JSON disagree on the locus or allele |
-| `malformed_source_row` | A count-export row has an invalid position or missing/extra fields |
+| `ready` | One allele, written in DNA bases, at a consistent position |
+| `missing_literal_allele` | No allele given |
+| `non_literal_allele` | REF or ALT is a placeholder such as `dup` or `not_reported` |
+| `ambiguous_literal_allele` | More than one allele given for the entry |
+| `conflicting_coordinates` | The site's pages and files disagree on the position or allele |
+| `malformed_source_row` | A read-count row has a broken position or the wrong number of fields |
 
-`ready` permits `.allele`, `.region()` and Varcode conversion. It does not
-validate REF against a genome, establish somatic status, guarantee RNA support
-or establish a protein effect. These need separate evidence.
+Only `ready` entries have `.allele`, `.region()` and Varcode conversion. `ready`
+doesn't mean the variant is checked against the genome, somatic, expressed or
+changes the protein.
 
-Omit the `status` filter to keep all entries. Unresolved entries remain visible,
-but `.allele` and `.region()` raise errors:
+Without the `status` filter you get every entry; `.allele` and `.region()` raise
+an error on the unusable ones:
 
 ```python
 unresolved = site.where(lambda v: v.status != "ready")
 print([(v.id, v.status) for v in unresolved])
 ```
 
-[Source corrections](curation.md) are on by default and can change an entry's
-allele and status. Use `corrections=False` when opening the snapshot to inspect
-the published alleles.
+[Corrections](curation.md) are on by default and can change an entry's allele
+and status. Open the snapshot with `corrections=False` to see the published ones.
 
 ## Read counts and annotations
 
@@ -80,10 +80,10 @@ print(data.pipeline_names)
 detected = data.variants(pipeline="oncoanalyser")
 ```
 
-Counts retain raw source values. Missing counts differ from zero; counts for
-corrected alleles or wrongly mapped alignments are cleared to unmeasured.
-`data.vafs.diagnostics` retains ragged rows' original fields and line numbers;
-missing trailing cells are `None`.
+Counts are kept exactly as published. A missing count isn't zero. Counts that
+were measured for the wrong allele or position are cleared by a correction, so
+they read as not measured. `data.vafs.diagnostics` lists rows with too few or too
+many fields, with their line numbers.
 
 ## Get vaccine peptides
 
@@ -94,16 +94,17 @@ for row in data.vaccine_peptides("mRNA"):
     print(row["variant_id"], row["sequence"], row["experiments"])
 ```
 
-Vaccine membership comes from the overlap JSON. For the separate flags in the
-source variant JSON, use `vaccine_source="source_variants"`. These sources can
-disagree; the annotations retain those disagreements.
+Which vaccines contain a variant comes from the site's vaccine-overlap file. The
+site's variant data file flags vaccines separately; use
+`vaccine_source="source_variants"` for those flags. The two can disagree, and the
+annotations keep both.
 
 ```python
 for row in data.vaccines.select(gene="SMC5"):
     print(row["elispot_status"], row["elispot_response"])
 ```
 
-An untested assay or missing response is not a negative result.
+An ELISPOT that wasn't run, or has no recorded response, isn't a negative result.
 
 ## Open a VCF
 
@@ -118,8 +119,8 @@ if calls:
             break
 ```
 
-This downloads the full VCF and its listed index.
-The returned pysam reader preserves headers, genotypes, and multiallelic records.
+This downloads the whole VCF and its index, and returns a pysam reader with the
+original headers, genotypes and records.
 For native Varcode objects, see [Use other libraries](consumers.md#varcode).
 
 ## Entries with reviewed alleles
@@ -162,8 +163,8 @@ describes the evidence review's outcome.
 
 ## Malformed source rows
 
-A malformed count-export row marks its entry `malformed_source_row`; other
-entries remain available. Inspect `variant.annotations["parse_errors"]` for
-the source values and error. For standalone parsing, pass the index and TSV
-text to `parse_variants(index, vaf_tsv)`. Missing or duplicate required headers
-still raise `SchemaError`.
+A broken row in the site's read-count table marks its entry
+`malformed_source_row` and leaves the other entries alone.
+`variant.annotations["parse_errors"]` shows the row and what was wrong. To parse the
+files yourself, use `parse_variants(index, vaf_tsv)`. A table missing a required
+column raises `SchemaError`.
