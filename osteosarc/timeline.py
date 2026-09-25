@@ -103,15 +103,21 @@ def _window(since, until):
 class Timeline(Collection):
     """Chronological events with composable filters and text rendering."""
 
+    def overview(self):
+        """How many events, their date range, and how many lanes."""
+        if not len(self):
+            return "no events"
+        last = max(e.last_day for e in self)
+        return f"{len(self)} events, {self[0].date} .. {last}, {len(self.lanes())} lanes"
+
     def __repr__(self):
-        from .display import Text
+        from .display import preview
         if not len(self):
             return "Timeline: no events"
-        last = max(e.last_day for e in self)
-        head = "\n".join(self[:8].listing().splitlines())
-        more = f"\n... {len(self) - 8} more" if len(self) > 8 else ""
-        return Text(f"Timeline: {len(self)} events, {self[0].date} .. {last}, {len(self.lanes())} lanes. "
-                    f".render() draws it; .listing() lists every event.\n{head}{more}")
+        return preview(f"Timeline: {self.overview()}. .render() draws it; .listing() lists every event.",
+                       self, ("date", "lane", "event"),
+                       lambda e: dict(date=e.date + (f"..{e.end}" if e.end else ""), lane=e.lane,
+                                      event=e.label + (f" = {e.value}" if e.kind == "event" and e.value else "")))
 
     def select(self, *, lane=None, category=None, kind=None, source=None, track=None,
                timepoint=None, contains=None, since=None, until=None):

@@ -26,7 +26,7 @@ from .catalog import (
     parse_data_paths,
 )
 from .curation import CORRECTIONS, Curation, normalize_tissue, unrecognized_values
-from .errors import CoordinateError, IntegrityError, OfflineError, SchemaError
+from .errors import CoordinateError, IntegrityError, NoSnapshotsError, OfflineError, SchemaError
 from .models import Asset, Region
 from .parsing import (
     PARSE_FORMATS,
@@ -67,7 +67,7 @@ def downloaded_at(manifest):
     return max((r["retrieved_at"] for r in manifest["sources"].values()), default=manifest.get("created_at"))
 
 
-def choose_snapshot(rows, name=None, *, date=None):
+def choose_snapshot(rows, name=None, *, date=None, root=None):
     """Name of the snapshot to open, given rows sorted newest first.
 
     With neither argument, the newest. name is an exact name or, if no snapshot
@@ -81,7 +81,7 @@ def choose_snapshot(rows, name=None, *, date=None):
     if date is not None and not DATE_SELECTOR.fullmatch(date):
         raise ValueError("date must be YYYY, YYYY-MM or YYYY-MM-DD")
     if not rows:
-        raise FileNotFoundError("No saved snapshots; run Dataset.sync() or `osteosarc sync` first")
+        raise NoSnapshotsError(root)
     if date is not None:
         matches, wanted = [r for r in rows if (r["downloaded"] or "").startswith(date)], f"downloaded in {date} (UTC)"
     elif name is not None:
@@ -238,11 +238,7 @@ class Dataset:
         else:
             cache = Cache(cache, offline=offline)
         if name is None or date is not None or not cls._snapshot_path(cache, name).exists():
-            rows = cls.snapshots(cache=cache)
-            if not len(rows):
-                raise FileNotFoundError(f"No saved snapshots in {cache.root}; run Dataset.sync() "
-                                        "to download the website's metadata")
-            name = choose_snapshot(rows, name, date=date)
+            name = choose_snapshot(cls.snapshots(cache=cache), name, date=date, root=cache.root)
         path = cls._snapshot_path(cache, name)
         return cls(cache, json.loads(path.read_text()), corrections=corrections)
 
@@ -422,8 +418,8 @@ class Dataset:
         Explorer(self).cmdloop()
 
     def __repr__(self):
-        return (f"Osteosarc snapshot {self.name} ({self.id[:12]}), downloaded "
-                f"{self.downloaded[:16].replace('T', ' ')} UTC. Try data.summary() or data.explore().")
+        from .explore import snapshot_line
+        return f"Osteosarc {snapshot_line(self)}. Try data.summary() or data.explore()."
 
     def assets_for_sample(self, sample_id, **filters):
         """Registry-linked alignments and files under the specimen's FASTQ folders."""

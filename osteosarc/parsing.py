@@ -52,7 +52,7 @@ class Table:
         shown = self.columns[:6]
         note = f" (first {len(shown)} shown)" if len(self.columns) > len(shown) else ""
         return preview(f"Table: {len(self):,} rows, {len(self.columns)} columns{note}",
-                       self.rows[:8], shown, total=len(self))
+                       self.rows, shown, lambda row: row)
 
     def to_dataframe(self):
         """Optional pandas conversion; performs no type or missing-value coercion."""

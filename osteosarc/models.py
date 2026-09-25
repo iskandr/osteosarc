@@ -162,9 +162,9 @@ class Assets(Collection):
     def __repr__(self):
         from .display import preview
         from .explore import _size
-        rows = [dict(kind=a.kind, format=a.format, size=_size(a.size), key=a.key) for a in self[:8]]
-        return preview(f"{len(self):,} files", rows, ("kind", "format", "size", "key"),
-                       total=len(self), fixed=("key",))
+        return preview(f"{len(self):,} files", self, ("kind", "format", "size", "key"),
+                       lambda a: dict(kind=a.kind, format=a.format, size=_size(a.size), key=a.key),
+                       fixed=("key",))
 
     def __getitem__(self, key):
         if isinstance(key, str):
@@ -210,13 +210,10 @@ class Assets(Collection):
 class Variants(Collection):
     def __repr__(self):
         from .display import preview
+        from .explore import allele_text
         ready = sum(v.status == "ready" for v in self)
-        rows = [dict(id=v.id, gene=v.gene, status=v.status,
-                     allele=(f"{v.alleles[0][0]}:{v.alleles[0][1]} {v.alleles[0][2]}>{v.alleles[0][3]}"
-                             if v.status == "ready" else ""))
-                for v in self[:8]]
-        return preview(f"{len(self)} variants, {ready} ready", rows, ("id", "gene", "status", "allele"),
-                       total=len(self))
+        return preview(f"{len(self)} variants, {ready} ready", self, ("id", "gene", "status", "allele"),
+                       lambda v: dict(id=v.id, gene=v.gene, status=v.status, allele=allele_text(v)))
 
     def select(self, *, gene=None, ids=None, vaccine=None, vaccinated=None, pipeline=None,
                status=None, on_site=None, vaccine_source="overlap"):

@@ -10,7 +10,7 @@ from . import __version__
 from .cache import Cache
 from .dataset import DATE_SELECTOR, Dataset
 from .discovery import list_bucket
-from .errors import OsteosarcError
+from .errors import NoSnapshotsError, OsteosarcError
 from .models import Region
 from .reads import ReadFilter
 
@@ -187,18 +187,25 @@ Or look around directly:
 osteosarc --help lists every command. Docs: https://iskandr.github.io/osteosarc/"""
 
 
-def ensure_snapshot(args, cache):
-    """Stop with a clear message if there's no snapshot; offer to sync for the explorer."""
-    if args.snapshot is not None or len(Dataset.snapshots(cache=cache)):
-        return
-    where = f"No snapshot yet in {cache.root}."
-    if args.command == "explore" and not args.offline and sys.stdin.isatty():
-        answer = input(f"{where} Download the website's metadata now (about 57 MB)? [Y/n] ")
-        if answer.strip().lower() in ("", "y", "yes"):
-            Dataset.sync(cache=cache, corrections=not args.no_corrections)
-            return
-    raise FileNotFoundError(f"{where} Run `osteosarc sync` to download the website's metadata "
-                            "(about 57 MB).")
+def open_snapshot(args, cache, online):
+    """Open the chosen snapshot; without any, say what to run, or offer to sync for the explorer."""
+    try:
+        return Dataset.open(**snapshot_selector(args), cache=cache, offline=not online,
+                            corrections=not args.no_corrections)
+    except NoSnapshotsError as error:
+        where = f"No snapshot yet in {error.root}."
+        if args.command == "explore" and args.snapshot is None and not args.offline and sys.stdin.isatty():
+            try:
+                answer = input(f"{where} Download the website's metadata now (about 57 MB)? [Y/n] ")
+            except (EOFError, KeyboardInterrupt):
+                print()
+                answer = "n"
+            if answer.strip().lower() in ("", "y", "yes"):
+                dataset = Dataset.sync(cache=cache, corrections=not args.no_corrections)
+                print(f"Saved snapshot {dataset.name}.")
+                return dataset
+        raise FileNotFoundError(f"{where} Run `osteosarc sync` to download the website's metadata "
+                                "(about 57 MB).") from None
 
 
 def main(argv=None):
@@ -259,9 +266,7 @@ def main(argv=None):
             # Listing and parsing pinned metadata remain offline automatically;
             # commands that acquire new bytes opt in unless --offline is set.
             online = args.command in ("download", "table", "reads") and not args.offline
-            ensure_snapshot(args, cache)
-            dataset = Dataset.open(**snapshot_selector(args), cache=cache, offline=not online,
-                                   corrections=not args.no_corrections)
+            dataset = open_snapshot(args, cache, online)
             if args.command == "assets":
                 filters = {name: getattr(args, name) for name in
                     ("kind", "format", "prefix", "contains", "timepoint", "assay", "platform", "tissue", "provider", "library", "include_conflicts", "include_inferred")}
