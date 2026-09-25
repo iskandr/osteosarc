@@ -80,9 +80,9 @@ To name a snapshot for a project, use `Dataset.sync("paper-2026")` or
 `osteosarc sync paper-2026`. It's created once and reopened after that. A named
 snapshot reuses files already in the cache unless you pass `refresh=True`.
 
-`osteosarc sync --source-revision <commit>` takes the tables that come from the
-website's GitLab repository at one commit. Files served by osteosarc.com itself
-have no versions.
+`osteosarc sync NAME --source-revision <commit>` takes the tables that come from
+the website's GitLab repository at one commit, given as the full 40-character SHA.
+Files served by osteosarc.com itself have no versions.
 
 ## Import a file you already downloaded
 

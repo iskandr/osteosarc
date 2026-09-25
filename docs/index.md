@@ -96,7 +96,7 @@ reads = data.extract_reads(source, variants=targets, padding=100)
 print(reads.path)
 ```
 
-This copies the reads around both variants into a small local BAM, after checking
+This copies the reads around those variants into a small local BAM, after checking
 that the BAM and the variants use the same genome build. Asking again reuses the
 cached copy. [Isovar](consumers.md#isovar) can tell you which reads carry the variant.
 

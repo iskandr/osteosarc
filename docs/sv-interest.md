@@ -15,15 +15,20 @@ print(len(targets), macrod2["kind"])
 
 ## Where the candidates come from
 
-Every candidate comes from files on osteosarc.com or in its data bucket, collected
-on 2026-09-22:
+633 candidates come from files on osteosarc.com or in its data bucket, as of
+2026-09-22:
 
 - 523 PASS calls from the oncoanalyser SV tables (ESVEE, PURPLE and LINX)
 - 32 DRAGEN SV calls
 - 78 long-read RNA fusions from the CTAT tables
-- 4 RNA events defined by hand
 
-`catalogue["sources"]` lists each input file with its URL and SHA-256 checksum.
+The other 4 were added by hand, as named fusions: FOXO3–STRADA–CCDC47,
+PARD3B–CDKN2B, GABBR1–SLC29A1 and OTUD7A–FMN1. One of the CTAT fusions,
+TPST1–CRCP, is also on that hand-made list.
+
+`catalogue["sources"]` gives the URL and SHA-256 checksum of every downloaded input.
+Two entries, the candidate list and the RNA read counts, were derived from those
+inputs and have only a checksum.
 
 A candidate is on the list because it's worth investigating. That doesn't mean
 it's real, expressed or makes a protein, and no candidate was dropped for lacking

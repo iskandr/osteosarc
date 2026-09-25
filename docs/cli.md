@@ -2,8 +2,8 @@
 
 The `osteosarc` command does the same things as the Python API and shares its
 cache. Every command uses your most recent snapshot unless you pass `--snapshot`.
-Browsing commands (`samples`, `specimens`, `assets`, `snapshots`, `timeline`) print
-tables, with `--json` where offered; the others print JSON.
+`samples`, `specimens`, `assets`, `snapshots`, `timeline` and `on` print text (the
+first five also have `--json`); the others print JSON.
 `osteosarc --help` and `osteosarc COMMAND --help` list every option.
 
 ## Global options
@@ -30,8 +30,10 @@ osteosarc curation --strict
 
 `sync` saves the website's metadata as a snapshot named by today's UTC date, such
 as `2026-09-24`; running it again that day reuses it. `--refresh` downloads a new
-one (`2026-09-24.2`), and `sync NAME` gives it your own name. `snapshots` lists
-what you have, newest first.
+one (`2026-09-24.2`), and `sync NAME` gives it your own name. `sync NAME
+--source-revision COMMIT` takes the tables that come from the website's GitLab
+repository at one full, 40-character commit. `snapshots` lists what you have,
+newest first.
 
 To use an older snapshot, pass `--snapshot`. A date, month or year picks the newest
 snapshot downloaded then (`--snapshot 2026-09` is the newest from September 2026);
@@ -41,8 +43,9 @@ a name or ID prefix picks exactly one:
 osteosarc variants --gene MAP2 --snapshot 2026-09
 ```
 
-`curation --strict` fails if a correction no longer matches the website, or the
-website uses a label Osteosarc doesn't know.
+`curation --strict` fails if a correction no longer matches the snapshot's data,
+or the data uses a label Osteosarc doesn't know. It checks the snapshot you have;
+run `osteosarc sync --refresh` first to check the live website.
 
 ## Browse samples, files and variants
 
@@ -170,6 +173,7 @@ See [Read fixtures and bundles](fixtures.md).
 osteosarc discover neoantigen_prediction/pvactools/
 ```
 
-`discover` lists what's in the bucket now under a prefix, without changing any
-snapshot.
+`discover` lists the bucket under a prefix, without changing any snapshot. It
+reuses a listing it already fetched; add `--refresh` for the bucket's current
+contents.
 See [Look for newer files](explore.md#look-for-newer-files).

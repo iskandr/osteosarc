@@ -25,7 +25,7 @@ them by task.
 | `cache.fetch(url, refresh=False, sha256=None, md5=None, size=None, max_bytes=None)` | Download and check a file; returns a `Receipt` |
 | `cache.path(receipt)` | Check a receipt and return the file's local path |
 | `cache.import_file(path, url, sha256=None, md5=None, size=None)` | Add a file you already have, without downloading it |
-| `list_bucket(cache, prefix, refresh=False, max_pages=1000)` | List everything in the bucket under a prefix, now |
+| `list_bucket(cache, prefix, refresh=False, max_pages=1000)` | List everything in the bucket under a prefix; `refresh=True` for the current contents |
 | `digest(path, algorithm="sha256")` | A file's checksum |
 | `SNAPSHOT_SOURCES`, `TABLE_SOURCES`, `TIMELINE_SOURCES` | The URLs a snapshot downloads |
 

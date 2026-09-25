@@ -86,8 +86,9 @@ osteosarc --offline fixtures select recipe.json --source rna=archive.bam
 
 A recipe is a dictionary with `schema_version: 1`, an `id`, and `targets`,
 `sources` and `members`. `validate_recipe(recipe)` checks it before any reads are
-touched. Remote BAMs are fetched with the same indexed extraction as
-[`extract_reads`](reads.md); local BAMs can be passed in directly.
+touched. `select_fixtures` and `fixtures select` only read BAMs you already have
+locally; `generate_bundle` and `fixtures generate` fetch remote ones for you, with
+the same indexed extraction as [`extract_reads`](reads.md).
 
 **Targets.** A small variant has `kind: small_variant`, `assembly`, `reference`
 (where the target came from), `coordinates: one-based`, `contig`, `position`,
@@ -95,7 +96,8 @@ touched. Remote BAMs are fetched with the same indexed extraction as
 or more `breakends` with `contig`, `position` and `orientation` (`+`, `-` or null).
 An `unresolved` target needs a `reason` and gets no reads.
 
-**Sources.** Each source has an `identity` (its file key or URL), `assembly`,
+**Sources.** Each source has an `identity` object that says which file it is,
+such as `{"key": "rna-seq/..."}` or `{"url": "https://..."}`, plus `assembly`,
 `sample`, `library` and `product`; use null for anything unknown. Two processed
 versions of one library are separate sources. `archive_sha256` pins a local file.
 

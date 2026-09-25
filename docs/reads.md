@@ -105,8 +105,10 @@ and `max_records=100_000`. On the command line, use `reads --recover-linked`.
 How it works:
 
 - All reads in your regions are kept. Each link is then fetched from the same
-  BAM, and a partner is kept only if its read group, read name, mate and position
-  match the link exactly (for split reads, the strand, CIGAR and MAPQ too).
+  BAM, and a partner is kept only if its read group, read name, which mate it is,
+  position and strand all match the link. A mate must be a primary alignment; a
+  split-read piece must also match the link's CIGAR and MAPQ, and its NM tag
+  when it has one.
 - Nothing is invented: a partner that isn't found stays missing, and reads keep
   their original clipping, flags and tags.
 - Hitting the round or interval limit gives a result marked `truncated`.
@@ -169,9 +171,11 @@ fixture = subset_templates(regional, count=48, seed="fixture-v1")
 print(fixture.path, fixture.receipt["records"])
 ```
 
-This picks 48 read pairs at random (reproducibly, from `seed`), ignoring alleles
-and quality, and keeps both mates. The receipt marks the result as sampled, so
-don't use it to estimate VAF. For test data with specific reads and controls, use
+This picks 48 reads at random (reproducibly, from `seed`), ignoring alleles and
+quality, and keeps every record in the input that shares their read group and name,
+such as a mate that's also in the input. It never fetches missing mates; start from
+a `fetch_pairs=True` result if you want them. The receipt marks the result as
+sampled, so don't use it to estimate VAF. For test data with specific reads and controls, use
 [fixture recipes](fixtures.md).
 
 ## Generate a panel for every sample
