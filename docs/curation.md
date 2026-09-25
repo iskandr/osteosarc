@@ -1,7 +1,8 @@
 # Source corrections
 
-Osteosarc applies documented corrections to source records by default. You can
-inspect each change, disable corrections, or supply your own.
+Osteosarc fixes 34 known problems in the website's data, and does it by default.
+Every time a snapshot is opened, each fix is checked against the data. You can see
+what changed, turn the fixes off, or add your own.
 
 ## Compare corrected and published values
 
@@ -16,61 +17,63 @@ print("Published:", raw.variants()[map2.id].allele)
 print(map2.annotations["corrections"])
 ```
 
-Allele corrections clear affected count rows to `""` (unmeasured), because the
-original counts describe a different allele or locus. IDs are retained from
-each snapshot; newer website snapshots may rename entries. See the [MAP2 example](tour.md) to check a
-correction against reads.
+When a fix changes a variant's allele, it usually clears that variant's read counts,
+because they were measured for a different allele or position. MAP2 is the exception
+(see below). Variant IDs are the snapshot's own; newer snapshots may rename them. The
+[MAP2 example](tour.md) checks a correction against the reads.
 
-## Inspect the changes and evidence
+## See every correction
 
 ```python
 for row in data.corrections:
     print(row["id"], row["status"], row["summary"], row["evidence"])
 ```
 
-Each correction edits or flags records. The affected objects carry its ID:
+Every record a fix touches carries its ID:
 
-| Object | Correction IDs |
+| Record | Where the IDs are |
 | --- | --- |
 | Variant | `variant.annotations["corrections"]` |
 | Some of a variant's count rows | `variant.annotations["count_corrections"]` |
-| Asset | `asset.metadata["corrections"]` |
-| Count, vaccine, annotation, measurement, and specimen rows | `corrections` field |
+| File | `asset.metadata["corrections"]` |
+| Count, vaccine, annotation, measurement and specimen rows | the `corrections` field |
 | Timeline event | `event.corrections` |
-| Variant selection / Varcode metadata | `source["corrections"]` |
+| Variant selection or Varcode metadata | `source["corrections"]` |
 
-## Check for source changes
+## When the website changes
 
-Every load checks that a correction still matches the published records.
+Each fix records what the data should look like before it's applied, so it notices
+when the website changes:
 
 | Status | Meaning |
 | --- | --- |
-| `applied` | Expected source values match; correction applied |
-| `fixed_upstream` | The source contains the corrected values, or a reviewed upstream removal resolved the problem |
-| `stale` | An unexpected change or disappearance; correction skipped, with a warning |
-| `unavailable` | The snapshot lacks a required source |
-| `disabled` | Corrections were turned off |
+| `applied` | The problem is still in the data, and the fix was applied |
+| `fixed_upstream` | The website now has the corrected value, or has removed the bad record |
+| `stale` | The data changed in an unexpected way; the fix was skipped, with a warning |
+| `unavailable` | The snapshot doesn't include the data the fix needs |
+| `disabled` | Corrections are turned off |
 
-Corrections apply all or nothing. A correction may also check an unchanged
-record as evidence that the original problem remains. For example,
-`tempus-grch37-counts` checks PDZRN4's published 7/7 count before clearing rows.
-When upstream renames or removes records, a correction can recognize a reviewed
-source layout. Exactly one layout must match; an unknown or mixed layout is stale.
+A fix applies completely or not at all. Some fixes also check a record they don't
+change, to confirm the problem is still there: `tempus-grch37-counts`, for example,
+checks PDZRN4's published 7/7 before clearing counts. When the website reorganizes
+records, a fix can list each layout it has been checked against; exactly one must
+match, or the fix is `stale`.
 
 ```sh
 osteosarc curation --strict
 osteosarc --no-corrections variants --gene MAP2
 ```
 
-`--strict` exits nonzero for stale corrections or unrecognized source labels.
-Inspect the correction's `changes` field to see which records differ. Check
-the new source evidence before revising or removing a correction.
+`--strict` fails when a fix is stale or the data uses a label Osteosarc doesn't
+know. It checks the snapshot you have; run `osteosarc sync --refresh` first to check
+the live website. A fix's `changes` field shows which records differ. Check the new
+data before changing or removing a fix.
 
-Source labels are normalized separately: for example, `Boston Gene` becomes
-`BostonGene`, and `CITE` becomes `cite-seq`. Original labels are retained.
-Unknown labels appear in `data.unrecognized`.
+Labels are also tidied separately, without being counted as corrections: `Boston
+Gene` becomes `BostonGene`, and `CITE` becomes `cite-seq`. The original labels are
+kept, and unknown ones are listed in `data.unrecognized`.
 
-## Add a local correction
+## Add your own correction
 
 ```python
 from osteosarc import CORRECTIONS, Change, Correction, glob
@@ -83,97 +86,92 @@ mine = Correction(
 data = Dataset.open(corrections=[*CORRECTIONS, mine])
 ```
 
-`Change(source, match, expect={}, set={})` selects published records by exact
-field values or `glob(...)`. Dotted names address nested fields. An empty
-`set` flags records without editing them. Pass a filtered list of `CORRECTIONS`
-to disable individual corrections.
+`Change(source, match, expect={}, set={})` picks records by exact field values or
+`glob(...)`; dotted names reach nested fields. A `Change` with no `set` flags records
+without editing them. To turn off some built-in fixes, pass a filtered list of
+`CORRECTIONS`.
 
-For reviewed upstream changes, `Correction(..., alternatives=(changes,))` adds
-another complete group of checks and edits. `Change(..., absent=True)` requires
-that no records match. Pair removal checks with surviving records as evidence;
-absence alone does not establish a fix.
+`Correction(..., alternatives=(changes,))` adds another layout the fix accepts, and
+`Change(..., absent=True)` requires that no records match. Pair an absence check with
+a check on a record that should still be there: a record disappearing doesn't prove
+the problem was fixed.
 
-## Built-in corrections
+## The corrections
 
-The historical 2026-09-18 snapshot still uses all 32 corrections. On 2026-09-21,
-29 applied and three were fixed upstream. Evidence URLs are available in
-`data.corrections` and the [registry source](https://github.com/iskandr/osteosarc/blob/main/osteosarc/curation.py).
+Checked against the website on 2026-09-24: 29 fixes apply and 5 are already fixed on
+the site. An older snapshot from 2026-09-18 uses all 34. Each fix's evidence is in
+`data.corrections` and in the
+[source code](https://github.com/iskandr/osteosarc/blob/main/osteosarc/curation.py).
+None of them only rewrites a value in an equivalent form: each fixes a wrong value,
+fills in a missing one, or flags something to be careful with.
 
-The site moved CABLES1, CCDC40, DCHS2, GAPVD1 and GOLGA6L2 to their corrected
-positions and renamed their IDs. Their alleles remain placeholders, so Osteosarc
-still supplies the verified DNA sequences and clears the placeholder counts.
-The original correction IDs remain stable for provenance.
+### Variants and read counts
 
-### Read counts and alleles
-
-| ID | Action | What |
+| ID | Does | What |
 | --- | --- | --- |
-| `tempus-grch37-counts` | edit | Clear 200 wrongly mapped GRCh37 Tempus WES count rows in historical snapshots. New snapshots omit these rows and the viewer BAM; the original vendor BAM remains available. |
-| `allele-CABLES1-chr18-23135500` | edit | Literal Tempus allele at chr18:23135764 (T>TGGCGGC); the site had chr18:23135500 and `dup`. |
-| `allele-CCDC40-chr17-80058951` | edit | Literal Tempus allele at chr17:80090148; the site had `not_reported`. |
-| `allele-DCHS2-chr4-154322488` | edit | Literal Tempus delins at chr4:154323273. |
-| `allele-GAPVD1-chr9-125299105` | edit | Literal Tempus delins at chr9:125301980 (TAGTGC>ATTGG). |
-| `allele-GOLGA6L2-chr15-23441121` | edit | Literal Tempus 120-bp insertion at chr15:23440197. |
-| `allele-MAP2-chr2-209694768` | edit | The curated 22-bp deletion, a vaccine target, is not the observed allele. Tempus and CeGaT report one complex −28 bp event, which the catalogue's own protein sequence matches. |
-| `allele-FAM157A-p_W70_Q71ins_14` | edit | Supply the verified 42-base insertion at GRCh38 chr3:198153259; retain the withdrawn protein-model caveat. |
-| `allele-COL3A1-Splice` | edit | Supply the public Tempus 737-base deletion matching c.4254+1_4255-1del, anchored at GRCh38 chr2:189010889. |
-| `map2-split-representations` | flag | Two other MAP2 entries are pieces of that same event. |
-| `muc3a-grch38-placement` | annotate | Record the GRCh37 call and assembly gap; leave GRCh38 placement unresolved. |
-| `ush2a-transposed-duplicate` | annotate | Preserve the possible relationship in historical snapshots. After the site's merge, record its provenance and fix the retained entry's location label, preserving its allele and counts. Original Natera identity remains unconfirmed. |
-| `fam157a-withdrawn-protein` | flag | The annotated protein model has been withdrawn by NCBI. |
-| `natera-alleles-unavailable` | flag | The original Natera report is unavailable. COL3A1 now has independent Tempus evidence. |
-| `otud4-source-unavailable` | annotate | No public genomic allele was found; retain the entry and identify the missing source. |
-| `transcript-DCHS2` | edit | Supply verified accession `NM_001142552.1` for the old typo or the newer versionless accession. |
-| `gene-symbol-TRMO` | edit | `TMRO` is a typo for `TRMO`; gene-symbol joins with pVACseq otherwise miss it. |
+| `tempus-grch37-counts` | edit | Clear the counts the site measured in a GRCh37 Tempus exome BAM at GRCh38 positions, which describe unrelated places. Newer snapshots drop those rows. |
+| `allele-CABLES1-chr18-23135500` | edit | Give the Tempus allele, chr18:23135764 T>TGGCGGC. The site had the call 264 bp away with a `dup` placeholder; it has since moved it, but still without an allele. |
+| `allele-CCDC40-chr17-80058951` | edit | Give the Tempus allele at chr17:80090148. The site had it 31 kb away with `not_reported`. |
+| `allele-DCHS2-chr4-154322488` | edit | Give the Tempus allele (a complex change) at chr4:154323273. The site had it 785 bp away, with `not_reported` and a wrong REF. |
+| `allele-GAPVD1-chr9-125299105` | edit | Give the Tempus allele, chr9:125301980 TAGTGC>ATTGG. The site had it 2.9 kb away, with `not_reported` and a wrong REF. |
+| `allele-GOLGA6L2-chr15-23441121` | edit | Give the Tempus allele, a 120-base insertion at chr15:23440197. The site had it 924 bp away, with `dup` and a wrong REF. |
+| `allele-MAP2-chr2-209694768` | edit | The vaccine target's 22-bp deletion isn't what's in the tumor. Tempus calls one complex change (c.2599_2630delinsAGGG) and CeGaT calls the same change as three records; the catalogue's own protein sequence and the reads match it. The published counts are kept, because the site's pileup already counts the reads carrying it. |
+| `allele-FAM157A-p_W70_Q71ins_14` | edit | Fill in the missing allele: a 42-base insertion at chr3:198153259, from a public Tempus call. |
+| `allele-COL3A1-Splice` | edit | Fill in the missing allele: a 737-base deletion anchored at chr2:189010889, from a public Tempus call. It removes exactly intron 50, matching the catalogue's cDNA description. |
+| `map2-split-representations` | flag | Two other MAP2 entries are pieces of the same change; don't count them separately. |
+| `muc3a-grch38-placement` | note | The Tempus call is on GRCh37, in a repeat that differs between genome builds, so its GRCh38 position stays unresolved. |
+| `ush2a-transposed-duplicate` | note | USH2A-chr1-215560752 is a typo of USH2A-chr1-215650752: the first position is outside the USH2A gene. The site has merged them; the kept entry's location label and sequence context still came from the typo, and are fixed. |
+| `fam157a-withdrawn-protein` | flag | NCBI withdrew the protein model behind FAM157A's insertion. The site has since added the same note. |
+| `natera-alleles-unavailable` | flag | COL3A1 and OTUD4 come from a Natera report that isn't public. A public Tempus call now gives COL3A1's allele. |
+| `otud4-source-unavailable` | note | No public call gives OTUD4's allele, so the entry stays without one. |
+| `transcript-DCHS2` | edit | The accession NM_1142552 is missing two zeros. The fix is NM_001142552, which the site now uses too. |
+| `transcript-COL4A2` | edit | The accession `NM_001846.` has a stray dot. |
+| `transcript-GTF3C5` | edit | The accession NM_00112283 is missing a digit; it's NM_001122823. |
+| `gene-symbol-TRMO` | edit | `TMRO` is a typo for `TRMO`. |
 
-The relocated alleles and MAP2 were mapped from the original GRCh37 Tempus
-TL-24-ALMY2X4KMV VCFs with Ensembl. Each mapped REF matched GRCh38. The
-published positions fall outside the indel-equivalence spans, so normalization
-does not explain the differences. Several wrong positions still matched a
-reference base in the correct gene; `ready` alone cannot validate an allele.
+The five moved alleles and MAP2 come from the Tempus TL-24-ALMY2X4KMV calls in the
+bucket, converted from GRCh37 to GRCh38 with Ensembl. Each REF matches GRCh38, and no
+equivalent way of writing an allele reaches its old position. These fixes make the
+catalogue match what Tempus called; several of these calls have few supporting reads
+or sit in repeats, so they don't prove a variant is real. FAM157A and COL3A1 were also
+checked with UCSC's liftover chain and NCBI's reference sequence.
 
-FAM157A and COL3A1 were checked separately against UCSC's GRCh37-to-GRCh38
-chain and versioned NCBI RefSeq windows. The complete REF and surrounding
-sequence agree across assemblies. Offline fixtures test the source VCFs,
-reference bases and equivalent indel representations. See
-[the five reviewed entries](variants.md) for usage and remaining limitations.
+The GRCh37 counts were wrong because the site's pileup script looked up GRCh38
+positions in a BAM aligned to GRCh37 (`human_g1k_v37`). Its MT-ND5 count of 0/0 comes
+from the same problem. These counts are cleared rather than read as zero.
 
-### Samples, pipelines, and files
+### Samples, pipelines and files
 
-| ID | Action | What |
+| ID | Does | What |
 | --- | --- | --- |
-| `viewer-label-BG009368` | edit | The viewer label still says T0 2022-12; the consolidated metadata re-assigned it to T1 2024-06, with VAF evidence. |
-| `viewer-label-SARC0277` | edit | Likewise, from T0 BostonGene to T2 UCLA 2025-01. |
-| `provider-IPISRC044-T1-rna` | edit | The oncoanalyser T1 RNA was built from BostonGene FASTQs, not UCLA ones. |
-| `pvac-2025-detection` | edit | CDC40, PIP5K1A, SMC5 and TECPR1 are in the 2025-04-27 pVACtools runs. |
-| `pvac-header-only-filtered-reports` | flag | Seven filtered reports contain only a header. |
-| `pvac-rna-fields-na` | flag | RNA depth, VAF and expression are `NA` in all 131,209 report rows. |
-| `pvac-extended-run-no-class-i` | flag | The "MHCI.extended" run has only Class-II reports. |
+| `viewer-label-BG009368` | edit | The site labeled this reprocessed RNA T0 2022-12; its FASTQ and allele fractions show it's T1 2024-06. The site now uses the fixed label. |
+| `viewer-label-SARC0277` | edit | Likewise, it's T2 UCLA 2025-01, not T0 BostonGene. The site now uses the fixed label. |
+| `provider-IPISRC044-T1-rna` | edit | The oncoanalyser T1 RNA BAM was built from BostonGene's FASTQs, but the site labels it UCLA, in its file list and its read counts. |
+| `pvac-2025-detection` | edit | CDC40, PIP5K1A, SMC5 and TECPR1 are in the 2025-04-27 pVACtools runs, which the site's detection flag misses. |
+| `pvac-header-only-filtered-reports` | flag | Seven filtered pVACseq reports are empty. An empty filtered report doesn't mean no epitope passed. |
+| `pvac-rna-fields-na` | flag | RNA depth, VAF and expression are `NA` in every pVACseq report: RNA was never given to pVACseq. |
+| `pvac-extended-run-no-class-i` | flag | The "MHCI.extended" run only has Class II reports. |
 
 ### Timeline and specimens
 
-| ID | Action | What |
+| ID | Does | What |
 | --- | --- | --- |
-| `specimen-T1-site` | edit | T1 was a UCLA biopsy, not a UCSF resection. It spans two UCLA biopsies (2024-06-06 and 2024-06-11). |
-| `specimen-T2-date-site` | edit | T2 was a UCLA biopsy on 2025-01-28, not UCSF on 2025-01-06 (the delivery folder date). |
+| `specimen-T1-site` | edit | T1 was a UCLA biopsy, not a UCSF resection. It spans two UCLA biopsies, on 2024-06-06 and 2024-06-11. |
+| `specimen-T2-date-site` | edit | T2 was a UCLA biopsy on 2025-01-28, not UCSF on 2025-01-06. |
 | `specimen-T3-site` | edit | T3 was an MSKCC resection, not a UCSF biopsy. |
-| `pbmc-capture-dates` | flag | Four PBMC specimen dates are capture dates; the flow-cytometry draws were 2–4 days earlier. |
+| `pbmc-capture-dates` | flag | Four blood specimens are dated by when their cells were captured; the blood was drawn two to four days earlier. |
 | `events-duplicate-rows` | flag | SQ3370 and Trabectedin each appear twice. |
-| `tempus-timepoint` | flag | The timeline places Tempus at T0, but all public Tempus data are TL-24 (T1 2024-06) accessions. |
-| `apheresis-date` | flag | The apheresis is 2024-05-14 in the timeline and 2024-05-15 in the ELISPOT records. |
-| `reyagel-end-date` | flag | The sheet's ReyaGel end date is `7/14` with no year, so the site shows a single day. It is the only malformed date among about 28,000. |
+| `tempus-timepoint` | flag | The timeline dates the Tempus tests to T0 (2022), but the site labels the Tempus files T1 (2024-06). The tumor's variants match T0, so the file labels are probably what's wrong. Both are left as published. |
+| `apheresis-date` | flag | The apheresis is 2024-05-14 on the timeline and 2024-05-15 in the ELISPOT records. |
+| `reyagel-end-date` | flag | The sheet's ReyaGel end date is `7/14`, with no year, so the site shows a single day. It's the only broken date among the sheet's 371. |
 
-## Other source limitations (2026-09-18)
+## Other things to know
 
-* The `Tempus 2022` detection label refers to a 2024 accession.
-* Three organoid DRAGEN BAMs and the T2 UCLA blood DRAGEN BAM have no specimen
-  assignment in the consolidated metadata. Four 2026 blood specimens have no BAMs.
-* ELISPOT `experiments[].date` is the earliest PBMC sample date, not the assay date.
-* The legacy `data/treatment_timeline.json` is stale and is not used here.
-* LENS files and Natera/BostonGene clinical reports were absent from the bucket.
-
-The Tempus count correction was checked against the site's `pileup-json`
-script: 171 of 172 SNV rows reproduced at the wrong locus. The BAM uses b37
-(`human_g1k_v37`), while the site queried GRCh38 positions. Its MT-ND5 0/0
-count also reflects a failed `chrM` to `MT` lookup. These rows are cleared,
-not interpreted as negative evidence.
+- The Tempus files are labeled T1 but look like the T0 tumor (see `tempus-timepoint`).
+- Some DRAGEN BAMs, mostly blood normals and organoid runs, aren't linked to a
+  specimen; list them with `data.assets.select(prefix="kamil/basespace/results/")`.
+  The four 2026 blood specimens have no BAMs.
+- An ELISPOT experiment's date is the date of the earliest blood sample it used, not
+  of the assay.
+- The site's older `data/treatment_timeline.json` is out of date, and isn't used.
+- The site lists LENS pipeline detections, but has no LENS files to download.

@@ -46,8 +46,8 @@ def test_reviewed_snapshots_have_no_stale_rules(version):
         for source in raw:
             curated.records(source)
     assert set(report) == IDS
-    assert report == {key: "fixed_upstream" if version == "current" and key == "tempus-grch37-counts"
-                     else "applied" for key in IDS}
+    upstream = {"tempus-grch37-counts", "transcript-DCHS2"} if version == "current" else set()
+    assert report == {key: "fixed_upstream" if key in upstream else "applied" for key in IDS}
     assert raw == before
 
 
@@ -68,7 +68,7 @@ def test_relocated_ids_keep_verified_alleles_and_do_not_reuse_placeholder_counts
         assert all((row["ref"], row["alt"]) == (current[new_id]["ref"], current[new_id]["alt"])
                    for row in rows)
     assert (current[RELOCATED["CABLES1"][1]]["ref"], current[RELOCATED["CABLES1"][1]]["alt"]) == ("T", "TGGCGGC")
-    assert current[RELOCATED["DCHS2"][1]]["refseq_id"] == "NM_001142552.1"
+    assert current[RELOCATED["DCHS2"][1]]["refseq_id"] == "NM_001142552"
     # Published zeroes are not evidence against the corrected literal alleles.
     assert all(row["total_reads"] == "0" for row in DATA["current"]["sources"]["vafs"]
                if row["gene"] in RELOCATED)
@@ -146,7 +146,7 @@ def test_ush2a_history_and_current_merge_remain_distinct():
     historical = evaluate(sources("historical"), ["ush2a-transposed-duplicate"])
     old_records = by_id(historical.records("source_variants")[0])
     assert old_records[old_id]["alt"] == "not_reported"
-    assert old_records[old_id]["allele_resolution"]["status"] == "source_identity_unconfirmed"
+    assert old_records[old_id]["allele_resolution"]["status"] == "duplicate"
     assert old_records[new_id]["ref"] == "C"
     raw = sources("current")
     current = evaluate(raw, ["ush2a-transposed-duplicate"])
@@ -155,7 +155,8 @@ def test_ush2a_history_and_current_merge_remain_distinct():
     assert (new_records[new_id]["pos"], new_records[new_id]["ref"], new_records[new_id]["alt"]) == (215650752, "C", "A")
     assert new_records[new_id]["genomic_location"] == "chr1:215650752"
     assert new_records[new_id]["upstream_merge"]["retired_id"] == old_id
-    assert new_records[new_id]["upstream_merge"]["original_source_identity"] == "unconfirmed"
+    assert new_records[new_id]["upstream_merge"]["original_source_identity"] == "confirmed"
+    assert new_records[new_id]["genomic_ref_context"] == "ACATGGTGCAGAACC"
     assert current.records("vafs")[0] == raw["vafs"]
 
 
@@ -221,3 +222,53 @@ def test_absence_assertions_cannot_edit_or_expect_values():
         Change("rows", {}, absent=True, set={"gene": "X"})
     with pytest.raises(ValueError, match="absence"):
         Change("rows", {}, absent=True, expect={"gene": "X"})
+
+
+def test_relocations_clear_sequence_context_from_the_wrong_position():
+    historical = by_id(evaluate(sources("historical")).records("source_variants")[0])
+    for old_id, _ in RELOCATED.values():
+        assert historical[old_id]["genomic_ref_context"] is None
+
+
+def _run(rule_id, raw):
+    curation = Curation([next(c for c in CORRECTIONS if c.id == rule_id)], raw.get)
+    return curation.report()[0]["status"], curation
+
+
+def test_audit_fixes_on_minimal_records():
+    from osteosarc.curation import _FAM157A_NOTE, _T1_RNA
+    # Accession typos are fixed; the correct versionless accessions count as fixed upstream.
+    for rule, vid, wrong, right in (("transcript-COL4A2", "COL4A2-chr13-110449715", "NM_001846.", "NM_001846"),
+                                    ("transcript-GTF3C5", "GTF3C5-chr9-133057893", "NM_00112283", "NM_001122823")):
+        status, curation = _run(rule, {"source_variants": [dict(id=vid, refseq_id=wrong)]})
+        assert status == "applied" and curation.records("source_variants")[0][0]["refseq_id"] == right
+        assert _run(rule, {"source_variants": [dict(id=vid, refseq_id=right)]})[0] == "fixed_upstream"
+
+    # FAM157A: flagged where the site has no note, fixed upstream where it has the same caveat.
+    fam = "FAM157A-p_W70_Q71ins_14"
+    assert _run("fam157a-withdrawn-protein", {"variant_index": [dict(id=fam)],
+                                              "source_variants": [dict(id=fam, note=None)]})[0] == "applied"
+    assert _run("fam157a-withdrawn-protein", {"variant_index": [dict(id=fam)],
+                                              "source_variants": [dict(id=fam, note=_FAM157A_NOTE)]})[0] == "fixed_upstream"
+
+    # Provider: both published layouts end with every label saying BostonGene.
+    for data_source in ("BostonGene", "UCLA"):
+        raw = {"bam_metadata": [dict(s3_path=_T1_RNA, provider="UCLA")],
+               "bams": [dict(url=_T1_RNA, name="T1 UCLA Tumor RNA oncoanalyser")],
+               "vafs": [dict(bam_file="IPISRC044_tumor_T1_ucla_rna.md.bam", data_source=data_source,
+                             sample_label="T1 UCLA Tumor RNA oncoanalyser")]}
+        status, curation = _run("provider-IPISRC044-T1-rna", raw)
+        [row] = curation.records("vafs")[0]
+        assert status == "applied"
+        assert (row["data_source"], row["sample_label"]) == ("BostonGene", "T1 BostonGene Tumor RNA oncoanalyser")
+        assert curation.records("bam_metadata")[0][0]["provider"] == "BostonGene"
+
+    # MAP2: the allele is corrected and the published counts, which measure the real event, are kept.
+    map2 = "MAP2-chr2-209694768"
+    raw = {"source_variants": [dict(id=map2, chr="chr2", pos=209694768, ref="CCTGGGCTACTGTGTGTTCAATA", alt="C")],
+           "vafs": [dict(variant_id=map2, chrom="chr2", pos="209694768", ref="CCTGGGCTACTGTGTGTTCAATA", alt="C",
+                         ref_reads="254", alt_reads="135", other_reads="0", total_reads="389", vaf="0.347")]}
+    status, curation = _run("allele-MAP2-chr2-209694768", raw)
+    [row] = curation.records("vafs")[0]
+    assert status == "applied" and row["alt"] == "CAGGG"
+    assert (row["alt_reads"], row["total_reads"]) == ("135", "389")

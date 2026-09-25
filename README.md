@@ -19,8 +19,8 @@ reads around a variant without downloading a whole BAM.
   counts, which pipelines found them, vaccine peptides and ELISPOT results.
 - **Reads around a variant.** Copy just the reads you need out of a remote BAM into a
   small local one.
-- **Corrected by default.** 32 documented, evidence-backed fixes to the published
-  data, such as the MAP2 vaccine target's allele. Every load checks them against
+- **Corrected by default.** 34 fixes to known problems in the published data, each
+  with its evidence, such as the MAP2 vaccine target's allele. Every load checks them against
   the snapshot's sources, and you can turn them off.
 - **Clinical timeline.** Treatments, procedures, imaging, MRD and lab results as a
   text chart, or in an interactive terminal explorer.

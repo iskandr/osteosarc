@@ -118,7 +118,7 @@ def test_five_dispositions_preserve_ids_counts_and_protein_caveat():
     ncbi = (DATA / "FAM157A-ncbi.txt").read_text()
     assert "NM_001145248.1" in ncbi and "not for the protein" in ncbi
     for vid, outcome in ((MUC, "unresolved_grch38_placement"),
-                         (OTUD, "source_unavailable"), (USH, "source_identity_unconfirmed")):
+                         (OTUD, "source_unavailable"), (USH, "duplicate")):
         assert variants[vid].status != "ready"
         assert variants[vid].annotations["allele_resolution"]["status"] == outcome
         with pytest.raises(ValueError):
@@ -149,7 +149,7 @@ def test_muc3a_source_is_in_chain_gap_and_does_not_match_catalogue_reference():
 def test_ush2a_evidence_supports_only_the_candidate_target():
     resolution = REVIEW[USH]["resolution"]
     relationship = resolution["relationship"]
-    assert relationship["kind"] == "possible_duplicate"
+    assert relationship["kind"] == "duplicate"
     assert relationship["variant_id"] == TARGET
     evidence = relationship["evidence"]
     row = vcf_record(evidence)
@@ -157,7 +157,7 @@ def test_ush2a_evidence_supports_only_the_candidate_target():
     a, b = evidence["references"]
     assert sequence(a) == sequence(b)
     assert sequence(b)[215650752 - b["start"]] == "C"
-    assert "allele" not in resolution  # cannot assign this evidence to the Natera entry
+    assert "allele" not in resolution  # A duplicate gets no second copy of the allele
 
 
 def test_natera_source_has_no_otud4_allele_and_supports_col3a1_hgvs():

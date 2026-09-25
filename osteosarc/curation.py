@@ -482,11 +482,12 @@ def _catalogue_resolution(variant_id, correction_id):
                       evidence=tuple(evidence), verified=entry["verified"])
 
 
-def _allele(variant_id, old, new, summary, evidence, *, extra_source=None):
+def _allele(variant_id, old, new, summary, evidence, *, extra_source=None, keep_counts=False):
     """Replace a catalogue allele everywhere it is published.
 
-    old/new are (chrom, pos, ref, alt). The count rows were measured for the old
-    allele, so their counts become missing ("") rather than being reattributed.
+    old/new are (chrom, pos, ref, alt). Count rows measured for the old allele
+    become missing ("") rather than being reattributed, unless keep_counts says
+    the published counts already measure the corrected event.
     """
     (chrom, pos, ref, alt), (new_chrom, new_pos, new_ref, new_alt) = old, new
     kind = _kind(new_ref, new_alt)
@@ -498,7 +499,8 @@ def _allele(variant_id, old, new, summary, evidence, *, extra_source=None):
         Change("vafs", {"variant_id": variant_id},
                expect=dict(chrom=chrom, pos=str(pos), ref=ref, alt=alt),
                set=dict(chrom=new_chrom, pos=str(new_pos), chr_pos=f"{new_chrom}:{new_pos}", ref=new_ref,
-                        alt=new_alt, change=f"{new_ref}>{new_alt}", variant_type=kind, **_COUNTS)),
+                        alt=new_alt, change=f"{new_ref}>{new_alt}", variant_type=kind,
+                        **({} if keep_counts else _COUNTS))),
     ]
     if (chrom, pos) != (new_chrom, new_pos):
         changes.append(Change("variant_index", {"id": variant_id}, expect={"location": f"{chrom}:{pos}"},
@@ -510,24 +512,24 @@ def _allele(variant_id, old, new, summary, evidence, *, extra_source=None):
 def _tempus_relocation(variant_id, old, new, grch37, caller="pindel"):
     original = _allele(
         variant_id, old, new,
-        f"The catalogue places this Tempus call at {old[0]}:{old[1]} without a literal allele. "
-        f"The original Tempus TL-24-ALMY2X4KMV record (GRCh37 {grch37}) lifts to "
-        f"{new[0]}:{new[1]}, where its REF matches GRCh38; indel normalization cannot bridge "
-        f"the gap. The website position came from a wrong transcript offset. Counts measured "
-        f"at the old position are cleared.",
-        (_ALMY + caller + ".vcf", f"https://rest.ensembl.org/map/human/GRCh37/{grch37}..{grch37.split(':')[1]}:1/GRCh38"))
+        f"The catalogue placed this Tempus call at {old[0]}:{old[1]}, with a placeholder instead "
+        f"of an allele. The Tempus TL-24-ALMY2X4KMV record (GRCh37 {grch37}) lifts to "
+        f"{new[0]}:{new[1]}, where its REF matches GRCh38, and no equivalent way of writing the "
+        f"allele reaches the old position. The site has since moved the entry there but still "
+        f"gives a placeholder allele and a stale REF. Counts measured for the placeholder are "
+        f"cleared, and so is sequence context taken from the wrong position.",
+        (_ALMY + caller + ".vcf", f"https://rest.ensembl.org/map/human/GRCh37/{grch37}..{grch37.split(':')[1]}:1/GRCh38"),
+        extra_source={"genomic_ref_context": None})
     # September 20: coordinates/IDs were fixed, but the alleles used for the
     # regenerated counts are still placeholders. Do not reuse those counts.
     new_id = f"{variant_id.split('-')[0]}-{new[0]}-{new[1]}"
     relocated = _allele(new_id, (new[0], new[1], old[2], old[3]), new,
-                        original.summary, original.evidence)
+                        original.summary, original.evidence, extra_source={"genomic_ref_context": None})
     current = (*relocated.changes,
                Change("variant_index", {"id": new_id}, expect={"location": f"{new[0]}:{new[1]}"}),
                *_absent_variant(variant_id))
     return replace(original, changes=(*original.changes, *_absent_variant(new_id)),
-                   alternatives=(current,), verified="2026-09-21",
-                   summary=original.summary + " The renamed upstream entry still needs its literal "
-                           "allele; counts regenerated for the placeholder are also cleared.",
+                   alternatives=(current,), verified="2026-09-24",
                    evidence=(*original.evidence, _COORDINATE_FIX, _PILEUP_FIX))
 
 
@@ -540,9 +542,13 @@ def _ush2a_resolution():
                expect=dict(gene="USH2A", chr="chr1", pos=215650752, ref="C", alt="A",
                            genomic_change_on_cdna="c.14183G>T", refseq_id="NM_206933",
                            protein_change="p.Cys4728Phe", genomic_location="chr1:215560752"),
-               set=dict(genomic_location="chr1:215650752", upstream_merge=dict(
+               # The site's context was taken at the old, wrong position (minus strand).
+               set=dict(genomic_location="chr1:215650752", genomic_ref_context="ACATGGTGCAGAACC",
+                        upstream_merge=dict(
                    retired_id=old_id, retained_id=new_id, evidence=_USH2A_FIX,
-                   original_source_identity="unconfirmed"))),
+                   original_source_identity="confirmed",
+                   identity_basis="chr1:215560752 lies outside USH2A (chr1:215621576-216423448), "
+                                  "so it cannot encode p.Cys4728Phe"))),
         Change("variant_index", {"id": new_id},
                expect=dict(gene="USH2A", location="chr1:215650752", protein_label="p.Cys4728Phe")),
         Change("vafs", {"variant_id": new_id},
@@ -550,8 +556,23 @@ def _ush2a_resolution():
     )
     return replace(original, alternatives=(current,), verified="2026-09-21",
                    evidence=(*original.evidence, _USH2A_FIX),
-                   summary=original.summary + " After the site's merge, preserve its retained "
-                           "allele/counts, record the merge provenance, and fix the old location label.")
+                   summary=original.summary + " After the site merged the two entries, the retained "
+                           "entry keeps its allele and counts; its location label and sequence context, "
+                           "still taken from the old position, are fixed.")
+
+
+_T1_RNA = "kamil/oncoanalyser/IPISRC044_T1_ucla/alignments/rna/IPISRC044_tumor_T1_ucla_rna.md.bam"
+_T1_RNA_PROVIDER = (
+    Change("bam_metadata", {"s3_path": _T1_RNA}, expect={"provider": "UCLA"}, set={"provider": "BostonGene"}),
+    Change("bams", {"url": _T1_RNA}, expect={"name": "T1 UCLA Tumor RNA oncoanalyser"},
+           set={"name": "T1 BostonGene Tumor RNA oncoanalyser"}),
+)
+
+# The site's own caveat on FAM157A's protein model, added in its commit bc13889.
+_FAM157A_NOTE = (
+    "FAM157A is a transcribed pseudogene (Ensembl biotype transcribed_unprocessed_pseudogene; no "
+    "annotated CDS in current RefSeq). The p.W70_Q71ins(14) annotation derives from the retired "
+    "protein model NM_001145248 and is not supported by current annotation.")
 
 
 def _stale_viewer_label(library, old, new, note):
@@ -571,7 +592,7 @@ CORRECTIONS = (
         "The website counted reads in the GRCh37 (b37) Tempus WES BAM TL-24-5GQLV9WSXQ at GRCh38 "
         "coordinates, so every count for this BAM describes an unrelated locus. PDZRN4's 7/7 "
         "(100% VAF) are reference reads elsewhere; at the lifted position depth is 0. Recounted "
-        "at lifted positions, six empty sites have coverage (e.g. KMT2D 0/1851, AKT2 2/1217). "
+        "at lifted positions, sites the site shows as empty have coverage (e.g. KMT2D 0/1851). "
         "Counts are cleared; recount from the BAM on GRCh37 coordinates if needed.",
         (Change("vafs", {"bam_file": "TL-24-5GQLV9WSXQ_T.sorted.bam"},
                 expect={"sample_label": "T1 Tempus Tumor WES 2024-06 (TL-24-5GQLV9WSXQ)"}, set=_COUNTS),
@@ -601,20 +622,23 @@ CORRECTIONS = (
         "oncoanalyser T2 RNA was built from its 2025-01-28 FASTQ; 114/120 variants VAF-match"),
     Correction(
         "provider-IPISRC044-T1-rna",
-        "The oncoanalyser T1 RNA BAM was built from BostonGene's BG009368 FASTQ (per the "
-        "consolidated metadata's own note), but its consolidated row and viewer label say UCLA. "
-        "The VAF export already says BostonGene.",
-        (Change("bam_metadata",
-                {"s3_path": "kamil/oncoanalyser/IPISRC044_T1_ucla/alignments/rna/"
-                            "IPISRC044_tumor_T1_ucla_rna.md.bam"},
-                expect={"provider": "UCLA"}, set={"provider": "BostonGene"}),
-         Change("bams", {"url": "kamil/oncoanalyser/IPISRC044_T1_ucla/alignments/rna/"
-                                "IPISRC044_tumor_T1_ucla_rna.md.bam"},
-                expect={"name": "T1 UCLA Tumor RNA oncoanalyser"},
-                set={"name": "T1 BostonGene Tumor RNA oncoanalyser"})),
+        "The oncoanalyser T1 RNA BAM was built from BostonGene's BG009368 FASTQs (its read group "
+        "and the consolidated metadata's own note say so), but the site labels it UCLA. Since "
+        "2026-09-21 its read-count rows say UCLA as well.",
+        (*_T1_RNA_PROVIDER,
+         # Witness: in older snapshots the count rows already say BostonGene.
+         Change("vafs", {"bam_file": "IPISRC044_tumor_T1_ucla_rna.md.bam"},
+                expect={"data_source": "BostonGene"},
+                set={"sample_label": "T1 BostonGene Tumor RNA oncoanalyser"})),
         evidence=(_CONSOLIDATED, "https://osteosarc.com/variants/variant_vafs_long.tsv",
                   "https://osteosarc.com/bams/bams.json"),
-        verified="2026-09-18"),
+        verified="2026-09-24",
+        alternatives=((
+            *_T1_RNA_PROVIDER,
+            Change("vafs", {"bam_file": "IPISRC044_tumor_T1_ucla_rna.md.bam"},
+                   expect={"data_source": "UCLA"},
+                   set={"data_source": "BostonGene", "sample_label": "T1 BostonGene Tumor RNA oncoanalyser"}),
+        ),)),
     Correction(
         "gene-symbol-TRMO",
         "Catalogue gene symbol TMRO is a typo for TRMO (HGNC, and the symbol pVACseq reports "
@@ -677,13 +701,17 @@ CORRECTIONS = (
         "MAP2-chr2-209694768", ("chr2", 209694768, "CCTGGGCTACTGTGTGTTCAATA", "C"),
         ("chr2", 209694768, "CCTGGGCTACTGTGTGTTCAATAAGTACACAGT", "CAGGG"),
         "The curated 22-bp deletion (a JLF/mRNA vaccine target) is not the observed allele. Tempus "
-        "(freebayes and pindel) and CeGaT describe one net -28 bp complex replacement, "
-        "c.2599_2630delinsAGGG; the catalogue's own protein sequence (…DSQLEDRAHCHHLF…) "
-        "translates from it, not from the 22-bp deletion. It is written here anchored at the "
-        "same position. The vaccine peptide lies downstream in the shared frame and is unaffected.",
+        "(freebayes and pindel) calls one complex replacement, c.2599_2630delinsAGGG (a net -28 bp), "
+        "and CeGaT calls the same event as three records (c.2599C>A, c.2600T>G and c.2603_2630del). "
+        "The catalogue's own protein sequence (…DSQLEDRAHCHHLF…) translates from it, not from the "
+        "22-bp deletion, and every deletion read in the BostonGene T0 tumor WES carries it. It is "
+        "written here anchored at the same position. The site's counts are kept: its pileup counts a "
+        "read as ALT when its deletion covers at least half of the curated one, which the real "
+        "28-bp deletion does. The vaccine peptide lies downstream in the shared frame.",
         (_ALMY + "pindel.vcf", _ALMY + "freebayes.vcf",
-         _BUCKET + "vendor/cegat/P116686_2_S000048/P116686_2_somatic.tsv"),
-        extra_source={"genomic_change_on_cdna": "c.2599_2630delinsAGGG"}),
+         _BUCKET + "vendor/cegat/P116686_2_S000048/P116686_2_somatic.tsv",
+         _SITE_REPO + "crates/pileup-json/src/main.rs (min_del_overlap)"),
+        extra_source={"genomic_change_on_cdna": "c.2599_2630delinsAGGG"}, keep_counts=True),
     Correction(
         "map2-split-representations",
         "MAP2-chr2-209694769 (CT>AG, off-site) plus MAP2-chr2-209694772 (28-bp deletion) are "
@@ -697,26 +725,47 @@ CORRECTIONS = (
         verified="2026-09-18"),
     Correction(
         "transcript-DCHS2",
-        "DCHS2's RefSeq accession is missing two leading zeros and its version.",
+        "DCHS2's RefSeq accession NM_1142552 is missing two zeros. The catalogue writes "
+        "accessions without versions, so the fix is NM_001142552, which the site now uses too.",
         (Change("source_variants", {"id": "DCHS2-chr4-154322488"}, expect={"refseq_id": "NM_1142552"},
-                set={"refseq_id": "NM_001142552.1"}),
+                set={"refseq_id": "NM_001142552"}),
          Change("source_variants", {"id": "DCHS2-chr4-154323273"}, absent=True)),
         alternatives=((
             Change("source_variants", {"id": "DCHS2-chr4-154323273"},
-                   expect={"refseq_id": "NM_001142552"}, set={"refseq_id": "NM_001142552.1"}),
+                   expect={"refseq_id": "NM_001142552"}, set={"refseq_id": "NM_001142552"}),
             Change("source_variants", {"id": "DCHS2-chr4-154322488"}, absent=True),
         ),),
-        evidence=(_ALMY + "pindel.vcf", _COORDINATE_FIX), verified="2026-09-21"),
+        evidence=("https://www.ncbi.nlm.nih.gov/nuccore/NM_001142552", _USH2A_FIX),
+        verified="2026-09-24"),
+    Correction(
+        "transcript-COL4A2",
+        "COL4A2's RefSeq accession 'NM_001846.' has a stray trailing dot; it is NM_001846.",
+        (Change("source_variants", {"id": "COL4A2-chr13-110449715"}, expect={"refseq_id": "NM_001846."},
+                set={"refseq_id": "NM_001846"}),),
+        evidence=("https://www.ncbi.nlm.nih.gov/nuccore/NM_001846",), verified="2026-09-24"),
+    Correction(
+        "transcript-GTF3C5",
+        "GTF3C5's RefSeq accession NM_00112283 is missing a digit; GTF3C5 transcript variant 1 "
+        "is NM_001122823.",
+        (Change("source_variants", {"id": "GTF3C5-chr9-133057893"}, expect={"refseq_id": "NM_00112283"},
+                set={"refseq_id": "NM_001122823"}),),
+        evidence=("https://www.ncbi.nlm.nih.gov/nuccore/NM_001122823",), verified="2026-09-24"),
     Correction(
         "fam157a-withdrawn-protein",
         "The 14-residue insertion is annotated on NM_001145248.1, which NCBI has suppressed "
         "(transcript supported, protein not); FAM157A is now only lncRNA NR_146164.1. Tempus "
         "gives a literal allele (GRCh37 3:197880130 G>G+42, GRCh38 chr3:198153259) inside a "
-        "low-complexity repeat. The genomic allele is supplied separately from this protein caveat.",
-        (Change("variant_index", {"id": "FAM157A-p_W70_Q71ins_14"}),),
+        "low-complexity repeat. The genomic allele is supplied separately from this protein caveat. "
+        "The site has added the same caveat as a note.",
+        (Change("variant_index", {"id": "FAM157A-p_W70_Q71ins_14"}),
+         Change("source_variants", {"id": "FAM157A-p_W70_Q71ins_14"}, expect={"note": None})),
         evidence=(_ALMY + "pindel.vcf", "https://www.ncbi.nlm.nih.gov/nuccore/NM_001145248.1",
-                  "https://www.ncbi.nlm.nih.gov/gene/728262"),
-        verified="2026-09-18"),
+                  "https://www.ncbi.nlm.nih.gov/gene/728262", _USH2A_FIX),
+        verified="2026-09-24",
+        alternatives=((
+            Change("source_variants", {"id": "FAM157A-p_W70_Q71ins_14"},
+                   expect={"note": _FAM157A_NOTE}, set={"note": _FAM157A_NOTE}),
+        ),)),
     _ush2a_resolution(),
     _catalogue_resolution("FAM157A-p_W70_Q71ins_14", "allele-FAM157A-p_W70_Q71ins_14"),
     _catalogue_resolution("COL3A1-Splice", "allele-COL3A1-Splice"),
@@ -763,8 +812,8 @@ CORRECTIONS = (
         "pbmc-capture-dates",
         "These PBMC single-cell specimens are dated by their capture files. The flow-cytometry "
         "workbook (documented as authoritative, and stating that file tokens are not draw dates) "
-        "gives draws two to four days earlier: 2025-06-24, 07-22, 08-20 and 09-18. MRD draws fall "
-        "on the same flow dates.",
+        "gives draws two to four days earlier: 2025-06-24, 07-22, 08-20 and 09-18. MRD samples "
+        "were drawn on those days or the day after.",
         tuple(Change("specimens", {"sample_id": f"blood_{day}"}, expect={"collection_date": day})
               for day in ("2025-06-26", "2025-07-24", "2025-08-21", "2025-09-22")),
         evidence=("https://osteosarc.com/data/flow/manifest.json",
@@ -779,12 +828,16 @@ CORRECTIONS = (
         evidence=("https://osteosarc.com/data/events.json",), verified="2026-09-18"),
     Correction(
         "tempus-timepoint",
-        "The timeline dates Tempus xT/xE/xR at T0 (2022-12-16), but every public Tempus BAM and VCF "
-        "is a TL-24 accession labelled T1 2024-06; the only 2022 Tempus objects are RNA FASTQs. "
-        "The catalogue's 'Tempus 2022' detection flag comes from TL-24-ALMY2X4KMV.",
+        "The timeline dates Tempus xT/xE/xR at T0 (2022-12-16), while the site labels the Tempus "
+        "files T1 2024-06, after their TL-24 accession numbers. The data agree with T0: the Tempus "
+        "tumor calls and reads carry all three variants seen only at T0 (KDM3B, KIF1C, VSIG4) and "
+        "none of the 35 seen only at T1, and its RNA FASTQs are named 20221226_tempus_tumor_rna. "
+        "The T1 labels on the Tempus files are likely wrong; timepoints are left as published.",
         tuple(Change("events", {"title": title, "date": "2022-12-16"})
               for title in ("Tempus xT", "Tempus xE", "Tempus xR")),
-        evidence=(_BUCKET + "vendor/tempus/", _ALMY + "pindel.vcf"), verified="2026-09-18"),
+        evidence=(_ALMY + "pindel.vcf", _ALMY + "freebayes.vcf",
+                  _BUCKET + "vendor/tempus/TL-24-ALMY2X4KMV/DNA/", _BUCKET + "vendor/tempus/TL-24-KCVBE1UI1P/RNA/"),
+        verified="2026-09-24"),
     Correction(
         "apheresis-date",
         "The timeline dates the apheresis 2024-05-14; the ELISPOT records label the same PBMCs "
