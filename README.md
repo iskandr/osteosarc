@@ -2,8 +2,8 @@
 
 Python library and command-line tool for the public [osteosarc.com](https://osteosarc.com/data/)
 dataset: one patient's osteosarcoma sequencing, variant calls, cancer vaccines and
-clinical history. Find files, select variants and vaccine peptides, and fetch reads
-around a variant without downloading an entire BAM.
+clinical history. Find files, pick variants and vaccine peptides, and fetch the
+reads around a variant without downloading a whole BAM.
 
 [Documentation](https://iskandr.github.io/osteosarc/) ·
 [Key concepts](https://iskandr.github.io/osteosarc/concepts/) ·
@@ -15,19 +15,19 @@ around a variant without downloading an entire BAM.
 
 - **Browse without downloading.** Search nearly 400,000 files by sample, timepoint and
   assay: bulk and single-cell RNA, exome, genome, Oxford Nanopore and PacBio.
-- **Variants and vaccine peptides.** Catalogue variants with checked genomic alleles,
-  read counts, pipeline detections, vaccine peptides and ELISPOT results.
-- **Reads around a variant.** Indexed queries copy only the reads you need from a
-  remote BAM into a cached, indexed local BAM.
+- **Variants and vaccine peptides.** The site's variants with checked alleles, read
+  counts, which pipelines found them, vaccine peptides and ELISPOT results.
+- **Reads around a variant.** Copy just the reads you need out of a remote BAM into a
+  small local one.
 - **Corrected by default.** 32 documented, evidence-backed fixes to the published
   data, such as the MAP2 vaccine target's allele. Every load checks them against
   the snapshot's sources, and you can turn them off.
 - **Clinical timeline.** Treatments, procedures, imaging, MRD and lab results as a
-  text chart or in an interactive terminal explorer.
-- **Reproducible.** Metadata snapshots, saved by download date with SHA-256 receipts,
-  reopen offline. The website changes; your results don't, until you sync again.
-- **OpenVax integration.** Adapters for Varcode, Isovar, Topiary and Vaxrank,
-  versioned read-fixture recipes, and a catalogue of 637 structural-variant candidates.
+  text chart, or in an interactive terminal explorer.
+- **Reproducible.** The site's metadata is saved as dated snapshots that reopen
+  offline. The website changes; your results don't, until you sync again.
+- **OpenVax integration.** Works with Varcode, Isovar, Topiary and Vaxrank, builds
+  reproducible test BAMs, and includes a list of 637 candidate structural variants.
 
 ## Install
 
@@ -35,8 +35,8 @@ around a variant without downloading an entire BAM.
 python -m pip install osteosarc
 ```
 
-Requires Python 3.9+ on Linux or macOS. Fetching reads also needs
-[SAMtools](https://www.htslib.org/) on PATH.
+Needs Python 3.9+ on Linux or macOS, and [SAMtools](https://www.htslib.org/) on
+your PATH to fetch reads.
 
 ## Quickstart
 

@@ -12,17 +12,13 @@ python -m build
 python -m mkdocs build --strict
 ```
 
-Tests run offline with public metadata excerpts and synthetic indexed BAMs.
-They cover cache integrity, source conflicts, corrections, coordinate checks,
-record and tag preservation, filtering, and offline reuse. Excerpt checksums
-are recorded in `tests/data/provenance.json`. The old and new correction layouts
-in `tests/data/curation_snapshots.json` include their snapshot IDs and source receipts.
+The tests run offline, on small excerpts of the website's files and on BAMs made
+up for the tests. `tests/data/provenance.json` records where each excerpt came from
+and its checksum.
 
-The consumer CI job tests Varcode 7.0.0 and 9.3.7 with Isovar 1.17.0 and
-Topiary 5.55.1. It checks native variant conversion, mitochondrial and custom
-contig annotation, source-name preservation, Isovar read evidence, Topiary report
-loading, and the paired-read acquisition pattern used by Vaxrank. Full protein
-reconstruction and vaccine ranking remain downstream integration tests.
+CI also tests the OpenVax libraries against Osteosarc: Varcode 7.0.0 and 9.3.7,
+Isovar 1.17.0 and Topiary 5.55.1. Their full protein and ranking tests run in their
+own repositories.
 
 ## Run the documentation examples
 
@@ -31,20 +27,16 @@ python scripts/check_docs.py
 python scripts/check_docs.py docs/reads.md
 ```
 
-The script checks `README.md` and every page in the `mkdocs.yml` nav, so a new
-page is covered as soon as it is published. It executes each page's Python blocks
-in order, then runs its `osteosarc` commands. Install and development commands are
-listed without execution. A block preceded by `<!-- docs-check: skip (reason) -->`
-is reported as skipped. The script uses a temporary cache by default;
-`--cache DIR` reuses an existing one.
+This runs every example in `README.md` and in each page of the site, against the
+live website: each page's Python blocks in order, then its `osteosarc` commands.
+Install commands are listed but not run, and a block marked
+`<!-- docs-check: skip (reason) -->` is skipped. It uses a fresh temporary cache
+unless you pass `--cache DIR`. You need network access, SAMtools, the OpenVax
+libraries and the Ensembl 95 annotation. When running single pages on an empty
+cache, include `README.md` first so a snapshot exists.
 
-Live examples need network access and SAMtools. The library examples also need
-the consumer packages and an indexed Ensembl 95 human reference. Start with
-`README.md` or `docs/index.md` to create a snapshot when running
-selected pages against an empty cache.
-
-The weekly `drift` workflow checks live sources for stale corrections and
-unrecognized labels, then executes the documentation examples.
+A weekly `drift` workflow checks that every correction still matches the live
+website, then runs all the examples.
 
 ## Repeat the live read check
 
@@ -61,8 +53,7 @@ print(subset.receipt["records"])
 assert Dataset.open().extract_reads(source, regions).path == subset.path
 ```
 
-On 2026-09-18, this returned 3,788 records in a 144,646-byte indexed BAM.
-The source header and index were checked, and the same result reopened offline.
+On 2026-09-18 this returned 3,788 reads, and reopened the same result offline.
 
 ## Recorded checks: 2026-09-18
 

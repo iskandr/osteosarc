@@ -1,8 +1,8 @@
 # Python API
 
-Import public objects from `osteosarc`. Imports perform no downloads and do not
-require the consumer packages. Install optional libraries only for the features
-you use. The guides show each call in context; this page lists them by task.
+Everything below imports from `osteosarc`. Importing never downloads anything or
+needs the OpenVax libraries. The guides show each call in context; this page lists
+them by task.
 
 [Snapshots and cache](#snapshots-and-cache) ·
 [Files and tables](#files-and-tables) ·
@@ -22,12 +22,12 @@ you use. The guides show each call in context; this page lists them by task.
 | `data.id`, `data.name`, `data.downloaded`, `data.receipts()` | Snapshot content identity, name, latest source download time, and source receipts |
 | `data.source_path(name)` | Verified local metadata path |
 | `Cache(root=None, offline=False, timeout=600)` | Shared local object cache |
-| `cache.fetch(url, refresh=False, sha256=None, md5=None, size=None, max_bytes=None)` | Verified download `Receipt` |
-| `cache.path(receipt)` | Verify receipt and return its local Path |
-| `cache.import_file(path, url, sha256=None, md5=None, size=None)` | Adopt existing bytes without downloading |
-| `list_bucket(cache, prefix, refresh=False, max_pages=1000)` | Separate complete paginated public S3 inventory with receipts |
-| `digest(path, algorithm="sha256")` | Incremental file hash |
-| `SNAPSHOT_SOURCES`, `TABLE_SOURCES`, `TIMELINE_SOURCES` | Source URLs that a snapshot records |
+| `cache.fetch(url, refresh=False, sha256=None, md5=None, size=None, max_bytes=None)` | Download and check a file; returns a `Receipt` |
+| `cache.path(receipt)` | Check a receipt and return the file's local path |
+| `cache.import_file(path, url, sha256=None, md5=None, size=None)` | Add a file you already have, without downloading it |
+| `list_bucket(cache, prefix, refresh=False, max_pages=1000)` | List everything in the bucket under a prefix; `refresh=True` for the current contents |
+| `digest(path, algorithm="sha256")` | A file's checksum |
+| `SNAPSHOT_SOURCES`, `TABLE_SOURCES`, `TIMELINE_SOURCES` | The URLs a snapshot downloads |
 
 See [Snapshots and cache](design.md).
 
@@ -35,21 +35,21 @@ See [Snapshots and cache](design.md).
 
 | Call / property | Returns / behavior |
 | --- | --- |
-| `data.assets`, `data.samples`, `data.timepoints` | All assets, source-attributed sample claims, published dates |
+| `data.assets`, `data.samples`, `data.timepoints` | Every file; what the site says about each file's sample; timepoint dates |
 | `data.describe_samples(timepoint=None, tissue=None, assay=None, platform=None, width=None)` | Readable sample and sequencing overview, with sequencing shown as filter names |
-| `data.assets_for_sample(sample_id, **filters)` | Registry-linked alignments and files in the sample's FASTQ folders |
-| `data.asset(key_or_id)` | Resolve exactly one key, URL, asset ID, or named resource |
-| `data.download(asset, refresh=False, verify_size=True)` | Fetch one complete object, bind bytes to the snapshot, return Path |
+| `data.assets_for_sample(sample_id, **filters)` | A sample's BAMs and the files in its FASTQ folders |
+| `data.asset(key_or_id)` | One file, by key, URL, ID or table name |
+| `data.download(asset, refresh=False, verify_size=True)` | Download one whole file and return its path |
 | `data.table(asset)`, `data.parse(asset)` | Parse a CSV/TSV table, or a supported JSON/FASTA resource |
-| `data.open_variants(asset)` | Context-managed native pysam VCF/BCF reader |
-| `assets.select(kind=..., format=..., prefix=..., contains=...)` | Select file products |
-| `assets.select(timepoint=..., assay=..., platform=..., tissue=..., provider=..., library=...)` | Match unambiguous published metadata by default |
-| `asset.values(field)`, `asset.resolved(field)`, `asset.conflicts` | Inspect metadata assertions (`SampleClaim`s) |
-| `collection.where(predicate)`, `collection[:n]`, `collection.to_records()` | Predicate filtering, slicing, dictionaries |
-| `table.select(**fields)`, `table.where(predicate)` | Original-row filtering; no type coercion |
-| `table.rows`, `table.columns`, `table.source`, `table.to_dataframe()` | Raw table values and optional pandas conversion |
-| `table.diagnostics` | Ragged-row diagnostics with zero-based `row`, source `line`, and original `fields`; filtering keeps the associated diagnostics |
-| `parse_table(text, delimiter="\t", strict=True)` | Parse CSV/TSV; opt into `strict=False` to retain ragged rows |
+| `data.open_variants(asset)` | Open a VCF or BCF with pysam |
+| `assets.select(kind=..., format=..., prefix=..., contains=...)` | Filter files by type or path |
+| `assets.select(timepoint=..., assay=..., platform=..., tissue=..., provider=..., library=...)` | Filter files by sample and sequencing |
+| `asset.values(field)`, `asset.resolved(field)`, `asset.conflicts` | What the site says about a file, and where it disagrees |
+| `collection.where(predicate)`, `collection[:n]`, `collection.to_records()` | Filter with a function, slice, or convert to dictionaries |
+| `table.select(**fields)`, `table.where(predicate)` | Filter rows; values stay as text |
+| `table.rows`, `table.columns`, `table.source`, `table.to_dataframe()` | The rows, columns, source, or a pandas DataFrame |
+| `table.diagnostics` | Rows with too few or too many fields: their `row`, `line` and `fields` |
+| `parse_table(text, delimiter="\t", strict=True)` | Parse CSV or TSV text; `strict=False` keeps broken rows |
 | `parse_file(path, format=None)` | Parse a local JSON, CSV, TSV or FASTA file |
 
 Asset selections accept `include_conflicts` and `include_inferred` opt-ins. An
@@ -63,16 +63,16 @@ See [Find samples and files](explore.md).
 
 | Call / property | Returns / behavior |
 | --- | --- |
-| `data.variants(set="site", **filters)` | Select `site`, `all`, or `vaccine` entries |
-| `variants.select(gene=..., ids=..., vaccine=..., pipeline=..., status=...)` | Compose exact variant filters |
-| `variant.allele`, `variant.region(padding=0)` | Unique literal allele / anchored reference span; unresolved entries raise |
-| `variants.regions(padding=0)` | Explicit Region tuple for selected alleles |
-| `variants.to_varcode(genome=..., assembly=None, ...)` | Native collection with original entries in metadata; [contig naming options](consumers.md#varcode) |
-| `data.annotations`, `data.vafs` | Original source annotations and count rows |
-| `data.vaccines`, `data.vaccine_names`, `data.vaccine_peptides(vaccine=None)` | Overlap rows, vaccine names, exact published peptides/experiments |
-| `data.pipeline_names` | Available source-JSON pipeline labels |
-| `parse_variants(index, vafs)` | Join index rows/HTML to VAF TSV text or a Table; preserve malformed entries with `annotations["parse_errors"]` |
-| `parse_variant_index(html)` | Website identities and counts from the variant page |
+| `data.variants(set="site", **filters)` | Variants: `site`, `all` or `vaccine` |
+| `variants.select(gene=..., ids=..., vaccine=..., pipeline=..., status=...)` | Filter variants |
+| `variant.allele`, `variant.region(padding=0)` | The allele, and the region it covers; error if not `ready` |
+| `variants.regions(padding=0)` | The regions of several variants |
+| `variants.to_varcode(genome=..., assembly=None, ...)` | Varcode variants, with the original entries in their metadata; see [naming options](consumers.md#varcode) |
+| `data.annotations`, `data.vafs` | The site's variant records and read counts |
+| `data.vaccines`, `data.vaccine_names`, `data.vaccine_peptides(vaccine=None)` | Vaccine rows, vaccine names, and the peptides with their ELISPOT experiments |
+| `data.pipeline_names` | The pipelines that detected variants |
+| `parse_variants(index, vafs)` | Build variants from the variants page and read-count table; broken rows go in `annotations["parse_errors"]` |
+| `parse_variant_index(html)` | Read the variants page |
 
 Variant filters additionally include `vaccinated`, `on_site`, and
 `vaccine_source="overlap"` or `"source_variants"`.

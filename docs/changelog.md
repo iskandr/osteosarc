@@ -5,6 +5,12 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.6.1 (2026-09-24)
+
+- The documentation is rewritten in plain language. [Key concepts](concepts.md) now
+  says where every piece of data comes from: osteosarc.com, its S3 bucket, and the
+  website's source repository on GitLab ([#41](https://github.com/iskandr/osteosarc/pull/41)).
+
 ## 0.6.0 (2026-09-24)
 
 - `RecoveryPolicy(on_timeout="incomplete")` keeps the verified seed reads and

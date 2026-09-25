@@ -1,27 +1,23 @@
 # Read fixtures and bundles
 
-Fixture recipes turn a few reads from the dataset into small, versioned test BAMs
-that any project can regenerate and verify offline. Isovar, Topiary and Vaxrank
-build their Osteosarc test data this way.
+A fixture recipe describes a small test BAM: which reads to take from which files,
+and why. Osteosarc turns the recipe into a bundle that anyone can rebuild and
+check offline. Isovar, Topiary and Vaxrank build their test data this way.
 
-A recipe declares three things:
+A recipe has three parts:
 
-- **Targets**: what each fixture is about. A target is a small variant, a
-  structural variant (SV), or an explicitly unresolved entry.
-- **Sources**: the alignments that reads come from, with their identity,
-  assembly, sample, library and processing product.
-- **Members**: pairs of one target and one source, each with a selection policy.
+- **Targets**: what each fixture is about: a small variant, a structural variant
+  (SV), or an entry marked unresolved.
+- **Sources**: the BAMs that reads come from, with their sample and assembly.
+- **Members**: one target and one source, plus a rule for picking reads.
 
-Osteosarc executes the policy. It doesn't infer allele, junction or protein
-support: that classification stays in the evidence-producing library, and its
-versioned assignments become recipe inputs. Selection doesn't use the current
-predicted protein, and a fixture is never a full-source abundance or VAF estimate.
+Osteosarc only follows the rule. Deciding which reads support an allele is up to
+the library that uses the fixture, and a fixture is never an estimate of VAF.
 
 ## Build a bundle
 
-This recipe keeps up to 25 read templates around DYNC1H1 from a T0 tumor RNA-seq
-alignment. `Dataset.generate_bundle` fetches the window with indexed extraction,
-selects the records, and publishes a self-contained directory:
+This recipe keeps up to 25 reads (with their mates) around DYNC1H1 from a T0
+tumor RNA-seq BAM:
 
 ```python
 import json
@@ -66,9 +62,9 @@ member = verify_bundle("dync1h1-bundle")["members"]["DYNC1H1-rna"]
 print(member["status"], member["record_count"])
 ```
 
-A regional member reports `truncated` when more templates overlapped the window than
-its cap allowed. Every record of a kept template is retained, so the record count
-can exceed the template cap. The destination must not exist yet.
+`truncated` means more reads overlapped the window than the cap allowed. Mates
+are kept together, so the record count can be larger than the cap. The
+destination directory must not exist yet.
 
 Check, list and export the bundle offline:
 
@@ -78,96 +74,69 @@ osteosarc fixtures list dync1h1-bundle
 osteosarc fixtures export dync1h1-bundle dync1h1-exported --member DYNC1H1-rna
 ```
 
-`select_fixtures(recipe, sources)` runs the same selection on BAMs you already
-have, without acquisition. The CLI prints the same membership and reasons as the
-Python API:
+To run a recipe on BAMs you already have, use `select_fixtures(recipe, sources)`
+or the CLI:
 
 <!-- docs-check: skip (needs your own local BAM) -->
 ```sh
 osteosarc --offline fixtures select recipe.json --source rna=archive.bam
 ```
 
-## Recipe reference (v1)
+## Recipe fields
 
-A recipe is a JSON-compatible dictionary with `schema_version: 1`, a stable `id`,
-and `targets`, `sources` and `members` mappings. `validate_recipe(recipe)` checks
-it before any source is read. `select_fixtures` and `Dataset.select_fixtures` run
-the identical implementation. Their `sources` argument maps source IDs to explicit
-local BAM paths or acquired `ReadSubset` objects. Remote BAMs must first go
-through bounded `extract_reads`.
+A recipe is a dictionary with `schema_version: 1`, an `id`, and `targets`,
+`sources` and `members`. `validate_recipe(recipe)` checks it before any reads are
+touched. `select_fixtures` and `fixtures select` only read BAMs you already have
+locally; `generate_bundle` and `fixtures generate` fetch remote ones for you, with
+the same indexed extraction as [`extract_reads`](reads.md).
 
-### Targets
+**Targets.** A small variant has `kind: small_variant`, `assembly`, `reference`
+(where the target came from), `coordinates: one-based`, `contig`, `position`,
+`ref` and `alt`. An SV has `kind: sv`, `coordinates: zero-based-interbase`, and two
+or more `breakends` with `contig`, `position` and `orientation` (`+`, `-` or null).
+An `unresolved` target needs a `reason` and gets no reads.
 
-A small variant declares `kind: small_variant`, `assembly`, a pinned `reference`
-identity, `coordinates: one-based`, `contig`, `position`, `ref` and `alt`.
+**Sources.** Each source has an `identity` object that says which file it is,
+such as `{"key": "rna-seq/..."}` or `{"url": "https://..."}`, plus `assembly`,
+`sample`, `library` and `product`; use null for anything unknown. Two processed
+versions of one library are separate sources. `archive_sha256` pins a local file.
 
-An SV declares `kind: sv`, `coordinates: zero-based-interbase`, and at least two
-`breakends` with `contig`, `position` and `orientation` (`+`, `-`, or null if
-unknown). Retain the inserted sequence and the original source-call and
-annotation provenance in the target.
+**Members.** Each member names a `target` and `source` and has a `policy` with
+`version: 1` and one of these kinds:
 
-`kind: unresolved` requires a `reason` and does not acquire or select reads.
-
-### Sources
-
-A source declares `identity` (original asset, snapshot and checksum metadata),
-`assembly`, `sample`, `library` and `product`. Unknown scope is explicitly null.
-Different processing products remain separate sources even if they share a
-library. CB/UMI labels never merge templates into inferred molecules. Pin a local
-archive with `archive_sha256`.
-
-### Members and selection policies
-
-Each member names a `target` and a `source`, and a `policy` with `version: 1`:
-
-| Policy `kind` | Selection |
+| `kind` | Picks |
 | --- | --- |
-| `regional` | Candidates overlapping explicit `regions`, optionally template-capped |
-| `exact` | Required `records` mapping from record digest to positive multiplicity |
-| `witnesses` | Original source/RG/QNAME/segment selectors with pinned reasons |
-| `stratified` | Required witnesses plus deterministically sampled optional strata |
-| `empty` | Deliberate empty fixture, distinct from unavailable acquisition |
-| `omitted` | Explicit omission with `reason` |
+| `regional` | Reads overlapping `regions`, optionally capped |
+| `exact` | Specific records, by checksum and count |
+| `witnesses` | Named reads (read group, read name, mate), each with a reason |
+| `stratified` | Named reads plus a reproducible sample of others, by group |
+| `empty` | Nothing, on purpose |
+| `omitted` | Nothing, with a `reason` |
 
-`regions` and `context_regions` contain `Region` fields: `contig`, `start`, `end`
-and `assembly`, zero-based and half-open. Context records are retained with the
-reason `assembly context`. Overlap alone never promotes them to junction support.
+`regions` use `Region` fields (`contig`, `start`, `end`, `assembly`), zero-based
+and half-open. Reads in `context_regions` are kept as context, never as support.
 
-### Witnesses, strata and caps
+**Named reads and caps.** A witness or stratum `assignment` has a `selector`
+(`rg`, `qname`, and optionally `segment`, the read's FLAG & 0xc0), a `reason`,
+and the `producer` name and version that chose it. Required reads (the default)
+must be present, or selection fails. `cap` limits the optional reads per stratum;
+`strata` sets per-stratum caps. Sampling is reproducible from `seed` (default
+`"0"`) and doesn't depend on read order.
 
-Each witness or stratum `assignment` contains a `selector` (`rg`, `qname`, and an
-optional `segment` equal to the original FLAG & 0xc0), a `reason`, and a
-`producer` name and version. `required` defaults to true, and a missing required
-witness fails. Optional assignments can specify a `stratum`.
+**Duplicates.** Repeated identical records are kept as repeats unless
+`duplicate_policy` is `identical-record-once`. Members that share records
+shouldn't be counted as independent evidence.
 
-`cap` is an optional-template budget **per stratum**; `strata` maps stratum names
-to overrides. Required witnesses bypass caps. All records of a sampled template
-that are available in the input survive. `seed` defaults to the string `0`.
-Hash ordering makes sampling independent of input order. Missing required record
-occurrences fail instead of silently weakening a pinned regression.
-
-### Duplicates and results
-
-Duplicate multiplicity is preserved by default. `duplicate_policy:
-identical-record-once` explicitly requests the legacy deduplication behavior.
-Shared fixture members reference a source record; their counts must not be
-summed as independent evidence.
-
-Results distinguish `selected`, `truncated`, `empty`, `unresolved` and `omitted`.
-Selection returns a manifest of per-record reasons and multiplicities, along with
-the original records in memory for export.
+Each member ends up `selected`, `truncated`, `empty`, `unresolved` or `omitted`,
+with the reason every record was picked.
 
 ## Record identity
 
-`record_multiset(path)` uses the `bam-record-v1` encoding: stored CIGAR, sequence,
-qualities, flags and typed auxiliary bytes, with reference names replacing numeric
-IDs and the derived bin omitted. Tag order is significant. Float payloads and
-integer widths survive; compression and coordinate-order ties do not affect
-equality. The encoding follows [SAM/BAM §4.2](https://samtools.github.io/hts-specs/SAMv1.pdf).
-
-An exact recipe may explicitly use `encoding: sam-text-v1` for historical SAM
-checksums. This cannot prove bitwise tag fidelity and rejects a text identity
-that ambiguously maps to different binary records. It is not the default.
+`record_multiset(path)` fingerprints every record of a BAM from its stored bytes
+(the `bam-record-v1` encoding), so two BAMs compare equal only if they hold the
+same records the same number of times, regardless of compression or order. An
+`exact` recipe can instead use `encoding: sam-text-v1` to match older SAM-text
+checksums; that's weaker, because SAM text can hide differences in tag types.
 
 ## Named panels
 
@@ -175,94 +144,56 @@ that ambiguously maps to different binary records. It is not the default.
 osteosarc fixtures panel vaccine-loci-v1
 ```
 
-`load_panel(name)` returns a shipped panel of targets. A target name alone is
-never an acquisition selector.
+`load_panel(name)` returns a set of shipped targets:
 
 | Panel | Contents |
 | --- | --- |
-| `vaccine-loci-v1` | The pinned historical vaccine alleles. Consumers keep their own reference and correction policies. |
-| `sv-regressions-v1` | Historical RNA events and the additional 2026-09-23 research panel, with original VCF anchors beside explicitly converted interbase boundaries |
-| `sv-interest-v1` | All 637 nominations from the September 22, 2026 SV audit, a broader discovery set than the regression panel. See the [SV interest catalogue](sv-interest.md). |
+| `vaccine-loci-v1` | The vaccine target alleles used in earlier fixtures |
+| `sv-regressions-v1` | RNA fusion events and five candidate SVs used in regression tests |
+| `sv-interest-v1` | All 637 entries of the [SV catalogue](sv-interest.md) |
+
+A panel only lists targets; a recipe decides which reads to fetch.
 
 ## Keep mates and split reads
 
-A member can set `retain_partners: true` to keep recovered mates and split
-records for its selected templates, carrying the recovery reasons. This needs a
-source acquired with a [`RecoveryPolicy`](reads.md#recover-mates-and-split-alignments).
-`acquisition_status` is separate from selection status: zero retained records in
-bounded, truncated or incomplete input is not evidence of zero support in the
-source. A source's `acquisition` can set `{"recovery": {"on_timeout": "incomplete"}}`
-so that a partner-query timeout yields an `incomplete` acquisition instead of
-failing the bundle.
+A member with `retain_partners: true` also keeps the mates and split alignments of
+its reads, if its source was fetched with a
+[`RecoveryPolicy`](reads.md#recover-mates-and-split-alignments). A source's
+`acquisition` can set `{"recovery": {"on_timeout": "incomplete"}}` to keep going
+when a partner query times out. The bundle then records the acquisition as
+`incomplete`. Zero reads from a limited or incomplete fetch isn't evidence of zero
+support.
 
-## Portable bundles
+## Bundles
 
-`generate_bundle(recipe, destination, sources=..., cache=...)` acquires declared
-inputs, selects, and publishes a self-contained directory. `pack_bundle(selection,
-destination)` starts from an existing selection. Destinations must be new.
-`Dataset.generate_bundle` also checks source identities against its snapshot.
+`generate_bundle(recipe, destination, sources=..., cache=...)` fetches the reads,
+applies the recipe and writes a self-contained directory. `pack_bundle(selection,
+destination)` starts from a selection you already made. `Dataset.generate_bundle`
+also checks each source against the snapshot.
 
-### Acquisition
+**Fetching.** A source can point to a small pinned `archive` (`url`, `sha256`,
+`size_bytes`), or to a BAM by `identity.url` with an `index`, fetched around the
+members' regions. `acquisition` passes read filters and recovery settings.
+Installing the package never downloads data.
 
-A source may declare a small historical `archive` with `url`, `sha256`, and
-`size_bytes`, or `identity.url`, `index` and bounded `regions` for live indexed
-acquisition. Member regions are the fallback acquisition union. Source
-`acquisition` holds explicit filters and recovery settings. Explicit local
-`sources` are verified against any declared archive hash. Interrupted extraction
-can reuse the existing verified cache derivatives. Normal installation never
-acquires data. Indexed acquisition preserves declared inventory size and
-modification metadata; the Dataset API also accepts an identity containing only
-a snapshot key or ID.
+**Contents.** A bundle holds each source's records once, indexed BAMs, the original
+headers, the recipe, fetch receipts, file checksums, and every member's records and
+reasons. The recipe's `redistribution` field carries license and citation notes.
 
-### Contents
+**Headers.** `header_policy="full"` (the default) keeps the source headers.
+`"compact"` keeps only what's needed: every sequence line, read groups, and the
+programs that produced the reads. The full header is archived either way.
 
-The bundle stores a shared source record pool, indexed BAMs, full original headers,
-the recipe, acquisition receipts, source/sample/library/product identities, member
-multiplicity and reasons, tool versions, parent lineage, and file hashes and sizes.
-`redistribution` in the recipe carries source license and citation information;
-absent license information remains unresolved. Remote HTTP identity is preserved as
-HTTP evidence, separate from archive or full-file SHA-256. Historical receipt paths
-are audit strings, never dependencies for offline verification or export.
+**Checking.** `verify_bundle(directory, sha256=...)` checks every file, record and
+index offline. Pass the manifest's SHA-256 when using someone else's bundle;
+without it, the check shows the bundle is intact but not who made it.
 
-### Headers
-
-`header_policy="full"` is the default. Compact mode keeps every SQ (including
-assembly-identifying contigs), source comments, retained RG/SM/LB metadata, and
-required PG ancestry. When producer lineage is unresolved it retains all PGs.
-Neither mode invents missing source metadata. Sorting only updates HD sort fields;
-the full original header remains archived. This avoids weakening assembly guards
-for downstream offline use.
-
-### Verification
-
-`verify_bundle(directory, sha256=pinned_manifest_hash)` checks all files, the
-recipe digest, source and member record multisets, and index enumeration. Pin the
-manifest hash when consuming an external release; internal consistency checks
-alone are not an authenticity signature. `record_multiset` separately supports
-lossless equivalence comparisons across compression and tool versions. Exact BAM
-byte reproducibility requires the same recorded pysam/HTSlib toolchain.
-
-### Export
-
-`export_bundle(bundle, destination, members=[...])` adds named, coordinate-sorted,
-indexed BAM exports, retaining the self-contained source pool and provenance.
-`format="sam"` or `"sam.gz"` explicitly requests legacy SAM-text fidelity. Empty
-members export valid empty indexed BAMs. Unresolved and omitted members stay
-declared without fabricated data. The default size budget is 64 MiB including
-metadata; set a smaller `size_budget` for a consumer's package. Publication is
-atomic only after verification, and existing destinations are refused.
-
-Exporting an exported bundle is supported: each request replaces the named export
-set in the new destination, so changing format leaves no stale export files.
-SAM exports use coordinate order, consistent with their headers. Verification
-checks member counts and status and SAM field multisets as well as BAM identities.
+**Exporting.** `export_bundle(bundle, destination, members=[...])` writes one sorted,
+indexed BAM per member (or SAM with `format="sam"`). Empty members become valid
+empty BAMs. The default size limit is 64 MiB; set `size_budget` for a smaller
+package. Existing destinations are never overwritten.
 
 ## Tests as examples
 
-The constructors in `tests/conftest.py`, `tests/test_fixtures.py` and
-`tests/test_bundles.py` build recipes and BAMs without network access. They cover
-source and read-group collisions, duplicates, required controls, contexts, empty
-selections, missing witnesses, float precision, API/CLI conformance, and
-generation, packing, export and verification in a fresh offline directory. Corrupt
-records, missing duplicates, nested members, recipe changes, swapped indexes,
-unsafe paths and size-budget failures are separate regressions.
+`tests/test_fixtures.py` and `tests/test_bundles.py` build recipes and BAMs without a
+network connection, and cover each rule above.
