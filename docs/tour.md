@@ -1,9 +1,9 @@
 # Worked example: check MAP2 against the reads
 
-The website's MAP2 vaccine target differs from the complex allele reported by
-Tempus and CeGaT. This example compares both sequences against T1 tumor WGS
-reads. It requires `osteosarc` and `samtools`, and shows how to check any
-[source correction](curation.md) against the original data.
+The website's MAP2 vaccine target is a 22-bp deletion, but Tempus and CeGaT both
+call a different, complex change there. This example checks both against T1 tumor
+WGS reads, and shows how to check any [correction](curation.md) against the data. It
+needs `samtools`.
 
 ## Compare the alleles
 
@@ -25,8 +25,8 @@ Published: ('chr2', 209694768, 'CCTGGGCTACTGTGTGTTCAATA', 'C')
 Corrected: ('chr2', 209694768, 'CCTGGGCTACTGTGTGTTCAATAAGTACACAGT', 'CAGGG')
 ```
 
-The website ID stays the same after correction. See the
-[correction registry](curation.md#read-counts-and-alleles) for its evidence.
+The variant keeps its website ID. See [the corrections](curation.md#variants-and-read-counts)
+for the evidence.
 
 ## Fetch the surrounding reads
 
@@ -39,12 +39,12 @@ subset = data.extract_reads(source, [variant.region(padding=30)])
 print(subset.path, subset.receipt["records"])
 ```
 
-This requests a region of the indexed BAM. It does not download the whole file.
+This fetches just that region of the BAM, not the whole file.
 
 ## Count exact sequence matches
 
-The sequences below include bases on both sides of the event. Count matches
-among primary, non-duplicate reads with mapping quality at least 20:
+The sequences below include a few bases on each side of the change. Count exact
+matches among primary, non-duplicate reads with mapping quality 20 or more:
 
 ```python
 from collections import Counter
@@ -72,7 +72,6 @@ Result from the 2026-09-18 check:
 Counter({'no exact match': 55, 'reference': 37, 'corrected allele': 30})
 ```
 
-Thirty reads match the corrected allele and none match the published allele.
-This is an exact-sequence check: reads in `no exact match` may stop short of the
-event or contain mismatches. For RNA evidence and reconstruction, use
-[Isovar](consumers.md#isovar).
+Thirty reads match the corrected allele and none match the published one. Reads
+with `no exact match` may stop short of the change or have sequencing errors. For
+RNA evidence and protein sequences, use [Isovar](consumers.md#isovar).

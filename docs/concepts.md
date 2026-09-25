@@ -91,13 +91,13 @@ so GRCh37 BAMs need GRCh37 coordinates. See [Specify coordinates](reads.md#speci
 
 ## Corrections
 
-Osteosarc applies 32 documented corrections to the published records by default.
-They fix misplaced alleles, relabeled samples, wrong specimen dates and wrongly
-mapped read counts. Each load checks that a correction still matches its source.
-A correction the source has since fixed is reported as `fixed_upstream`. An
-unexpected change is reported as `stale`, and that correction is skipped.
-Corrected records carry the correction IDs. Open a snapshot with
-`corrections=False` to see the published values. See [Source corrections](curation.md).
+Osteosarc fixes 35 known problems in the website's data by default: misplaced or
+missing alleles, mislabeled samples, wrong specimen sites and dates, read counts
+measured in the wrong place, and accession typos. Others are only flagged. Each fix
+is checked against the snapshot when it's opened: one the website has since fixed
+shows as `fixed_upstream`, and one whose data changed unexpectedly is skipped as
+`stale`. Open a snapshot with `corrections=False` to see the published values. See
+[Source corrections](curation.md).
 
 ## Missing is not zero
 

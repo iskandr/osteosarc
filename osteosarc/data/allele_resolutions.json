@@ -311,7 +311,7 @@
     "resolution": {
       "status": "source_unavailable",
       "source": {
-        "url": "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/scripts/variants/source_data/SS%20neoantigen%20_%20mutations%20-%20Mutations.tsv",
+        "url": "https://gitlab.com/slowkow/osteosarc.com/-/raw/62c23d08c03dfb4b0339b82b95d161bdf90d4ac3/scripts/variants/source_data/SS%20neoantigen%20_%20mutations%20-%20Mutations.tsv",
         "sha256": "b84ece29e11884d14b2273bc7872b6660bd3e5aeaba4a278b28dc3de9a579931"
       },
       "summary": "The catalogue reports Natera p.Ala153del without a transcript, cDNA change or genomic allele. The original clinical variant report is not public; no matching allele was found in the public Tempus or CeGaT calls checked.",
@@ -322,7 +322,7 @@
     }
   },
   "USH2A-chr1-215560752": {
-    "verified": "2026-09-20",
+    "verified": "2026-09-24",
     "expected_source": {
       "gene": "USH2A",
       "chr": "chr1",
@@ -339,14 +339,14 @@
       "protein_label": "p.Cys4728Phe"
     },
     "resolution": {
-      "status": "source_identity_unconfirmed",
+      "status": "duplicate",
       "source": {
-        "url": "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/scripts/variants/source_data/SS%20neoantigen%20_%20mutations%20-%20Mutations.tsv",
+        "url": "https://gitlab.com/slowkow/osteosarc.com/-/raw/62c23d08c03dfb4b0339b82b95d161bdf90d4ac3/scripts/variants/source_data/SS%20neoantigen%20_%20mutations%20-%20Mutations.tsv",
         "sha256": "b84ece29e11884d14b2273bc7872b6660bd3e5aeaba4a278b28dc3de9a579931"
       },
-      "summary": "The positions differ by a digit transposition and both entries carry p.Cys4728Phe. Public Tempus evidence verifies chr1:215650752 C>A, but cannot establish the identity of the original Natera entry.",
+      "summary": "The positions differ by a transposed digit and both entries carry p.Cys4728Phe. chr1:215560752 lies outside USH2A (chr1:215621576-216423448), so it cannot encode that change: this entry is the same variant as chr1:215650752 C>A, which a public Tempus call verifies.",
       "relationship": {
-        "kind": "possible_duplicate",
+        "kind": "duplicate",
         "variant_id": "USH2A-chr1-215650752",
         "evidence": {
           "source_allele": {

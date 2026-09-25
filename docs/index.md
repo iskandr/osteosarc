@@ -18,8 +18,8 @@ errors in it, and downloads only the reads you ask for.
 | Look through 637 candidate structural variants | [SV catalogue](sv-interest.md) |
 
 !!! note "Corrections are on by default"
-    Osteosarc applies 32 documented, evidence-backed [corrections](curation.md)
-    to the published data. For example, it replaces the MAP2 vaccine target's
+    Osteosarc fixes 35 known problems in the published data, each with its
+    evidence ([corrections](curation.md)). For example, it replaces the MAP2 vaccine target's
     allele with the complex event that Tempus and CeGaT report and that the
     [tumor reads support](tour.md). Each load checks every correction against
     the snapshot's source records. Pass `corrections=False` to

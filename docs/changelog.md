@@ -5,6 +5,29 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.7.0 (2026-09-24)
+
+Every correction was re-checked against the reference genome and the site's data.
+None only rewrites an equivalent form of a value, and these fixes follow from the
+review:
+
+- The Tempus tumor's variants match T0, so the T1 labels on the Tempus files are
+  probably what's wrong. `tempus-timepoint` now says so, and a new flag,
+  `tempus-file-labels`, marks the files.
+- `provider-IPISRC044-T1-rna` also fixes the site's read-count rows, which switched
+  to UCLA on 2026-09-21.
+- `transcript-DCHS2` fixes only the typo, to the versionless NM_001142552 the site
+  now uses; it no longer adds a version.
+- New: `transcript-COL4A2` and `transcript-GTF3C5` fix two more accession typos.
+- MAP2 keeps its published read counts as an approximation: the site counts any
+  large deletion there, which in the T0 tumor exome is always the real change.
+- USH2A's retired entry is recorded as a confirmed duplicate, and the kept entry's
+  sequence context is fixed. The moved Tempus alleles lose sequence context taken
+  from the wrong position.
+- `fam157a-withdrawn-protein` shows as fixed upstream where the site has the same
+  note.
+- The corrections page is rewritten in plain language.
+
 ## 0.6.1 (2026-09-24)
 
 - The documentation is rewritten in plain language. [Key concepts](concepts.md) now

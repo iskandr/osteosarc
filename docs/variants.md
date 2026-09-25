@@ -126,7 +126,7 @@ For native Varcode objects, see [Use other libraries](consumers.md#varcode).
 ## Entries with reviewed alleles
 
 Five entries were reviewed in [issue #5](https://github.com/iskandr/osteosarc/issues/5).
-Their `allele_resolution` annotation records the outcome and source evidence:
+Their `allele_resolution` annotation records the outcome and evidence:
 
 ```python
 for v in site:
@@ -145,16 +145,16 @@ print(fam157a.annotations["allele_resolution"]["protein_interpretation"])
 | COL3A1 | Verified 737-base deletion anchored at GRCh38 chr2:189010889, matching the catalogue's cDNA annotation. |
 | MUC3A | Public GRCh37 duplication; GRCh38 placement remains unresolved across an assembly gap. |
 | OTUD4 | Source unavailable: the protein label alone does not identify a genomic allele. |
-| USH2A-chr1-215560752 | Possible duplicate of USH2A-chr1-215650752. Historical snapshots retain both. The site now merges them; the original report is still needed to confirm identity. |
+| USH2A-chr1-215560752 | A typo of USH2A-chr1-215650752: its position is outside the USH2A gene. Older snapshots have both; the site has since merged them. |
 
-The two resolved alleles come from a public Tempus VCF, with versioned RefSeq
-checks and source checksums in the annotation. Neither has published count
-rows; use [read extraction](reads.md) to examine support.
+The two filled-in alleles come from a public Tempus VCF in the bucket; the
+annotation holds the reference checks and file checksums. Neither has published
+read counts; use [read extraction](reads.md) to look at the reads.
 
-In newer snapshots, the retained USH2A entry keeps its published `C>A` allele
-and counts. Its `annotations["source_record"]["upstream_merge"]` records the
-retired ID, the upstream commit and the identity caveat. Osteosarc corrects the
-outdated location label without creating an allele for the retired entry.
+In newer snapshots, the kept USH2A entry has its published `C>A` allele and counts.
+`annotations["source_record"]["upstream_merge"]` records the retired ID and the
+site's commit, and the location label and sequence context taken from the typo are
+fixed.
 
 Three different statuses appear here. `variant.status` describes allele
 usability, as listed under [Variant status](#variant-status). The `status` column of `data.corrections`
