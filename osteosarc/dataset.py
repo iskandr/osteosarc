@@ -51,6 +51,13 @@ def _check_inventory_time(asset, receipt):
             "create a new snapshot to use the current object")
 
 
+_NEXT_STEPS = """Try:
+  data.describe_samples()                     # samples and what was sequenced
+  data.assets_for_sample("T1_tumor")          # one sample's files
+  data.variants(gene="MAP2")                  # variants, with their alleles
+  data.timeline.select(since="2024-05")       # treatments, scans and lab results
+  data.explore()                              # the interactive explorer"""
+
 DATE_SELECTOR = re.compile(r"\d{4}(-\d{2}(-\d{2})?)?")
 DATED_NAME = re.compile(r"\d{4}-\d{2}-\d{2}(\.\d+)?")
 
@@ -231,7 +238,11 @@ class Dataset:
         else:
             cache = Cache(cache, offline=offline)
         if name is None or date is not None or not cls._snapshot_path(cache, name).exists():
-            name = choose_snapshot(cls.snapshots(cache=cache), name, date=date)
+            rows = cls.snapshots(cache=cache)
+            if not len(rows):
+                raise FileNotFoundError(f"No saved snapshots in {cache.root}; run Dataset.sync() "
+                                        "to download the website's metadata")
+            name = choose_snapshot(rows, name, date=date)
         path = cls._snapshot_path(cache, name)
         return cls(cache, json.loads(path.read_text()), corrections=corrections)
 
@@ -394,9 +405,25 @@ class Dataset:
         assay and platform keep specimens whose registry lists that sequencing,
         using the same names as asset filters (rna-seq, scrna-seq, ont, ...).
         """
+        from .display import Text
         from .explore import samples_view
-        return samples_view(self, timepoint=timepoint, tissue=tissue, assay=assay, platform=platform,
-                            width=width)
+        return Text(samples_view(self, timepoint=timepoint, tissue=tissue, assay=assay,
+                                 platform=platform, width=width))
+
+    def summary(self):
+        """What's in this snapshot, and what to try next."""
+        from .display import Text
+        from .explore import summary_view
+        return Text(summary_view(self) + "\n\n" + _NEXT_STEPS)
+
+    def explore(self):
+        """Open the interactive explorer (type help for commands, quit to leave)."""
+        from .explore import Explorer
+        Explorer(self).cmdloop()
+
+    def __repr__(self):
+        return (f"Osteosarc snapshot {self.name} ({self.id[:12]}), downloaded "
+                f"{self.downloaded[:16].replace('T', ' ')} UTC. Try data.summary() or data.explore().")
 
     def assets_for_sample(self, sample_id, **filters):
         """Registry-linked alignments and files under the specimen's FASTQ folders."""

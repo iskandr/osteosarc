@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 
 from .cache import stable_id
+from .display import Text
 from .models import Collection
 
 #: Display order of lanes; unlisted lanes follow alphabetically within their category.
@@ -72,7 +73,7 @@ class Event:
     open_end: bool = False
     links: tuple[str, ...] = ()
     corrections: tuple[str, ...] = ()
-    details: dict = field(default_factory=dict, compare=False)
+    details: dict = field(default_factory=dict, compare=False, repr=False)
 
     @property
     def first_day(self):
@@ -101,6 +102,16 @@ def _window(since, until):
 
 class Timeline(Collection):
     """Chronological events with composable filters and text rendering."""
+
+    def __repr__(self):
+        from .display import Text
+        if not len(self):
+            return "Timeline: no events"
+        last = max(e.last_day for e in self)
+        head = "\n".join(self[:8].listing().splitlines())
+        more = f"\n... {len(self) - 8} more" if len(self) > 8 else ""
+        return Text(f"Timeline: {len(self)} events, {self[0].date} .. {last}, {len(self.lanes())} lanes. "
+                    f".render() draws it; .listing() lists every event.\n{head}{more}")
 
     def select(self, *, lane=None, category=None, kind=None, source=None, track=None,
                timepoint=None, contains=None, since=None, until=None):
@@ -138,7 +149,7 @@ class Timeline(Collection):
             label = e.label + (f" = {e.value}" if e.kind == "event" and e.value else "")
             notes = f" (corrections: {', '.join(e.corrections)})" if e.corrections else ""
             lines.append(f"{when:<23} {e.lane[:30]:<30} {label}  [{e.source}]{notes}")
-        return "\n".join(lines)
+        return Text("\n".join(lines))
 
     def render(self, *, width=None, since=None, until=None, legend=True):
         """ASCII lanes over a shared date axis.
@@ -191,7 +202,7 @@ class Timeline(Collection):
             rows.append("")
             rows.append(f"{lo} .. {hi}; one column = {days:.1f} days.  * event  2-9/# several  "
                         "= range  > ongoing  MRD: + detected  o not detected  ~ below LOQ")
-        return "\n".join(rows)
+        return Text("\n".join(rows))
 
 
 _MRD_MARK = {"numeric": "+", "not_detected": "o", "below_loq": "~", "missing": "?"}

@@ -4,7 +4,8 @@ The `osteosarc` command does the same things as the Python API and shares its
 cache. Every command uses your most recent snapshot unless you pass `--snapshot`.
 `samples`, `specimens`, `assets`, `snapshots`, `timeline` and `on` print text (the
 first five also have `--json`); the others print JSON.
-`osteosarc --help` and `osteosarc COMMAND --help` list every option.
+`osteosarc` on its own suggests where to start; `osteosarc --help` and
+`osteosarc COMMAND --help` list every option.
 
 ## Global options
 
@@ -132,7 +133,8 @@ the event records. Filter with `--since`, `--until`, `--lane` and `--contains`.
 osteosarc explore
 ```
 
-The explorer opens with a snapshot summary. Its commands:
+The explorer opens with a snapshot summary. If you haven't synced yet, it offers to
+download the website's metadata first. Its commands:
 
 | Command | Shows |
 | --- | --- |

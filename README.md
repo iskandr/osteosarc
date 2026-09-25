@@ -38,7 +38,28 @@ python -m pip install osteosarc
 Needs Python 3.9+ on Linux or macOS, and [SAMtools](https://www.htslib.org/) on
 your PATH to fetch reads.
 
-## Quickstart
+## Explore the data
+
+```sh
+osteosarc sync      # Once: about 57 MB of the website's metadata
+osteosarc explore
+```
+
+The explorer opens with a summary of the data. Try `samples`, `specimen T1_tumor`,
+`variants MAP2`, `timeline 2024-05 2024-09` and `help`; `quit` leaves. Running
+`osteosarc` on its own lists more commands to try.
+
+In Python or a notebook, everything shows a readable preview:
+
+```python
+from osteosarc import Dataset
+
+data = Dataset.sync()
+print(data.summary())            # What's here, and what to try next
+print(data.variants(gene="MAP2"))
+```
+
+## From samples to reads
 
 ```python
 from osteosarc import Dataset
