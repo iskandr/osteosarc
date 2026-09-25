@@ -5,6 +5,22 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.8.0 (2026-09-25)
+
+A first look at the data is easier from both the command line and Python
+([#44](https://github.com/iskandr/osteosarc/issues/44)):
+
+- `osteosarc` on its own suggests where to start.
+- Without a snapshot, commands say which cache they looked in and to run
+  `osteosarc sync`. In a terminal, `osteosarc explore` offers to download one.
+- In Python, `data`, variants, files, tables and the timeline show readable previews
+  instead of `<object at 0x…>`. Text views such as `describe_samples()` display without
+  quotes, and single variants, files and events no longer print their full source
+  records.
+- `data.summary()` shows what's in a snapshot and what to try next; `data.explore()`
+  opens the interactive explorer.
+- The README and docs home start with "Explore the data".
+
 ## 0.7.0 (2026-09-24)
 
 Every correction was re-checked against the reference genome and the site's data.

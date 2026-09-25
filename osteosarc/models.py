@@ -70,7 +70,7 @@ class Asset:
     modified: str | int | None = None
     index_urls: tuple[str, ...] = ()
     claims: tuple[SampleClaim, ...] = ()
-    metadata: dict = field(default_factory=dict, compare=False)
+    metadata: dict = field(default_factory=dict, compare=False, repr=False)
 
     def values(self, name, *, include_inferred=False):
         """Distinct nonmissing source assertions for a sample field.
@@ -111,7 +111,7 @@ class Variant:
     vaccine_count: int | None = None
     vaccines: tuple[str, ...] = ()
     pipelines: tuple[str, ...] = ()
-    annotations: dict = field(default_factory=dict, compare=False)
+    annotations: dict = field(default_factory=dict, compare=False, repr=False)
 
     @property
     def allele(self):
@@ -154,8 +154,18 @@ class Collection(Sequence):
     def to_records(self):
         return [asdict(item) for item in self]
 
+    def __repr__(self):
+        return f"<{type(self).__name__}: {len(self)} items>"
+
 
 class Assets(Collection):
+    def __repr__(self):
+        from .display import preview
+        from .explore import _size
+        return preview(f"{len(self):,} files", self, ("kind", "format", "size", "key"),
+                       lambda a: dict(kind=a.kind, format=a.format, size=_size(a.size), key=a.key),
+                       fixed=("key",))
+
     def __getitem__(self, key):
         if isinstance(key, str):
             matches = [a for a in self if key in (a.id, a.key, a.url)]
@@ -198,6 +208,13 @@ class Assets(Collection):
 
 
 class Variants(Collection):
+    def __repr__(self):
+        from .display import preview
+        from .explore import allele_text
+        ready = sum(v.status == "ready" for v in self)
+        return preview(f"{len(self)} variants, {ready} ready", self, ("id", "gene", "status", "allele"),
+                       lambda v: dict(id=v.id, gene=v.gene, status=v.status, allele=allele_text(v)))
+
     def select(self, *, gene=None, ids=None, vaccine=None, vaccinated=None, pipeline=None,
                status=None, on_site=None, vaccine_source="overlap"):
         if vaccine_source not in ("overlap", "source_variants"):

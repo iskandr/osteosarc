@@ -19,10 +19,11 @@ from .errors import OsteosarcError
 from .timeline import _window
 
 
-def table(rows, columns, *, width=None, limit=None, wrap=False, fixed=()):
+def table(rows, columns, *, width=None, limit=None, wrap=False, fixed=(), total=None):
     """Fixed-width text table; long cells are truncated to fit the terminal.
 
-    Columns in fixed, such as file keys people copy, are never shortened.
+    Columns in fixed, such as file keys people copy, are never shortened. total
+    is the full row count when rows holds only the first few.
     """
     if limit is not None and (not isinstance(limit, int) or isinstance(limit, bool) or limit < 0):
         raise ValueError("limit must be a nonnegative integer")
@@ -45,8 +46,9 @@ def table(rows, columns, *, width=None, limit=None, wrap=False, fixed=()):
         for i in range(max(map(len, parts), default=0)):
             out.append(line((part[i] if i < len(part) else "").ljust(w)
                             for part, w in zip(parts, widths)).rstrip())
-    if limit is not None and len(rows) > limit:
-        out.append(f"... {len(rows) - limit} more")
+    total = len(rows) if total is None else total
+    if limit is not None and total > limit:
+        out.append(f"... {total - limit} more")
     return "\n".join(out)
 
 
@@ -156,12 +158,24 @@ def assets_view(data, *, limit=40, width=None, more="Add limit=N to show more.",
     return f"{len(selected)} files\n{shown}" + (f"\n{more}" if limit is not None and len(rows) > limit else "")
 
 
+def allele_text(variant):
+    """chrom:pos REF>ALT, with long alleles shortened; blank without a single allele."""
+    if len(variant.alleles) != 1:
+        return ""
+    chrom, pos, ref, alt = variant.alleles[0]
+    return f"{chrom}:{pos} {ref[:12]}>{alt[:12]}"
+
+
+def snapshot_line(data):
+    when = (data.downloaded or "")[:16].replace("T", " ")
+    return (f"snapshot {data.name} ({data.id[:12]}), "
+            + (f"downloaded {when} UTC" if when else "download time unknown"))
+
+
 def variants_view(data, *, width=None, limit=None, **filters):
     rows = []
     for v in data.variants("all" if filters.pop("all", False) else "site", **filters):
-        allele = f"{v.alleles[0][0]}:{v.alleles[0][1]} {v.alleles[0][2][:12]}>{v.alleles[0][3][:12]}" \
-            if len(v.alleles) == 1 else ""
-        rows.append(dict(id=v.id, gene=v.gene, status=v.status, allele=allele,
+        rows.append(dict(id=v.id, gene=v.gene, status=v.status, allele=allele_text(v),
                          vaccines=_text(v.vaccines), pipelines=_text(v.pipelines),
                          corrections=_text(v.annotations.get("corrections"))))
     return table(rows, ("gene", "id", "status", "allele", "vaccines", "pipelines", "corrections"),
@@ -175,14 +189,11 @@ def corrections_view(data, *, width=None):
 
 
 def summary_view(data):
-    downloaded = data.downloaded[:16].replace("T", " ")
-    lines = [f"snapshot {data.name} ({data.id[:12]}), downloaded {downloaded} UTC"]
+    lines = [snapshot_line(data)]
     statuses = Counter(r["status"] for r in data.corrections)
     lines.append("corrections: " + ", ".join(f"{n} {s}" for s, n in sorted(statuses.items())))
     try:
-        timeline = data.timeline
-        first, last = timeline[0].date, max(e.last_day for e in timeline)
-        lines.append(f"timeline: {len(timeline)} events, {first} .. {last}, {len(timeline.lanes())} lanes")
+        lines.append(f"timeline: {data.timeline.overview()}")
         lines.append(f"specimens: {len(data.specimens)}")
     except OsteosarcError as error:
         lines.append(f"timeline: unavailable ({error})")

@@ -47,6 +47,13 @@ class Table:
             raise KeyError(f"Unknown columns: {sorted(unknown)}")
         return self.where(lambda row: all(row.get(k) == v for k, v in fields.items()))
 
+    def __repr__(self):
+        from .display import preview
+        shown = self.columns[:6]
+        note = f" (first {len(shown)} shown)" if len(self.columns) > len(shown) else ""
+        return preview(f"Table: {len(self):,} rows, {len(self.columns)} columns{note}",
+                       self.rows, shown, lambda row: row)
+
     def to_dataframe(self):
         """Optional pandas conversion; performs no type or missing-value coercion."""
         import pandas as pd

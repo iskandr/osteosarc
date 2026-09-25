@@ -10,7 +10,7 @@ from . import __version__
 from .cache import Cache
 from .dataset import DATE_SELECTOR, Dataset
 from .discovery import list_bucket
-from .errors import OsteosarcError
+from .errors import NoSnapshotsError, OsteosarcError
 from .models import Region
 from .reads import ReadFilter
 
@@ -172,7 +172,46 @@ def snapshots_view(rows):
             + f"\n\nCommands use {rows[0]['name']} unless you pass --snapshot.")
 
 
+START = """osteosarc: explore the public osteosarc.com dataset.
+
+Start here:
+  osteosarc sync       Download the website's metadata (about 57 MB, once)
+  osteosarc explore    Browse samples, files, variants and the timeline
+
+Or look around directly:
+  osteosarc samples                   Samples and what was sequenced
+  osteosarc specimens T1_tumor        One sample's files and nearby treatments
+  osteosarc variants --gene MAP2      Variants, with their alleles
+  osteosarc timeline --since 2024-05  Treatments, scans and lab results
+
+osteosarc --help lists every command. Docs: https://iskandr.github.io/osteosarc/"""
+
+
+def open_snapshot(args, cache, online):
+    """Open the chosen snapshot; without any, say what to run, or offer to sync for the explorer."""
+    try:
+        return Dataset.open(**snapshot_selector(args), cache=cache, offline=not online,
+                            corrections=not args.no_corrections)
+    except NoSnapshotsError as error:
+        where = f"No snapshot yet in {error.root}."
+        if args.command == "explore" and args.snapshot is None and not args.offline and sys.stdin.isatty():
+            try:
+                answer = input(f"{where} Download the website's metadata now (about 57 MB)? [Y/n] ")
+            except (EOFError, KeyboardInterrupt):
+                print()
+                answer = "n"
+            if answer.strip().lower() in ("", "y", "yes"):
+                dataset = Dataset.sync(cache=cache, corrections=not args.no_corrections)
+                print(f"Saved snapshot {dataset.name}.")
+                return dataset
+        raise FileNotFoundError(f"{where} Run `osteosarc sync` to download the website's metadata "
+                                "(about 57 MB).") from None
+
+
 def main(argv=None):
+    if not (sys.argv[1:] if argv is None else argv):
+        print(START)
+        return 0
     root = parser()
     args, extra = root.parse_known_args(argv)
     # Before Python 3.13, argparse binds the optional regions positional before any
@@ -227,8 +266,7 @@ def main(argv=None):
             # Listing and parsing pinned metadata remain offline automatically;
             # commands that acquire new bytes opt in unless --offline is set.
             online = args.command in ("download", "table", "reads") and not args.offline
-            dataset = Dataset.open(**snapshot_selector(args), cache=cache, offline=not online,
-                                   corrections=not args.no_corrections)
+            dataset = open_snapshot(args, cache, online)
             if args.command == "assets":
                 filters = {name: getattr(args, name) for name in
                     ("kind", "format", "prefix", "contains", "timepoint", "assay", "platform", "tissue", "provider", "library", "include_conflicts", "include_inferred")}

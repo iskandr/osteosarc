@@ -26,7 +26,7 @@ from .catalog import (
     parse_data_paths,
 )
 from .curation import CORRECTIONS, Curation, normalize_tissue, unrecognized_values
-from .errors import CoordinateError, IntegrityError, OfflineError, SchemaError
+from .errors import CoordinateError, IntegrityError, NoSnapshotsError, OfflineError, SchemaError
 from .models import Asset, Region
 from .parsing import (
     PARSE_FORMATS,
@@ -51,6 +51,13 @@ def _check_inventory_time(asset, receipt):
             "create a new snapshot to use the current object")
 
 
+_NEXT_STEPS = """Try:
+  data.describe_samples()                     # samples and what was sequenced
+  data.assets_for_sample("T1_tumor")          # one sample's files
+  data.variants(gene="MAP2")                  # variants, with their alleles
+  data.timeline.select(since="2024-05")       # treatments, scans and lab results
+  data.explore()                              # the interactive explorer"""
+
 DATE_SELECTOR = re.compile(r"\d{4}(-\d{2}(-\d{2})?)?")
 DATED_NAME = re.compile(r"\d{4}-\d{2}-\d{2}(\.\d+)?")
 
@@ -60,7 +67,7 @@ def downloaded_at(manifest):
     return max((r["retrieved_at"] for r in manifest["sources"].values()), default=manifest.get("created_at"))
 
 
-def choose_snapshot(rows, name=None, *, date=None):
+def choose_snapshot(rows, name=None, *, date=None, root=None):
     """Name of the snapshot to open, given rows sorted newest first.
 
     With neither argument, the newest. name is an exact name or, if no snapshot
@@ -74,7 +81,7 @@ def choose_snapshot(rows, name=None, *, date=None):
     if date is not None and not DATE_SELECTOR.fullmatch(date):
         raise ValueError("date must be YYYY, YYYY-MM or YYYY-MM-DD")
     if not rows:
-        raise FileNotFoundError("No saved snapshots; run Dataset.sync() or `osteosarc sync` first")
+        raise NoSnapshotsError(root)
     if date is not None:
         matches, wanted = [r for r in rows if (r["downloaded"] or "").startswith(date)], f"downloaded in {date} (UTC)"
     elif name is not None:
@@ -231,7 +238,7 @@ class Dataset:
         else:
             cache = Cache(cache, offline=offline)
         if name is None or date is not None or not cls._snapshot_path(cache, name).exists():
-            name = choose_snapshot(cls.snapshots(cache=cache), name, date=date)
+            name = choose_snapshot(cls.snapshots(cache=cache), name, date=date, root=cache.root)
         path = cls._snapshot_path(cache, name)
         return cls(cache, json.loads(path.read_text()), corrections=corrections)
 
@@ -394,9 +401,25 @@ class Dataset:
         assay and platform keep specimens whose registry lists that sequencing,
         using the same names as asset filters (rna-seq, scrna-seq, ont, ...).
         """
+        from .display import Text
         from .explore import samples_view
-        return samples_view(self, timepoint=timepoint, tissue=tissue, assay=assay, platform=platform,
-                            width=width)
+        return Text(samples_view(self, timepoint=timepoint, tissue=tissue, assay=assay,
+                                 platform=platform, width=width))
+
+    def summary(self):
+        """What's in this snapshot, and what to try next."""
+        from .display import Text
+        from .explore import summary_view
+        return Text(summary_view(self) + "\n\n" + _NEXT_STEPS)
+
+    def explore(self):
+        """Open the interactive explorer (type help for commands, quit to leave)."""
+        from .explore import Explorer
+        Explorer(self).cmdloop()
+
+    def __repr__(self):
+        from .explore import snapshot_line
+        return f"Osteosarc {snapshot_line(self)}. Try data.summary() or data.explore()."
 
     def assets_for_sample(self, sample_id, **filters):
         """Registry-linked alignments and files under the specimen's FASTQ folders."""

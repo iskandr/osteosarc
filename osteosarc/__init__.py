@@ -17,7 +17,14 @@ from .catalog import SNAPSHOT_SOURCES, TABLE_SOURCES, TIMELINE_SOURCES
 from .curation import CORRECTIONS, Change, Correction, CurationWarning, glob
 from .dataset import Dataset
 from .discovery import list_bucket
-from .errors import CoordinateError, IntegrityError, OfflineError, OsteosarcError, SchemaError
+from .errors import (
+    CoordinateError,
+    IntegrityError,
+    NoSnapshotsError,
+    OfflineError,
+    OsteosarcError,
+    SchemaError,
+)
 from .fixtures import (
     FixtureSelection,
     load_panel,
@@ -43,7 +50,7 @@ from .recovery import RecoveryPolicy, recover_reads
 from .sv_interest import load_sv_interest
 from .timeline import Event, Timeline
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 
 __all__ = [
     "load_sv_interest",
@@ -53,7 +60,7 @@ __all__ = [
     "compact_header", "export_bundle", "generate_bundle", "list_bundle", "pack_bundle",
     "safe_path", "verify_bundle", "verify_digest", "verify_gzip_digests", "verify_manifest_files",
     "AlignmentInfo", "Asset", "Assets", "CORRECTIONS", "Cache", "Change", "CoordinateError", "Correction",
-    "CurationWarning", "Dataset", "Event", "IntegrityError", "TIMELINE_SOURCES", "Timeline", "glob",
+    "CurationWarning", "Dataset", "Event", "IntegrityError", "NoSnapshotsError", "TIMELINE_SOURCES", "Timeline", "glob",
     "OfflineError", "OsteosarcError", "ReadFilter", "ReadSubset", "Receipt", "Region",
     "SNAPSHOT_SOURCES", "SampleClaim", "SchemaError", "TABLE_SOURCES", "Table", "Variant",
     "Variants", "assembly_from_header", "digest", "extract_reads", "inspect_alignment", "list_bucket",

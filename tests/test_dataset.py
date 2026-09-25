@@ -308,7 +308,7 @@ def test_choose_snapshot_selects_exact_names_download_dates_or_ids():
         choose_snapshot(rows, date="2026-9")
     with pytest.raises(ValueError, match="not both"):
         choose_snapshot(rows, "baseline", date="2026")
-    with pytest.raises(FileNotFoundError, match="osteosarc sync"):
+    with pytest.raises(FileNotFoundError, match="Dataset.sync"):
         choose_snapshot([])
     ambiguous = [dict(rows[0], id="abcdef" + "0" * 58), dict(rows[1], id="abcdef" + "1" * 58)]
     with pytest.raises(FileNotFoundError, match="ambiguous"):
@@ -444,3 +444,75 @@ def test_asset_filters_reject_labels_and_values_no_source_uses(dataset):
     marrow = Assets([Asset("x", "x.bam", "https://example.test/x.bam", "alignment", "bam",
                            claims=(SampleClaim("bams", tissue="marrow"),))])
     assert len(marrow.select(tissue="marrow")) == 1
+
+
+def test_a_first_look_is_readable_in_python(dataset, monkeypatch):
+    from osteosarc.display import Text
+    assert repr(dataset).startswith("Osteosarc snapshot fixture (") and "data.summary()" in repr(dataset)
+    summary = dataset.summary()
+    assert isinstance(summary, Text) and repr(summary) == str(summary)  # Shown without quotes
+    assert "variants:" in summary and "data.explore()" in summary
+    assert repr(dataset.describe_samples()) == str(dataset.describe_samples())
+
+    variants = repr(dataset.variants())
+    assert variants.startswith("5 variants, 5 ready") and "chr14:101980529 G>A" in variants
+    assets = repr(dataset.assets)
+    assert assets.startswith(f"{len(dataset.assets):,} files") and dataset.assets[0].key in assets
+    table = repr(dataset.specimens)
+    assert table.startswith(f"Table: {len(dataset.specimens)} rows") and "sample_id" in table
+    timeline = repr(dataset.timeline)
+    assert timeline.startswith(f"Timeline: {len(dataset.timeline)} events") and ".render()" in timeline
+    assert repr(dataset.timeline.render()) == str(dataset.timeline.render())
+    assert repr(dataset.timeline.select(lane="no such lane")) == "Timeline: no events"
+    # Single records stay short: the long source records aren't printed.
+    assert "annotations=" not in repr(dataset.variants()[0])
+    assert "details=" not in repr(dataset.timeline[0]) and "metadata=" not in repr(dataset.assets[0])
+
+    import osteosarc.explore as explore
+    opened = []
+    monkeypatch.setattr(explore.Explorer, "cmdloop", lambda self: opened.append(self.data))
+    dataset.explore()
+    assert opened == [dataset]
+
+    # Headers survive a snapshot without a download time; alleles show whenever there's one.
+    from types import SimpleNamespace
+
+    from osteosarc import Variant, Variants
+    stub = SimpleNamespace(name="old", id="a" * 64, downloaded=None)
+    assert explore.snapshot_line(stub) == "snapshot old (aaaaaaaaaaaa), download time unknown"
+    odd = Variants([Variant("x", "G", "GRCh38", (("chr1", 5, "A" * 20, "dup"),), "non_literal_allele")])
+    assert "chr1:5 AAAAAAAAAAAA>dup" in repr(odd) and "0 ready" in repr(odd)
+
+
+def test_a_first_look_is_guided_on_the_command_line(source_cache, capsys, monkeypatch):
+    from osteosarc import Cache
+    assert main([]) == 0
+    assert "osteosarc sync" in capsys.readouterr().out
+    root = str(source_cache.root)
+    import re
+
+    from osteosarc import NoSnapshotsError
+    with pytest.raises(NoSnapshotsError, match=re.escape(f"No saved snapshots in {root}")) as raised:
+        Dataset.open(cache=Cache(root))
+    assert str(raised.value.root) == root
+    # Without a snapshot, commands say where they looked and what to run.
+    assert main(["--offline", "--cache", root, "samples"]) == 1
+    err = capsys.readouterr().err
+    assert f"No snapshot yet in {root}" in err and "osteosarc sync" in err
+    # In a terminal, the explorer offers to download one first (served here from the test files).
+    import osteosarc.explore as explore
+    fetch = Cache.fetch
+    monkeypatch.setattr(Cache, "fetch", lambda self, url, refresh=False, **kw: fetch(self, url, **kw))
+    monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+    opened = []
+    monkeypatch.setattr(explore.Explorer, "cmdloop", lambda self: opened.append(self.data))
+
+    def closed(prompt):  # Ctrl-D at the prompt means no, without a traceback
+        raise EOFError
+    monkeypatch.setattr("builtins.input", closed)
+    assert main(["--cache", root, "explore"]) == 1
+    assert "osteosarc sync" in capsys.readouterr().err and not opened
+    monkeypatch.setattr("builtins.input", lambda prompt: "")
+    assert main(["--cache", root, "explore"]) == 0
+    assert "Saved snapshot" in capsys.readouterr().out
+    assert len(Dataset.snapshots(cache=source_cache)) == 1 and opened[0].name == Dataset.open(cache=source_cache).name

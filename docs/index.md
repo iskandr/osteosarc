@@ -28,6 +28,31 @@ errors in it, and downloads only the reads you ask for.
 New to the dataset? [Key concepts](concepts.md) explains where the data comes from,
 sample IDs, variant statuses and coordinates.
 
+## Explore the data
+
+The quickest way in is the interactive explorer:
+
+```sh
+python -m pip install osteosarc
+osteosarc sync      # Once: about 57 MB of the website's metadata
+osteosarc explore
+```
+
+It opens with a summary of the data. Try `samples`, `specimen T1_tumor`,
+`assets sample=T1_tumor kind=alignment`, `variants MAP2`, `timeline 2024-05 2024-09`
+and `corrections`; `help` lists every command and `quit` leaves.
+
+In Python or a notebook, `Dataset` objects, variants, files, tables and the timeline
+all show readable previews, and `data.summary()` suggests what to try next:
+
+```python
+from osteosarc import Dataset
+
+data = Dataset.sync()
+print(data.summary())
+print(data.variants(gene="MAP2"))
+```
+
 ## Get started
 
 ### Install

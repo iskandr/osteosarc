@@ -2,7 +2,8 @@
 
 Everything below imports from `osteosarc`. Importing never downloads anything or
 needs the OpenVax libraries. The guides show each call in context; this page lists
-them by task.
+them by task. In a REPL or notebook, datasets, variants, files, tables and the
+timeline show a readable preview, and text views display without quotes.
 
 [Snapshots and cache](#snapshots-and-cache) ·
 [Files and tables](#files-and-tables) ·
@@ -20,6 +21,7 @@ them by task.
 | `Dataset.open(name=None, date=None, cache=None, offline=True, corrections=True)` | Verify and reopen the most recent snapshot, one with an exact name or ID prefix, or the newest downloaded on a UTC `date` (`2026-09-24`, `2026-09`, `2026`); `corrections=False` or a list of `Correction`s |
 | `Dataset.snapshots(cache=None)` | Table of saved snapshots, newest download first: `name`, `downloaded`, `created`, `id` |
 | `data.id`, `data.name`, `data.downloaded`, `data.receipts()` | Snapshot content identity, name, latest source download time, and source receipts |
+| `data.summary()`, `data.explore()` | What's in the snapshot and what to try next; the interactive explorer |
 | `data.source_path(name)` | Verified local metadata path |
 | `Cache(root=None, offline=False, timeout=600)` | Shared local object cache |
 | `cache.fetch(url, refresh=False, sha256=None, md5=None, size=None, max_bytes=None)` | Download and check a file; returns a `Receipt` |
