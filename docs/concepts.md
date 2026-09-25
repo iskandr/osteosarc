@@ -91,7 +91,7 @@ so GRCh37 BAMs need GRCh37 coordinates. See [Specify coordinates](reads.md#speci
 
 ## Corrections
 
-Osteosarc fixes 34 known problems in the website's data by default: misplaced or
+Osteosarc fixes 35 known problems in the website's data by default: misplaced or
 missing alleles, mislabeled samples, wrong specimen sites and dates, read counts
 measured in the wrong place, and accession typos. Others are only flagged. Each fix
 is checked against the snapshot when it's opened: one the website has since fixed

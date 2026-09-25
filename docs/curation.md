@@ -1,6 +1,6 @@
 # Source corrections
 
-Osteosarc fixes 34 known problems in the website's data, and does it by default.
+Osteosarc fixes 35 known problems in the website's data, and does it by default.
 Every time a snapshot is opened, each fix is checked against the data. You can see
 what changed, turn the fixes off, or add your own.
 
@@ -98,8 +98,8 @@ the problem was fixed.
 
 ## The corrections
 
-Checked against the website on 2026-09-24: 29 fixes apply and 5 are already fixed on
-the site. An older snapshot from 2026-09-18 uses all 34. Each fix's evidence is in
+Checked against the website on 2026-09-24: 30 fixes apply and 5 are already fixed on
+the site. An older snapshot from 2026-09-18 uses all 35. Each fix's evidence is in
 `data.corrections` and in the
 [source code](https://github.com/iskandr/osteosarc/blob/main/osteosarc/curation.py).
 None of them only rewrites a value in an equivalent form: each fixes a wrong value,
@@ -115,7 +115,7 @@ fills in a missing one, or flags something to be careful with.
 | `allele-DCHS2-chr4-154322488` | edit | Give the Tempus allele (a complex change) at chr4:154323273. The site had it 785 bp away, with `not_reported` and a wrong REF. |
 | `allele-GAPVD1-chr9-125299105` | edit | Give the Tempus allele, chr9:125301980 TAGTGC>ATTGG. The site had it 2.9 kb away, with `not_reported` and a wrong REF. |
 | `allele-GOLGA6L2-chr15-23441121` | edit | Give the Tempus allele, a 120-base insertion at chr15:23440197. The site had it 924 bp away, with `dup` and a wrong REF. |
-| `allele-MAP2-chr2-209694768` | edit | The vaccine target's 22-bp deletion isn't what's in the tumor. Tempus calls one complex change (c.2599_2630delinsAGGG) and CeGaT calls the same change as three records; the catalogue's own protein sequence and the reads match it. The published counts are kept, because the site's pileup already counts the reads carrying it. |
+| `allele-MAP2-chr2-209694768` | edit | The vaccine target's 22-bp deletion isn't what's in the tumor. Tempus calls one complex change (c.2599_2630delinsAGGG) and CeGaT calls the same change as three records; the catalogue's own protein sequence and the reads match it. The published counts are kept as an approximation: the site counts any large deletion there, which in the T0 tumor exome is always this change. |
 | `allele-FAM157A-p_W70_Q71ins_14` | edit | Fill in the missing allele: a 42-base insertion at chr3:198153259, from a public Tempus call. |
 | `allele-COL3A1-Splice` | edit | Fill in the missing allele: a 737-base deletion anchored at chr2:189010889, from a public Tempus call. It removes exactly intron 50, matching the catalogue's cDNA description. |
 | `map2-split-representations` | flag | Two other MAP2 entries are pieces of the same change; don't count them separately. |
@@ -161,13 +161,14 @@ from the same problem. These counts are cleared rather than read as zero.
 | `specimen-T3-site` | edit | T3 was an MSKCC resection, not a UCSF biopsy. |
 | `pbmc-capture-dates` | flag | Four blood specimens are dated by when their cells were captured; the blood was drawn two to four days earlier. |
 | `events-duplicate-rows` | flag | SQ3370 and Trabectedin each appear twice. |
-| `tempus-timepoint` | flag | The timeline dates the Tempus tests to T0 (2022), but the site labels the Tempus files T1 (2024-06). The tumor's variants match T0, so the file labels are probably what's wrong. Both are left as published. |
+| `tempus-timepoint` | flag | The timeline dates the Tempus tests to T0 (2022), but the site labels the Tempus files T1 (2024-06). The timeline agrees with the data. |
+| `tempus-file-labels` | flag | The Tempus files are labeled T1 2024-06, but their variants match the T0 tumor: they carry all three variants seen only at T0 and none of the 35 seen only at T1. The labels are left as published. |
 | `apheresis-date` | flag | The apheresis is 2024-05-14 on the timeline and 2024-05-15 in the ELISPOT records. |
 | `reyagel-end-date` | flag | The sheet's ReyaGel end date is `7/14`, with no year, so the site shows a single day. It's the only broken date among the sheet's 371. |
 
 ## Other things to know
 
-- The Tempus files are labeled T1 but look like the T0 tumor (see `tempus-timepoint`).
+- The Tempus files are labeled T1 but look like the T0 tumor (see `tempus-file-labels`).
 - Some DRAGEN BAMs, mostly blood normals and organoid runs, aren't linked to a
   specimen; list them with `data.assets.select(prefix="kamil/basespace/results/")`.
   The four 2026 blood specimens have no BAMs.

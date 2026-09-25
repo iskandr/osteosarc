@@ -257,6 +257,11 @@ def _get(record, name):
     return value
 
 
+def _same(value, expected):
+    """An expected None also matches a field the record doesn't have."""
+    return value == expected or (expected is None and value is _MISSING)
+
+
 def _set(record, name, value):
     *parents, last = name.split(".")
     for part in parents:
@@ -343,7 +348,7 @@ class Curation:
             matched = [i for i, record in enumerate(records) if _matches(record, change.match)]
             matches.append(matched)
             differing = sorted({name for i in matched for name, value in change.expect.items()
-                                if _get(records[i], name) != value})
+                                if not _same(_get(records[i], name), value)})
             if change.absent:
                 state = "unexpected" if matched else "absent"
             elif not matched:
@@ -411,7 +416,7 @@ class Curation:
             status, details = self.evaluate(correction)
             rows.append(dict(id=correction.id, status=status if self.enabled else "disabled",
                              evaluation=status, summary=correction.summary,
-                             action="edit" if any(c.set for c in self._selected[correction.id]) else "flag",
+                             action="edit" if any(c.set for c in correction.changes) else "flag",
                              changes=details, evidence=list(correction.evidence),
                              verified=correction.verified))
         return rows
@@ -482,7 +487,8 @@ def _catalogue_resolution(variant_id, correction_id):
                       evidence=tuple(evidence), verified=entry["verified"])
 
 
-def _allele(variant_id, old, new, summary, evidence, *, extra_source=None, keep_counts=False):
+def _allele(variant_id, old, new, summary, evidence, *, extra_source=None, keep_counts=False,
+            verified="2026-09-18"):
     """Replace a catalogue allele everywhere it is published.
 
     old/new are (chrom, pos, ref, alt). Count rows measured for the old allele
@@ -506,7 +512,7 @@ def _allele(variant_id, old, new, summary, evidence, *, extra_source=None, keep_
         changes.append(Change("variant_index", {"id": variant_id}, expect={"location": f"{chrom}:{pos}"},
                               set={"location": f"{new_chrom}:{new_pos}"}))
     return Correction(f"allele-{variant_id}", summary, tuple(changes), evidence=evidence,
-                      verified="2026-09-18")
+                      verified=verified)
 
 
 def _tempus_relocation(variant_id, old, new, grch37, caller="pindel"):
@@ -515,16 +521,16 @@ def _tempus_relocation(variant_id, old, new, grch37, caller="pindel"):
         f"The catalogue placed this Tempus call at {old[0]}:{old[1]}, with a placeholder instead "
         f"of an allele. The Tempus TL-24-ALMY2X4KMV record (GRCh37 {grch37}) lifts to "
         f"{new[0]}:{new[1]}, where its REF matches GRCh38, and no equivalent way of writing the "
-        f"allele reaches the old position. The site has since moved the entry there but still "
-        f"gives a placeholder allele and a stale REF. Counts measured for the placeholder are "
-        f"cleared, and so is sequence context taken from the wrong position.",
+        f"allele reaches the old position. Later versions of the site move the entry there, "
+        f"still with a placeholder allele. Counts measured for the placeholder are cleared, and "
+        f"so is sequence context taken from the wrong position.",
         (_ALMY + caller + ".vcf", f"https://rest.ensembl.org/map/human/GRCh37/{grch37}..{grch37.split(':')[1]}:1/GRCh38"),
         extra_source={"genomic_ref_context": None})
     # September 20: coordinates/IDs were fixed, but the alleles used for the
     # regenerated counts are still placeholders. Do not reuse those counts.
     new_id = f"{variant_id.split('-')[0]}-{new[0]}-{new[1]}"
     relocated = _allele(new_id, (new[0], new[1], old[2], old[3]), new,
-                        original.summary, original.evidence, extra_source={"genomic_ref_context": None})
+                        original.summary, original.evidence)
     current = (*relocated.changes,
                Change("variant_index", {"id": new_id}, expect={"location": f"{new[0]}:{new[1]}"}),
                *_absent_variant(variant_id))
@@ -554,7 +560,7 @@ def _ush2a_resolution():
         Change("vafs", {"variant_id": new_id},
                expect=dict(gene="USH2A", chrom="chr1", pos="215650752", ref="C", alt="A")),
     )
-    return replace(original, alternatives=(current,), verified="2026-09-21",
+    return replace(original, alternatives=(current,), verified="2026-09-24",
                    evidence=(*original.evidence, _USH2A_FIX),
                    summary=original.summary + " After the site merged the two entries, the retained "
                            "entry keeps its allele and counts; its location label and sequence context, "
@@ -562,11 +568,7 @@ def _ush2a_resolution():
 
 
 _T1_RNA = "kamil/oncoanalyser/IPISRC044_T1_ucla/alignments/rna/IPISRC044_tumor_T1_ucla_rna.md.bam"
-_T1_RNA_PROVIDER = (
-    Change("bam_metadata", {"s3_path": _T1_RNA}, expect={"provider": "UCLA"}, set={"provider": "BostonGene"}),
-    Change("bams", {"url": _T1_RNA}, expect={"name": "T1 UCLA Tumor RNA oncoanalyser"},
-           set={"name": "T1 BostonGene Tumor RNA oncoanalyser"}),
-)
+_T1_RNA_LABEL = "T1 BostonGene Tumor RNA oncoanalyser"
 
 # The site's own caveat on FAM157A's protein model, added in its commit bc13889.
 _FAM157A_NOTE = (
@@ -625,20 +627,16 @@ CORRECTIONS = (
         "The oncoanalyser T1 RNA BAM was built from BostonGene's BG009368 FASTQs (its read group "
         "and the consolidated metadata's own note say so), but the site labels it UCLA. Since "
         "2026-09-21 its read-count rows say UCLA as well.",
-        (*_T1_RNA_PROVIDER,
-         # Witness: in older snapshots the count rows already say BostonGene.
-         Change("vafs", {"bam_file": "IPISRC044_tumor_T1_ucla_rna.md.bam"},
-                expect={"data_source": "BostonGene"},
-                set={"sample_label": "T1 BostonGene Tumor RNA oncoanalyser"})),
+        (Change("bam_metadata", {"s3_path": _T1_RNA}, expect={"provider": "UCLA"},
+                set={"provider": "BostonGene"}),
+         Change("bams", {"url": _T1_RNA}, expect={"name": "T1 UCLA Tumor RNA oncoanalyser"},
+                set={"name": _T1_RNA_LABEL}),
+         # The count rows said BostonGene until 2026-09-21 and UCLA since; both become BostonGene.
+         Change("vafs", {"bam_file": _T1_RNA.rsplit("/", 1)[1]},
+                set={"data_source": "BostonGene", "sample_label": _T1_RNA_LABEL})),
         evidence=(_CONSOLIDATED, "https://osteosarc.com/variants/variant_vafs_long.tsv",
                   "https://osteosarc.com/bams/bams.json"),
-        verified="2026-09-24",
-        alternatives=((
-            *_T1_RNA_PROVIDER,
-            Change("vafs", {"bam_file": "IPISRC044_tumor_T1_ucla_rna.md.bam"},
-                   expect={"data_source": "UCLA"},
-                   set={"data_source": "BostonGene", "sample_label": "T1 BostonGene Tumor RNA oncoanalyser"}),
-        ),)),
+        verified="2026-09-24"),
     Correction(
         "gene-symbol-TRMO",
         "Catalogue gene symbol TMRO is a typo for TRMO (HGNC, and the symbol pVACseq reports "
@@ -705,13 +703,16 @@ CORRECTIONS = (
         "and CeGaT calls the same event as three records (c.2599C>A, c.2600T>G and c.2603_2630del). "
         "The catalogue's own protein sequence (…DSQLEDRAHCHHLF…) translates from it, not from the "
         "22-bp deletion, and every deletion read in the BostonGene T0 tumor WES carries it. It is "
-        "written here anchored at the same position. The site's counts are kept: its pileup counts a "
-        "read as ALT when its deletion covers at least half of the curated one, which the real "
-        "28-bp deletion does. The vaccine peptide lies downstream in the shared frame.",
+        "written here anchored at the same position. The site's counts are kept, as an "
+        "approximation: its pileup counts a read as ALT when it has a deletion covering at least "
+        "half of the curated one, which the real 28-bp deletion does, and doesn't check the "
+        "substitution. In the BostonGene T0 tumor WES every such read carries this change. The "
+        "vaccine peptide lies downstream in the shared frame.",
         (_ALMY + "pindel.vcf", _ALMY + "freebayes.vcf",
          _BUCKET + "vendor/cegat/P116686_2_S000048/P116686_2_somatic.tsv",
          _SITE_REPO + "crates/pileup-json/src/main.rs (min_del_overlap)"),
-        extra_source={"genomic_change_on_cdna": "c.2599_2630delinsAGGG"}, keep_counts=True),
+        extra_source={"genomic_change_on_cdna": "c.2599_2630delinsAGGG"}, keep_counts=True,
+        verified="2026-09-24"),
     Correction(
         "map2-split-representations",
         "MAP2-chr2-209694769 (CT>AG, off-site) plus MAP2-chr2-209694772 (28-bp deletion) are "
@@ -829,14 +830,25 @@ CORRECTIONS = (
     Correction(
         "tempus-timepoint",
         "The timeline dates Tempus xT/xE/xR at T0 (2022-12-16), while the site labels the Tempus "
-        "files T1 2024-06, after their TL-24 accession numbers. The data agree with T0: the Tempus "
-        "tumor calls and reads carry all three variants seen only at T0 (KDM3B, KIF1C, VSIG4) and "
-        "none of the 35 seen only at T1, and its RNA FASTQs are named 20221226_tempus_tumor_rna. "
-        "The T1 labels on the Tempus files are likely wrong; timepoints are left as published.",
+        "files T1 2024-06. The timeline's date agrees with the data; see tempus-file-labels.",
         tuple(Change("events", {"title": title, "date": "2022-12-16"})
               for title in ("Tempus xT", "Tempus xE", "Tempus xR")),
         evidence=(_ALMY + "pindel.vcf", _ALMY + "freebayes.vcf",
                   _BUCKET + "vendor/tempus/TL-24-ALMY2X4KMV/DNA/", _BUCKET + "vendor/tempus/TL-24-KCVBE1UI1P/RNA/"),
+        verified="2026-09-24"),
+    Correction(
+        "tempus-file-labels",
+        "The site labels the Tempus files T1 2024-06, after their TL-24 accession numbers, but they "
+        "look like the T0 tumor: the Tempus tumor calls and reads carry all three variants seen only "
+        "at T0 (KDM3B, KIF1C, VSIG4) and none of the 35 seen only at T1, its RNA FASTQs are named "
+        "20221226_tempus_tumor_rna, and the timeline dates the Tempus tests to T0. The labels are "
+        "left as published, because the specimen can't be pinned down exactly.",
+        (Change("bam_metadata", {"s3_path": glob("vendor/tempus/TL-24-ALMY2X4KMV/*")},
+                expect={"timepoint": "T1"}),
+         Change("bam_metadata", {"s3_path": glob("vendor/tempus/TL-24-KCVBE1UI1P/*")},
+                expect={"timepoint": "T1"})),
+        evidence=(_ALMY + "pindel.vcf", _ALMY + "freebayes.vcf", _CONSOLIDATED,
+                  _BUCKET + "vendor/tempus/TL-24-KCVBE1UI1P/RNA/"),
         verified="2026-09-24"),
     Correction(
         "apheresis-date",

@@ -251,6 +251,10 @@ def test_audit_fixes_on_minimal_records():
     assert _run("fam157a-withdrawn-protein", {"variant_index": [dict(id=fam)],
                                               "source_variants": [dict(id=fam, note=_FAM157A_NOTE)]})[0] == "fixed_upstream"
 
+    # FAM157A: a record without a note field counts as having no note.
+    assert _run("fam157a-withdrawn-protein", {"variant_index": [dict(id=fam)],
+                                              "source_variants": [dict(id=fam)]})[0] == "applied"
+
     # Provider: both published layouts end with every label saying BostonGene.
     for data_source in ("BostonGene", "UCLA"):
         raw = {"bam_metadata": [dict(s3_path=_T1_RNA, provider="UCLA")],
@@ -262,6 +266,21 @@ def test_audit_fixes_on_minimal_records():
         assert status == "applied"
         assert (row["data_source"], row["sample_label"]) == ("BostonGene", "T1 BostonGene Tumor RNA oncoanalyser")
         assert curation.records("bam_metadata")[0][0]["provider"] == "BostonGene"
+    # Once the site fixes every label, the correction is fixed upstream, not ambiguous.
+    fixed = {"bam_metadata": [dict(s3_path=_T1_RNA, provider="BostonGene")],
+             "bams": [dict(url=_T1_RNA, name="T1 BostonGene Tumor RNA oncoanalyser")],
+             "vafs": [dict(bam_file="IPISRC044_tumor_T1_ucla_rna.md.bam", data_source="BostonGene",
+                           sample_label="T1 BostonGene Tumor RNA oncoanalyser")]}
+    assert _run("provider-IPISRC044-T1-rna", fixed)[0] == "fixed_upstream"
+
+    # Tempus files: flagged where the site labels them T1.
+    tempus = {"bam_metadata": [dict(s3_path="vendor/tempus/TL-24-ALMY2X4KMV/DNA/TL-24-ALMY2X4KMV_T.sorted.bam",
+                                    timepoint="T1"),
+                               dict(s3_path="vendor/tempus/TL-24-KCVBE1UI1P/RNA/TL-24-KCVBE1UI1P_T_sorted.bam",
+                                    timepoint="T1")]}
+    status, curation = _run("tempus-file-labels", tempus)
+    assert status == "applied" and curation.report()[0]["action"] == "flag"
+    assert all(marks == ("tempus-file-labels",) for marks in curation.records("bam_metadata")[1].values())
 
     # MAP2: the allele is corrected and the published counts, which measure the real event, are kept.
     map2 = "MAP2-chr2-209694768"

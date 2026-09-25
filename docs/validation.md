@@ -63,12 +63,12 @@ On a snapshot downloaded 2026-09-25 (UTC):
 | --- | --- |
 | Files | 395,541, including 843 alignments and 323 VCF or BCF files |
 | Variants | 181 on the variants page: 179 ready, 1 with a placeholder allele, 1 with no allele |
-| Corrections | 34: 29 applied, 5 already fixed on the site, none stale |
+| Corrections | 35: 30 applied, 5 already fixed on the site, none stale |
 | Unknown labels | None |
 | Timeline | 788 events and 21 specimens |
 
 The 2026-09-18 snapshot, from before the site renamed five variants and merged two
-USH2A entries, still applies all 34 corrections to its 182 entries. Every allele
+USH2A entries, still applies all 35 corrections to its 182 entries. Every allele
 correction was checked against the reference genome, and none only rewrites an
 equivalent form of the published allele. These checks don't download every BAM, or
 test every scientific claim in the sources. The [MAP2 example](tour.md) checks one
