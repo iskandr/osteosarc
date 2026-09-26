@@ -14,7 +14,12 @@ python -m mkdocs build --strict
 
 The tests run offline, on small excerpts of the website's files and on BAMs made up
 for the tests; tests/data/provenance.json records where each excerpt came from, with
-its checksum. CI also runs the OpenVax libraries against osteosarc: Varcode 7.0.0 and
+its checksum. scripts/build_test_fixtures.py remakes the excerpts from a folder of the
+website's files, downloaded under their own names: variants.html, source-variants.json,
+vaccine_overlap.json, bams.json, bucket_listing.json, vafs.tsv, vafs-columns.tsv,
+bam-metadata.tsv, data.html, events.json, timeline.csv, mrd.json,
+samples-consolidated.tsv, samples.json, fastqs-consolidated.tsv, flow-manifest.json,
+dicom-studies.json, pathology-slides.json, lab_results.tsv and cytometry.tsv. CI also runs the OpenVax libraries against osteosarc: Varcode 7.0.0 and
 9.3.7, Isovar 1.17.0 and Topiary 5.55.1. Their full protein and ranking tests run in
 their own repositories.
 

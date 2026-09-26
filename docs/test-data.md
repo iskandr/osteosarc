@@ -205,8 +205,7 @@ recorded as incomplete: finding no reads then isn't evidence that there are none
 
 **Records.** Bundles identify each record by a checksum of its stored bytes, so two BAMs
 match only when they hold the same records the same number of times, whatever their
-compression or order. Older checksums of SAM text still work in exact members, but can
-miss differences in tag types.
+compression or order.
 
 ## Bundles
 

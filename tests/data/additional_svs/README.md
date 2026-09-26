@@ -6,7 +6,7 @@ query intervals, direction and missing-quality evidence remain in the saved
 JSON inputs. The data license is CC0-1.0. These are research candidates, not
 independently validated biological or clinical interpretations.
 
-The shared recipe is `osteosarc/data/additional_sv_recipe.json`. It preserves
+The shared recipe is `recipe.json`, beside this file. It preserves
 all 251 archived source records in shared context members, plus exact per-event,
 per-source witness membership. Reuse across members is not independent evidence.
 Candidate reverse-direction matches remain labeled reverse; missing PacBio
@@ -16,12 +16,12 @@ new witnesses. Source/RG/QNAME/segment selectors are pinned, not gene names.
 Regenerate entirely offline from the repository root:
 
 ```sh
-python -m osteosarc --offline fixtures generate osteosarc/data/additional_sv_recipe.json /tmp/additional-sv-bundle \
+osteosarc --offline test-data make /tmp/additional-sv-bundle --recipe tests/data/additional_svs/recipe.json \
   --source T1-ONT-tagged=tests/data/additional_svs/T1-ONT-tagged.bam \
   --source T2-ONT-tagged=tests/data/additional_svs/T2-ONT-tagged.bam \
   --source T1-short=tests/data/additional_svs/T1-short.bam \
-  --source T1-PacBio=tests/data/additional_svs/T1-PacBio.bam
-python -m osteosarc fixtures verify /tmp/additional-sv-bundle
+  --source T1-PacBio=tests/data/additional_svs/T1-PacBio.bam --size-budget 4000000
+osteosarc test-data verify /tmp/additional-sv-bundle
 ```
 
 [VCF §5.4](https://samtools.github.io/hts-specs/VCFv4.3.pdf) breakend anchor coordinates are retained next to interbase boundaries. A

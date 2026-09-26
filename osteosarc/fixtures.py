@@ -16,7 +16,7 @@ from .cache import digest, stable_id
 from .errors import IntegrityError, SchemaError
 from .models import Region
 from .reads import ReadSubset, assembly_from_header, normalize_assembly, resolve_regions
-from .records import RECORD_ENCODING, read_records, sam_digest
+from .records import RECORD_ENCODING, read_records
 
 
 def _count(value, label):
@@ -94,7 +94,7 @@ def validate_recipe(recipe):
         if policy.get("duplicate_policy", "preserve") not in ("preserve", "identical-record-once"):
             raise SchemaError("Unknown duplicate policy")
         if policy["kind"] == "exact":
-            if policy.get("encoding", RECORD_ENCODING) not in (RECORD_ENCODING, "sam-text-v1"):
+            if policy.get("encoding", RECORD_ENCODING) != RECORD_ENCODING:
                 raise SchemaError("Unsupported record identity encoding")
             if not isinstance(policy.get("records"), dict):
                 raise SchemaError("Exact selection requires an explicit records mapping (empty if intentional)")
@@ -187,6 +187,8 @@ def select_fixture_records(records, policy, *, regions=(), context_regions=()):
     refer to the same source records. Required witnesses bypass sampling caps.
     A cap limits optional templates, never records belonging to a kept template.
     """
+    if policy.get("encoding", RECORD_ENCODING) != RECORD_ENCODING:
+        raise SchemaError(f"Unsupported record identity encoding: {policy['encoding']}")
     # Public callers may pass read_records() directly. Selection revisits the
     # input for witnesses, strata and context, so consume an iterator only once.
     records = tuple(records)
@@ -200,24 +202,10 @@ def select_fixture_records(records, policy, *, regions=(), context_regions=()):
         return counts, {}, "omitted" if kind == "omitted" else "empty"
     if kind == "exact":
         required = Counter(policy.get("records", {}))
-        pinned = dict(policy.get("reasons", {}))  # keyed like records; re-keyed below for SAM text
-        if policy.get("encoding", RECORD_ENCODING) == "sam-text-v1":
-            by_sam = defaultdict(Counter)
-            for record in records:
-                by_sam[sam_digest(record.read.to_string())][record.digest] += 1
-            if required - Counter({k: sum(v.values()) for k, v in by_sam.items()}):
-                raise IntegrityError("Missing pinned SAM-text records or duplicate occurrences")
-            for key, n in required.items():
-                if len(by_sam[key]) != 1:
-                    raise IntegrityError("Ambiguous SAM identity maps to distinct binary records")
-                binary = next(iter(by_sam[key]))
-                counts[binary] = n
-                if key in pinned:
-                    pinned[binary] = pinned.pop(key)
-        else:
-            if missing := required - available:
-                raise IntegrityError(f"Missing pinned records or duplicate occurrences: {dict(missing)}")
-            counts = required
+        pinned = dict(policy.get("reasons", {}))
+        if missing := required - available:
+            raise IntegrityError(f"Missing pinned records or duplicate occurrences: {dict(missing)}")
+        counts = required
         for key in counts:
             reasons[key].update(pinned.get(key, [policy.get("reason", "pinned historical record")]))
     else:

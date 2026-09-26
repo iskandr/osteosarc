@@ -3,7 +3,6 @@
 The v1 encoding retains the stored CIGAR, SEQ, QUAL and auxiliary bytes (including
 floating-point payloads and integer widths). It ignores only the derived bin and
 numeric reference IDs. Tag order is deliberately significant. See SAMv1 §4.2.
-SAM-text identities are separate legacy identities, never a lossless substitute.
 """
 
 from __future__ import annotations
@@ -60,11 +59,6 @@ def bam_record_digests(path):
 def record_multiset(path):
     """Return the exact stored record multiplicities of a local BAM."""
     return Counter(bam_record_digests(path))
-
-
-def sam_digest(line):
-    """Historical SAM-text identity; does not guarantee typed binary tag fidelity."""
-    return hashlib.sha256(line.encode("utf-8")).hexdigest()
 
 
 @dataclass(frozen=True)

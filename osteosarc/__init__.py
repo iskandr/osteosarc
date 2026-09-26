@@ -55,7 +55,7 @@ from .shared import bundle_file, check_fixtures, fetch_bundle
 from .sv_candidates import load_sv_candidates
 from .timeline import Event, Timeline
 
-__version__ = "0.12.0"
+__version__ = "0.13.0"
 
 # The public API. A few other helpers are importable from here because the OpenVax
 # libraries use them (digest, parse_variants, inspect_alignment, ...); everything
