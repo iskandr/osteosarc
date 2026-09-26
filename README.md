@@ -66,8 +66,10 @@ print(reads.path)
 ```
 
 Only the reads near the variants are fetched, into a small indexed BAM; asking again
-reuses it, even offline. The OpenVax libraries share one ready-made bundle of test
-reads, openvax-v1: `osteosarc test-data list openvax-v1` shows what's in it.
+reuses it, even offline. For a bundle anyone can rebuild, with a balanced set of reads
+at each variant and every record pinned, use `osteosarc test-data make`; a test then
+reads a member with `osteosarc.bundle_file(bundle, member)`. The OpenVax libraries share
+one such bundle, openvax-v1.
 
 The website changes over time, so its metadata is saved as dated snapshots:
 `osteosarc snapshots` lists them, and `--snapshot 2026-09` picks the newest from that

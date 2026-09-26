@@ -27,8 +27,8 @@ def test_api_dataset_cli_and_input_order_agree(bam, dataset, tmp_path, capsys):
     selected = select_fixtures(recipe, {"rna": bam})
     path = tmp_path / "recipe.json"
     path.write_text(json.dumps(recipe))
-    assert main(["--cache", str(tmp_path / "cache"), "--offline", "test-data", "generate", str(path),
-                 str(tmp_path / "bundle"), "--source", f"rna={bam}", "--json"]) == 0
+    assert main(["--cache", str(tmp_path / "cache"), "--offline", "test-data", "make", str(tmp_path / "bundle"),
+                 "--recipe", str(path), "--source", f"rna={bam}", "--json"]) == 0
     assert json.loads(capsys.readouterr().out)["members"] == selected.manifest["members"]
     assert selected.members["alt"]["records"] == record_multiset(bam)
     records = list(read_records(bam))

@@ -55,9 +55,16 @@ def test_cli_and_dataset_produce_same_bundle(bam, dataset, tmp_path, capsys):
     path = tmp_path / "recipe.json"
     path.write_text(json.dumps(recipe))
     expected = generate_bundle(recipe, tmp_path / "api", sources={"rna": bam}, dataset=dataset)
-    assert main(["--cache", str(tmp_path / "cache"), "--offline", "test-data", "generate", str(path),
-                 str(tmp_path / "cli"), "--source", f"rna={bam}", "--json"]) == 0
+    assert main(["--cache", str(tmp_path / "cache"), "--offline", "test-data", "make", str(tmp_path / "cli"),
+                 "--recipe", str(path), "--source", f"rna={bam}", "--json"]) == 0
     assert json.loads(capsys.readouterr().out) == expected
+    # A recipe alone decides the bundle; BAMs and targets are for making one without a recipe.
+    assert main(["--cache", str(tmp_path / "cache"), "--offline", "test-data", "make", str(tmp_path / "x"),
+                 "T1_tumor", "--recipe", str(path)]) == 1
+    assert "from the recipe alone" in capsys.readouterr().err
+    assert main(["--cache", str(tmp_path / "cache"), "--offline", "test-data", "make", str(tmp_path / "x"),
+                 "--variant", "DYNC1H1-chr14-101980529"]) == 1
+    assert "Name the BAMs to read" in capsys.readouterr().err
     assert main(["--cache", str(tmp_path / "cache"), "--offline", "test-data", "verify", str(tmp_path / "cli")]) == 0
     assert "1 member (1 with reads), 7 records from 1 BAM" in capsys.readouterr().out
 
@@ -533,3 +540,30 @@ def test_export_refuses_two_members_that_would_share_a_file(bam, tmp_path):
         export_bundle(tmp_path / "bundle", tmp_path / "out")
     assert not (tmp_path / "out").exists()
     assert set(export_bundle(tmp_path / "bundle", tmp_path / "out", members=["reads"])) == {"reads"}
+
+
+def test_a_local_folder_named_like_a_published_bundle_stays_local(bam, tmp_path, tiny_release, monkeypatch):
+    from osteosarc import Cache, bundle_file, export_bundle
+    from osteosarc.shared import bundle_folder
+    generate_bundle(bundle_recipe(bam), tmp_path / "tiny-v1", sources={"rna": bam})
+    monkeypatch.chdir(tmp_path)
+    offline = Cache(tmp_path / "empty", offline=True)  # the published tiny-v1 isn't cached: any fetch would fail
+    folder = bundle_folder("./tiny-v1", cache=offline)
+    assert verify_bundle(folder, cache=offline)["members"].keys() == {"duplicates"}
+    assert set(export_bundle("./tiny-v1", tmp_path / "out", cache=offline)) == {"duplicates"}
+    assert bundle_file("./tiny-v1", "duplicates", cache=offline).is_file()
+
+
+def test_bundle_file_gives_each_member_its_own_file_and_exports_a_source_once(bam, tmp_path, monkeypatch):
+    import osteosarc.bundles as bundles
+    from osteosarc import bundle_file
+    recipe = bundle_recipe(bam)
+    recipe["members"]["reads"] = copy.deepcopy(recipe["members"]["duplicates"])
+    recipe["members"]["reads.bam"] = recipe["members"].pop("duplicates")
+    generate_bundle(recipe, tmp_path / "bundle", sources={"rna": bam})
+    first = bundle_file(tmp_path / "bundle", "reads", cache=tmp_path / "cache")
+    monkeypatch.setattr(bundles, "_write_members", lambda *a, **kw: pytest.fail("exported the source again"))
+    second = bundle_file(tmp_path / "bundle", "reads.bam", cache=tmp_path / "cache")
+    assert first != second and first.is_file() and second.is_file()
+    with pytest.raises(ValueError, match="bam, sam or sam.gz"):
+        bundle_file(tmp_path / "bundle", "reads", format="cram", cache=tmp_path / "cache")

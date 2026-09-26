@@ -71,16 +71,21 @@ see [Reads](reads.md).
 
 | Call | What it does |
 | --- | --- |
-| `fetch_bundle("openvax-v1")` | Download the OpenVax libraries' shared test reads once, and return their folder (`offline=True` never downloads) |
+| `data.make_bundle("dir", variants=[...], files=[...])` | Make a bundle of test reads: a balanced set at each variant (or SV) in each BAM, every record pinned |
+| `bundle_file("dir", member)` | One member as a local indexed BAM (or SAM), exported once into the cache and reused offline |
+| `list_bundle("dir")` | Each member, with its records and why they were kept |
+| `export_bundle("dir", "tests/data", members=[...])` | Write members into a folder as indexed BAMs (or SAM), named after them |
 | `check_fixtures("openvax-v1", {"member": "file.bam"}, root="tests/data")` | Compare your own files with a bundle's members; returns those that differ |
-| `generate_bundle(recipe, "bundle", dataset=data)` | Fetch a recipe's reads and write a bundle anyone can check offline |
-| `verify_bundle("bundle")` | Check every file, record and index |
-| `list_bundle("bundle")` | Each member, with its records and why they were kept |
-| `export_bundle("bundle", "tests/data", members=[...])` | Write members into a folder as indexed BAMs (or SAM), named after them |
+| `verify_bundle("dir")` | Check every file, record and index |
+| `fetch_bundle("openvax-v1")` | Download a published bundle once, and return its folder (`offline=True` never downloads) |
+| `generate_bundle(recipe, "dir", dataset=data)` | Make a bundle from a [recipe](test-data.md#recipes) |
 | `validate_recipe(recipe)` | Check a recipe before fetching anything |
-| `load_panel("vaccine-loci-v1")` | A shipped list of targets to build a recipe from |
-| `load_sv_candidates()` | The [SV candidates](sv-candidates.md), with their evidence |
+| `load_panel("vaccine-loci-v1")`, `load_sv_candidates()` | Shipped lists of targets, and the [SV candidates](sv-candidates.md) |
 
+bundle_file, list_bundle, export_bundle, check_fixtures and verify_bundle take a
+bundle's folder or the name of a published bundle, such as openvax-v1, the reads the
+OpenVax libraries share; fetch_bundle takes a name. In make_bundle, files can also be
+samples, by ID or as data.samples[...].
 `osteosarc.shared.published("openvax-v1")` gives a published bundle's release
 record, with the manifest checksum to record alongside your results. See
 [Test data](test-data.md).

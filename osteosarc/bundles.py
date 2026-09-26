@@ -241,15 +241,23 @@ def _verify_member(name, member, declared, recipe):
     return counts
 
 
-def verify_bundle(directory, *, sha256=None):
+def _folder(bundle, cache=None):
+    """A bundle's folder: bundle is a published bundle's name (such as openvax-v1) or a path."""
+    from .shared import bundle_folder
+    return bundle_folder(bundle, cache=cache)
+
+
+def verify_bundle(bundle, *, sha256=None, cache=None):
     """Verify bytes, recipe/membership, original record multiplicity and indexes offline.
 
-    Pin ``sha256`` to the manifest hash when loading an externally supplied data
-    version. Internal checks detect corruption; an unpinned manifest is not an
-    authenticity signature. This function needs neither SAMtools nor network.
+    bundle is a folder, or a published bundle's name (such as openvax-v1), which is
+    downloaded the first time. Pin ``sha256`` to the manifest hash when loading an
+    externally supplied data version. Internal checks detect corruption; an
+    unpinned manifest is not an authenticity signature. Verifying a folder needs
+    neither SAMtools nor network.
     """
     import pysam
-    root = Path(directory)
+    root = _folder(bundle, cache)
     if sha256 and digest(root / "manifest.json") != sha256:
         raise IntegrityError("Pinned bundle manifest checksum mismatch")
     manifest = json.loads((root / "manifest.json").read_text())
@@ -327,28 +335,47 @@ def verify_bundle(directory, *, sha256=None):
     return manifest
 
 
-def list_bundle(directory):
-    """Return member status, scope, record counts and reasons after verification."""
-    return verify_bundle(directory)["members"]
+def list_bundle(bundle, *, cache=None):
+    """Each member of a bundle (a published name such as openvax-v1, or a folder):
+    its status, record counts and the reasons its records were kept."""
+    return verify_bundle(bundle, cache=cache)["members"]
 
 
-def export_bundle(directory, to, *, members=None, format="bam"):
+def export_bundle(bundle, to, *, members=None, format="bam", cache=None):
     """Write a bundle's members into a folder, each as a file named after it.
 
-    A BAM export (NAME.bam, with its index; a member already named x.bam is
-    written as x.bam) holds exactly the member's records,
-    repeats included. SAM text (NAME.sam or NAME.sam.gz) keeps every field but
-    can't promise binary float and tag types. The folder may already exist: a
-    file there that holds the same records is kept, and one that differs is an
-    error, in which case nothing is written. Members without reads (unresolved
-    or omitted) are skipped; empty members give valid empty files. Returns
-    {member: path}.
+    bundle is a published bundle's name (such as openvax-v1) or a folder. A BAM
+    export (NAME.bam, with its index; a member already named x.bam is written as
+    x.bam) holds exactly the member's records, repeats included. SAM text
+    (NAME.sam or NAME.sam.gz) keeps every field but can't promise binary float
+    and tag types. The folder may already exist: a file there that holds the same
+    records is kept, and one that differs is an error, in which case nothing is
+    written. Members without reads (unresolved or omitted) are skipped; empty
+    members give valid empty files. Returns {member: path}. For one member in a
+    test, bundle_file is simpler.
     """
-    import pysam
-    if format not in ("bam", "sam", "sam.gz"):
-        raise ValueError("Export format must be bam, sam or sam.gz")
-    root, to = Path(directory), Path(to)
+    _check_format(format)
+    root = _folder(bundle, cache)
     manifest = verify_bundle(root)
+    return _write_members(root, manifest, members, to, format)
+
+
+def _check_format(format):
+    if format not in ("bam", "sam", "sam.gz"):
+        raise ValueError(f"Export format must be bam, sam or sam.gz, not {format!r}")
+
+
+def export_target(to, name, format):
+    """Where a member is written: under its own name when it already ends in the format's extension."""
+    return safe_path(Path(to), name if name.endswith("." + format) else f"{name}.{format}")
+
+
+def _write_members(root, manifest, members, to, format, *, naming=None):
+    """export_bundle's work, for a bundle already verified. naming gives each
+    member's path in the folder (by default export_target's)."""
+    import pysam
+    _check_format(format)
+    to = Path(to)
     names = sorted(set(manifest["members"] if members is None else members))
     if missing := set(names) - manifest["members"].keys():
         raise KeyError(f"Unknown bundle members: {sorted(missing)}")
@@ -357,8 +384,8 @@ def export_bundle(directory, to, *, members=None, format="bam"):
         member = manifest["members"][name]
         if member["status"] not in ("unresolved", "omitted"):
             by_source.setdefault(member["source"], []).append(name)
-            # A member named after its file (reads.bam) keeps its name; checks every name before writing any.
-            targets[name] = safe_path(to, name if name.endswith("." + format) else f"{name}.{format}")
+            # Checks every name before writing any.
+            targets[name] = safe_path(to, naming(name)) if naming else export_target(to, name, format)
     by_target = {}
     for name, target in targets.items():
         if target in by_target:

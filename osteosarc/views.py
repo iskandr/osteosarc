@@ -111,8 +111,9 @@ def regions_text(regions):
     return first if len(regions) == 1 else f"{len(regions)} regions from {first}"
 
 
-def plural(n, word):
-    return f"{n:,} {word}" + ("" if n == 1 else "s")
+def plural(n, word, words=None):
+    """"1 BAM", "3 BAMs"; words is the plural when it isn't word + "s"."""
+    return f"{n:,} {word if n == 1 else words or word + 's'}"
 
 
 def hints(lines):

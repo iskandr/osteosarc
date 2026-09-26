@@ -62,8 +62,8 @@ print(reads.path)
 ```
 
 Asking again reuses the cached result, even offline. [Reads](reads.md) covers
-regions, filters and mates; [test data](test-data.md) covers openvax-v1, the test reads
-the OpenVax libraries share, and bundles of your own.
+regions, filters and mates; [test data](test-data.md) covers making a bundle of test
+reads, using one in tests, and openvax-v1, the bundle the OpenVax libraries share.
 
 ## Where to go next
 
