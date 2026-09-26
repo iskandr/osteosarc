@@ -1,6 +1,7 @@
 {
  "url": "https://github.com/iskandr/osteosarc/releases/download/openvax-v1/openvax-v1.tar.gz",
- "sha256": "1b69c56cefb3fcaba072a17345c75a1111d338f95eb88c845d2f92f1bbf14a38",
- "size_bytes": 26622021,
- "manifest_sha256": "35119638785c106c4c5e3c80cf0651932cf84bffa2f6463c24983c24429b6bde"
+ "spec_sha256": "4fa9388c24f09a31475fdf40dff16d077a420fcae18d7d729fea53bf581c128d",
+ "sha256": "2f4e82fa2ae267d9c71e5b26274cbd388a49dc093b4e8165678e082d7a037f2d",
+ "size_bytes": 28126927,
+ "manifest_sha256": "d2218c8ea28c7194ff9676ea5cf7a0632b6ce8d073c7d62237d514b59744ac02"
 }

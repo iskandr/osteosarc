@@ -296,51 +296,57 @@ def structural_targets(spec):
     return targets, breakends, observed_in
 
 
-def _pieces(read):
-    """Reference spans of a read's alignment, split at deletions but not at introns (N)."""
-    pieces, start, position = [], None, read.reference_start
-    for op, length in read.cigartuples or ():
-        if op in (0, 3, 7, 8):  # M, N, =, X
-            start = position if start is None else start
-            position += length
-        elif op == 2:  # D
-            if start is not None:
-                pieces.append((start, position))
-            start, position = None, position + length
-    return pieces + ([(start, position)] if start is not None else [])
+#: How far a gap's ends may sit from the breakends it joins (alignments of a junction wobble).
+JUNCTION_SLACK = 10
 
 
-def _joins(records, windows):
-    """Whether a template's alignments join every window, as a split read, a
+def _joins(records, breakends, pad):
+    """Whether a template's alignments join every breakend, as a split read, a
     discordant pair or a chimeric long read would.
 
-    Only aligned bases count as touching a window. A read that runs across the
-    breakends, even through an intron, doesn't join them (a deletion does), and
-    neither does a proper pair whose mates fall on either side.
+    Every breakend's window (pad bases either side) must hold aligned bases of
+    the template, but no single aligned block may run across all of them. The
+    template must then be split (a supplementary alignment or an SA tag), a pair
+    the aligner didn't call proper, or a read whose intron or deletion runs from
+    one breakend to another. So a proper pair on either side of the breakends, or
+    a read spliced from an exon near one to an exon near another, doesn't count.
     """
     reads = [r.read for r in records if not r.read.is_unmapped]
+    windows = [(contig, max(0, position - pad), position + pad) for contig, position in breakends]
+    blocks = [(r.reference_name, start, end) for r in reads for start, end in r.get_blocks()]
 
-    def touches(contig, start, end, window):
-        return contig == window[0] and start < window[2] and end > window[1]
-
-    def reaches(read, spans):
-        return all(any(touches(read.reference_name, s, e, w) for s, e in spans) for w in windows)
-    if not all(any(touches(r.reference_name, s, e, w) for r in reads for s, e in r.get_blocks()) for w in windows):
+    def touches(block, window):
+        return block[0] == window[0] and block[1] < window[2] and block[2] > window[1]
+    if not all(any(touches(b, w) for b in blocks) for w in windows):
         return False
-    if any(reaches(r, [piece]) for r in reads for piece in _pieces(r)):
+    if any(all(touches(b, w) for w in windows) for b in blocks):
         return False
-    ordinary_pair = all(r.is_proper_pair and not r.is_supplementary and not r.has_tag("SA") for r in reads)
-    return not ordinary_pair or any(reaches(r, r.get_blocks()) for r in reads)
+    split = any(r.is_supplementary or r.has_tag("SA") for r in reads)
+    discordant = any(r.is_paired and not r.is_proper_pair and not r.mate_is_unmapped for r in reads)
+    return split or discordant or any(_junction(r, breakends) for r in reads)
 
 
-def select_breakend_templates(templates, windows, *, cap=50):
-    """Templates whose alignments join every breakend window: {template: reason}.
+def _junction(read, breakends):
+    """Whether one of the read's introns or deletions runs from one breakend to another."""
+    here = [p for c, p in breakends if c == read.reference_name]
+    position = read.reference_start
+    for op, length in read.cigartuples or ():
+        if op in (2, 3):  # D, N
+            left, right = position, position + length
+            if any(i != j and abs(left - a) <= JUNCTION_SLACK and abs(right - b) <= JUNCTION_SLACK
+                   for i, a in enumerate(here) for j, b in enumerate(here)):
+                return True
+        if op in (0, 2, 3, 7, 8):  # M, D, N, =, X consume the reference
+            position += length
+    return False
 
-    That's a split read, a discordant pair or a chimeric long read. A read that
-    merely spans the breakends in one aligned block, or a proper pair whose mates
-    fall on either side, doesn't count. Up to cap, in hash order.
+
+def select_breakend_templates(templates, breakends, *, pad=1000, cap=50):
+    """Templates whose alignments join every breakend (see _joins): {template: reason}.
+
+    breakends are (contig, position) pairs. Up to cap, in hash order.
     """
-    joined = [t for t, records in templates.items() if _joins(records, windows)]
+    joined = [t for t, records in templates.items() if _joins(records, breakends, pad)]
     chosen = sorted(joined, key=template_order)[:cap]
     return {t: "joins the breakends (hash order)" for t in chosen}, len(joined)
 
@@ -417,7 +423,7 @@ def _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, e
     if not wanted:
         return None
     label = dataset.short_name(file)  # names members as osteosarc reads --to names files
-    return dict(file=file, label=label, mine=mine, covered=covered, sv_covered=sv_covered,
+    return dict(file=file, label=label, mine=mine, covered=covered, sv_covered=sv_covered, pad=pad,
                 source=_source_entry(dataset, file, header, resolve_regions(wanted, header), label),
                 # Each target's window and breakends, in this source's contig names.
                 variant_regions={n: resolve_regions([r], header)[0] for n, r in variant_regions.items()},
@@ -453,7 +459,8 @@ def _select_source(plan, index, windows, targets, caps, low_quality_alt, cap):
         for end in ends[1:]:
             near = index.touching(*end)
             candidates = {t: rs for t, rs in candidates.items() if t in near}
-        chosen, joined = select_breakend_templates(candidates, ends, cap=cap)
+        breakends = [(r.contig, r.end - plan["pad"]) for r in plan["breakend_regions"][name]]
+        chosen, joined = select_breakend_templates(candidates, breakends, pad=plan["pad"], cap=cap)
         members[f"{label}.{name}"] = dict(target=name, source=label, observed=dict(joined=joined),
                                           policy=dict(exact(chosen), reason="templates joining the breakends"))
     for subset_name, required_subset in sorted(plan["mine"].items()):

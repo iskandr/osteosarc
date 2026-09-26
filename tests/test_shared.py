@@ -81,27 +81,30 @@ def test_fusion_templates_must_reach_every_breakend_window():
         (None, "pair"): [aligned("pair", 0, 150, flag=65), aligned("pair", 1, 520, flag=129)],
         (None, "one-sided"): [aligned("one-sided", 0, 120)],
     }
-    windows = [("chr1", 50, 250), ("chr2", 400, 600)]
-    chosen, joined = select_breakend_templates(templates, windows, cap=5)
+    breakends = [("chr1", 150), ("chr2", 500)]
+    chosen, joined = select_breakend_templates(templates, breakends, pad=100, cap=5)
     assert joined == 2 and set(chosen) == {(None, "split"), (None, "pair")}
-    capped, _ = select_breakend_templates(templates, windows, cap=1)
+    capped, _ = select_breakend_templates(templates, breakends, pad=100, cap=1)
     assert list(capped) == sorted([(None, "split"), (None, "pair")], key=template_order)[:1]
 
-    # Breakends close together: reads that merely run across them don't join them.
-    close = [("chr1", 1000, 1200), ("chr1", 1300, 1500)]
+    # Breakends on one contig: reads that merely run across them, or are spliced from
+    # an exon near one to an exon near the other, don't join them; a junction does.
+    close = [("chr1", 1100), ("chr1", 1400)]
     ordinary = {
         (None, "spans"): [aligned("spans", 0, 1150, cigar="200M")],
         (None, "spliced"): [aligned("spliced", 0, 1150, cigar="5M200N5M")],
         (None, "intron-over-both"): [aligned("intron-over-both", 0, 900, cigar="5M700N5M")],
+        (None, "deletion-elsewhere"): [aligned("deletion-elsewhere", 0, 1150, cigar="5M200D5M")],
         (None, "proper"): [aligned("proper", 0, 1100, flag=67), aligned("proper", 0, 1400, flag=131)],
     }
     junctions = {
-        (None, "deletion"): [aligned("deletion", 0, 1150, cigar="5M200D5M")],
+        (None, "spliced-junction"): [aligned("spliced-junction", 0, 1050, cigar="50M300N50M")],
+        (None, "deletion"): [aligned("deletion", 0, 1052, cigar="50M296D50M")],
         (None, "discordant"): [aligned("discordant", 0, 1100, flag=65), aligned("discordant", 0, 1400, flag=129)],
         (None, "supplementary"): [aligned("supplementary", 0, 1100), aligned("supplementary", 0, 1400, flag=2048)],
     }
-    chosen, joined = select_breakend_templates({**ordinary, **junctions}, close, cap=10)
-    assert set(chosen) == set(junctions) and joined == 3
+    chosen, joined = select_breakend_templates({**ordinary, **junctions}, close, pad=100, cap=10)
+    assert set(chosen) == set(junctions) and joined == 4
 
 
 def test_required_reads_can_be_named_instead_of_listed():
