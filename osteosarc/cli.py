@@ -28,7 +28,7 @@ COMMANDS = (
         ("download FILE", "A whole file (--to DIR puts it, and its index, in DIR)"),
         ("downloads", "What's already on this computer, and where"))),
     ("Test data for libraries", (
-        ("test-data ...", "Shared test reads (openvax-v1): list, export, and check your copies"),)),
+        ("test-data ...", "Bundles of test reads: make your own, or use the shared openvax-v1"),)),
     ("Snapshots of the website's metadata", (
         ("sync", "Download the current metadata (about 57 MB); commands use the newest"),
         ("snapshots", "Saved snapshots, by download date"),
@@ -186,20 +186,41 @@ def parser():
     snapshots.add_argument("--json", action="store_true")
     command("repl")
     test_data = command("test-data", data=False, epilog="examples:\n"
+                        "  osteosarc test-data make tests/data/dync1h1 T0_tumor --assay rna-seq "
+                        "--variant DYNC1H1-chr14-101980529\n"
                         "  osteosarc test-data list openvax-v1\n"
-                        "  osteosarc test-data export openvax-v1 tests/data --member IPISRC044_tumor_T2_ucla.redux.DYNC1H1-chr14-101980529\n"
-                        "  osteosarc test-data check openvax-v1 fixtures.json\n"
-                        "  osteosarc test-data generate recipe.json bundle")
+                        "  osteosarc test-data export openvax-v1 tests/data --member "
+                        "IPISRC044_tumor_T2_ucla.redux.DYNC1H1-chr14-101980529\n"
+                        "  osteosarc test-data check openvax-v1 fixtures.json")
     actions = test_data.add_subparsers(dest="test_data_command", required=True, metavar="ACTION")
-    generate = actions.add_parser("generate", help="Fetch a recipe's reads and write a bundle")
-    generate.add_argument("recipe")
-    generate.add_argument("output", help="A new directory")
-    generate.add_argument("--source", action="append", default=[], metavar="ID=LOCAL_BAM",
-                          help="Use a BAM you already have for one of the recipe's sources")
-    generate.add_argument("--size-budget", type=int, default=64 * 1024 * 1024)
-    generate.add_argument("--header-policy", choices=("full", "compact"), default="full",
-                          help="compact keeps only the header lines the records need")
-    generate.add_argument("--json", action="store_true", help="The bundle's manifest as JSON")
+    make = actions.add_parser(
+        "make", parents=[snapshot], formatter_class=argparse.RawDescriptionHelpFormatter,
+        help="Make a bundle of test reads for variants and SVs in some BAMs (or from a recipe)",
+        description="Make a bundle of test reads in a new folder. For each variant, each BAM gives a\n"
+                    "balanced set of templates (up to 20 alt, 10 ref, 5 other and 2 not spanning it); for\n"
+                    "each SV or fusion, up to 50 templates that join its breakends. Every record is pinned\n"
+                    "by checksum, so anyone can rebuild the bundle and check it offline.",
+        epilog="examples:\n"
+               "  osteosarc test-data make tests/data/dync1h1 T0_tumor --assay rna-seq "
+               "--variant DYNC1H1-chr14-101980529\n"
+               "  osteosarc test-data make tests/data/gabbr1 T2_tumor --assay wgs --sv GABBR1-SLC29A1\n"
+               "  osteosarc test-data make bundle --recipe recipe.json")
+    make.add_argument("output", help="A new folder for the bundle")
+    make.add_argument("sources", nargs="*", metavar="FILE|SAMPLE",
+                      help="BAMs to read: a file's key, URL or ID, or a sample ID for each of its indexed BAMs")
+    make.add_argument("--variant", action="append", default=[], metavar="ID",
+                      help="A catalogue variant with a ready allele; repeat for several")
+    make.add_argument("--sv", action="append", default=[], metavar="ID",
+                      help="An SV candidate (such as SV0461) or SV regression target; repeat for several")
+    make.add_argument("--assay", help="With a sample: only its BAMs of this assay, such as rna-seq")
+    make.add_argument("--platform", help="With a sample: only its BAMs from this platform, such as ont")
+    make.add_argument("--recipe", metavar="FILE", help="Make the bundle from a recipe instead (see the test data docs)")
+    make.add_argument("--source", action="append", default=[], metavar="ID=LOCAL_BAM",
+                      help="With --recipe: use a BAM you already have for one of its sources")
+    make.add_argument("--header-policy", choices=("full", "compact"), default="full",
+                      help="With --recipe: compact keeps only the header lines the records need")
+    make.add_argument("--size-budget", type=int, default=64 * 1024 * 1024, help="Largest bundle, in bytes")
+    make.add_argument("--json", action="store_true", help="The bundle's manifest as JSON")
     for name, what in (("list", "Each member of a bundle, with its records and why"),
                        ("verify", "Check a bundle's files, records and indexes"),
                        ("export", "Write members into a folder as indexed BAMs (or SAM), named after them")):
@@ -436,22 +457,27 @@ def is_sample(dataset, name):
     return "/" not in name and name in {sample.id for sample in dataset.samples}
 
 
-def read_sources(dataset, args):
-    """The BAMs a reads command reads from: one file, or a sample's BAMs."""
-    if not is_sample(dataset, args.file):
-        if args.assay or args.platform:
+def bams(dataset, name, *, assay=None, platform=None):
+    """A FILE|SAMPLE argument's BAMs: that file, or a sample's indexed BAMs (of this assay and platform)."""
+    if not is_sample(dataset, name):
+        if assay or platform:
             raise ValueError("--assay and --platform choose among a sample's BAMs; give a sample ID")
-        return [dataset.file(args.file)]
-    if args.index:
-        raise ValueError("--index belongs to one BAM; give a file's key, not a sample, to use it")
-    bams = dataset.samples[args.file].files.select(kind="alignment", assay=args.assay, platform=args.platform)
-    indexed = [f for f in bams if f.index_urls]
-    for file in bams:
+        return [dataset.file(name)]
+    found = dataset.samples[name].files.select(kind="alignment", assay=assay, platform=platform)
+    for file in found:
         if not file.index_urls:
             print(f"skipping {file.key}: it has no index in the bucket", file=sys.stderr)
+    indexed = [f for f in found if f.index_urls]
     if not indexed:
-        raise ValueError(f"{args.file} has no indexed BAMs" + (" of that kind" if args.assay or args.platform else ""))
+        raise ValueError(f"{name} has no indexed BAMs" + (" of that kind" if assay or platform else ""))
     return indexed
+
+
+def read_sources(dataset, args):
+    """The BAMs a reads command reads from: one file, or a sample's BAMs."""
+    if is_sample(dataset, args.file) and args.index:
+        raise ValueError("--index belongs to one BAM; give a file's key, not a sample, to use it")
+    return bams(dataset, args.file, assay=args.assay, platform=args.platform)
 
 
 def get_data(args, dataset):
@@ -546,21 +572,41 @@ def main(argv=None):
 
 
 def test_data(args, cache):
-    """test-data generate, list, verify, export and check."""
+    """test-data make, list, verify, export and check."""
     from pathlib import Path
 
     from .bundles import export_bundle, generate_bundle, list_bundle, verify_bundle
     from .shared import bundle_folder, check_fixtures, read_json
+    from .views import table
     action = args.test_data_command
-    if action == "generate":
-        recipe = read_json(args.recipe)
-        sources = dict(item.split("=", 1) for item in args.source)
-        manifest = generate_bundle(recipe, args.output, sources=sources, cache=cache,
-                                   size_budget=args.size_budget, header_policy=args.header_policy)
+    if action == "make":
+        if args.recipe:
+            if args.sources or args.variant or args.sv or args.assay or args.platform:
+                raise ValueError("--recipe makes the bundle from the recipe alone; drop the BAMs, --variant and --sv")
+            manifest = generate_bundle(read_json(args.recipe), args.output,
+                                       sources=dict(item.split("=", 1) for item in args.source), cache=cache,
+                                       size_budget=args.size_budget, header_policy=args.header_policy)
+        else:
+            if args.source:
+                raise ValueError("--source goes with --recipe")
+            if not args.sources:
+                raise ValueError("Name the BAMs to read: a file's key, or a sample ID (see osteosarc samples)")
+            dataset = open_snapshot(args, cache, not args.offline)
+            files = [f for name in args.sources for f in bams(dataset, name, assay=args.assay, platform=args.platform)]
+            print(f"Reading {len(files)} BAM{'s' if len(files) != 1 else ''}; the first time, this streams "
+                  "the reads it needs from each.", file=sys.stderr)
+            from .shared import make_bundle
+            folder = make_bundle(dataset, args.output, variants=args.variant, svs=args.sv, files=files,
+                                 size_budget=args.size_budget, log=lambda text: print(text, file=sys.stderr))
+            manifest = verify_bundle(folder)
         if args.json:
             print_json(manifest)
-        else:
-            print(bundle_summary(args.output, manifest))
+            return 0
+        rows = [dict(member=name, status=m["status"], records=m["record_count"])
+                for name, m in manifest["members"].items()]
+        print(bundle_summary(args.output, manifest) + "\n\n" + table(rows, ["status", "records", "member"],
+                                                                      fixed=("member",)))
+        print(f'\nIn a test: osteosarc.bundle_file("{args.output}", MEMBER) gives a member as an indexed BAM.')
         return 0
     args.bundle = bundle_folder(args.bundle, cache=cache)
     if action == "check":
@@ -583,7 +629,6 @@ def test_data(args, cache):
         if args.json:
             print_json(members)
         else:
-            from .views import table
             rows = [dict(member=name, status=m["status"], records=m["record_count"]) for name, m in members.items()]
             print(table(rows, ["status", "records", "member"], fixed=("member",)))
     else:

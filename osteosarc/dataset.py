@@ -66,9 +66,10 @@ GUIDE = """What's here:
   data.corrections      known problems in the website's data, and their fixes
 
 Get data:
-  data.download(key)                       download a whole file; returns its local path
-  data.extract_reads(key, variants=...)    reads around variants, as a small local BAM
-  data.downloads()                         what's already on this computer, and where"""
+  data.download(key)                          download a whole file; returns its local path
+  data.extract_reads(key, variants=...)       reads around variants, as a small local BAM
+  data.make_bundle(dir, variants=..., ...)    a bundle of test reads that anyone can rebuild
+  data.downloads()                            what's already on this computer, and where"""
 
 DATE_SELECTOR = re.compile(r"\d{4}(-\d{2}(-\d{2})?)?")
 DATED_NAME = re.compile(r"\d{4}-\d{2}-\d{2}(\.\d+)?")
@@ -858,6 +859,26 @@ class Dataset:
         from .reads import inspect_alignment
         file = file if isinstance(file, File) else self.file(file)
         return inspect_alignment(file, cache=self.cache, snapshot_id=self.id, **kwargs)
+
+    def make_bundle(self, to, *, variants=(), svs=(), files=(), caps=None, size_budget=64 * 1024 * 1024):
+        """Make a bundle of test reads in a new folder, and return the folder.
+
+        variants are catalogue IDs or data.variants(...); svs are SV candidate or
+        SV regression IDs; files are BAMs (File objects, keys or URLs), or samples
+        for all their indexed BAMs. For each variant, each file gives a balanced set
+        of templates: up to 20 showing the alt allele, 10 the ref, 5 something else
+        and 2 not spanning it, plus the two lowest-quality alt templates. For each
+        SV or fusion, up to 50 templates that join its breakends. Every record is
+        pinned by checksum, so anyone can rebuild the bundle and check it offline.
+        Members are named FILE.TARGET, like the files extract_reads(to=...) writes;
+        read one in a test with osteosarc.bundle_file(folder, member).
+
+            data = Dataset.open(offline=False)
+            bundle = data.make_bundle("tests/data/dync1h1", variants=["DYNC1H1-chr14-101980529"],
+                                      files=["rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"])
+        """
+        from .shared import make_bundle
+        return make_bundle(self, to, variants=variants, svs=svs, files=files, caps=caps, size_budget=size_budget)
 
     def extract_reads(self, file, regions=None, *, variants=None, padding=0, to=None, name=None, **kwargs):
         """Stream just the reads in some regions, or around variants, into a small indexed BAM.

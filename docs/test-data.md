@@ -1,9 +1,10 @@
 # Test data
 
-Unit tests need small, real sets of reads that anyone can rebuild. Osteosarc gives
-you three kinds: a quick BAM of the reads around some variants; openvax-v1, the reads
-the OpenVax libraries share; and bundles built from your own recipe, which pin every
-record so rebuilding gives the same bytes.
+Unit tests need small, real sets of reads that anyone can rebuild. Osteosarc makes
+them three ways: a quick BAM of the reads around some variants; a bundle you make for
+your library, with a balanced set of reads at each variant, every record pinned; and
+openvax-v1, the bundle the OpenVax libraries share. A test reads a bundle's member with
+one call, `osteosarc.bundle_file(bundle, member)`.
 
 ## A quick test BAM
 
@@ -24,6 +25,56 @@ osteosarc reads T0_tumor --assay rna-seq --variant DYNC1H1-chr14-101980529 --pad
 In Python, `data.extract_reads(file, variants=..., to="test-data")` does the same. See
 [reads](reads.md) for regions, filters and mates.
 
+## Make a bundle
+
+Name the BAMs and the variants (or SVs):
+
+<!-- docs-check: skip (makes the same bundle as the Python example below) -->
+```sh
+osteosarc test-data make dync1h1 rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam --variant DYNC1H1-chr14-101980529
+```
+
+This streams the reads around the variant, keeps a balanced set of them (see
+[how reads are chosen](#how-reads-are-chosen)), and writes a verified bundle to the new
+folder dync1h1, about 100 KB. Each member is one target in one BAM, named like the
+files osteosarc reads --to writes:
+BG003082.Aligned.sortedByCoord.out.md.DYNC1H1-chr14-101980529. A sample ID stands for
+its indexed BAMs, narrowed with `--assay` or `--platform`; repeat `--variant`, and use
+`--sv` for an SV candidate or fusion, as in
+`osteosarc test-data make gabbr1 T2_tumor --assay wgs --sv GABBR1-SLC29A1`. Commit the
+folder beside your tests, or make it in CI.
+
+In Python:
+
+```python
+from osteosarc import Dataset
+
+data = Dataset.open(offline=False)
+data.make_bundle(
+    "dync1h1",
+    variants=["DYNC1H1-chr14-101980529"],
+    files=["rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"],
+)
+```
+
+Variants can also be data.variants(...), and files can be samples, as in
+data.samples["T0_tumor"]; caps change how many reads of each kind are kept.
+
+## Use a bundle in tests
+
+```python
+import osteosarc
+
+bam = osteosarc.bundle_file("dync1h1", "BG003082.Aligned.sortedByCoord.out.md.DYNC1H1-chr14-101980529")
+```
+
+That's an indexed BAM of exactly the member's records, exported once into the cache,
+read-only, and reused, offline, by every later test run; `format="sam"` gives SAM
+text. The bundle can be a folder or the name of a published bundle, such as
+openvax-v1. An unknown member's error suggests close names, and
+`osteosarc test-data list dync1h1` lists them all. To write members into a folder
+instead, use `osteosarc test-data export`.
+
 ## Shared test data: openvax-v1
 
 Isovar, Topiary, Varcode and Vaxrank can all test against one bundle of reads,
@@ -38,17 +89,16 @@ openvax-v1, chosen once, here. It holds:
   that moves onto openvax-v1 keeps every assertion it has.
 
 <!-- docs-check: skip (downloads the bundle, 28 MB) -->
-```sh
-osteosarc test-data list openvax-v1
-osteosarc test-data export openvax-v1 tests/data --member IPISRC044_tumor_T2_ucla.redux.DYNC1H1-chr14-101980529
+```python
+bam = osteosarc.bundle_file("openvax-v1", "IPISRC044_tumor_T2_ucla.redux.DYNC1H1-chr14-101980529")
 ```
 
-The first command downloads the bundle (28 MB), checks it against checksums
-that ship with osteosarc, and keeps it in the cache; later commands work offline.
-Each member is one target in one BAM, named like the files osteosarc reads --to
-writes: the BAM's name, then the target. A library's own test files keep their
-names, such as isovar/chimeric/osteosarc-ont.sam. Export writes each member as
-an indexed BAM. In Python, `fetch_bundle("openvax-v1")` returns the bundle's folder.
+The first use downloads the bundle (28 MB), checks it against checksums that ship
+with osteosarc, and keeps it in the cache; later uses work offline, and
+`offline=True` makes sure they do. Members are named the BAM's name, then the target;
+a library's own test files keep their names, such as isovar/chimeric/osteosarc-ont.sam.
+From the command line, `osteosarc test-data list openvax-v1` lists the members and
+`osteosarc test-data export openvax-v1 DIR --member NAME` writes them into a folder.
 
 To check that your library's copies match, list them in a JSON file that maps
 member names to your files, with paths relative to that JSON file: a BAM, SAM or SAM.gz path, or, for SAM lines kept inside
@@ -64,7 +114,10 @@ osteosarc test-data check openvax-v1 fixtures.json
 Records are compared as SAM text, repeats included, so formats and headers don't
 matter. The command fails if any file differs.
 
-**How reads are chosen.** At each small variant, osteosarc sorts every template (a
+## How reads are chosen
+
+Bundles you make and openvax-v1 choose reads the same way. At each small variant,
+osteosarc sorts every template (a
 read with its mate) by what it shows across the allele: alt, ref, something else, or
 nothing, when it doesn't span it. Indels are judged across any repeat they could
 slide within. It keeps up to 20 alt, 10 ref, 5 other and 2 uncallable templates, in
@@ -74,12 +127,13 @@ alt templates. At a fusion or SV it keeps up to 50 templates with aligned bases 
 didn't call proper, and reads spliced or deleted exactly from one breakend to another.
 A read that simply runs across the breakends, a proper pair on either side, or a read
 spliced between exons that merely lie near them doesn't count. A kept template keeps
-all its records. Reads come from the T2 tumor RNA-seq and WGS BAMs for
-every target, from any BAM a library already uses there, and from each RNA BAM the
-[SV candidates](sv-candidates.md) saw a junction in. Each record is pinned by
-checksum, so rebuilding gives the same bytes, and any change upstream fails loudly.
+all its records. Each record is pinned by checksum, so rebuilding gives the same
+bytes, and any change upstream fails loudly. openvax-v1's reads come from the T2 tumor
+RNA-seq and WGS BAMs for every target, from any BAM a library already uses there, and
+from each RNA BAM the [SV candidates](sv-candidates.md) saw a junction in; a bundle you
+make reads only the BAMs you name.
 
-**Rebuilding.** As the libraries move their test reads here and delete their own
+**Rebuilding openvax-v1.** As the libraries move their test reads here and delete their own
 copies, each new version carries their members forward from the one before, pinned by
 checksum. To make openvax-v2, copy osteosarc/data/bundles/openvax-v1.spec.json to
 openvax-v2.spec.json, set its id to openvax-v2 (and its snapshot or targets, if they
@@ -100,75 +154,20 @@ scripts/shared_test_data list their SAM lines (for Varcode, the read names behin
 junctions) at the revision you give, and openvax-v1 as the revision means the commits
 it was built from. Its published release record is never replaced by a rebuild.
 
-## A bundle from a recipe
-
-A recipe says which reads to take from which BAMs, and why. Osteosarc turns it into a
-bundle: indexed BAMs plus a manifest listing every record and the reason it was kept.
-Anyone can rebuild the bundle and check it offline. This recipe keeps up to 25 reads,
-with their mates, around one variant in a T0 tumor RNA-seq BAM:
-
-```python
-import json
-from pathlib import Path
-
-from osteosarc import Dataset, generate_bundle, verify_bundle
-
-data = Dataset.open(offline=False)
-source = data.file("rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam")
-variant = data.variants()["DYNC1H1-chr14-101980529"]
-chrom, position, ref, alt = variant.allele
-window = variant.region(padding=100)
-
-recipe = {
-    "schema_version": 1,
-    "id": "dync1h1-rna-example",
-    "targets": {
-        "DYNC1H1": {
-            "kind": "small_variant", "assembly": "GRCh38", "coordinates": "one-based",
-            "contig": chrom, "position": position, "ref": ref, "alt": alt,
-            "reference": {"source": "osteosarc", "snapshot_id": data.id, "variant_id": variant.id},
-        },
-    },
-    "sources": {
-        "rna": {
-            "identity": {"key": source.key}, "assembly": "GRCh38",
-            "sample": "T0_tumor", "library": "BG003082", "product": source.key,
-        },
-    },
-    "members": {
-        "DYNC1H1-rna": {
-            "target": "DYNC1H1", "source": "rna",
-            "regions": [{"contig": window.contig, "start": window.start,
-                         "end": window.end, "assembly": window.assembly}],
-            "policy": {"version": 1, "kind": "regional", "cap": 25, "seed": "example"},
-        },
-    },
-}
-Path("recipe.json").write_text(json.dumps(recipe, indent=2))
-generate_bundle(recipe, "dync1h1-bundle", dataset=data)
-member = verify_bundle("dync1h1-bundle")["members"]["DYNC1H1-rna"]
-print(member["status"], member["record_count"])
-```
-
-The status is truncated when more reads overlapped than the cap allowed. Mates stay
-together, so there can be more records than the cap. Then, offline:
-
-```sh
-osteosarc test-data list dync1h1-bundle
-osteosarc test-data verify dync1h1-bundle
-osteosarc test-data export dync1h1-bundle dync1h1-exported --member DYNC1H1-rna
-```
-
-The same recipe runs from the command line, fetching the reads, or on BAMs you already
-have:
-
-<!-- docs-check: skip (needs your own BAM) -->
-```sh
-osteosarc test-data generate recipe.json bundle
-osteosarc --offline test-data generate recipe.json bundle --source rna=archive.bam
-```
-
 ## Recipes
+
+For anything make doesn't cover (your own alleles or regions, named reads, other
+selection rules), write a recipe: the JSON a bundle is built from. Every bundle keeps
+its own as recipe.json, so one you made is a good start. Then:
+
+<!-- docs-check: skip (needs your own recipe) -->
+```sh
+osteosarc test-data make bundle --recipe recipe.json
+osteosarc --offline test-data make bundle --recipe recipe.json --source rna=archive.bam
+```
+
+The second uses a BAM you already have for the recipe's source rna. In Python,
+`generate_bundle(recipe, "bundle", dataset=data)` does the same.
 
 A recipe has targets (what each piece of test data is about), sources (the BAMs its
 reads come from) and members (one target in one source, with a rule for picking

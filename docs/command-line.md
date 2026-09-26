@@ -18,7 +18,7 @@ Get data:
   downloads          What's already on this computer, and where
 
 Test data for libraries:
-  test-data ...      Shared test reads (openvax-v1): list, export, and check your copies
+  test-data ...      Bundles of test reads: make your own, or use the shared openvax-v1
 
 Snapshots of the website's metadata:
   sync               Download the current metadata (about 57 MB); commands use the newest
@@ -111,17 +111,19 @@ local paths. BAMs are large, so for tests read a region instead.
 
 ## Test data for libraries
 
-<!-- docs-check: skip (downloads openvax-v1) -->
+<!-- docs-check: skip (streams reads, and downloads openvax-v1) -->
 ```sh
+osteosarc test-data make dync1h1 T0_tumor --assay rna-seq --variant DYNC1H1-chr14-101980529
 osteosarc test-data list openvax-v1
 osteosarc test-data export openvax-v1 tests/data --member MEMBER
 osteosarc test-data check openvax-v1 fixtures.json
 ```
 
-openvax-v1 is the bundle of reads the OpenVax libraries share; list downloads it the
-first time, export writes members as indexed BAMs, and check compares your own copies
-with it. The same commands take a bundle folder, and generate builds one from your
-own recipe. See [Test data](test-data.md).
+make writes a bundle of test reads to a new folder: a balanced set at each variant
+(or `--sv`) in each BAM, every record pinned, so anyone can rebuild it and check it
+offline. list, export, check and verify take a bundle folder, or openvax-v1, the bundle
+the OpenVax libraries share, which list downloads the first time. See
+[Test data](test-data.md).
 
 ## Snapshots
 
@@ -147,5 +149,5 @@ These go before the command, as in `osteosarc --offline variants`.
 | `--no-corrections` | Show the website's values unchanged |
 | `--version` | Print the installed version |
 
-Only sync, download, reads, repl, test-data generate, and the first use of openvax-v1
+Only sync, download, reads, repl, test-data make, and the first use of openvax-v1
 use the network.

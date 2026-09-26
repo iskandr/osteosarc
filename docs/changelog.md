@@ -5,6 +5,26 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.12.0 (unreleased)
+
+Test data in a call or two ([#73](https://github.com/iskandr/osteosarc/issues/73)).
+
+- **Make a bundle without a recipe.** `osteosarc test-data make DIR SAMPLE|FILE
+  --variant ID --sv ID` and `data.make_bundle(dir, variants=..., files=...)` write a
+  verified bundle with openvax-v1's selection: a balanced set of templates at each
+  variant in each BAM, and templates joining each SV's breakends, every record pinned.
+  They say which BAMs they skip, and why. `test-data make DIR --recipe FILE` replaces
+  `test-data generate`.
+- **Use a member in one call.** `osteosarc.bundle_file(bundle, member)` returns it as a
+  local indexed BAM (or SAM), exported once into the cache, read-only, and reused
+  offline, the helper each OpenVax library had written for itself. An unknown
+  member's error suggests close names.
+- **One rule for bundles.** list_bundle, export_bundle, verify_bundle, check_fixtures
+  and bundle_file all take a bundle folder or a published bundle's name, such as
+  openvax-v1. Offline, a bundle that isn't cached yet says how to get it.
+- The package docstring, the `data` overview, `osteosarc --help` and the docs lead
+  with these.
+
 ## 0.11.3 (2026-09-26)
 
 Follow-ups from moving Isovar, Topiary, Vaxrank and Varcode onto openvax-v1, which

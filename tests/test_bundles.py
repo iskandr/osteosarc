@@ -55,9 +55,16 @@ def test_cli_and_dataset_produce_same_bundle(bam, dataset, tmp_path, capsys):
     path = tmp_path / "recipe.json"
     path.write_text(json.dumps(recipe))
     expected = generate_bundle(recipe, tmp_path / "api", sources={"rna": bam}, dataset=dataset)
-    assert main(["--cache", str(tmp_path / "cache"), "--offline", "test-data", "generate", str(path),
-                 str(tmp_path / "cli"), "--source", f"rna={bam}", "--json"]) == 0
+    assert main(["--cache", str(tmp_path / "cache"), "--offline", "test-data", "make", str(tmp_path / "cli"),
+                 "--recipe", str(path), "--source", f"rna={bam}", "--json"]) == 0
     assert json.loads(capsys.readouterr().out) == expected
+    # A recipe alone decides the bundle; BAMs and targets are for making one without a recipe.
+    assert main(["--cache", str(tmp_path / "cache"), "--offline", "test-data", "make", str(tmp_path / "x"),
+                 "T1_tumor", "--recipe", str(path)]) == 1
+    assert "from the recipe alone" in capsys.readouterr().err
+    assert main(["--cache", str(tmp_path / "cache"), "--offline", "test-data", "make", str(tmp_path / "x"),
+                 "--variant", "DYNC1H1-chr14-101980529"]) == 1
+    assert "Name the BAMs to read" in capsys.readouterr().err
     assert main(["--cache", str(tmp_path / "cache"), "--offline", "test-data", "verify", str(tmp_path / "cli")]) == 0
     assert "1 member (1 with reads), 7 records from 1 BAM" in capsys.readouterr().out
 
