@@ -143,9 +143,9 @@ def samples_view(samples, *, width=None, footer=None):
 
 
 #: What kind of single-cell library a site label names; bulk libraries need no name.
-LIBRARIES = {"scRNA_GEX": "gene expression", "scRNA_TCR": "αβ TCR", "scRNA_TCRgd": "γδ TCR",
-             "scRNA_BCR": "BCR", "CITE": "antibody tags", "scRNA_ONT": "long reads", "scRNA": "gene expression",
-             "PacBio": "long reads"}
+LIBRARIES = {"scRNA_GEX": "gene expression", "scRNA": "gene expression", "Tumor scRNA": "gene expression",
+             "Blood scRNA": "gene expression", "scRNA_TCR": "αβ TCR", "scRNA_TCRgd": "γδ TCR", "scRNA_BCR": "BCR",
+             "CITE": "antibody tags", "scRNA_ONT": "long reads", "scRNA ONT": "long reads", "PacBio": "long reads"}
 
 
 def _fastq_folders(sample, files):
@@ -445,7 +445,8 @@ def variant_view(variant, data, *, width=None):
 
 def vaccines_view(data, *, width=None):
     vaccines = list(data.vaccines)
-    names = list(dict.fromkeys(name for row in vaccines for name in (row.get("vaccines") or {})))
+    names = data._json("vaccine_overlap").get("vaccine_names") or list(dict.fromkeys(
+        name for row in vaccines for name in (row.get("vaccines") or {})))  # the site's own list and order
     rows = []
     for row in vaccines:
         included = [n for n in names if (row.get("vaccines") or {}).get(n)]

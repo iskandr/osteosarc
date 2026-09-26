@@ -196,6 +196,8 @@ def parser():
     generate.add_argument("--source", action="append", default=[], metavar="ID=LOCAL_BAM",
                           help="Use a BAM you already have for one of the recipe's sources")
     generate.add_argument("--size-budget", type=int, default=64 * 1024 * 1024)
+    generate.add_argument("--header-policy", choices=("full", "compact"), default="full",
+                          help="compact keeps only the header lines the records need")
     for name, what in (("list", "Each member of a bundle, with its records and why"),
                        ("verify", "Check a bundle's files, records and indexes"),
                        ("export", "Write a bundle's members as indexed BAMs (or SAM)")):
@@ -225,12 +227,14 @@ def read_targets(dataset, args):
         raise ValueError("Supply either regions (with --assembly) or --variant, not both; "
                          "variants carry their own assembly")
     if args.variant:
-        variants = dataset.variants("all", ids=args.variant)
-        missing = sorted(set(args.variant) - {v.id for v in variants})
+        found = dataset.variants("all", ids=args.variant)
+        missing = sorted(set(args.variant) - {v.id for v in found})
         if missing:
             raise ValueError(f"Unknown variant ID(s): {', '.join(missing)}; "
                              "list them with `osteosarc variants --set all"
                              + (f" --snapshot {args.snapshot}" if args.snapshot else "") + "`")
+        order = {v: i for i, v in enumerate(dict.fromkeys(args.variant))}
+        variants = type(found)(sorted(found, key=lambda v: order[v.id]), source=found.source)  # as given
         return dict(variants=variants, padding=args.padding)
     if args.regions and args.assembly is None:
         raise ValueError("--assembly is required with explicit regions")
@@ -376,6 +380,8 @@ def browse(args, dataset):
         return 0
     if args.command == "timeline":
         events = dataset.timeline.select(lane=args.lane, contains=args.contains, since=args.since, until=args.until)
+        if args.days != 7 and not args.around:
+            raise ValueError("--days sets the window around --around DATE; give a date too")
         if args.around:
             events = events.around(args.around, args.days)
             print_json(events.to_records()) if args.json else print(events.listing() or "(no events)")
@@ -421,6 +427,8 @@ def read_sources(dataset, args):
         if args.assay or args.platform:
             raise ValueError("--assay and --platform choose among a sample's BAMs; give a sample ID")
         return [dataset.file(args.file)]
+    if args.index:
+        raise ValueError("--index belongs to one BAM; give a file's key, not a sample, to use it")
     bams = dataset.samples[args.file].files.select(kind="alignment", assay=args.assay, platform=args.platform)
     indexed = [f for f in bams if f.index_urls]
     for file in bams:
@@ -458,8 +466,11 @@ def get_data(args, dataset):
                                 receipt=subset.receipt))
             if not args.json:
                 print(subset.path)
+        if not results:
+            raise ValueError(f"No reads extracted: every BAM of {args.file} was skipped")
         if args.json:
-            print_json(results if len(sources) > 1 else results[0])
+            # A sample always gives a list, however many of its BAMs it has.
+            print_json(results if args.file not in {f.key for f in sources} else results[0])
     else:
         rows = list(dataset.downloads())
         print_json(rows) if args.json else print(views.downloads_view(rows, dataset.cache.root))
@@ -528,7 +539,8 @@ def test_data(args, cache):
     if action == "generate":
         recipe = json.loads(Path(args.recipe).read_text())
         sources = dict(item.split("=", 1) for item in args.source)
-        value = generate_bundle(recipe, args.output, sources=sources, cache=cache, size_budget=args.size_budget)
+        value = generate_bundle(recipe, args.output, sources=sources, cache=cache, size_budget=args.size_budget,
+                                header_policy=args.header_policy)
     elif action == "verify":
         value = verify_bundle(args.bundle, sha256=args.sha256)
     elif action == "list":

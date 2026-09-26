@@ -649,8 +649,9 @@ def test_reads_for_a_sample_land_in_a_folder_with_readable_names(dataset, bam, t
     source = dataset.samples["T1_tumor"].files.select(kind="alignment")[0]
     monkeypatch.setattr(Dataset, "_download", lambda self, file, **k: bam)
     variant = dataset.variants(status="ready")[0]
-    placed = dataset.extract_reads(source, variants=dataset.variants(ids=variant.id), to=tmp_path / "tests")
-    stem = source.key.rsplit("/", 1)[-1].split(".")[0]
+    one = (v for v in dataset.variants(ids=variant.id))  # any iterable of variants will do
+    placed = dataset.extract_reads(source, variants=one, to=tmp_path / "tests")
+    stem = dataset.short_name(source)
     assert placed.path == tmp_path / "tests" / f"{stem}.{variant.id}.bam" and placed.path.read_bytes() == bam.read_bytes()
     assert placed.index_path.name == f"{stem}.{variant.id}.bam.bai" and placed.receipt == subset.receipt
     # From the command line, a sample ID means each of its indexed BAMs, filtered by assay.
@@ -664,3 +665,49 @@ def test_reads_for_a_sample_land_in_a_folder_with_readable_names(dataset, bam, t
     assert main(["--cache", root, "reads", "--snapshot", "fixture", source.key, "--assay", "rna-seq",
                  "--variant", variant.id]) == 1
     assert "give a sample ID" in capsys.readouterr().err
+    assert main(["--cache", root, "reads", "--snapshot", "fixture", "T1_tumor", "--index", "x.bai",
+                 "--variant", variant.id]) == 1
+    assert "--index belongs to one BAM" in capsys.readouterr().err
+    # A sample's JSON is always a list, even with one BAM.
+    assert main(["--cache", root, "reads", "--snapshot", "fixture", "T1_tumor", "--variant", variant.id,
+                 "--json"]) == 0
+    assert isinstance(json.loads(capsys.readouterr().out), list)
+    # Different reads never silently replace a file already in the folder.
+    (tmp_path / "tests" / "other.bam").write_bytes(b"not these reads")
+    with pytest.raises(FileExistsError, match="different contents"):
+        dataset.extract_reads(source, variants=dataset.variants(ids=variant.id), to=tmp_path / "tests",
+                              name="other")
+    # A sample whose BAMs are all skipped (here, the only one) fails rather than printing nothing.
+    from osteosarc import CoordinateError
+
+    def wrong_build(*args, **kwargs):
+        raise CoordinateError("the BAM is GRCh37")
+    monkeypatch.setattr(Dataset, "extract_reads", wrong_build)
+    assert main(["--cache", root, "reads", "--snapshot", "fixture", "T1_tumor", "--variant", variant.id]) == 1
+    assert "GRCh37" in capsys.readouterr().err
+
+
+def test_short_names_tell_same_named_files_apart(dataset):
+    from osteosarc import File, Files
+    keys = ["kamil/blood/output/Pool_1/outs/possorted_genome_bam.bam",
+            "kamil/blood/output/Pool_2/outs/possorted_genome_bam.bam",
+            "rna-seq/tempus/TL/RNA/x_sorted.bam", "vendor/tempus/TL/RNA/x_sorted.bam", "solo/unique.bam"]
+    dataset.files = Files([File(k, k, "https://example.test/" + k, "alignment", "bam") for k in keys])
+    assert [dataset.short_name(k) for k in keys] == [
+        "Pool_1.possorted_genome_bam", "Pool_2.possorted_genome_bam", "rna-seq.x_sorted", "vendor.x_sorted", "unique"]
+
+
+def test_a_sample_whose_bams_are_all_skipped_is_an_error(dataset, monkeypatch, capsys):
+    import osteosarc.cli as cli
+    from osteosarc import CoordinateError
+    bams = list(dataset.files.select(kind="alignment"))[:2]
+    monkeypatch.setattr(cli, "read_sources", lambda data, args: bams)
+
+    def wrong_build(*args, **kwargs):
+        raise CoordinateError("the BAM is GRCh37")
+    monkeypatch.setattr(Dataset, "extract_reads", wrong_build)
+    variant = dataset.variants(status="ready")[0].id
+    assert main(["--cache", str(dataset.cache.root), "reads", "--snapshot", "fixture", "T1_tumor",
+                 "--variant", variant]) == 1
+    err = capsys.readouterr().err
+    assert err.count("skipping") == 2 and "every BAM of T1_tumor was skipped" in err

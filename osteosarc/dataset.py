@@ -76,8 +76,8 @@ DATED_NAME = re.compile(r"\d{4}-\d{2}-\d{2}(\.\d+)?")
 
 def _asked_for(variants, regions):
     """A short file-name part for an extraction: its first variant or region, and how many more."""
-    first = variants[0].id if variants is not None else f"{regions[0].contig}_{regions[0].start + 1}-{regions[0].end}"
-    count = len(variants) if variants is not None else len(regions)
+    first = variants[0].id if variants else f"{regions[0].contig}_{regions[0].start + 1}-{regions[0].end}"
+    count = len(variants) if variants else len(regions)
     return first + (f"+{count - 1}" if count > 1 else "")
 
 
@@ -698,6 +698,31 @@ class Dataset:
             place(self._download(index, cache=self.cache), directory / PurePosixPath(index.key).name)
         return place(path, directory / PurePosixPath(file.key).name)
 
+    def short_name(self, file):
+        """A file's name without its extension, led by the nearest folder that
+        tells it apart from other files of the same name (e.g. Pool_2.possorted_genome_bam)."""
+        file = file if isinstance(file, File) else self.file(file)
+        path = PurePosixPath(file.key)
+        stem = path.name.rsplit(".", 1)[0] if "." in path.name else path.name
+        twins = [PurePosixPath(f.key) for f in self._by_basename.get(path.name, ()) if f.key != file.key]
+        parents = path.parent.parts[::-1]
+        for depth, folder in enumerate(parents):
+            if not twins:
+                break
+            twins = [t for t in twins if len(t.parent.parts) > depth and t.parent.parts[::-1][depth] == folder]
+            if len(twins) < len(self._by_basename[path.name]) - 1 or not twins:
+                stem = f"{folder}.{stem}"
+                if not twins:
+                    break
+        return stem
+
+    @cached_property
+    def _by_basename(self):
+        by_name = defaultdict(list)
+        for file in self.files:
+            by_name[PurePosixPath(file.key).name].append(file)
+        return by_name
+
     def local_path(self, file):
         """The downloaded copy of a file, or None; never uses the network.
 
@@ -848,6 +873,7 @@ class Dataset:
         if variants is not None:
             if regions is not None:
                 raise ValueError("Supply either regions or variants, not both")
+            variants = tuple(variants)
             regions = tuple(v.region(padding=padding) for v in variants)
         elif padding:
             raise ValueError("padding requires variants; pad explicit regions when constructing them")
@@ -870,7 +896,7 @@ class Dataset:
         subset = extract_reads(file, regions, cache=self.cache, snapshot_id=self.id, **kwargs)
         if to is None:
             return subset
-        name = name or f"{PurePosixPath(file.key).name.split('.')[0]}.{_asked_for(variants, regions)}"
+        name = name or f"{self.short_name(file)}.{_asked_for(variants, regions)}"
         directory = Path(to).expanduser()
         return ReadSubset(place(subset.path, directory / f"{name}.bam"),
                           place(subset.index_path, directory / f"{name}.bam.bai"), subset.receipt)

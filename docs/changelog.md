@@ -15,8 +15,11 @@ test data ([#58](https://github.com/iskandr/osteosarc/issues/58)).
   BAMs, and saves each as a small indexed BAM named for its source and variant.
   `data.extract_reads(..., to="tests/data")` does the same in Python.
 - **Command line.** `osteosarc timeline --around DATE` replaces `osteosarc on`, and
-  `osteosarc test-data` (generate, list, verify, export) replaces `fixtures`.
-  `table` and `discover` are gone.
+  `osteosarc test-data` (generate, list, verify, export) replaces `fixtures`; its
+  select, pack and panel actions are gone (use the Python functions). `table` and
+  `discover` are gone.
+- **No silent overwrites.** Saving a download or reads into a folder never replaces
+  a file with different contents; it stops and says so.
 - **Python.**
   - Dataset loses `table` (use `parse`), `claims`, `timepoints`, `annotations`,
     `vaccine_names`, `pipeline_names`, `receipts`, `open_variants`, and the

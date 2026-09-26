@@ -80,13 +80,18 @@ def place(path, destination):
     """Put a cached object at destination, as a read-only hard link where possible, else a copy.
 
     A hard link is the cached object itself, so it's made read-only: editing it
-    in place would corrupt the cache. An existing destination is replaced only
-    once the new one is complete. Returns the destination path.
+    in place would corrupt the cache. A destination that already holds the same
+    bytes is left alone; one holding different bytes is an error, never silently
+    replaced. Returns the destination path.
     """
     destination = Path(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    if destination.exists() and destination.samefile(path):
-        return destination
+    if destination.exists():
+        if destination.samefile(path) or (destination.stat().st_size == Path(path).stat().st_size
+                                          and digest(destination) == digest(path)):
+            return destination
+        raise FileExistsError(f"{destination} already exists with different contents; "
+                              "move it, or choose another name or folder")
     with tempfile.TemporaryDirectory(dir=destination.parent, prefix=".osteosarc-") as temporary:
         staged = Path(temporary) / destination.name
         try:
