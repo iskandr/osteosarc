@@ -18,9 +18,10 @@ from pathlib import Path, PurePosixPath
 
 import pysam
 
-from . import Dataset, File, Region, SampleClaim, digest, extract_reads
+from . import Dataset, File, Region, digest, extract_reads
 from . import __version__ as osteosarc_version
 from .bundles import DEFAULT_SIZE_BUDGET, safe_path
+from .models import SampleClaim
 
 
 def record_digest(read, *, text_only=False):

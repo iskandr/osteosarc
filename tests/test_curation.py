@@ -141,12 +141,9 @@ def test_registry_is_complete_and_documented():
 def test_cached_records_are_not_exposed_for_mutation(dataset):
     data = reopen(dataset, True)
     record = data.variants()[SMC5].annotations["source_record"]
-    for row in data.annotations:
-        row["detection"].clear()
     for row in data.vaccines:
         row["vaccines"] = {}
-    assert data.annotations.select(id=SMC5).rows[0]["detection"]
-    assert record["detection"] and data.pipeline_names
+    assert record["detection"]
     assert any(row["vaccines"] for row in data.vaccines)
 
 
@@ -167,7 +164,8 @@ def test_source_revision_pins_every_repository_source():
 def test_malformed_bucket_rows_are_schema_errors(tmp_path):
     from conftest import DATA, FILES
 
-    from osteosarc import SNAPSHOT_SOURCES, TIMELINE_SOURCES, Cache, SchemaError
+    from osteosarc import Cache, SchemaError
+    from osteosarc.catalog import SNAPSHOT_SOURCES, TIMELINE_SOURCES
     cache = Cache(tmp_path / "cache", offline=True)
     urls = {**SNAPSHOT_SOURCES, **TIMELINE_SOURCES}
     for key, name in FILES.items():
@@ -207,10 +205,9 @@ def test_count_row_corrections_are_separate_from_variant_corrections(dataset):
 
 def test_variant_annotations_do_not_alias_the_sources(dataset):
     data = reopen(dataset, True)
-    names = data.pipeline_names
     data.variants()[SMC5].annotations["source_record"]["detection"].clear()
-    assert data.pipeline_names == names
-    assert data.annotations.select(id=SMC5).rows[0]["detection"]
+    source = next(r for r in data.curation.records("source_variants")[0] if r["id"] == SMC5)
+    assert source["detection"]
     raw = reopen(dataset, False)
     raw.vafs.rows[0]["alt"] = "N"
     assert raw.variants()[raw.vafs.rows[0]["variant_id"]].alleles[0][3] != "N"

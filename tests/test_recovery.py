@@ -3,7 +3,8 @@ from collections import Counter
 import pysam
 import pytest
 
-from osteosarc import Cache, IntegrityError, RecoveryPolicy, Region, extract_reads, record_multiset
+from osteosarc import Cache, IntegrityError, RecoveryPolicy, Region, extract_reads
+from osteosarc.records import record_multiset
 
 
 @pytest.fixture
@@ -193,7 +194,7 @@ def test_missing_index_never_falls_back_to_scan(split_bam, tmp_path):
 
 
 def test_recipe_partner_retention_has_effect(split_bam, tmp_path):
-    from osteosarc import select_fixtures
+    from osteosarc.fixtures import select_fixtures
     subset = extract_reads(split_bam, [Region("chr1", 100, 150, "GRCh38")], cache=tmp_path / "cache",
                            recovery=RecoveryPolicy())
     recipe = dict(schema_version=1, id="split", targets={"sv": dict(

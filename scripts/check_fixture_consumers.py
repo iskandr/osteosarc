@@ -14,7 +14,8 @@ from pathlib import Path
 
 import pysam
 
-from osteosarc import record_multiset, verify_bundle
+from osteosarc import verify_bundle
+from osteosarc.records import record_multiset
 
 
 def main():

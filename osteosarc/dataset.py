@@ -7,7 +7,6 @@ import json
 import re
 import warnings
 from collections import Counter, defaultdict
-from dataclasses import asdict
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from functools import cached_property
@@ -73,6 +72,13 @@ Get data:
 
 DATE_SELECTOR = re.compile(r"\d{4}(-\d{2}(-\d{2})?)?")
 DATED_NAME = re.compile(r"\d{4}-\d{2}-\d{2}(\.\d+)?")
+
+
+def _asked_for(variants, regions):
+    """A short file-name part for an extraction: its first variant or region, and how many more."""
+    first = variants[0].id if variants is not None else f"{regions[0].contig}_{regions[0].start + 1}-{regions[0].end}"
+    count = len(variants) if variants is not None else len(regions)
+    return first + (f"+{count - 1}" if count > 1 else "")
 
 
 def _read_receipt(path):
@@ -645,10 +651,6 @@ class Dataset:
         """Vaccine-overlap rows including unmodified ELISPOT states (copies; edits do not persist)."""
         return Table(self._traced("vaccine_overlap"), source=self.manifest["sources"]["vaccine_overlap"])
 
-    @property
-    def vaccine_names(self):
-        return tuple(self._json("vaccine_overlap")["vaccine_names"])
-
     def vaccine_peptides(self, vaccine=None):
         """Published peptide sequences and experiments, keyed by exact variant ID."""
         rows = []
@@ -657,39 +659,6 @@ class Dataset:
                 if vaccine is None or vaccine in peptide.get("in_vaccines", []):
                     rows.append(dict(copy.deepcopy(peptide), variant_id=record["id"], gene=record["gene"]))
         return Table(rows, source=self.manifest["sources"]["source_variants"])
-
-    @property
-    def annotations(self):
-        """Variant annotation records, including peptides and validation (copies)."""
-        return Table(self._traced("source_variants"), source=self.manifest["sources"]["source_variants"])
-
-    @property
-    def pipeline_names(self):
-        return tuple(sorted({p for record in self.curation.records("source_variants")[0]
-                             for p in record.get("detection", {})}))
-
-    @property
-    def claims(self):
-        """What each source says about files' samples and libraries, with the IDs
-        of the files each claim is made for.
-
-        These rows don't turn processing products or pooled libraries into
-        separate samples, and they keep unresolved identities visible.
-        """
-        groups = {}
-        for file in self.files:
-            for claim in file.claims:
-                key = stable_id(asdict(claim))
-                groups.setdefault(key, dict(asdict(claim), id=key, file_ids=[]))["file_ids"].append(file.id)
-        return Table(groups.values(), source={"snapshot_id": self.id})
-
-    @property
-    def timepoints(self):
-        """Published timepoint/date pairs; dates retain their source precision."""
-        rows = {(c.timepoint, c.date, c.source) for a in self.files for c in a.claims
-                if c.basis == "published" and (c.timepoint or c.date)}
-        return Table((dict(timepoint=t, date=d, source=s) for t, d, s in
-                      sorted(rows, key=lambda r: tuple(x or "" for x in r))))
 
     @cached_property
     def _file_index(self):
@@ -859,27 +828,23 @@ class Dataset:
         return parse_file(self.download(file), format=file.format,
                           source=dict(url=file.url, snapshot_id=self.id))
 
-    def table(self, file):
-        """Read any CSV/TSV file, including named site tables and RSEM output."""
-        file = file if isinstance(file, File) else self.file(file)
-        if file.format not in ("csv", "tsv"):
-            raise ValueError("table requires a CSV or TSV file")
-        return self.parse(file)
-
     def inspect_alignment(self, file, **kwargs):
         """Cache the alignment header to inspect assembly before choosing regions."""
         from .reads import inspect_alignment
         file = file if isinstance(file, File) else self.file(file)
         return inspect_alignment(file, cache=self.cache, snapshot_id=self.id, **kwargs)
 
-    def extract_reads(self, file, regions=None, *, variants=None, padding=0, **kwargs):
-        """Extract an indexed region union; see osteosarc.extract_reads.
+    def extract_reads(self, file, regions=None, *, variants=None, padding=0, to=None, name=None, **kwargs):
+        """Stream just the reads in some regions, or around variants, into a small indexed BAM.
 
-        Supply regions or selected osteosarc variants with optional padding.
-        The listed index is downloaded once, bound to this snapshot like any
-        other object, and reused for every query.
+        Give regions, or variants (from data.variants()) with optional padding.
+        Only the needed parts of the remote BAM are read, and asking again
+        reuses the result. to names a directory to also put the BAM and its
+        index in, as NAME.bam: by default the source file's name and what was
+        asked for, such as BG003082.MAP2-chr2-209694768.bam. Other options:
+        see osteosarc.extract_reads.
         """
-        from .reads import extract_reads, require_samtools
+        from .reads import ReadSubset, extract_reads, require_samtools
         if variants is not None:
             if regions is not None:
                 raise ValueError("Supply either regions or variants, not both")
@@ -902,38 +867,10 @@ class Dataset:
                 require_samtools(fetch_pairs=kwargs.get("fetch_pairs", False), filters=kwargs.get("filters"))
                 index_path = self.download(file.index_urls[0])
             kwargs["index"] = str(index_path)
-        return extract_reads(file, regions, cache=self.cache, snapshot_id=self.id, **kwargs)
-
-    def generate_bundle(self, recipe, destination, **kwargs):
-        """Generate a fixture bundle with this snapshot's verified source files."""
-        from .bundles import generate_bundle
-        return generate_bundle(recipe, destination, dataset=self, **kwargs)
-
-    def select_fixtures(self, recipe, sources):
-        """Execute a pinned fixture recipe on explicitly supplied local inputs.
-
-        Membership and reasons are identical to osteosarc.select_fixtures.
-        The snapshot does not override the recipe's historical source identity.
-        """
-        from .fixtures import select_fixtures
-        return select_fixtures(recipe, sources)
-
-    def open_variants(self, file):
-        """Download one VCF/BCF and its listed index, returning pysam.VariantFile.
-
-        Use as a context manager. Header, caller annotations, multiallelic
-        records, symbolic alleles and per-sample FORMAT fields are preserved.
-        Indexed fetch is available when an index is published; otherwise iterate.
-        """
-        import pysam
-        file = file if isinstance(file, File) else self.file(file)
-        if file.format not in ("vcf", "bcf"):
-            raise ValueError("open_variants requires a VCF or BCF")
-        path = self.download(file)
-        index = None
-        if file.index_urls:
-            index = self.download(file.index_urls[0])
-        return pysam.VariantFile(str(path), index_filename=str(index) if index else None)
-
-    def receipts(self):
-        return {name: Receipt(**value) for name, value in self.manifest["sources"].items()}
+        subset = extract_reads(file, regions, cache=self.cache, snapshot_id=self.id, **kwargs)
+        if to is None:
+            return subset
+        name = name or f"{PurePosixPath(file.key).name.split('.')[0]}.{_asked_for(variants, regions)}"
+        directory = Path(to).expanduser()
+        return ReadSubset(place(subset.path, directory / f"{name}.bam"),
+                          place(subset.index_path, directory / f"{name}.bam.bai"), subset.receipt)

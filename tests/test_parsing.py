@@ -3,8 +3,9 @@ from copy import deepcopy
 
 import pytest
 
-from osteosarc import SchemaError, parse_file, parse_table, parse_variants
+from osteosarc import SchemaError, parse_variants
 from osteosarc.catalog import build_files, parse_data_paths
+from osteosarc.parsing import parse_file, parse_table
 
 
 def test_missing_values_zero_and_ragged_tables(tmp_path):
@@ -73,7 +74,7 @@ def test_data_page_links_enrich_raw_files_without_provider_guessing(dataset):
     assert claim.timepoint == "T0" and claim.assay == "rna-seq"
     assert claim.platform is None
 def test_unsupported_format_does_not_read_large_file(tmp_path):
-    from osteosarc import parse_file
+    from osteosarc.parsing import parse_file
     # The nonexistent path must not be opened before deciding parser support.
     with pytest.raises(ValueError, match="No built-in parser"):
         parse_file(tmp_path / "huge.bam")

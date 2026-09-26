@@ -8,8 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from osteosarc import CORRECTIONS, Dataset, Table, parse_table, parse_variants
+from osteosarc import CORRECTIONS, Dataset, Table, parse_variants
 from osteosarc.curation import Curation, CurationWarning
+from osteosarc.parsing import parse_table
 
 DATA = Path(__file__).parent / "data" / "allele_resolution"
 REVIEW = json.loads(files("osteosarc").joinpath("data/allele_resolutions.json").read_text())

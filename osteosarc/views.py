@@ -444,9 +444,10 @@ def variant_view(variant, data, *, width=None):
 
 
 def vaccines_view(data, *, width=None):
-    names = data.vaccine_names
+    vaccines = list(data.vaccines)
+    names = list(dict.fromkeys(name for row in vaccines for name in (row.get("vaccines") or {})))
     rows = []
-    for row in data.vaccines:
+    for row in vaccines:
         included = [n for n in names if (row.get("vaccines") or {}).get(n)]
         rows.append(dict(gene=row.get("gene"), mutation=row.get("mutation"), vaccines=", ".join(included),
                          ELISPOT=(row.get("elispot_status") or "").replace("_", " ")))
