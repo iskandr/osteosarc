@@ -29,7 +29,7 @@ data = Dataset.open(offline=False)
 source = data.file("rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam")
 targets = data.variants(ids=["DYNC1H1-chr14-101980529"], status="ready")
 subset = data.extract_reads(source, variants=targets, padding=100, to="tests/data")
-print(subset.path)  # tests/data/BG003082.DYNC1H1-chr14-101980529.bam
+print(subset.path)  # tests/data/BG003082.Aligned.sortedByCoord.out.md.DYNC1H1-chr14-101980529.bam
 ```
 
 Without a folder to put it in, the BAM stays in the cache. Asking again reuses it,

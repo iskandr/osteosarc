@@ -319,3 +319,68 @@ def test_legacy_full_header_bundles_remain_readable_and_exportable(bam, tmp_path
     (directory / "manifest.json").write_text(json.dumps(manifest))
     with pytest.raises(IntegrityError, match="Exported header differs"):
         verify_bundle(directory)
+
+
+def test_a_published_bundle_is_fetched_verified_and_checked_offline(bam, tmp_path, monkeypatch):
+    import gzip
+    import json
+
+    import pysam
+
+    import osteosarc.shared as shared
+    from osteosarc import Cache
+    bundle = tmp_path / "bundle"
+    generate_bundle(bundle_recipe(bam), bundle, sources={"rna": bam})
+    release = shared.pack_release(bundle, tmp_path / "panel.tar.gz")
+    assert shared.pack_release(bundle, tmp_path / "again.tar.gz") == release  # reproducible
+    published_dir = tmp_path / "bundles"
+    published_dir.mkdir()
+    url = "https://example.test/panel.tar.gz"
+    (published_dir / "tiny-v1.release.json").write_text(json.dumps(dict(release, url=url)))
+    monkeypatch.setattr(shared, "BUNDLES", published_dir)
+    cache = Cache(tmp_path / "cache", offline=True)
+    cache.import_file(tmp_path / "panel.tar.gz", url)
+    fetched = shared.fetch_bundle("tiny-v1", cache=cache)
+    assert fetched == shared.fetch_bundle("tiny-v1", cache=cache)  # reused
+    with pytest.raises(KeyError, match="published: tiny-v1"):
+        shared.published("missing")
+    # A library's copy passes when its records are the member's; its file format doesn't matter.
+    with pysam.AlignmentFile(str(bam)) as handle:
+        lines = [read.to_string() for read in handle]
+        text = str(handle.header) + "".join(line + "\n" for line in lines)
+    (tmp_path / "copy.sam.gz").write_bytes(gzip.compress(text.encode()))
+    (tmp_path / "evidence.json").write_text(json.dumps(dict(paths=[dict(records=lines[:-1])])))
+    fixtures = {"duplicates": str(bam), "empty": "copy.sam.gz"}
+    problems = shared.check_fixtures(fetched, {"duplicates": "copy.sam.gz"}, root=tmp_path)
+    assert problems == {}
+    problems = shared.check_fixtures(fetched, dict(fixtures, duplicates=dict(json="evidence.json",
+                                     pointer="/paths/0/records")), root=tmp_path)
+    assert problems["duplicates"] == dict(missing=1, extra=0) and "not a member" in problems["empty"]["error"]
+
+
+def test_the_cli_lists_and_checks_a_published_bundle(bam, tmp_path, monkeypatch, capsys):
+    import json
+
+    import osteosarc.shared as shared
+    from osteosarc import Cache
+    from osteosarc.cli import main
+    bundle = tmp_path / "bundle"
+    generate_bundle(bundle_recipe(bam), bundle, sources={"rna": bam})
+    release = shared.pack_release(bundle, tmp_path / "panel.tar.gz")
+    published_dir = tmp_path / "bundles"
+    published_dir.mkdir()
+    url = "https://example.test/panel.tar.gz"
+    (published_dir / "tiny-v1.release.json").write_text(json.dumps(dict(release, url=url)))
+    monkeypatch.setattr(shared, "BUNDLES", published_dir)
+    root = tmp_path / "cache"
+    Cache(root, offline=True).import_file(tmp_path / "panel.tar.gz", url)
+    (tmp_path / "fixtures.json").write_text(json.dumps({"duplicates": str(bam)}))
+    assert main(["--cache", str(root), "--offline", "test-data", "check", "tiny-v1", str(tmp_path / "fixtures.json")]) == 0
+    assert "matches the bundle" in capsys.readouterr().out
+    (tmp_path / "wrong.json").write_text(json.dumps({"shared": str(bam)}))
+    assert main(["--cache", str(root), "--offline", "test-data", "check", "tiny-v1", str(tmp_path / "wrong.json")]) == 1
+    assert "not a member" in capsys.readouterr().out
+    assert main(["--cache", str(root), "--offline", "test-data", "list", "tiny-v1"]) == 0
+    assert "duplicates" in json.loads(capsys.readouterr().out)
+    assert main(["--cache", str(root), "--offline", "test-data", "list", "no-such-bundle"]) == 1
+    assert "published: tiny-v1" in capsys.readouterr().err

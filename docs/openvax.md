@@ -141,7 +141,8 @@ if rsem:
 Downloads keep their file extensions, so format detection works. Reports with only a
 header load as empty reports.
 
-For small, reproducible test BAMs, see [test data](test-data.md).
+For tests, the four libraries share one bundle of reads, openvax-v1; see
+[shared test data](test-data.md#shared-test-data-openvax-v1).
 
 ## Move your own code to osteosarc
 

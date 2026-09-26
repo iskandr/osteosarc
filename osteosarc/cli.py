@@ -28,7 +28,7 @@ COMMANDS = (
         ("download FILE", "A whole file (--to DIR puts it, and its index, in DIR)"),
         ("downloads", "What's already on this computer, and where"))),
     ("Test data for libraries", (
-        ("test-data ...", "Build, check and export bundles of test reads from a recipe"),)),
+        ("test-data ...", "Shared test reads (openvax-v1): list, export, and check your copies"),)),
     ("Snapshots of the website's metadata", (
         ("sync", "Download the current metadata (about 57 MB); commands use the newest"),
         ("snapshots", "Saved snapshots, by download date"),
@@ -186,9 +186,10 @@ def parser():
     snapshots.add_argument("--json", action="store_true")
     command("repl")
     test_data = command("test-data", data=False, epilog="examples:\n"
-                        "  osteosarc test-data generate recipe.json bundle\n"
-                        "  osteosarc test-data list bundle\n"
-                        "  osteosarc test-data export bundle exported --member DYNC1H1-rna")
+                        "  osteosarc test-data list openvax-v1\n"
+                        "  osteosarc test-data export openvax-v1 tests/data --member DYNC1H1-rna\n"
+                        "  osteosarc test-data check openvax-v1 fixtures.json\n"
+                        "  osteosarc test-data generate recipe.json bundle")
     actions = test_data.add_subparsers(dest="test_data_command", required=True, metavar="ACTION")
     generate = actions.add_parser("generate", help="Fetch a recipe's reads and write a bundle")
     generate.add_argument("recipe")
@@ -202,13 +203,17 @@ def parser():
                        ("verify", "Check a bundle's files, records and indexes"),
                        ("export", "Write a bundle's members as indexed BAMs (or SAM)")):
         action = actions.add_parser(name, help=what)
-        action.add_argument("bundle")
+        action.add_argument("bundle", help="A bundle directory, or a published bundle such as openvax-v1")
         if name == "export":
             action.add_argument("output", help="A new directory")
             action.add_argument("--member", action="append", help="Only these members; repeat for several")
             action.add_argument("--format", choices=("bam", "sam", "sam.gz"), default="bam")
         if name == "verify":
             action.add_argument("--sha256", help="The manifest checksum you expect")
+    check = actions.add_parser("check", help="Compare your library's test files with a bundle's members")
+    check.add_argument("bundle", help="A bundle directory, or a published bundle such as openvax-v1")
+    check.add_argument("fixtures", help='JSON mapping member names to your files: a BAM, SAM or SAM.gz path, '
+                                        'or {"json": path, "pointer": "/path/to/lines"}')
     return root
 
 
@@ -535,17 +540,30 @@ def main(argv=None):
 
 
 def test_data(args, cache):
-    """test-data generate, list, verify and export."""
+    """test-data generate, list, verify, export and check."""
     from pathlib import Path
 
     from .bundles import export_bundle, generate_bundle, list_bundle, verify_bundle
+    from .shared import check_fixtures, fetch_bundle, read_json
     action = args.test_data_command
     if action == "generate":
-        recipe = json.loads(Path(args.recipe).read_text())
+        recipe = read_json(args.recipe)
         sources = dict(item.split("=", 1) for item in args.source)
-        value = generate_bundle(recipe, args.output, sources=sources, cache=cache, size_budget=args.size_budget,
-                                header_policy=args.header_policy)
-    elif action == "verify":
+        print_json(generate_bundle(recipe, args.output, sources=sources, cache=cache,
+                                   size_budget=args.size_budget, header_policy=args.header_policy))
+        return 0
+    if not Path(args.bundle).exists():
+        args.bundle = fetch_bundle(args.bundle, cache=cache)
+    if action == "check":
+        manifest = Path(args.fixtures)
+        problems = check_fixtures(args.bundle, read_json(manifest), root=manifest.parent)
+        if problems:
+            print_json(problems)
+            print(f"osteosarc: {len(problems)} of your files differ from the bundle", file=sys.stderr)
+            return 1
+        print(f"Every file in {manifest} matches the bundle.")
+        return 0
+    if action == "verify":
         value = verify_bundle(args.bundle, sha256=args.sha256)
     elif action == "list":
         value = list_bundle(args.bundle)

@@ -62,6 +62,9 @@ def validate_recipe(recipe):
                 _count(end.get("position"), "breakend position")
                 if not end.get("contig") or end.get("orientation") not in ("+", "-", None):
                     raise SchemaError("Invalid oriented breakend")
+        elif kind == "fixture":
+            if not target.get("description"):
+                raise SchemaError(f"Fixture target {name} needs a description")
         else:
             raise SchemaError(f"Unknown target kind: {kind}")
     for name, source in recipe["sources"].items():
@@ -102,6 +105,11 @@ def validate_recipe(recipe):
                 _count(n, "record multiplicity")
                 if not n:
                     raise SchemaError("Record multiplicity must be positive")
+            reasons = policy.get("reasons", {})
+            if (not isinstance(reasons, dict) or set(reasons) - set(policy["records"])
+                    or any(not isinstance(why, list) or not why or not all(isinstance(w, str) and w for w in why)
+                           for why in reasons.values())):
+                raise SchemaError("Exact reasons must map pinned records to nonempty lists of reasons")
         assignments = policy.get("assignments", [])
         if not isinstance(assignments, list) or any(not isinstance(a, dict) for a in assignments):
             raise SchemaError("Evidence assignments must be a list of objects")
@@ -192,6 +200,7 @@ def select_fixture_records(records, policy, *, regions=(), context_regions=()):
         return counts, {}, "omitted" if kind == "omitted" else "empty"
     if kind == "exact":
         required = Counter(policy.get("records", {}))
+        pinned = dict(policy.get("reasons", {}))  # keyed like records; re-keyed below for SAM text
         if policy.get("encoding", RECORD_ENCODING) == "sam-text-v1":
             by_sam = defaultdict(Counter)
             for record in records:
@@ -201,13 +210,16 @@ def select_fixture_records(records, policy, *, regions=(), context_regions=()):
             for key, n in required.items():
                 if len(by_sam[key]) != 1:
                     raise IntegrityError("Ambiguous SAM identity maps to distinct binary records")
-                counts[next(iter(by_sam[key]))] = n
+                binary = next(iter(by_sam[key]))
+                counts[binary] = n
+                if key in pinned:
+                    pinned[binary] = pinned.pop(key)
         else:
             if missing := required - available:
                 raise IntegrityError(f"Missing pinned records or duplicate occurrences: {dict(missing)}")
             counts = required
         for key in counts:
-            reasons[key].add(policy.get("reason", "pinned historical record"))
+            reasons[key].update(pinned.get(key, [policy.get("reason", "pinned historical record")]))
     else:
         groups = defaultdict(list)
         for r in records:

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "osteosarc"
-version = "0.10.0"
+version = "0.11.0"
 description = "Reproducible access to the public osteosarc.com dataset"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -44,7 +44,7 @@ osteosarc = "osteosarc.cli:main"
 include = ["osteosarc*"]
 
 [tool.setuptools.package-data]
-osteosarc = ["data/*.json"]
+osteosarc = ["data/*.json", "data/bundles/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

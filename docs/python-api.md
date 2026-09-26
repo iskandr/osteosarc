@@ -71,6 +71,7 @@ see [Reads](reads.md).
 
 | Call | What it does |
 | --- | --- |
+| `fetch_bundle("openvax-v1")` | Download the OpenVax libraries' shared test reads once, and return their folder |
 | `generate_bundle(recipe, "bundle", dataset=data)` | Fetch a recipe's reads and write a bundle anyone can check offline |
 | `verify_bundle("bundle")` | Check every file, record and index |
 | `list_bundle("bundle")` | Each member, with its records and why they were kept |
