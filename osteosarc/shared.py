@@ -37,7 +37,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from .alleles import CLASSES, allele_window, read_allele, template_allele
-from .errors import CoordinateError, IntegrityError, SchemaError
+from .errors import CoordinateError, IntegrityError, OsteosarcError, SchemaError
 from .models import Region
 from .reads import resolve_regions
 from .records import read_records
@@ -668,14 +668,53 @@ def fetch_bundle(name, *, cache=None):
     return root
 
 
+def sam_lines(value):
+    """Every SAM record line anywhere in a JSON value: in strings (one line or
+    several joined by newlines), lists and objects, whatever the field names.
+
+    A line counts when it has at least 11 tab-separated fields with a numeric
+    FLAG and POS; other strings (names, versions, URLs) and non-strings are
+    skipped, so a pointer may lead to records or to anything that holds them.
+    """
+    if isinstance(value, str):
+        for line in value.split("\n"):
+            line = line.rstrip("\r")
+            fields = line.split("\t")
+            if len(fields) >= 11 and fields[1].isdigit() and fields[3].isdigit():
+                yield line
+    elif isinstance(value, dict):
+        for item in value.values():
+            yield from sam_lines(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from sam_lines(item)
+
+
+def resolve_pointer(document, pointer):
+    """The part of a JSON document a JSON Pointer (RFC 6901) names; "" or "/" is all of it."""
+    if pointer in ("", "/"):
+        return document
+    if not pointer.startswith("/"):
+        raise SchemaError(f"JSON pointer {pointer!r} must start with /")
+    here = ""
+    for token in pointer[1:].split("/"):
+        token = token.replace("~1", "/").replace("~0", "~")
+        here += "/" + token
+        if isinstance(document, list) and token.isdigit() and int(token) < len(document):
+            document = document[int(token)]
+        elif isinstance(document, dict) and token in document:
+            document = document[token]
+        else:
+            raise SchemaError(f"JSON pointer {pointer!r}: nothing at {here}")
+    return document
+
+
 def _local_sam(value, root=Path(".")):
-    """SAM text lines from a local fixture: a BAM/SAM/SAM.gz path, or {"json": path, "pointer": "/a/b"}."""
+    """SAM text lines from a local fixture: a BAM/SAM/SAM.gz path, or
+    {"json": path, "pointer": "/a/b"} for the SAM lines under a JSON Pointer."""
     import pysam
     if isinstance(value, dict):
-        document = read_json(root / value["json"])
-        for part in value["pointer"].strip("/").split("/"):
-            document = document[int(part) if isinstance(document, list) else part]
-        return list(_sam_lines(document, f"{value['json']}#{value['pointer']}"))
+        return list(sam_lines(resolve_pointer(read_json(root / value["json"]), value.get("pointer", ""))))
     path = root / value
     if path.suffix == ".gz" and path.name.endswith(".sam.gz"):
         import tempfile
@@ -688,30 +727,12 @@ def _local_sam(value, root=Path(".")):
         return [read.to_string() for read in handle.fetch(until_eof=True)]
 
 
-def _sam_lines(value, where):
-    """SAM lines kept in JSON: a line, a list, a record object's sam and partner_sam
-    fields (as Isovar stores them), or a {digest: line} map, nested in any mix."""
-    if isinstance(value, str):
-        yield value
-    elif isinstance(value, list):
-        for item in value:
-            yield from _sam_lines(item, where)
-    elif isinstance(value, dict) and ("sam" in value or "partner_sam" in value):
-        for key in ("sam", "partner_sam"):
-            if value.get(key):
-                yield from _sam_lines(value[key], where)
-    elif isinstance(value, dict):
-        for item in value.values():
-            yield from _sam_lines(item, where)
-    else:
-        raise SchemaError(f"{where} holds something other than SAM lines: {type(value).__name__}")
-
-
 def check_fixtures(bundle, fixtures, *, root=Path(".")):
     """Compare a library's local fixtures with a bundle's members, as multisets of SAM text.
 
     fixtures maps member names to local files (see _local_sam). Returns
-    {member: dict(missing=n, extra=n)} for every member that differs.
+    {member: dict(missing=n, extra=n)} for every member that differs, and
+    {member: dict(error=why)} for one that isn't a member or can't be read.
     """
     from .bundles import safe_path, verify_bundle
     manifest = verify_bundle(bundle)
@@ -729,7 +750,11 @@ def check_fixtures(bundle, fixtures, *, root=Path(".")):
             by_source[sid] = {record.digest: record.read.to_string() for record in read_records(path)}
         for key, n in member["records"].items():
             expected[by_source[sid][key]] += n
-        found = Counter(_local_sam(value, Path(root)))
+        try:
+            found = Counter(_local_sam(value, Path(root)))
+        except (OsteosarcError, OSError, ValueError, KeyError, TypeError) as error:
+            problems[name] = dict(error=f"can't read {value}: {error}")
+            continue
         if found != expected:
             problems[name] = dict(missing=sum((expected - found).values()), extra=sum((found - expected).values()))
     return problems

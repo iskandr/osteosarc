@@ -7,9 +7,12 @@ snapshot (by name or download date) for reproducible analyses. Full release note
 
 ## 0.11.1 (2026-09-26)
 
-- `osteosarc test-data check` reads both SAM fields of records kept in JSON, sam and
-  partner_sam, as Isovar stores its fusion corpus, so those fixtures no longer look
-  half missing ([#61](https://github.com/iskandr/osteosarc/issues/61)).
+- `osteosarc test-data check` counts every SAM line under a JSON pointer, whatever
+  fields hold it, so records kept as sam and partner_sam (Isovar's fusion corpus) no
+  longer look half missing, and names or versions beside them aren't counted
+  ([#61](https://github.com/iskandr/osteosarc/issues/61)). Pointers follow the JSON
+  Pointer standard, a pointer to nothing says where it stopped, and a fixture that
+  can't be read is reported without stopping the check of the others.
 
 ## 0.11.0 (2026-09-26)
 
