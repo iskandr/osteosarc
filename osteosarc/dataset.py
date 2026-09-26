@@ -3,14 +3,9 @@
 from __future__ import annotations
 
 import copy
-import functools
 import json
-import os
-import pickle
 import re
-import tempfile
 import warnings
-import zlib
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -131,39 +126,49 @@ def choose_snapshot(rows, name=None, *, date=None, root=None):
 
 
 
-#: The snapshot sources the timeline is built from.
-TIMELINE_EVENT_SOURCES = ("events", "events_sheet", "mrd", "flow", "imaging", "pathology", "specimens",
-                          "labs", "cytometry")
-#: The snapshot sources the variant catalogue is built from.
-VARIANT_SOURCES = ("variant_index", "source_variants", "vaccine_overlap", "vafs")
+class _FileIndex:
+    """Files by ID, key, URL or resource name. Each kind of name gets its own
+    dictionary when first looked up: building one from the files takes about a
+    tenth of a second, less than loading a saved one."""
 
+    def __init__(self, files, base=BUCKET):
+        self._files, self._by, self._base = files, {}, base
 
-def _files_by_sample(files):
-    by_sample = defaultdict(list)
-    for file in files:
-        for sample in file.samples:
-            by_sample[sample].append(file)
-    return dict(by_sample)
+    def _names(self, kind):
+        """{name: file}, with a list for a name several files share."""
+        if kind not in self._by:
+            files = list(self._files)
+            names = [f.metadata.get("resource") if kind == "resource" else getattr(f, kind) for f in files]
+            by = dict(zip(names, files))  # built in C: a tenth of the time of a loop
+            by.pop(None, None), by.pop("", None)
+            if len(by) < sum(1 for name in names if name):
+                for name, count in Counter(name for name in names if name).items():
+                    if count > 1:
+                        by[name] = [f for n, f in zip(names, files) if n == name]
+            self._by[kind] = by
+        return self._by[kind]
 
+    def _lookup(self, kind, name):
+        found = self._names(kind).get(name)
+        return [] if found is None else found if isinstance(found, list) else [found]
 
-def _index_files(files):
-    """Files by ID, key, URL and resource name."""
-    index = defaultdict(list)
-    for file in files:
-        for name in dict.fromkeys((file.id, file.key, file.url, file.metadata.get("resource"))):
-            if name:
-                index[name].append(file)
-    return index
+    def get(self, name, default=()):
+        if "://" in name:
+            # A bucket URL is its key under the download base: look the key up instead.
+            try:
+                key = object_key(name, self._base)
+            except SchemaError:
+                key = None
+            found = [f for f in self._lookup("key", key) if f.url == name] if key else []
+            found = found or self._lookup("url", name)
+        else:
+            found = []
+            for kind in ("id", "key") if re.fullmatch(r"[0-9a-f]{64}", name) else ("key", "resource"):
+                found = self._lookup(kind, name)
+                if found:  # the first kind of name that matches
+                    break
+        return list(dict.fromkeys(found)) or list(default)
 
-
-@functools.lru_cache(maxsize=1)
-def _code_key():
-    """A fingerprint of osteosarc's code, so a saved catalogue is rebuilt whenever it changes."""
-    import hashlib
-    digest = hashlib.sha256()
-    for path in sorted(Path(__file__).parent.glob("*.py")):
-        digest.update(path.name.encode() + b"\0" + path.read_bytes())
-    return digest.hexdigest()[:12]
 
 class Dataset:
     """A pinned set of metadata receipts plus lazily parsed public resources.
@@ -388,7 +393,12 @@ class Dataset:
             events_from_specimens,
         )
         self._require_timeline()
-        records, undated = self.curation.records, []
+        undated, used = [], []
+
+        def records(source):
+            found = self.curation.records(source)
+            used.append(found[1])  # the corrections this timeline depends on
+            return found
         events, event_marks = records("events")
         mrd, mrd_marks = records("mrd")
         sheet, sheet_marks = records("events_sheet")
@@ -406,7 +416,7 @@ class Dataset:
                                            undated=undated)]
         # Rows whose dates cannot be read are kept out of the chart but reported here.
         return Timeline(sorted(items, key=lambda e: (e.first_day, e.lane, e.label, e.id)),
-                        source={"snapshot_id": self.id, "corrections": self.curation.applied(TIMELINE_EVENT_SOURCES),
+                        source={"snapshot_id": self.id, "corrections": self.curation.ids_in(*used),
                                 "undated": undated})
 
     @cached_property
@@ -585,40 +595,13 @@ class Dataset:
     @cached_property
     def files(self):
         """All listed files plus metadata-only catalog objects and site tables."""
-        return self._catalog[0]
-
-    @cached_property
-    def _catalog(self):
-        """The files, an index of them by ID, key, URL and resource name, and by sample."""
-        def build():
-            files = self._build_files()
-            return files, _index_files(files), _files_by_sample(files)
-        return self._saved("files", build)
+        return self._saved("files", self._build_files)
 
     def _saved(self, name, build):
-        """A catalogue built once and kept in the cache, compressed. Building one takes
-        seconds (the bucket holds some 400,000 objects), and a snapshot never changes,
-        so a copy serves this snapshot, this osteosarc code and this set of corrections."""
-        folder = self.cache.workspace / "catalogs"
-        stem = f"{self.id}-{name}-{self._corrections_key}"
-        path = folder / f"{stem}-{_code_key()}.pickle.z"
-        try:
-            return pickle.loads(zlib.decompress(path.read_bytes()))
-        except (OSError, zlib.error, pickle.UnpicklingError, EOFError, AttributeError, ImportError, ValueError):
-            pass
-        value = build()
-        try:
-            folder.mkdir(parents=True, exist_ok=True)
-            with tempfile.NamedTemporaryFile(dir=folder, prefix=".catalog-", delete=False) as handle:
-                handle.write(zlib.compress(pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL), 1))
-            os.replace(handle.name, path)
-            # Copies made by other versions of osteosarc for this snapshot are stale.
-            for old in folder.glob(f"{stem}-*.pickle.z"):
-                if old != path:
-                    old.unlink(missing_ok=True)
-        except OSError:
-            pass  # a read-only cache still works; it builds the catalogue each time
-        return value
+        """A catalogue built once for this snapshot and set of corrections, and kept
+        in the cache (see osteosarc.saved)."""
+        from .saved import load_or_build
+        return load_or_build(self.cache.workspace / "catalogs", f"{self.id}-{name}-{self._corrections_key}", build)
 
     @cached_property
     def _corrections_key(self):
@@ -683,7 +666,8 @@ class Dataset:
                                   source_variants=records,
                                   vaccine_overlap=dict(self._json("vaccine_overlap"), mutations=mutations),
                                   source={"snapshot_id": self.id, "receipts": self.manifest["sources"],
-                                          "corrections": self.curation.applied(VARIANT_SOURCES)})
+                                          "corrections": self.curation.ids_in(
+                                              index_touched, record_touched, overlap_touched, count_touched)})
         # A correction belongs to a variant when it touches the variant's own records
         # or all of its count rows. One that touches only some count rows (e.g. one
         # BAM's counts) is listed separately as a count correction.
@@ -750,18 +734,18 @@ class Dataset:
 
     @cached_property
     def _file_index(self):
-        files = self.files
-        catalog = self.__dict__.get("_catalog")
-        # The saved index, unless files were replaced (tests do).
-        return catalog[1] if catalog is not None and files is catalog[0] else _index_files(files)
+        return _FileIndex(self.files, self._download_header.get("download_base", BUCKET))
 
     def _sample_files(self, sample_id):
-        """A sample's files, as files.select(sample=...) gives them, from the saved index."""
-        files = self.files
-        catalog = self.__dict__.get("_catalog")
-        if catalog is not None and files is catalog[0]:
-            return Files(catalog[2].get(sample_id, ()), source=files.source)
-        return files.select(sample=sample_id)
+        """A sample's files, as files.select(sample=...) gives them."""
+        memo = self.__dict__.setdefault("_by_sample", {})
+        if memo.get("files") is not self.files:  # built once, or again if files were replaced
+            by_sample = defaultdict(list)
+            for file in self.files:
+                for sample in file.samples:
+                    by_sample[sample].append(file)
+            memo.update(files=self.files, by_sample=by_sample)
+        return Files(memo["by_sample"].get(sample_id, ()), source=self.files.source)
 
     def file(self, key_or_id):
         """Resolve an exact bucket key, URL, resource name, or file ID."""

@@ -386,7 +386,9 @@ def browse(args, dataset):
         if not any(filters.values()) and not args.downloaded and not args.json:
             print(views.files_overview(dataset))
             return 0
-        selection = dataset.files.select(**filters)
+        # A sample's files come from an index, not a pass over every file.
+        pool = dataset._sample_files(filters.pop("sample")) if filters["sample"] is not None else dataset.files
+        selection = pool.select(**{k: v for k, v in filters.items() if k != "sample"})
         if args.downloaded:
             local = dataset.local_urls()
             selection = selection.where(lambda f: f.url in local)

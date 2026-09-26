@@ -61,9 +61,11 @@ def digests(path, algorithms=("sha256",)):
 
 
 def file_identity(path):
-    """Size, modification time and inode: changes whenever a file is rewritten."""
+    """Size, times and inode: changes whenever a file is rewritten, even if its
+    modification time is set back (the change time can't be)."""
     status = Path(path).stat()
-    return [str(Path(path).resolve()), status.st_size, status.st_mtime_ns, status.st_ino, status.st_dev]
+    return [str(Path(path).resolve()), status.st_size, status.st_mtime_ns, status.st_ctime_ns, status.st_ino,
+            status.st_dev]
 
 
 _UMASK = os.umask(0)
@@ -225,7 +227,10 @@ class Cache:
                 return record["sha256"]
         value = digest(path)
         if file_identity(path) == identity:
-            write_json(memo, dict(identity=identity, sha256=value))
+            try:
+                write_json(memo, dict(identity=identity, sha256=value))
+            except OSError:
+                pass  # a read-only cache: hashed again next time
         return value
 
     def fetch(self, url, *, refresh=False, sha256=None, md5=None, size=None, max_bytes=None):

@@ -303,14 +303,11 @@ def _first_sentence(text):
 
 
 def all_sample_files_view(samples, data, *, width=None):
-    by_sample, local = defaultdict(list), data.local_urls()
-    for file in data.files:  # one pass, rather than one per sample
-        for sample in file.samples:
-            by_sample[sample].append(file)
+    local = data.local_urls()
     parts = []
     for sample in samples:
         what = ", ".join(x for x in (sample.description or sample.tissue, sample.site, sample.date) if x)
-        files, _, _ = sample_files_view(sample, data, width=width, files=by_sample[sample.id], local=local)
+        files, _, _ = sample_files_view(sample, data, width=width, files=data._sample_files(sample.id), local=local)
         parts.append(f"== {sample.id}: {what}\n{files}")
     parts.append("Get a file: osteosarc download KEY --to .   Reads in a region: osteosarc reads KEY REGION"
                  "\nOne sample, with commands written out: osteosarc samples SAMPLE")

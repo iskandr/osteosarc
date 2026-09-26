@@ -144,6 +144,10 @@ class Collection(Sequence):
     def __len__(self):
         return len(self._items)
 
+    def __iter__(self):
+        # Sequence's own __iter__ calls __getitem__ once per item, in Python.
+        return iter(self._items)
+
     def __getitem__(self, key):
         if isinstance(key, slice):
             return type(self)(self._items[key], source=self.source)

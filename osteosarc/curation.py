@@ -414,7 +414,8 @@ class Curation:
         values = self._index(source, name, ordered=True)
         start = bisect.bisect_left(values, (prefix,))
         found = []
-        for value, i in values[start:]:
+        for j in range(start, len(values)):  # without copying the rest of the index
+            value, i = values[j]
             if not value.startswith(prefix):
                 break
             found.append(i)
@@ -471,12 +472,14 @@ class Curation:
         for key in [k for k in self._indexes if k[0] == source]:
             del self._indexes[key]
 
-    def applied(self, sources=None):
-        """IDs of the corrections applied, or of those applied to any of these sources."""
-        return tuple(c.id for c in self.corrections if self.enabled
-                     and (sources is None or any(change.source in sources
-                                                 for group in c.versions for change in group))
-                     and self.evaluate(c)[0] == "applied")
+    def applied(self):
+        return tuple(c.id for c in self.corrections if self.enabled and self.evaluate(c)[0] == "applied")
+
+    def ids_in(self, *marks):
+        """IDs of the corrections in these marks ({record index: correction IDs}, as
+        records() gives them), in the corrections' order: those a result depends on."""
+        found = {i for mark in marks for ids in mark.values() for i in ids}
+        return tuple(c.id for c in self.corrections if c.id in found)
 
     def report(self):
         rows = []
