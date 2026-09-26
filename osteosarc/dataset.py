@@ -7,6 +7,7 @@ import json
 import re
 import warnings
 from collections import Counter, defaultdict
+from dataclasses import asdict
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from functools import cached_property
@@ -33,7 +34,7 @@ from .curation import (
     unrecognized_values,
 )
 from .errors import CoordinateError, IntegrityError, NoSnapshotsError, OfflineError, SchemaError
-from .models import File, Files, Region
+from .models import File, Region
 from .parsing import (
     PARSE_FORMATS,
     Table,
@@ -497,14 +498,16 @@ class Dataset:
         return Samples(result, source={"snapshot_id": self.id})
 
     def _tag_samples(self, files):
-        """Record on each file the samples whose BAM it is or whose FASTQ folder holds it."""
+        """Record on each file the samples whose BAM it is or whose FASTQ folder holds it.
+
+        Returns a problem that left them unlinked, if any."""
         try:
             sources = self._sample_sources
         except SchemaError as error:
             # An older snapshot has no sample registry; any other problem is worth saying.
             if set(TIMELINE_SOURCES) <= set(self.manifest["sources"]):
-                warnings.warn(f"Files aren't linked to samples: {error}", stacklevel=3)
-            return
+                return f"Files aren't linked to samples: {error}"
+            return None
         owners, folders = defaultdict(list), defaultdict(list)
         for source in sources:
             sample = source["row"]["sample_id"]
@@ -595,18 +598,35 @@ class Dataset:
     @cached_property
     def files(self):
         """All listed files plus metadata-only catalog objects and site tables."""
-        return self._saved("files", self._build_files)
+        return self._saved("files", self._build_files,
+                           ("bucket", "bams", "bam_metadata", "vafs", "specimens", "fastqs"))
 
-    def _saved(self, name, build):
+    def _saved(self, name, build, sources):
         """A catalogue built once for this snapshot and set of corrections, and kept
-        in the cache (see osteosarc.saved)."""
+        in the cache (see osteosarc.saved).
+
+        build returns the catalogue and any problems to warn of. They're kept with
+        it, with the stale corrections to the sources it's built from, and warned
+        of whether it's built or loaded.
+        """
         from .saved import load_or_build
-        return load_or_build(self.cache.workspace / "catalogs", f"{self.id}-{name}-{self._corrections_key}", build)
+
+        def build_noting_problems():
+            value, problems = build()
+            return value, problems, self.curation.stale(self.curation.of_sources(*sources))
+        value, problems, stale = load_or_build(self.cache.workspace / "catalogs",
+                                               f"{self.id}-{name}-{self._corrections_key}", build_noting_problems)
+        self.curation.warn(stale)
+        for problem in problems:
+            warnings.warn(problem, stacklevel=3)
+        return value
 
     @cached_property
     def _corrections_key(self):
-        chosen = self.curation.corrections if self.curation.enabled else ()
-        return stable_id(repr(chosen))[:12]
+        def canonical(value):  # sets in a fixed order
+            return sorted(value, key=repr) if isinstance(value, (set, frozenset)) else repr(value)
+        chosen = [asdict(c) for c in self.curation.corrections] if self.curation.enabled else []
+        return stable_id(json.loads(json.dumps(chosen, default=canonical)))[:12]
 
     def _build_files(self):
         bams = self._json("bams")
@@ -634,15 +654,15 @@ class Dataset:
         for file in files:
             if file.key in touched:
                 file.metadata["corrections"] = tuple(dict.fromkeys(touched[file.key]))
-        self._tag_samples(files)
+        problem = self._tag_samples(files)
         # The listing is large; evaluated corrections keep their matches if it is reloaded.
         self.curation.release("bucket")
-        return files
+        return files, [problem] if problem else []
 
     @cached_property
     def _download_header(self):
         """The bucket listing's fields other than its file rows (download_base, dates)."""
-        return self._saved("header", self._raw_download_header)
+        return self._saved("header", lambda: (self._raw_download_header(), []), ())
 
     def _raw_download_header(self):
         if self._bucket_header is None:
@@ -652,7 +672,8 @@ class Dataset:
 
     @cached_property
     def _variants(self):
-        return self._saved("variants", self._build_variants)
+        return self._saved("variants", self._build_variants,
+                           ("variant_index", "source_variants", "vaccine_overlap", "vafs"))
 
     def _build_variants(self):
         index, index_touched = self.curation.records("variant_index")
@@ -689,7 +710,7 @@ class Dataset:
                 (ids if n == rows_per_variant[variant.id] else partial[variant.id]).append(correction)
             variant.annotations["corrections"] = tuple(dict.fromkeys(ids))
             variant.annotations["count_corrections"] = tuple(dict.fromkeys(partial[variant.id]))
-        return variants
+        return variants, []
 
     def variants(self, set="site", **filters):
         """Select 'site', 'all' (includes count-export entries), or 'vaccine'.
@@ -735,17 +756,6 @@ class Dataset:
     @cached_property
     def _file_index(self):
         return _FileIndex(self.files, self._download_header.get("download_base", BUCKET))
-
-    def _sample_files(self, sample_id):
-        """A sample's files, as files.select(sample=...) gives them."""
-        memo = self.__dict__.setdefault("_by_sample", {})
-        if memo.get("files") is not self.files:  # built once, or again if files were replaced
-            by_sample = defaultdict(list)
-            for file in self.files:
-                for sample in file.samples:
-                    by_sample[sample].append(file)
-            memo.update(files=self.files, by_sample=by_sample)
-        return Files(memo["by_sample"].get(sample_id, ()), source=self.files.source)
 
     def file(self, key_or_id):
         """Resolve an exact bucket key, URL, resource name, or file ID."""
@@ -848,8 +858,10 @@ class Dataset:
             except (OSError, ValueError, KeyError, TypeError):
                 continue
             bam = receipt_path.parent / "reads.bam"
+            if not isinstance(source, str) or not bam.is_file():
+                continue
             file = self._url_file(source)
-            if not bam.is_file() or not (file or str(source).startswith(base)):
+            if not (file or source.startswith(base)):
                 continue
             rows.append(dict(kind="reads", key=file.key if file else source, url=source, size=bam.stat().st_size,
                              path=str(bam), regions=regions_text(regions),
@@ -873,8 +885,10 @@ class Dataset:
                     receipts.setdefault(receipt.url, []).append(receipt)
         rows = []
         for url, candidates in sorted(receipts.items()):
+            if url in sources:
+                continue
             file = self._url_file(url)
-            if url in sources or not (file or url.startswith(base)):
+            if not (file or url.startswith(base)):
                 continue
             for receipt in candidates:
                 path = self._local_copy(file or File(stable_id(url), url, url, "", ""), receipt)

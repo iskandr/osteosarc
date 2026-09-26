@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import re
+from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
+from functools import cached_property
 
 from .curation import check_filter
 from .errors import CoordinateError
@@ -211,8 +213,6 @@ class Files(Collection):
                 return False
             if contains is not None and contains not in file.key:
                 return False
-            if sample is not None and sample not in file.samples:
-                return False
             for name, value in filters.items():
                 if value is None:
                     continue
@@ -220,7 +220,16 @@ class Files(Collection):
                 if value not in values or (len(values) > 1 and not include_conflicts):
                     return False
             return True
-        return self.where(match)
+        pool = self if sample is None else self._by_sample.get(sample, ())
+        return type(self)((file for file in pool if match(file)), source=self.source)
+
+    @cached_property
+    def _by_sample(self):
+        by_sample = defaultdict(list)
+        for file in self:
+            for sample in file.samples:
+                by_sample[sample].append(file)
+        return by_sample
 
 
 @dataclass(frozen=True)
@@ -260,7 +269,7 @@ class Sample:
         dataset = getattr(self, "_dataset", None)
         if dataset is None:
             raise ValueError(f"{self.id} is not attached to a Dataset")
-        return dataset._sample_files(self.id)
+        return dataset.files.select(sample=self.id)
 
     def __repr__(self):
         from .display import Text

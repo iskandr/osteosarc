@@ -3,8 +3,7 @@
 A snapshot never changes, but building its file catalogue (some 400,000 bucket
 objects) takes seconds, so each catalogue is saved the first time and loaded after.
 A saved copy serves one snapshot, one version of osteosarc's code and one set of
-corrections, and holds the warnings its build raised, which are raised again on
-every load.
+corrections.
 
 Copies are pickles, which can run code when loaded, so each user keeps their own
 and loads only files they own that no one else can write. Copies unused for 30
@@ -19,8 +18,9 @@ import os
 import pickle
 import tempfile
 import time
-import warnings
 from pathlib import Path
+
+from .cache import read_own
 
 #: Copies of one catalogue kept (for different versions of osteosarc's code).
 KEEP = 3
@@ -32,39 +32,24 @@ def load_or_build(folder, stem, build):
     """The saved catalogue named stem in folder, or build() it, save it and return it."""
     code = code_key()
     if code is None:  # no source to fingerprint: build every time
-        return _build(build)[0]
+        return build()
     path = Path(folder) / f"{stem}-{code}-u{os.getuid()}.pickle.gz"
-    try:
-        if _trusted(path):
+    saved = read_own(path)
+    if saved is not None:
+        try:
             # Decompressed whole, not streamed: 40% faster, for a brief ~150 MB of bytes.
-            value, raised = pickle.loads(gzip.decompress(path.read_bytes()))
-            os.utime(path)  # recently used
-            _raise_again(raised)
+            value = pickle.loads(gzip.decompress(saved))
+        except Exception:  # damaged: build it again
+            pass
+        else:
+            try:
+                os.utime(path)  # recently used
+            except OSError:
+                pass
             return value
-    except Exception:  # missing, damaged or foreign: build it again
-        pass
-    value, raised = _build(build)
-    _save(path, (value, raised))
+    value = build()
+    _save(path, value)
     return value
-
-
-def _build(build):
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        value = build()
-    raised = [(str(w.message), w.category) for w in caught]
-    _raise_again(raised)
-    return value, raised
-
-
-def _raise_again(raised):
-    for message, category in raised:
-        warnings.warn(message, category, stacklevel=4)
-
-
-def _trusted(path):
-    status = path.stat()
-    return status.st_uid == os.getuid() and not status.st_mode & 0o022
 
 
 def _save(path, value):

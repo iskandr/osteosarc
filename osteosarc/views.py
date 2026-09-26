@@ -195,11 +195,11 @@ def _bam_rows(sample, data, local):
     return sorted(rows, key=lambda r: (order.get(r["assay"].split(", ")[0], len(order)), r["key"]))
 
 
-def sample_files_view(sample, data, *, width=None, files=None, local=None):
+def sample_files_view(sample, data, *, width=None, local=None):
     """A sample's BAMs and FASTQ folders as two tables.
 
-    files (the sample's files) and local (URLs with a local copy) save looking
-    them up again when showing many samples.
+    local (URLs with a local copy) saves looking them up again when showing many
+    samples.
     """
     local = data.local_urls() if local is None else local
     bams = _bam_rows(sample, data, local)
@@ -214,7 +214,7 @@ def sample_files_view(sample, data, *, width=None, files=None, local=None):
         lines.append("BAMs: none")
     if sample.missing_bams:
         lines.append("The site names BAMs the bucket doesn't have: " + "; ".join(sample.missing_bams))
-    folders = _fastq_folders(sample, sample.files if files is None else files)
+    folders = _fastq_folders(sample, sample.files)
     lines.append("")
     if folders:
         lines.append(f"FASTQ folders, raw reads ({len(folders)}):")
@@ -307,7 +307,7 @@ def all_sample_files_view(samples, data, *, width=None):
     parts = []
     for sample in samples:
         what = ", ".join(x for x in (sample.description or sample.tissue, sample.site, sample.date) if x)
-        files, _, _ = sample_files_view(sample, data, width=width, files=data._sample_files(sample.id), local=local)
+        files, _, _ = sample_files_view(sample, data, width=width, local=local)
         parts.append(f"== {sample.id}: {what}\n{files}")
     parts.append("Get a file: osteosarc download KEY --to .   Reads in a region: osteosarc reads KEY REGION"
                  "\nOne sample, with commands written out: osteosarc samples SAMPLE")

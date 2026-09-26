@@ -564,7 +564,11 @@ def test_downloads_are_listed_found_and_placed_under_their_own_names(dataset, tm
     (derived / "reads.bam").write_bytes(b"bam")
     (derived / "receipt.json").write_text(json.dumps(dict(request=dict(source=vcf.url, regions=[
         dict(contig="chr1", start=9, end=20), dict(contig="chr2", start=0, end=5)]))))
-    reads = next(r for r in dataset.downloads() if r["kind"] == "reads")
+    malformed = dataset.cache.workspace / "derived" / "malformed"  # skipped, as unreadable ones are
+    malformed.mkdir()
+    (malformed / "reads.bam").write_bytes(b"bam")
+    (malformed / "receipt.json").write_text(json.dumps(dict(request=dict(source=None))))
+    (reads,) = (r for r in dataset.downloads() if r["kind"] == "reads")
     assert (reads["key"], reads["regions"]) == (key, "2 regions from chr1:10-20")
     from osteosarc.views import downloads_view, files_view
     shown = downloads_view(list(dataset.downloads()), dataset.cache.root)

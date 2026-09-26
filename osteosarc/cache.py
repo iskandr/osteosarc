@@ -16,6 +16,7 @@ import fcntl
 import hashlib
 import json
 import os
+import re
 import shutil
 import stat
 import sys
@@ -61,11 +62,40 @@ def digests(path, algorithms=("sha256",)):
 
 
 def file_identity(path):
-    """Size, times and inode: changes whenever a file is rewritten, even if its
-    modification time is set back (the change time can't be)."""
+    """Size, modification time and inode: changes whenever a file is rewritten."""
     status = Path(path).stat()
-    return [str(Path(path).resolve()), status.st_size, status.st_mtime_ns, status.st_ctime_ns, status.st_ino,
-            status.st_dev]
+    return [str(Path(path).resolve()), status.st_size, status.st_mtime_ns, status.st_ino, status.st_dev]
+
+
+def read_own(path):
+    """The bytes of a file this user owns and no one else can write, else None.
+
+    What's checked is the file opened, never a symbolic link, so it can't be
+    swapped for another between the check and the read.
+    """
+    try:
+        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+    except OSError:
+        return None
+    with os.fdopen(descriptor, "rb") as handle:
+        status = os.fstat(handle.fileno())
+        if not stat.S_ISREG(status.st_mode) or status.st_uid != os.getuid() or status.st_mode & 0o022:
+            return None
+        return handle.read()
+
+
+def write_own(path, data):
+    """Atomically write bytes only this user can read or write (see read_own)."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix=".own-")
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(data)
+        os.replace(temporary, path)
+    except BaseException:
+        Path(temporary).unlink(missing_ok=True)
+        raise
 
 
 _UMASK = os.umask(0)
@@ -217,18 +247,21 @@ class Cache:
         """SHA256 of a local file, remembered on disk by file identity.
 
         Local BAMs are large; an unchanged file (same size, mtime and inode) is
-        not re-read. Any rewrite changes its identity and forces a new hash.
+        not re-read. Any rewrite changes its identity and forces a new hash. Each
+        user keeps their own records, and a damaged one is hashed again.
         """
         identity = file_identity(path)
-        memo = self.workspace / "digests" / (stable_id(identity) + ".json")
-        if memo.is_file():
-            record = json.loads(memo.read_text())
-            if record.get("identity") == identity:
+        memo = self.workspace / "digests" / f"{stable_id(identity)}-u{os.getuid()}.json"
+        try:
+            record = json.loads(read_own(memo) or "{}")
+            if record.get("identity") == identity and re.fullmatch("[0-9a-f]{64}", record.get("sha256")):
                 return record["sha256"]
+        except (ValueError, AttributeError, TypeError):
+            pass
         value = digest(path)
         if file_identity(path) == identity:
             try:
-                write_json(memo, dict(identity=identity, sha256=value))
+                write_own(memo, json.dumps(dict(identity=identity, sha256=value)).encode())
             except OSError:
                 pass  # a read-only cache: hashed again next time
         return value

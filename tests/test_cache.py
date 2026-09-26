@@ -149,7 +149,16 @@ def test_files_are_shareable_and_local_digests_are_remembered(tmp_path, download
     first = cache.file_digest(local)
     assert Cache(tmp_path / "cache").file_digest(local) == first and len(calls) == 1
     local.write_bytes(b"rewritten alignment")
-    assert cache.file_digest(local) != first and len(calls) == 2
+    second = cache.file_digest(local)
+    assert second != first and len(calls) == 2
+    # A damaged record, or one someone else could have written, is hashed again.
+    from osteosarc.cache import file_identity, stable_id
+    record = cache.workspace / "digests" / f"{stable_id(file_identity(local))}-u{os.getuid()}.json"
+    for damage in (lambda: record.write_text(""), lambda: record.write_text("[]"),
+                   lambda: record.chmod(0o666)):
+        damage()
+        assert cache.file_digest(local) == second
+    assert len(calls) == 5
 
 
 def test_objects_use_the_shared_openvax_layout(tmp_path, download_transport, monkeypatch):
