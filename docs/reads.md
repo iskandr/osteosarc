@@ -112,20 +112,16 @@ checksums, header, tool versions and read count. Osteosarc checks a remote BAM's
 HTTP headers before and after reading, to catch a file that changed mid-read.
 `osteosarc downloads` lists every extract with its local path.
 
-## Local BAMs and random samples
+## Local BAMs
 
-The same extraction works on any local indexed BAM, and a reproducible random
-sample of its reads makes a quick fixture:
+The same extraction works on any local indexed BAM:
 
 ```python
 from osteosarc import extract_reads
-from osteosarc.reads import subset_templates
 
 regional = extract_reads(str(subset.path), regions)
-sample = subset_templates(regional, count=48, seed="fixture-v1")
-print(sample.path, sample.receipt["records"])
+print(regional.path, regional.receipt["records"])
 ```
 
-A random sample ignores alleles and quality, so don't use it to estimate allele
-fractions. For test data with chosen reads and controls, and the shared test data
-the OpenVax libraries use, see [test data](test-data.md).
+For a bundle of test data with a balanced set of reads at each variant, and the
+shared test data the OpenVax libraries use, see [test data](test-data.md).

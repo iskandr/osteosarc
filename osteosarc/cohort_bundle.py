@@ -8,7 +8,6 @@ import gzip
 import hashlib
 import json
 import os
-import shutil
 import struct
 import tempfile
 import zipfile
@@ -18,10 +17,8 @@ from pathlib import Path, PurePosixPath
 
 import pysam
 
-from . import Dataset, File, Region, digest, extract_reads
-from . import __version__ as osteosarc_version
+from . import Dataset, digest
 from .bundles import DEFAULT_SIZE_BUDGET, safe_path
-from .models import SampleClaim
 
 
 def record_digest(read, *, text_only=False):
@@ -36,30 +33,6 @@ def record_digest(read, *, text_only=False):
                 identity.append([tag, kind, value.typecode,
                                  struct.pack("<" + value.typecode * len(value), *value).hex()])
     return hashlib.sha256(json.dumps(identity, separators=(",", ":")).encode()).hexdigest()
-
-
-def retrieval_regions(records, assembly, *, pin_lengths=True):
-    """Minimal point cover of alignment spans, including explicit mate records.
-
-    Select the last base of the earliest-ending uncovered interval, per contig.
-    Interval stabbing greedily minimizes the number of retrieval points; it
-    does not change the required read list or infer biological coverage.
-    """
-    intervals = defaultdict(list)
-    lengths = {}
-    for read in records:
-        if read.is_unmapped or read.reference_end is None:
-            raise ValueError("Indexed retrieval requires mapped selected records")
-        intervals[read.reference_name].append((read.reference_start, read.reference_end))
-        lengths[read.reference_name] = read.header.get_reference_length(read.reference_name) if pin_lengths else None
-    regions = []
-    for contig, spans in sorted(intervals.items()):
-        anchor = -1
-        for start, end in sorted(spans, key=lambda span: span[1]):
-            if start > anchor:
-                anchor = end - 1
-                regions.append([contig, anchor, anchor + 1, assembly, lengths[contig]])
-    return regions
 
 
 def select_records(subset, cohort):
@@ -152,74 +125,6 @@ def update_manifests(root):
     # digest identifies the repackaged, record-equivalent test inputs.
     prediction["bundled_input_manifest_sha256"] = digest(selection / "isovar/manifest.json")
     write_json(selection / "predictions_manifest.json", prediction)
-
-
-def generate_cohort_bundle(recipe, cache, output):
-    recipe, output = Path(recipe), Path(output)
-    if output.exists() or output.is_symlink():
-        raise FileExistsError(output)
-    plan = json.loads(gzip.decompress((recipe / "selection.json.gz").read_bytes()))
-    catalog = json.loads((recipe / "catalog.json").read_text())
-    if catalog["snapshot"]["id"] != plan["snapshot_id"] or catalog["corrections"] is not False:
-        raise ValueError("Wrong osteosarc catalog or correction policy")
-    native = catalog["variants"]
-    groups = defaultdict(list)
-    for cohort in plan["cohorts"]:
-        groups[cohort["source"]].append(cohort)
-    provenance = dict(schema_version=1, snapshot_id=plan["snapshot_id"], corrections=False,
-                      osteosarc_version=osteosarc_version, recipe_files={p.relative_to(recipe).as_posix(): digest(p)
-                                    for p in sorted(recipe.rglob("*")) if p.is_file()},
-                      variants=native, sources={}, cohorts=[])
-    with tempfile.TemporaryDirectory(prefix="sid-bundle-build-") as temporary:
-        root = Path(temporary)
-        shutil.copytree(recipe / "support", root, dirs_exist_ok=True)
-        for number, (url, cohorts) in enumerate(groups.items(), 1):
-            source = catalog["assets"][url]
-            fields = dict(source["asset"])
-            fields["claims"] = tuple(SampleClaim(**c) for c in fields["claims"])
-            fields["index_urls"] = tuple(fields["index_urls"])
-            asset = File(**fields)
-            pinned_index = source["index_receipt"]
-            index = cache.path(cache.fetch(pinned_index["url"], sha256=pinned_index["sha256"],
-                                           size=pinned_index["size"]))
-            regions = {tuple(r) for c in cohorts for r in c["regions"]}
-            print("[%d/%d] %s: %d required records" % (
-                number, len(groups), asset.key, sum(len(c["records"]) for c in cohorts)), flush=True)
-            subset = extract_reads(asset, [Region(*r) for r in sorted(regions)], cache=cache,
-                                   index=str(index), snapshot_id=plan["snapshot_id"], fetch_pairs=False)
-            provenance["sources"][url] = dict(asset=asdict(asset), index=pinned_index, extraction=subset.receipt)
-            for cohort in cohorts:
-                records = select_records(subset, cohort)
-                write_cohort(root, cohort, records, recipe)
-                provenance["cohorts"].append({k: v for k, v in cohort.items()
-                                             if k not in ("header", "record_metadata")})
-        update_manifests(root)
-        write_json(root / "provenance.json", provenance)
-        members = sorted(p for p in root.rglob("*") if p.is_file())
-        manifest = {p.relative_to(root).as_posix(): dict(sha256=digest(p), size=p.stat().st_size)
-                    for p in members}
-        write_json(root / "bundle.json", dict(schema_version=1, files=manifest))
-        # Fixed member timestamps/order/mode; volatile acquisition receipts are
-        # preserved honestly, so a fresh online acquisition may differ in bytes.
-        output.parent.mkdir(parents=True, exist_ok=True)
-        if output.exists():
-            raise FileExistsError(output)
-        with tempfile.TemporaryDirectory(prefix=".sid-package-", dir=output.parent) as package_directory:
-            staged = Path(package_directory) / output.name
-            with zipfile.ZipFile(staged, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-                for path in sorted(root.rglob("*")):
-                    if path.is_file():
-                        info = zipfile.ZipInfo(path.relative_to(root).as_posix(), (1980, 1, 1, 0, 0, 0))
-                        info.compress_type = zipfile.ZIP_DEFLATED
-                        info.external_attr = 0o100644 << 16
-                        archive.writestr(info, path.read_bytes())
-            if staged.stat().st_size > plan.get("size_budget_bytes", 64 * 1024 * 1024):
-                raise ValueError("Cohort bundle exceeds size budget")
-            # Same-filesystem hard linking publishes atomically and exclusively,
-            # including when another writer creates output during acquisition.
-            os.link(staged, output)
-        print("Wrote %s (%d bytes)" % (output, output.stat().st_size), flush=True)
-
 
 
 def _extract_bundle(archive, destination):

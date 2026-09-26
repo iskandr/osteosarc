@@ -10,7 +10,6 @@ clinical history.
   BAM into a small local one, without downloading the BAM.
 
 [Documentation](https://iskandr.github.io/osteosarc/) ·
-[Concepts](https://iskandr.github.io/osteosarc/concepts/) ·
 [Command line](https://iskandr.github.io/osteosarc/command-line/) ·
 [Python API](https://iskandr.github.io/osteosarc/python-api/) ·
 [Changelog](https://iskandr.github.io/osteosarc/changelog/)
@@ -80,7 +79,7 @@ in the website's data; `osteosarc --no-corrections` shows the published values.
 
 | To | Read |
 | --- | --- |
-| Understand samples, variants, coordinates and corrections | [Concepts](https://iskandr.github.io/osteosarc/concepts/) |
+| Understand samples, variants, coordinates and corrections | [Overview](https://iskandr.github.io/osteosarc/#how-the-data-fits-together) |
 | Find a sample's files, and download them | [Samples and files](https://iskandr.github.io/osteosarc/samples/) |
 | Get alleles, read counts and vaccine peptides | [Variants and vaccines](https://iskandr.github.io/osteosarc/variants/) |
 | Fetch reads by variant or region | [Reads](https://iskandr.github.io/osteosarc/reads/) |

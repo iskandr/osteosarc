@@ -4,7 +4,7 @@ from dataclasses import replace
 import pytest
 
 from osteosarc import Cache, CoordinateError, IntegrityError, ReadFilter, Region, extract_reads
-from osteosarc.reads import inspect_alignment, resolve_regions, subset_templates
+from osteosarc.reads import inspect_alignment, resolve_regions
 
 
 def records(path):
@@ -123,19 +123,6 @@ def test_mitochondrial_lengths_and_ambiguous_contigs():
     header["SQ"].append(dict(SN="M", LN=16569))
     with pytest.raises(CoordinateError, match="ambiguous"):
         resolve_regions([replace(region, reference_length=16569)], header)
-
-
-def test_template_sampling_keeps_full_record_multiplicity_and_read_groups(bam, tmp_path):
-    cache = Cache(tmp_path / "cache")
-    fixture = subset_templates(bam, 2, cache=cache, seed="example")
-    selected = {tuple(t) for t in fixture.receipt["selected_templates"]}
-    import pysam
-    with pysam.AlignmentFile(bam) as handle:
-        expected = [r.to_string() for r in handle if (r.get_tag("RG"), r.query_name) in selected]
-    assert Counter(records(fixture.path)) == Counter(expected)
-    assert fixture.receipt["templates"] == 2
-    assert fixture.receipt["suitable_for_vaf"] is False
-    assert subset_templates(bam, 2, cache=cache, seed="example").path == fixture.path
 
 
 def test_cram_requires_explicit_reference_and_decodes_regional_records(bam, tmp_path):

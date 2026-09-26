@@ -5,6 +5,22 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.13.0 (unreleased)
+
+A simpler site, and less code ([#75](https://github.com/iskandr/osteosarc/issues/75)).
+
+- **The home page is the overview.** Concepts is folded into a short "How the data
+  fits together" there, linking to each topic's page.
+- **Removed, now that the OpenVax libraries take their reads from openvax-v1:**
+  - osteosarc.regional_corpus;
+  - the generators in legacy_fixtures and cohort_bundle (the functions Isovar and
+    Vaxrank import stay);
+  - osteosarc.reads.subset_templates, a random sample that make_bundle's balanced
+    sets replace;
+  - SAM-text record identities in recipes, and reading full headers in bundles made
+    by 0.2.2, which no recipe or bundle uses any more.
+- The frozen SV test recipe moves from the package into tests/data.
+
 ## 0.12.0 (2026-09-26)
 
 Test data in a call or two ([#73](https://github.com/iskandr/osteosarc/issues/73)).
@@ -221,7 +237,7 @@ review:
 
 ## 0.6.1 (2026-09-24)
 
-- The documentation is rewritten in plain language. [Key concepts](concepts.md) now
+- The documentation is rewritten in plain language. Key concepts now
   says where every piece of data comes from: osteosarc.com, its S3 bucket, and the
   website's source repository on GitLab ([#41](https://github.com/iskandr/osteosarc/pull/41)).
 
@@ -271,7 +287,7 @@ review:
 
 ## 0.2.6 (2026-09-24)
 
-- Reorganized documentation with [key concepts](concepts.md), a
+- Reorganized documentation with key concepts, a
   [command-line guide](command-line.md), a complete [API reference](python-api.md) and this
   changelog. The README is a shorter landing page that lists the main features
   ([#32](https://github.com/iskandr/osteosarc/issues/32)).

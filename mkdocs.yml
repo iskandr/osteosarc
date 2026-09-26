@@ -11,8 +11,7 @@ theme:
   highlightjs: true
   hljs_languages: [python, bash]
 nav:
-  - Home: index.md
-  - Concepts: concepts.md
+  - Overview: index.md
   - Guides:
       - Samples and files: samples.md
       - Variants and vaccines: variants.md

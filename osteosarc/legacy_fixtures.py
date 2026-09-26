@@ -10,11 +10,8 @@ import gzip
 import json
 import os
 import tempfile
-from collections import Counter
 from hashlib import sha256
 from pathlib import Path
-
-from .bundles import safe_path
 
 
 def read_json(path):
@@ -54,39 +51,6 @@ def sam_regions(regions, assembly, reference_lengths=None):
     return result
 
 
-def asset_identity(asset):
-    return {key: getattr(asset, key) for key in ("id", "key", "url", "size", "modified")}
-
-
-def required_counts(recipe, source_id):
-    """Repeated fixture use is shared; true source duplicates remain required."""
-    counts = Counter()
-    for fixture in recipe["fixtures"].values():
-        if fixture["source"] == source_id:
-            needed = Counter(fixture["records"])
-            if fixture.get("record_references", False):
-                needed = Counter(dict.fromkeys(needed, 1))
-            counts |= needed
-    return counts
-
-
-def select_records(records, required):
-    """Fail if even one required original record or duplicate is absent."""
-    observed = Counter()
-    selected = {}
-    for record in records:
-        line = record.to_string()
-        checksum = sam_digest(line)
-        if checksum in required:
-            observed[checksum] += 1
-            selected[checksum] = line
-    missing = required - observed
-    if missing:
-        raise ValueError("Source is missing %d required SAM records: %s" % (
-            sum(missing.values()), dict(missing)))
-    return selected
-
-
 def minimal_header(header, records):
     """Retain decoding identity, without shipping thousands of irrelevant PGs."""
     references, groups, programs = set(), set(), set()
@@ -121,97 +85,6 @@ def minimal_header(header, records):
     return result
 
 
-def generate(recipe, output, dataset, *, source_ids=None):
-    """Regenerate only the exact test selections from indexed osteosarc data.
-
-    Separate source files make an interrupted acquisition resumable. Every
-    reused file is checked against the recipe and source snapshot identity.
-    """
-    from osteosarc import Region
-    output = Path(output)
-    output.mkdir(parents=True, exist_ok=True)
-    chosen = sorted(recipe["sources"] if source_ids is None else source_ids)
-    for identity in chosen:
-        source = recipe["sources"][identity]
-        asset = dataset.file(source["asset"]["key"])
-        if asset_identity(asset) != source["asset"]:
-            raise ValueError("Snapshot asset changed: " + asset.key)
-        required = required_counts(recipe, identity)
-        path = safe_path(output, identity + ".json.gz")
-        if path.exists():
-            cached = read_json(path)
-            validate_source(cached, required)
-            if cached["asset"] != source["asset"] or cached["snapshot_id"] != dataset.id:
-                raise ValueError("Acquisition snapshot/asset mismatch: " + identity)
-            continue
-        regions = [Region(**region) for region in source["regions"]]
-        if not regions:
-            raise ValueError("No bounded query regions: " + identity)
-        subset = dataset.extract_reads(asset, regions)
-        with subset.open() as handle:
-            records = select_records(handle, required)
-            header = minimal_header(handle.header.to_dict(), records.values())
-        value = dict(asset=source["asset"], snapshot_id=dataset.id,
-                     header=header, records=records,
-                     duplicate_counts={k: n for k, n in required.items() if n > 1},
-                     acquisition=subset.receipt)
-        write_json(path, value)
-        print(identity, len(records), "selected records", flush=True)
-    return chosen
-
-
-def validate_source(source, required):
-    records = source["records"]
-    if set(records) != set(required) or source["duplicate_counts"] != {
-            k: n for k, n in required.items() if n > 1}:
-        raise ValueError("Selected records differ from the test recipe")
-    if any(sam_digest(line) != checksum for checksum, line in records.items()):
-        raise ValueError("Original SAM checksum mismatch")
-
-
-def pack(recipe, acquired, output):
-    sources = {}
-    for identity in sorted(recipe["sources"]):
-        source = read_json(safe_path(acquired, identity + ".json.gz"))
-        validate_source(source, required_counts(recipe, identity))
-        if source["asset"] != recipe["sources"][identity]["asset"]:
-            raise ValueError("Source asset differs from recipe")
-        sources[identity] = source
-    bundle = dict(schema_version=1, sources=sources, recipe_sha256=recipe_digest(recipe))
-    write_json(output, bundle)
-    return bundle
-
-
-def verify(recipe, bundle):
-    if bundle["recipe_sha256"] != recipe_digest(recipe):
-        raise ValueError("Bundle recipe checksum mismatch")
-    if set(bundle["sources"]) != set(recipe["sources"]):
-        raise ValueError("Bundle source set differs from recipe")
-    for identity, source in bundle["sources"].items():
-        validate_source(source, required_counts(recipe, identity))
-        if source["asset"] != recipe["sources"][identity]["asset"]:
-            raise ValueError("Bundle source identity differs from recipe")
-    return dict(fixtures=len(recipe["fixtures"]), sources=len(bundle["sources"]),
-                unique_records=sum(len(s["records"]) for s in bundle["sources"].values()))
-
-
-def recipe_digest(recipe):
-    return sha256(json.dumps(recipe, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-
-
-def export_fixture(name, output, *, recipe, bundle):
-    """Export original SAM records in fixture order, including repeated records."""
-    import pysam
-    verify(recipe, bundle)
-    fixture = recipe["fixtures"][name]
-    source = bundle["sources"][fixture["source"]]
-    with Path(output).open("x") as handle:
-        handle.write(str(pysam.AlignmentHeader.from_dict(source["header"])))
-        for checksum in fixture["records"]:
-            handle.write(source["records"][checksum] + "\n")
-
-
-
 def select_window_segments(bam, windows, *, available_context=False, duplicate_policy="preserve"):
     """Select original segments touching every window, with explicit legacy scope.
 
@@ -243,34 +116,6 @@ def select_window_segments(bam, windows, *, available_context=False, duplicate_p
     elif duplicate_policy != "preserve":
         raise ValueError("Unknown historical duplicate policy")
     return sorted(lines), len(selected), len(entries)
-
-
-def select_assigned_names(groups, preferred_names=(), *, limit=16, preferred_limit=32):
-    """Execute the pinned historical QName-only stratum ordering (one source).
-
-    ``groups`` contains producer-supplied name -> record-score mappings. This
-    compatibility policy deliberately preserves old membership across RGs; new
-    recipes should use source/RG/segment assignments. No support is inferred.
-    """
-    selected = set(preferred_names[:preferred_limit])
-    for values in groups.values():
-        selected.update(sorted(values, key=lambda name: (values[name], name))[:limit])
-    return selected
-
-
-def write_selected_names(source_bam, output, region, selected_names, *, complete=False):
-    """Write the historical source-scoped QName selection, preserving occurrences."""
-    import pysam
-    if Path(output).exists():
-        raise FileExistsError(output)
-    records = []
-    with pysam.AlignmentFile(source_bam) as source, pysam.AlignmentFile(output, "wb", header=source.header) as target:
-        for ordinal, read in enumerate(source.fetch(*region)):
-            if complete or read.query_name in selected_names:
-                target.write(read)
-                records.append(dict(regional_ordinal=ordinal, sam_sha256=sam_digest(read.to_string()), name=read.query_name))
-    pysam.index(str(output))
-    return records
 
 
 def segment_key(read):

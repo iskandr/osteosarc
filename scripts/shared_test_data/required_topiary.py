@@ -58,7 +58,7 @@ def records(path, data, work):
 
 
 def multiset_sha256(lines):
-    """The digest osteosarc.regional_corpus records as read_selections[...]["sam_records_sha256"]."""
+    """The digest Topiary's regional corpus recorded as read_selections[...]["sam_records_sha256"]."""
     return hashlib.sha256(json.dumps(sorted(Counter(lines).items()), separators=(",", ":")).encode()).hexdigest()
 
 
