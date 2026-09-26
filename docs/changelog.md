@@ -5,7 +5,7 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
-## 0.11.0 (unreleased)
+## 0.11.0 (2026-09-26)
 
 The OpenVax libraries can take their test reads from one place: **openvax-v1**, chosen
 once here ([#56](https://github.com/iskandr/osteosarc/issues/56)). See
