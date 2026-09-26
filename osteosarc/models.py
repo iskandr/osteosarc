@@ -58,8 +58,9 @@ class SampleClaim:
 
 
 @dataclass(frozen=True)
-class Asset:
-    """One source object; separate processing products have separate IDs."""
+class File:
+    """One file in the bucket, or one of the site's tables. Each processing
+    product is a separate file with its own ID."""
 
     id: str
     key: str
@@ -71,6 +72,11 @@ class Asset:
     index_urls: tuple[str, ...] = ()
     claims: tuple[SampleClaim, ...] = ()
     metadata: dict = field(default_factory=dict, compare=False, repr=False)
+
+    @property
+    def samples(self):
+        """IDs of the samples this file belongs to (see Dataset.samples)."""
+        return self.metadata.get("samples", ())
 
     def values(self, name, *, include_inferred=False):
         """Distinct nonmissing source assertions for a sample field.
@@ -158,61 +164,145 @@ class Collection(Sequence):
         return f"<{type(self).__name__}: {len(self)} items>"
 
 
-class Assets(Collection):
+class Files(Collection):
+    """Files in the bucket and the site's tables. Index by key, URL or ID."""
+
     def __repr__(self):
         from .display import preview
-        from .explore import _size
-        return preview(f"{len(self):,} files", self, ("kind", "format", "size", "key"),
-                       lambda a: dict(kind=a.kind, format=a.format, size=_size(a.size), key=a.key),
-                       fixed=("key",))
+        from .views import size_text
+        return preview(f"{len(self):,} files. Narrow them with .select(kind=, sample=, prefix=, ...).",
+                       self, ("kind", "size", "key"),
+                       lambda f: dict(kind=f.kind, size=size_text(f.size), key=f.key), fixed=("key",))
 
     def __getitem__(self, key):
         if isinstance(key, str):
-            matches = [a for a in self if key in (a.id, a.key, a.url)]
+            matches = [f for f in self if key in (f.id, f.key, f.url)]
             if len(matches) != 1:
                 raise KeyError(key)
             return matches[0]
         return super().__getitem__(key)
 
-    def select(self, *, kind=None, format=None, prefix=None, contains=None, timepoint=None,
+    def select(self, *, kind=None, format=None, prefix=None, contains=None, sample=None, timepoint=None,
                assay=None, platform=None, tissue=None, provider=None, library=None,
                include_conflicts=False, include_inferred=False):
-        """Filter processing products; unresolved metadata does not match by default.
+        """Filter files; unresolved metadata does not match by default.
 
-        include_conflicts matches any of several published assertions;
-        include_inferred also admits explicitly marked path inferences.
-        String matching is case-sensitive and uses normalized assay names.
+        sample keeps a sample's BAMs and the files in its FASTQ folders (see
+        Dataset.samples). include_conflicts matches any of several published
+        assertions; include_inferred also admits explicitly marked path
+        inferences. String matching is case-sensitive and uses normalized
+        assay names.
         """
         filters = dict(timepoint=timepoint, assay=assay, platform=platform,
                        tissue=tissue, provider=provider, library=library)
         for name in ("assay", "platform", "tissue"):
             check_filter(name, filters[name], lambda name=name: {
-                v for a in self for v in a.values(name, include_inferred=True)})
+                v for f in self for v in f.values(name, include_inferred=True)})
 
-        def match(asset):
-            if any(value is not None and getattr(asset, name) != value
+        def match(file):
+            if any(value is not None and getattr(file, name) != value
                    for name, value in (("kind", kind), ("format", format))):
                 return False
-            if prefix is not None and not asset.key.startswith(prefix):
+            if prefix is not None and not file.key.startswith(prefix):
                 return False
-            if contains is not None and contains not in asset.key:
+            if contains is not None and contains not in file.key:
+                return False
+            if sample is not None and sample not in file.samples:
                 return False
             for name, value in filters.items():
                 if value is None:
                     continue
-                values = asset.values(name, include_inferred=include_inferred)
+                values = file.values(name, include_inferred=include_inferred)
                 if value not in values or (len(values) > 1 and not include_conflicts):
                     return False
             return True
         return self.where(match)
 
 
+@dataclass(frozen=True)
+class Sample:
+    """One collected sample: a tumor biopsy or resection, an organoid, or a blood draw.
+
+    sequencing lists (assay, platform) pairs from the site's sample registry
+    and from the sample's FASTQ folders. bams are file keys; fastq_folders are
+    bucket folders. missing_bams are BAMs the registry names but the bucket
+    doesn't have.
+    """
+
+    id: str
+    timepoint: str | None = None
+    date: str | None = None
+    tissue: str | None = None
+    site: str | None = None
+    description: str | None = None
+    providers: tuple[str, ...] = ()
+    sequencing: tuple[tuple[str, str | None], ...] = ()
+    bams: tuple[str, ...] = ()
+    fastq_folders: tuple[str, ...] = ()
+    missing_bams: tuple[str, ...] = ()
+    notes: str = ""
+    disagreements: tuple[dict, ...] = ()
+    corrections: tuple[str, ...] = ()
+    details: dict = field(default_factory=dict, compare=False, repr=False)
+
+    @property
+    def assays(self):
+        """Distinct assay names, such as ('rna-seq', 'wgs', 'scrna-seq')."""
+        return tuple(dict.fromkeys(assay for assay, _ in self.sequencing))
+
+    @property
+    def files(self):
+        """This sample's BAMs and the files in its FASTQ folders."""
+        dataset = getattr(self, "_dataset", None)
+        if dataset is None:
+            raise ValueError(f"{self.id} is not attached to a Dataset")
+        return dataset.files.select(sample=self.id)
+
+    def __repr__(self):
+        from .display import Text
+        from .views import sample_view
+        return str(Text(sample_view(self, getattr(self, "_dataset", None), python=True)))
+
+
+class Samples(Collection):
+    """Samples in collection order. Index by ID: data.samples["T1_tumor"]."""
+
+    def __getitem__(self, key):
+        if isinstance(key, str):
+            matches = [s for s in self if s.id == key]
+            if not matches:
+                raise KeyError(f"No sample {key!r}; samples: {', '.join(s.id for s in self)}")
+            return matches[0]
+        return super().__getitem__(key)
+
+    def select(self, *, timepoint=None, tissue=None, assay=None, platform=None):
+        """Samples with this timepoint, tissue, or sequencing (assay and platform
+        use the file filter names: rna-seq, scrna-seq, ont, ...)."""
+        for name, value in (("tissue", tissue), ("assay", assay), ("platform", platform)):
+            check_filter(name, value)
+        return self.where(lambda s: (timepoint is None or s.timepoint == timepoint)
+                          and (tissue is None or s.tissue == tissue)
+                          and (assay is None and platform is None or any(
+                              (assay is None or a == assay) and (platform is None or p == platform)
+                              for a, p in s.sequencing)))
+
+    def to_records(self):
+        return [asdict(sample) for sample in self]
+
+    def __repr__(self):
+        from .display import Text
+        from .views import samples_view
+        return str(Text(samples_view(self)))
+
+
 class Variants(Collection):
     def __repr__(self):
         from .display import preview
-        from .explore import allele_text
+        from .views import allele_text
         ready = sum(v.status == "ready" for v in self)
-        return preview(f"{len(self)} variants, {ready} ready", self, ("id", "gene", "status", "allele"),
+        return preview(f"{len(self)} variants, {ready} with a ready allele. Narrow them with "
+                       ".select(gene=, status=, vaccine=, pipeline=); index by ID.", self,
+                       ("id", "gene", "status", "allele"),
                        lambda v: dict(id=v.id, gene=v.gene, status=v.status, allele=allele_text(v)))
 
     def select(self, *, gene=None, ids=None, vaccine=None, vaccinated=None, pipeline=None,

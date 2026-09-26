@@ -12,6 +12,7 @@ import calendar
 import json
 import re
 import shutil
+import textwrap
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import date, timedelta
@@ -22,14 +23,14 @@ from .models import Collection
 
 #: Display order of lanes; unlisted lanes follow alphabetically within their category.
 LANE_ORDER = (
-    "Time points", "Specimens", "Procedures: Surgery", "Procedures: Biopsy", "Treatments: Surgery",
+    "Time points", "Samples", "Procedures: Surgery", "Procedures: Biopsy", "Treatments: Surgery",
     "Treatments: Radiation", "Treatments: Chemotherapy", "Treatments: Targeted therapy",
     "Treatments: Immunotherapy", "Treatments: Cancer vaccines", "Treatments: Steroids",
     "Treatments: Antibiotics", "Imaging", "Imaging studies (DICOM)", "Pathology", "Pathology slides",
     "Omics: Genomics", "Omics: Transcriptomics", "Omics: Functional testing",
     "MRD: Signatera", "MRD: Northstar", "MRD: Personalis", "Flow cytometry draws",
     "Cytometry panels", "Lab draws", "Symptoms")
-CATEGORY_ORDER = ("Time points", "Specimens", "Procedures", "Treatments", "Imaging", "Pathology",
+CATEGORY_ORDER = ("Time points", "Samples", "Procedures", "Treatments", "Imaging", "Pathology",
                   "Omics", "MRD", "Blood draws", "Symptoms")
 
 
@@ -114,7 +115,8 @@ class Timeline(Collection):
         from .display import preview
         if not len(self):
             return "Timeline: no events"
-        return preview(f"Timeline: {self.overview()}. .render() draws it; .listing() lists every event.",
+        return preview(f"Timeline: {self.overview()}. .render() charts it, .listing() lists every event, "
+                       ".select(since=, until=, lane=, contains=) narrows it.",
                        self, ("date", "lane", "event"),
                        lambda e: dict(date=e.date + (f"..{e.end}" if e.end else ""), lane=e.lane,
                                       event=e.label + (f" = {e.value}" if e.kind == "event" and e.value else "")))
@@ -148,88 +150,206 @@ class Timeline(Collection):
                                               order.get(lane, len(order)), lane))
 
     def listing(self):
-        """One line per event: dates, lane, label, source, and any corrections."""
+        """One line per event: dates, lane, label, and any corrections."""
+        width = max((len(e.lane) for e in self), default=0)
         lines = []
         for e in self:
             when = e.date + (f"..{e.end}" + ("+" if e.open_end else "") if e.end else "")
             label = e.label + (f" = {e.value}" if e.kind == "event" and e.value else "")
-            notes = f" (corrections: {', '.join(e.corrections)})" if e.corrections else ""
-            lines.append(f"{when:<23} {e.lane[:30]:<30} {label}  [{e.source}]{notes}")
+            notes = f"  (corrections: {', '.join(e.corrections)})" if e.corrections else ""
+            lines.append(f"{when:<23} {e.lane:<{width}}  {label}{notes}".rstrip())
         return Text("\n".join(lines))
 
-    def render(self, *, width=None, since=None, until=None, legend=True):
-        """ASCII lanes over a shared date axis.
+    def render(self, *, width=None, since=None, until=None, everything=False, legend=True):
+        """A chart with one row per treatment and rows for time points, samples,
+        procedures, scans and each MRD assay, over a month axis.
 
-        *  one event  2-9 events in one column  #  ten or more  = range  > ongoing
-        +  MRD detected  o  not detected  ~  below limit of quantification
+        Frequent records (lab draws, DICOM studies, cytometry, flow draws,
+        slides and sequencing runs) are left out unless everything=True; the
+        legend says how many. Every event is in listing().
         """
         events = list(self.select(since=since, until=until)) if (since or until) else list(self)
         if not events:
-            return "(no events)"
+            return Text("(no events)")
+        rows, hidden = _chart_rows(events, everything)
+        if not any(label for _, label, _ in rows):
+            rows, hidden = _chart_rows(events, True)
         lo, hi = _window(since, until)
-        lo = lo or min(e.first_day for e in events)
+        lo = date((lo or min(e.first_day for e in events)).year, (lo or min(e.first_day for e in events)).month, 1)
         hi = hi or max(e.last_day for e in events)
-        lanes = Timeline(events).lanes()
-        label_width = min(30, max(len(lane) for lane in lanes))
+        labels = [("  " if heading is None and _indented(rows, i) else "") + label
+                  for i, (heading, label, _) in enumerate(rows)]
         width = width or shutil.get_terminal_size((110, 24)).columns
-        plot = max(20, width - label_width - 2)
-        span = max(1, (hi - lo).days)
-
-        def column(day):
-            return min(plot - 1, max(0, round((day - lo).days * (plot - 1) / span)))
-
-        rows = [_axis(lo, hi, plot, column, label_width)]
-        for lane in lanes:
-            cells, counts, marks = [" "] * plot, Counter(), {}
-            for e in (e for e in events if e.lane == lane):
-                start, stop = column(max(e.first_day, lo)), column(min(e.last_day, hi))
-                if e.end:
-                    for c in range(start, stop + 1):
-                        cells[c] = "="
-                    if e.open_end and e.last_day >= hi:
-                        cells[stop] = ">"
-                elif e.kind == "measurement" and e.category == "MRD":
-                    marks[start] = max(marks.get(start, "?"), _MRD_MARK[e.details.get("value_kind")],
-                                       key=_MRD_RANK.index)
-                else:
-                    counts[start] += 1
-            for c, n in counts.items():
-                cells[c] = "*" if n == 1 else str(n) if n < 10 else "#"
-            for c, mark in marks.items():
-                cells[c] = mark
-            if lane == "Time points":
-                for e in (e for e in events if e.lane == lane and e.timepoint):
-                    c = column(e.first_day)
-                    if c + 1 + len(e.timepoint) <= plot and all(x == " " for x in cells[c + 1:c + 1 + len(e.timepoint)]):
-                        cells[c + 1:c + 1 + len(e.timepoint)] = e.timepoint
-            rows.append(f"{lane[:label_width]:<{label_width}}  {''.join(cells).rstrip()}")
+        months = (hi.year - lo.year) * 12 + hi.month - lo.month + 1
+        # Labels get what a column per month leaves, between 20 and 42 characters.
+        label_width = min(max(len(label) for label in labels), 42, max(20, width - 2 - months))
+        axis = _MonthAxis(lo, hi, max(24, width - label_width - 2))
+        out = [" " * (label_width + 2) + line for line in axis.lines()]
+        for (heading, _, items), label in zip(rows, labels):
+            if heading is not None:
+                out.append(heading)
+                continue
+            if len(label) > label_width:
+                label = label[:label_width - 2] + ".."
+            out.append(f"{label:<{label_width}}  {axis.draw(items, lo, hi)}".rstrip())
         if legend:
-            days = span / max(1, plot - 1)
-            rows.append("")
-            rows.append(f"{lo} .. {hi}; one column = {days:.1f} days.  * event  2-9/# several  "
-                        "= range  > ongoing  MRD: + detected  o not detected  ~ below LOQ")
-        return Text("\n".join(rows))
+            out += ["", *textwrap.wrap("* event or dose   = continuing   > still ongoing   "
+                                       "MRD: + detected  o not detected  ~ below LOQ", width,
+                                       break_on_hyphens=False),
+                    axis.scale()]
+            if hidden:
+                out += textwrap.wrap("Not shown: " + ", ".join(f"{n} {lane}" for lane, n in hidden)
+                                     + ". Add --all (everything=True in Python) to include them.", width,
+                                     break_on_hyphens=False)
+        return Text("\n".join(out))
+
+
+#: Lanes of frequent records, charted only with everything=True (with every
+#: Omics lane: the sequencing runs, which follow the samples).
+RECORD_LANES = ("Imaging studies (DICOM)", "Pathology slides", "Flow cytometry draws", "Cytometry panels",
+                "Lab draws")
+#: Chart names for the rows above the headed sections, in display order.
+OVERVIEW_ROWS = {"Time points": "Time points", "Samples": "Samples collected", "Imaging": "Imaging",
+                 "Pathology": "Pathology", "Symptoms": "Symptoms"}
+#: Names of treatment groups that would otherwise read like a procedure row.
+TREATMENT_HEADINGS = {"Surgery": "Surgical treatments", "Other": "Other treatments"}
+
+
+def _chart_rows(events, everything):
+    """Chart rows as (heading, label, events): a heading row has no label or events.
+
+    Returns the rows and the (lane, count) pairs left out.
+    """
+    by_lane = defaultdict(list)
+    for e in events:
+        by_lane[e.lane].append(e)
+    overview, procedures, treatments, mrd, records, hidden = [], [], defaultdict(dict), [], [], []
+    for lane in Timeline(events).lanes():
+        items = by_lane[lane]
+        category = items[0].category
+        if category == "Treatments":
+            group = lane.split(": ", 1)[1] if ": " in lane else "Other"
+            for e in items:
+                treatments[group].setdefault(e.details.get("title") or e.label, []).append(e)
+        elif category == "Procedures":
+            procedures.append((None, lane.split(": ", 1)[1] if ": " in lane else "Other", items))
+        elif category == "MRD":
+            mrd.append((None, lane.split(": ", 1)[-1], items))
+        elif lane in RECORD_LANES or category == "Omics":
+            if everything:
+                records.append((None, lane, items))
+            else:
+                hidden.append((lane, len(items)))
+        else:
+            overview.append((None, OVERVIEW_ROWS.get(lane, lane), items))
+    order = list(OVERVIEW_ROWS.values())
+    overview.sort(key=lambda row: order.index(row[1]) if row[1] in order else len(order))
+    rows = list(overview)
+    if procedures:
+        rows += [("Procedures", "", ()), *sorted(procedures, key=lambda row: row[1] == "Other")]
+    groups = [lane.split(": ", 1)[1] for lane in LANE_ORDER if lane.startswith("Treatments: ")]
+    for group in sorted(treatments, key=lambda g: (g == "Other", groups.index(g) if g in groups else len(groups), g)):
+        rows.append((TREATMENT_HEADINGS.get(group, group), "", ()))
+        rows += [(None, name, items) for name, items in
+                 sorted(treatments[group].items(), key=lambda item: min(e.first_day for e in item[1]))]
+    if mrd:
+        rows += [("MRD", "", ()), *mrd]
+    if records:
+        rows += [("Records", "", ()), *records]
+    return rows, hidden
+
+
+def _indented(rows, i):
+    """Whether row i sits under a heading."""
+    return any(heading is not None for heading, _, _ in rows[:i])
 
 
 _MRD_MARK = {"numeric": "+", "not_detected": "o", "below_loq": "~", "missing": "?"}
 _MRD_RANK = ["?", "o", "~", "+"]
 
 
-def _axis(lo, hi, plot, column, label_width):
-    """Year (or month, for short windows) labels above tick marks."""
-    labels, ticks = [" "] * plot, [" "] * plot
-    months = (hi - lo).days <= 540
-    day = date(lo.year, lo.month, 1) if months else date(lo.year, 1, 1)
-    while day <= hi:
-        if day >= lo:
-            c = column(day)
-            text = day.strftime("%Y-%m" if months else "%Y")
-            if all(x == " " for x in labels[max(0, c - 1):c + len(text) + 1]) and c + len(text) <= plot:
-                labels[c:c + len(text)] = text
-                ticks[c] = "|"
-        day = date(day.year + (day.month == 12), day.month % 12 + 1, 1) if months else date(day.year + 1, 1, 1)
-    pad = " " * (label_width + 2)
-    return pad + "".join(labels).rstrip() + "\n" + pad + "".join(ticks).rstrip()
+class _MonthAxis:
+    """Whole months across the plot: several columns per month, or several months per column."""
+
+    def __init__(self, lo, hi, plot):
+        self.lo = lo
+        self.months = (hi.year - lo.year) * 12 + hi.month - lo.month + 1
+        self.per_month = max(1, plot // self.months)
+        self.per_column = max(1, -(-self.months // plot))
+        self.width = (self.months * self.per_month if self.per_column == 1
+                      else -(-self.months // self.per_column))
+
+    def column(self, day):
+        month = (day.year - self.lo.year) * 12 + day.month - self.lo.month
+        if self.per_column > 1:
+            return month // self.per_column
+        days = calendar.monthrange(day.year, day.month)[1]
+        return month * self.per_month + min(self.per_month - 1, (day.day - 1) * self.per_month // days)
+
+    def _starts(self):
+        for i in range(self.months):
+            year, month = divmod(self.lo.month - 1 + i, 12)
+            yield date(self.lo.year + year, month + 1, 1)
+
+    def lines(self):
+        years, months = [" "] * self.width, [" "] * self.width
+
+        def put(cells, column, text):
+            if column + len(text) <= self.width and all(c == " " for c in cells[max(0, column - 1):column + len(text)]):
+                cells[column:column + len(text)] = text
+                return True
+            return False
+
+        for i, start in enumerate(self._starts()):
+            column = self.column(start)
+            # The first month is labeled only when its year's label ends before January's.
+            if start.month == 1 or (i == 0 and (start.month > 1 and self.column(
+                    date(start.year + 1, 1, 1)) > column + 4 or self.months - i <= 12 - start.month)):
+                put(years, column, str(start.year))
+            if self.per_column > 1:
+                if start.month == 1:
+                    months[column] = "|"
+            elif self.per_month >= 4:
+                put(months, column, calendar.month_abbr[start.month])
+            else:
+                months[column] = calendar.month_abbr[start.month][0]
+        return ["".join(years).rstrip(), "".join(months).rstrip()]
+
+    def scale(self):
+        if self.per_column > 1:
+            return f"Each column is {self.per_column} months."
+        if self.per_month == 1:
+            return "Each column is a month."
+        return f"Each month is {self.per_month} columns."
+
+    def draw(self, events, lo, hi):
+        cells = [" "] * self.width
+        marks = {}
+        for e in events:
+            start, stop = self.column(max(e.first_day, lo)), self.column(min(e.last_day, hi))
+            if e.end:
+                for c in range(start, stop + 1):
+                    if cells[c] == " ":
+                        cells[c] = "="
+                if e.open_end and e.last_day >= hi:
+                    cells[stop] = ">"
+        for e in events:
+            start = self.column(max(e.first_day, lo))
+            if e.kind == "measurement" and e.category == "MRD":
+                marks[start] = max(marks.get(start, "?"), _MRD_MARK[e.details.get("value_kind")],
+                                   key=_MRD_RANK.index)
+            elif not e.end:
+                cells[start] = "*"
+        for c, mark in marks.items():
+            cells[c] = mark
+        for e in events:
+            if e.lane == "Time points" and e.timepoint:
+                c = self.column(max(e.first_day, lo))
+                text = e.timepoint
+                if c + len(text) <= self.width and all(x in " *" for x in cells[c:c + len(text)]) and (
+                        c == 0 or cells[c - 1] == " "):
+                    cells[c:c + len(text)] = text
+        return "".join(cells)
 
 
 # ---------------------------------------------------------------------------
@@ -379,7 +499,7 @@ def events_from_pathology(document, *, marks=None, undated=None):
 
 
 def events_from_specimens(rows, *, marks=None, undated=None):
-    return [_event("specimens", row, n, date=day, lane="Specimens", category="Specimens", kind="specimen",
+    return [_event("specimens", row, n, date=day, lane="Samples", category="Samples", kind="sample",
                    timepoint=row.get("timepoint") or None,
                    label=f"{row['sample_id']}: {row.get('tissue_source', '')} ({row.get('collection_site', '')})",
                    links=(row["sample_id"],), corrections=corrections)

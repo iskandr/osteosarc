@@ -75,6 +75,26 @@ def share(path):
     os.chmod(path, (0o777 if Path(path).is_dir() else 0o666) & ~_UMASK)
 
 
+def place(path, destination):
+    """Put a cached object at destination, as a hard link where possible, else a copy.
+
+    An existing destination is replaced only once the new copy is complete.
+    Returns the destination path.
+    """
+    destination = Path(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists() and destination.samefile(path):
+        return destination
+    with tempfile.TemporaryDirectory(dir=destination.parent, prefix=".osteosarc-") as temporary:
+        staged = Path(temporary) / destination.name
+        try:
+            os.link(path, staged)
+        except OSError:
+            shutil.copyfile(path, staged)
+        os.replace(staged, destination)
+    return destination
+
+
 def default_root():
     """The shared OpenVax cache root, resolved exactly as vaxrank/datacache resolve it."""
     if os.environ.get("OPENVAX_DATA_CACHE"):

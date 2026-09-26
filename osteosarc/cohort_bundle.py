@@ -18,7 +18,7 @@ from pathlib import Path, PurePosixPath
 
 import pysam
 
-from . import Asset, Dataset, Region, SampleClaim, digest, extract_reads
+from . import Dataset, File, Region, SampleClaim, digest, extract_reads
 from . import __version__ as osteosarc_version
 from .bundles import DEFAULT_SIZE_BUDGET, safe_path
 
@@ -177,7 +177,7 @@ def generate_cohort_bundle(recipe, cache, output):
             fields = dict(source["asset"])
             fields["claims"] = tuple(SampleClaim(**c) for c in fields["claims"])
             fields["index_urls"] = tuple(fields["index_urls"])
-            asset = Asset(**fields)
+            asset = File(**fields)
             pinned_index = source["index_receipt"]
             index = cache.path(cache.fetch(pinned_index["url"], sha256=pinned_index["sha256"],
                                            size=pinned_index["size"]))
@@ -271,8 +271,8 @@ def pin_catalog(recipe, cache):
         catalog["variants"][variant_id] = {k: v for k, v in asdict(variants[variant_id]).items()
                                            if k != "annotations"}
     for url in sorted({c["source"] for c in plan["cohorts"]}):
-        asset = dataset.asset(url)
-        index = dataset.asset(asset.index_urls[0])
+        asset = dataset.file(url)
+        index = dataset.file(asset.index_urls[0])
         path = dataset.download(index)
         receipt = cache.fetch(index.url, sha256=digest(path), size=path.stat().st_size)
         catalog["assets"][url] = dict(asset=asdict(asset), index=asdict(index), index_receipt=receipt.to_dict())

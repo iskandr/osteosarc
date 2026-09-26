@@ -17,7 +17,7 @@ SAMtools.
 from osteosarc import Dataset
 
 data = Dataset.open(offline=False)
-source = data.asset(
+source = data.file(
     "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"
 )
 targets = data.variants(ids=["DYNC1H1-chr14-101980529"], status="ready")
@@ -27,10 +27,12 @@ print(subset.path, subset.receipt["records"])
 
 You get a local indexed BAM. Osteosarc checks that the remote BAM uses the
 same genome build as the variants, downloads its index, and reads only the parts
-it needs. Pick a BAM with [`assets_for_sample`](explore.md#bulk-and-single-cell-data)
-or `data.assets.select(...)`.
+it needs. To pick a BAM, look at a sample's files with `data.samples["T0_tumor"]`
+(`osteosarc samples T0_tumor` in a terminal), or filter with
+`data.files.select(kind="alignment", ...)`; see [Samples and files](samples.md).
 
-The command line does the same and reuses the same cached result:
+The command line does the same, reuses the same cached result, and prints the
+local BAM's path (`--json` adds the receipt):
 
 ```sh
 osteosarc reads rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam --variant DYNC1H1-chr14-101980529 --padding 100
@@ -158,7 +160,8 @@ assert offline.extract_reads(source, regions).path == subset.path
 Each result is cached by its request, and its receipt records the regions,
 filters, checksums, BAM header, tool versions and read count. For a remote BAM,
 Osteosarc checks the file's HTTP headers before and after reading, to catch a file
-that changes mid-download.
+that changes mid-download. `data.downloads()` (or `osteosarc downloads`) lists
+every extract with its source file, regions and local path.
 
 ## Use a local BAM or sample a small fixture
 
@@ -198,10 +201,8 @@ variants = [v for v in data.variants(status="ready")
 regions = [v.region(padding=500) for v in variants]
 assert regions, "No eligible variants in this snapshot"
 
-for sample in data.specimens:
-    sources = data.assets_for_sample(
-        sample["sample_id"], kind="alignment", format="bam", assay="rna-seq",
-    )
+for sample in data.samples:
+    sources = sample.files.select(kind="alignment", format="bam", assay="rna-seq")
     for source in sources:
         if not source.index_urls:
             print("Skipping alignment published without an index:", source.key)
@@ -210,12 +211,12 @@ for sample in data.specimens:
             print("Skipping incompatible or unresolved assembly:", source.key)
             continue
         subset = data.extract_reads(source, regions, fetch_pairs=True)
-        output = Path("panel") / sample["sample_id"] / source.id
+        output = Path("panel") / sample.id / source.id
         output.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(subset.path, output / "reads.bam")
         shutil.copyfile(subset.index_path, output / "reads.bam.bai")
         (output / "receipt.json").write_text(json.dumps(subset.receipt, indent=2))
-        print(sample["sample_id"], source.key, output)
+        print(sample.id, source.key, output)
 ```
 
 To use your own loci, replace the `variants` and `regions` lines with:

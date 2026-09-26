@@ -5,6 +5,53 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.9.0 (2026-09-26)
+
+The command line and the Python API now use the same two nouns, samples and files,
+and every command prints something a person can read
+([#46](https://github.com/iskandr/osteosarc/issues/46)–[#55](https://github.com/iskandr/osteosarc/issues/55)).
+
+**Samples.** `data.samples` is the list of samples (tumor, organoid and blood), each
+a `Sample` with its sequencing, BAMs and FASTQ folders. `data.samples["T1_tumor"]`
+and `osteosarc samples T1_tumor` show one sample's files with their sizes and
+whether they're downloaded, followed by the commands that fetch them;
+`osteosarc samples --files` lists every sample's files. Sequencing now also comes
+from the site's FASTQ table, so the four 2026 blood draws, which the registry leaves
+blank, show single-cell and CITE-seq instead of "unknown".
+
+**Files.** `data.assets`, `data.asset()`, `Asset` and `Assets` are now `data.files`,
+`data.file()`, `File` and `Files`, and `osteosarc assets` is `osteosarc files`. With
+no filters it summarizes the bucket by kind and folder; lists put BAMs first and name
+each file's sample. `files.select(sample=...)` and `file.samples` link files to
+samples, and scans and slides are a new `image` kind.
+
+**Downloads.** `osteosarc downloads` and `data.downloads()` list what's on this
+computer, with local paths, and `data.local_path(file)` finds one file's copy
+without the network. `download(file, to=DIR)` and `osteosarc download FILE --to DIR`
+put a file, and its index, in a folder under its own name.
+
+**Timeline.** The chart has a row per treatment, named and grouped by class, over a
+month axis, with rows for time points, samples, procedures, scans and each MRD
+assay. Lab draws, DICOM studies and other frequent records are left out unless you
+pass `--all` (`everything=True`), and the legend says how many.
+
+**Command line.**
+
+- Commands are grouped (browse, get data, snapshots, more) in `osteosarc` and
+  `osteosarc --help`, and `osteosarc` on its own says which snapshot it's using.
+- `variants`, `vaccines`, `corrections`, `sync`, `table` and `discover` print text;
+  `--json` gives the old output. `variants ID` and `corrections ID` show one record.
+- `curation` is now `corrections`. `specimens` and `timepoints` are gone: use
+  `samples`.
+- `download` and `reads` print plain paths (`reads --json` for the receipt).
+- `osteosarc repl` replaces the `explore` mini-shell: it opens Python with the
+  snapshot loaded as `data`.
+
+**Python.** `repr(data)` lists what's there and how to get it; collections end with
+how to narrow them. The old `data.samples` (what each source says about a file) is
+now `data.claims`, with `file_ids`. `data.specimens`, `data.describe_samples()`,
+`data.assets_for_sample()` and `data.explore()` are gone.
+
 ## 0.8.0 (2026-09-25)
 
 A first look at the data is easier from both the command line and Python

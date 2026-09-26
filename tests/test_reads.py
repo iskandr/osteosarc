@@ -199,7 +199,7 @@ def test_missing_samtools_options_fail_before_any_acquisition(dataset, monkeypat
     from osteosarc import OsteosarcError
 
     dataset.cache = Cache(dataset.cache.root)
-    source = dataset.assets.select(format="bam")[0]
+    source = dataset.files.select(format="bam")[0]
     assert source.index_urls
     def run(command, timeout):
         assert command == ["samtools", "view", "--help"]
@@ -212,11 +212,11 @@ def test_missing_samtools_options_fail_before_any_acquisition(dataset, monkeypat
 
 def test_variant_selection_produces_the_same_complete_regional_records(dataset, bam, monkeypatch):
     import osteosarc.reads as reads
-    from osteosarc import Asset, Variant, Variants
+    from osteosarc import File, Variant, Variants
     from osteosarc.cache import stable_id
 
     # A local file URL exercises the real Dataset path without remote data.
-    source = Asset(stable_id(str(bam)), "toy.bam", str(bam), "alignment", "bam")
+    source = File(stable_id(str(bam)), "toy.bam", str(bam), "alignment", "bam")
     selected = Variants([Variant("toy", "GENE", "GRCh38", (("chr1", 106, "A", "C"),), "ready")])
     subset = dataset.extract_reads(source, variants=selected, padding=40)
     expected = extract_reads(source, selected.regions(padding=40), cache=dataset.cache, snapshot_id=dataset.id)

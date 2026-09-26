@@ -276,7 +276,7 @@ def test_direct_acquisition_preserves_inventory_size_pin(bam, tmp_path, monkeypa
 def test_dataset_acquisition_accepts_identity_without_url(bam, dataset, tmp_path, monkeypatch, lookup):
     import osteosarc.reads as reads
     dataset.cache.offline = False
-    asset = next(a for a in dataset.assets if a.format == "bam")
+    asset = next(a for a in dataset.files if a.format == "bam")
     recipe = bundle_recipe(bam)
     source = recipe["sources"]["rna"]
     source.pop("archive_sha256")

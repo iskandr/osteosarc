@@ -2,8 +2,8 @@
 
 Python library and command-line tool for the public [osteosarc.com](https://osteosarc.com/data/)
 dataset: one patient's osteosarcoma sequencing, variant calls, cancer vaccines and
-clinical history. Find files, pick variants and vaccine peptides, and fetch the
-reads around a variant without downloading a whole BAM.
+clinical history. Find a sample's files, pick variants and vaccine peptides, and
+fetch the reads around a variant without downloading a whole BAM.
 
 [Documentation](https://iskandr.github.io/osteosarc/) ·
 [Key concepts](https://iskandr.github.io/osteosarc/concepts/) ·
@@ -13,17 +13,19 @@ reads around a variant without downloading a whole BAM.
 
 ## Features
 
-- **Browse without downloading.** Search nearly 400,000 files by sample, timepoint and
-  assay: bulk and single-cell RNA, exome, genome, Oxford Nanopore and PacBio.
+- **Samples and their files.** Every tumor, organoid and blood sample, what was
+  sequenced, and its BAMs and FASTQ folders, with the commands that fetch them.
+- **Browse without downloading.** Search nearly 400,000 files by sample, kind,
+  assay and folder, and see which you've already downloaded.
 - **Variants and vaccine peptides.** The site's variants with checked alleles, read
   counts, which pipelines found them, vaccine peptides and ELISPOT results.
 - **Reads around a variant.** Copy just the reads you need out of a remote BAM into a
   small local one.
 - **Corrected by default.** 35 fixes to known problems in the published data, each
-  with its evidence, such as the MAP2 vaccine target's allele. Every load checks them against
-  the snapshot's sources, and you can turn them off.
-- **Clinical timeline.** Treatments, procedures, imaging, MRD and lab results as a
-  text chart, or in an interactive terminal explorer.
+  with its evidence, such as the MAP2 vaccine target's allele. Every load checks
+  them against the snapshot's sources, and you can turn them off.
+- **Clinical timeline.** Every treatment, procedure, scan and MRD result on one
+  chart, with a row per drug.
 - **Reproducible.** The site's metadata is saved as dated snapshots that reopen
   offline. The website changes; your results don't, until you sync again.
 - **OpenVax integration.** Works with Varcode, Isovar, Topiary and Vaxrank, builds
@@ -38,25 +40,29 @@ python -m pip install osteosarc
 Needs Python 3.9+ on Linux or macOS, and [SAMtools](https://www.htslib.org/) on
 your PATH to fetch reads.
 
-## Explore the data
+## Look around
 
 ```sh
-osteosarc sync      # Once: about 57 MB of the website's metadata
-osteosarc explore
+osteosarc sync                # Once: about 57 MB of the website's metadata
+osteosarc                     # Which snapshot you're using, and every command
+osteosarc samples             # Samples and what was sequenced
+osteosarc samples T1_tumor    # One sample's files, and commands to get them
+osteosarc files               # What's in the bucket, by kind and folder
+osteosarc variants --gene MAP2
+osteosarc timeline            # Treatments, procedures, scans and MRD
 ```
 
-The explorer opens with a summary of the data. Try `samples`, `specimen T1_tumor`,
-`variants MAP2`, `timeline 2024-05 2024-09` and `help`; `quit` leaves. Running
-`osteosarc` on its own lists more commands to try.
-
-In Python or a notebook, everything shows a readable preview:
+Every command prints text for people, and `--json` for scripts. `osteosarc repl`
+opens Python with the data loaded as `data`, and in Python or a notebook everything
+shows a readable preview:
 
 ```python
 from osteosarc import Dataset
 
-data = Dataset.sync()
-print(data.summary())            # What's here, and what to try next
-print(data.variants(gene="MAP2"))
+data = Dataset.sync()   # or Dataset.open() to reopen your newest snapshot offline
+data                    # What's here, and how to get it
+data.samples            # Samples and their sequencing
+data.samples["T1_tumor"]
 ```
 
 ## From samples to reads
@@ -65,9 +71,8 @@ print(data.variants(gene="MAP2"))
 from osteosarc import Dataset
 
 data = Dataset.sync()  # Save today's website metadata (about 57 MB)
-print(data.describe_samples())
 
-rna = data.assets_for_sample("T0_tumor", kind="alignment", assay="rna-seq")
+rna = data.samples["T0_tumor"].files.select(kind="alignment", assay="rna-seq")
 targets = data.variants(gene="DYNC1H1", status="ready")
 
 source = rna["rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"]
@@ -77,6 +82,8 @@ print(reads.path)  # Local indexed BAM
 
 The BAM key is the file's path in the dataset's public S3 bucket. Only the reads
 near the variants are downloaded, into a small indexed BAM in your local cache.
+`data.download(key, to=".")` fetches a whole file instead, and `data.downloads()`
+lists what you have.
 
 Later, `Dataset.open()` reopens your most recent snapshot without a network
 connection. The website changes over time, so snapshots are saved by download date:
@@ -88,25 +95,22 @@ The same workflow from the terminal:
 
 ```sh
 osteosarc sync
-osteosarc samples
-osteosarc assets --sample T0_tumor --kind alignment --assay rna-seq
+osteosarc samples T0_tumor
+osteosarc files --sample T0_tumor --kind alignment --assay rna-seq
 osteosarc variants --gene DYNC1H1 --status ready
 osteosarc reads rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam --variant DYNC1H1-chr14-101980529 --variant DYNC1H1-chr14-102030200 --padding 100
-osteosarc explore
+osteosarc downloads
 ```
-
-`osteosarc explore` opens an interactive browser for specimens, files, variants and
-the timeline. Type `help` for commands and `quit` to leave.
 
 ## Guides
 
 | I want to… | Read |
 | --- | --- |
-| Understand sample IDs, variant status, coordinates and corrections | [Key concepts](https://iskandr.github.io/osteosarc/concepts/) |
-| Find RNA, DNA, single-cell or long-read files and read tables | [Find samples and files](https://iskandr.github.io/osteosarc/explore/) |
+| Understand samples, files, variant status, coordinates and corrections | [Key concepts](https://iskandr.github.io/osteosarc/concepts/) |
+| Find a sample's RNA, DNA, single-cell or long-read files, and download them | [Samples and files](https://iskandr.github.io/osteosarc/samples/) |
 | Get alleles, read counts or vaccine peptides | [Select variants](https://iskandr.github.io/osteosarc/variants/) |
 | Fetch, filter or pair reads by variant or region | [Extract reads](https://iskandr.github.io/osteosarc/reads/) |
-| Browse treatments, specimens, MRD and labs | [Browse the timeline](https://iskandr.github.io/osteosarc/timeline/) |
+| Browse treatments, MRD and labs | [Browse the timeline](https://iskandr.github.io/osteosarc/timeline/) |
 | Pass data to Varcode, Isovar, Topiary or Vaxrank | [Use other libraries](https://iskandr.github.io/osteosarc/consumers/) |
 | Build small, verifiable test BAMs | [Read fixtures](https://iskandr.github.io/osteosarc/fixtures/) |
 | Explore candidate structural variants | [SV interest catalogue](https://iskandr.github.io/osteosarc/sv-interest/) |

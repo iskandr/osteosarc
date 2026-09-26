@@ -4,7 +4,7 @@ from copy import deepcopy
 import pytest
 
 from osteosarc import SchemaError, parse_file, parse_table, parse_variants
-from osteosarc.catalog import build_assets, parse_data_paths
+from osteosarc.catalog import build_files, parse_data_paths
 
 
 def test_missing_values_zero_and_ragged_tables(tmp_path):
@@ -53,7 +53,7 @@ def test_all_objects_and_ambiguous_basenames_remain_visible(dataset):
         ["new+folder/raw.fastq.gz", 4, 1], ["unknown.extension", 5, 1]])
     from osteosarc import Table
     vafs = Table([dict(bam_file="same.bam", sample_label="T0", timepoint="T0")])
-    assets = build_assets(listing, dict(baseUrl="https://example.test/", categories=[]), [], vafs)
+    assets = build_files(listing, dict(baseUrl="https://example.test/", categories=[]), [], vafs)
     bams = assets.select(kind="alignment")
     assert len(bams) == 2
     assert not bams.select(timepoint="T0")
@@ -64,7 +64,7 @@ def test_all_objects_and_ambiguous_basenames_remain_visible(dataset):
     duplicate = deepcopy(listing)
     duplicate["files"].append(duplicate["files"][0])
     with pytest.raises(SchemaError):
-        build_assets(duplicate, dict(categories=[]), [], vafs)
+        build_files(duplicate, dict(categories=[]), [], vafs)
 
 
 def test_data_page_links_enrich_raw_files_without_provider_guessing(dataset):

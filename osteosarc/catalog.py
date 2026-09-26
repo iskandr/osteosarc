@@ -17,7 +17,7 @@ from .curation import (
     normalize_tissue,
 )
 from .errors import SchemaError
-from .models import Asset, Assets, SampleClaim
+from .models import File, Files, SampleClaim
 from .urls import BUCKET, SITE, SOURCE_REPO
 
 SNAPSHOT_SOURCES = {
@@ -32,7 +32,7 @@ SNAPSHOT_SOURCES = {
     "data_page": SITE + "data/",
 }
 
-#: Dated sources behind the timeline and specimen views (about 1.7 MB).
+#: Dated sources behind the timeline and sample views (about 1.7 MB).
 #: Snapshots created before these existed still open; their timeline is unavailable.
 TIMELINE_SOURCES = {
     "events": SITE + "data/events.json",
@@ -57,7 +57,12 @@ TABLE_SOURCES = {
 }
 
 
-def asset_type(key):
+#: Scans, microscopy and slide images. Like "other" files, their paths are not
+#: mined for timepoints or library names.
+IMAGE_FORMATS = ("dcm", "jpg", "jpeg", "png", "tif", "tiff", "svs", "ndpi", "mrxs", "czi")
+
+
+def file_type(key):
     """Classify file format separately from scientific interpretation."""
     lower = key.lower()
     if lower.endswith((".bai", ".csi", ".crai", ".tbi", ".fai")):
@@ -80,6 +85,8 @@ def asset_type(key):
         return "table", suffix
     if suffix in ("h5", "h5ad", "h5mu", "rds", "mtx", "cloupe"):
         return "expression", suffix
+    if suffix in IMAGE_FORMATS:
+        return "image", suffix
     return "other", suffix
 
 
@@ -96,7 +103,7 @@ def object_key(value, base=BUCKET):
     return value
 
 
-def build_assets(listing, bams, metadata, vafs, path_claims=(), *, tables=None):
+def build_files(listing, bams, metadata, vafs, path_claims=(), *, tables=None):
     """Retain every listed object, enriching exact paths before basename matches.
 
     Basename joins are used only when unique among alignment objects. Path
@@ -135,7 +142,7 @@ def build_assets(listing, bams, metadata, vafs, path_claims=(), *, tables=None):
                                        row.get("sample_date") or None, assay, platform,
                                        normalize_tissue(row.get("tissue")), normalize_provider(row.get("provider"))))
         extra[key].setdefault("metadata_rows", []).append(row)
-    counts = Counter(PurePosixPath(key).name for key in objects if asset_type(key)[0] == "alignment")
+    counts = Counter(PurePosixPath(key).name for key in objects if file_type(key)[0] == "alignment")
     by_basename = defaultdict(set)
     malformed = {d["row"] for d in getattr(vafs, "diagnostics", ())}
     for i, row in enumerate(vafs):
@@ -146,9 +153,9 @@ def build_assets(listing, bams, metadata, vafs, path_claims=(), *, tables=None):
     by_path = defaultdict(list)
     for prefix, claim in path_claims:
         by_path[prefix.rstrip("/")].append(claim)
-    assets = []
+    files = []
     for key, object_metadata in objects.items():
-        kind, format = asset_type(key)
+        kind, format = file_type(key)
         info = dict(extra.get(key, {}))
         records = list(claims.get(key, ()))
         # The most specific data-page path wins: a file's own row overrides the
@@ -170,7 +177,7 @@ def build_assets(listing, bams, metadata, vafs, path_claims=(), *, tables=None):
         # This inference is useful for discovery, but never establishes identity.
         points = sorted(set(re.findall(r"(?:^|[/_ .-])(T[0-3])(?=[/_ .-]|$)", key)))
         libraries = sorted(set(re.findall(r"\b(?:BG\d{6}|SARC\d{4}|TL-\d{2}-[A-Z0-9]+)\b", key)))
-        if kind != "other":
+        if kind not in ("other", "image"):
             for point in points:
                 records.append(SampleClaim("bucket_path", key, timepoint=point, basis="inferred"))
             for library in libraries:
@@ -180,12 +187,12 @@ def build_assets(listing, bams, metadata, vafs, path_claims=(), *, tables=None):
             [key + ".tbi", key + ".csi"] if format in ("vcf", "bcf") else [])
         indexes = tuple(bucket_url(k, base) for k in suffixes if k in objects)
         url = bucket_url(key, base)
-        assets.append(Asset(stable_id(url), key, url, kind, format, index_urls=indexes,
-                            claims=tuple(records), metadata=info, **object_metadata))
+        files.append(File(stable_id(url), key, url, kind, format, index_urls=indexes,
+                          claims=tuple(records), metadata=info, **object_metadata))
     for name, (url, format) in (tables or TABLE_SOURCES).items():
-        assets.append(Asset(stable_id(url), "site/" + name, url, "table", format,
-                            metadata={"resource": name}))
-    return Assets(assets)
+        files.append(File(stable_id(url), "site/" + name, url, "table", format,
+                          metadata={"resource": name}))
+    return Files(files)
 
 
 def data_page_rows(html):

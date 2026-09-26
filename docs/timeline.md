@@ -1,30 +1,64 @@
-# Browse the timeline and specimens
+# Browse the timeline
 
-See treatments, procedures, imaging, specimens, MRD and lab results on one
-timeline, and look up each specimen's files. The examples open your most recent snapshot;
-see [Get started](index.md#get-started) to save one.
+See treatments, procedures, scans, sample collection, MRD and lab results on one
+timeline. The examples open your most recent snapshot; see
+[Get started](index.md#get-started) to save one.
 
-## View events around a date
+## Draw the timeline
 
 ```python
 from osteosarc import Dataset
 
 data = Dataset.open()
+print(data.timeline.render(since="2024-05", until="2024-08", width=90))
+```
+
+Each treatment gets its own row, under its group (chemotherapy, immunotherapy,
+cancer vaccines and so on), above rows for each MRD assay:
+
+```text
+                                      2024
+                                      May          Jun          Jul          Aug
+Time points                                          T1
+Samples collected                                    *
+Imaging                               *     **    *        **                     *     *
+Pathology                                *           * *
+Procedures
+  Biopsy                                 *           * *
+  Other                                    *
+Radiation
+  Proton therapy                                       =======================
+Chemotherapy
+  Trabectedin                                 *
+Targeted therapy
+  DeltaRex-G                                 ============================================
+  ...
+Cancer vaccines
+  Peptide neoantigen vaccine (JLFv2)  *  *                *           *
+  Peptide neoantigen vaccine (CeGaT)                        *                      *
+MRD
+  Signatera                             o              +      o      +       o      +
+  Northstar                                                   +      +       +      +
+```
+
+`*` is an event or dose, `=` a treatment that continues over time, and `>` one
+still going. MRD uses `+` for detected, `o` for not detected, and `~` for below the
+limit of quantification. The whole timeline fits a month per column; a shorter
+window gets several columns per month.
+
+Lab draws, DICOM studies, cytometry panels, flow draws, pathology slides and
+sequencing runs happen too often to chart usefully, so they're left out; the
+legend says how many. `render(everything=True)` includes them, as does asking for
+one with `select`.
+
+## View events around a date
+
+```python
 print(data.timeline.around("2025-01-28", days=5).listing())
 ```
 
-The timeline puts treatments, procedures, imaging, pathology, sample collection,
-MRD and lab results on one axis. Each event keeps the record it came from.
-
-## Draw a timeline
-
-```python
-print(data.timeline.render(since="2024-05", until="2024-08", width=100))
-```
-
-The text chart uses `*` for events, `=` for ranges, and `>` for ongoing treatment.
-MRD uses `+` for detected, `o` for not detected, and `~` for below the limit of
-quantification.
+`listing()` prints one line per event, with its date or date range, lane and any
+[corrections](curation.md). Each event keeps the record it came from.
 
 ## Filter events
 
@@ -41,23 +75,8 @@ print(event.date, event.precision, event.source, event.details)
 ```
 
 Dates can be `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. A date published as just a month
-stays a month. Events have a timepoint only where the site gives one. Rows with a
+stays a month. Events have a time point only where the site gives one. Rows with a
 date that can't be read are in `data.timeline.source["undated"]`.
-
-## Find a specimen's files
-
-```python
-for row in data.specimens:
-    print(row["sample_id"], row["date"], row["site"])
-
-t2 = next(r for r in data.specimens if r["sample_id"] == "T2_tumor")
-print(t2["assets"][:3])
-print(t2["fastq_folders"][:3])
-print(t2["corrections"], t2["disagreements"])
-```
-
-Each specimen's date and site are checked against the site's other pages, and
-the row lists any disagreements and [corrections](curation.md).
 
 ## Read measurements
 
@@ -72,36 +91,30 @@ Values keep their published text and units. `kind` is `numeric`, `not_detected`,
 `below_loq`, `text` or `missing`; for `below_loq`, the value is the lab's reporting
 limit, not a measurement.
 
+## Samples on the timeline
+
+The "Samples collected" row marks each [sample](samples.md)'s collection date.
+`data.samples["T2_tumor"]` shows a sample's files, and
+`data.timeline.around("2025-01-28").listing()` what happened around it. A sample's
+`disagreements` lists dates or sites that the site's other pages give differently.
+
 ## Use the terminal
 
 ```sh
+osteosarc timeline
 osteosarc timeline --since 2024-05 --until 2024-09
-osteosarc timeline --lane MRD --since 2025
+osteosarc timeline --lane MRD --since 2025 --list
+osteosarc timeline --all
 osteosarc on 2025-01-28 --days 5
-osteosarc specimens T2_tumor
-osteosarc explore
 ```
 
-Inside the explorer:
-
-```text
-osteosarc> zoom 2024-05 2024-09
-osteosarc> only MRD
-osteosarc> events vaccine
-osteosarc> specimen T1_tumor
-osteosarc> assets kind=alignment timepoint=T3
-osteosarc> variants MAP2
-osteosarc> reset
-osteosarc> quit
-```
-
-`zoom` and `only` persist until `reset`. Type `help` for all commands.
-Add `--json` to the `timeline` CLI command for machine-readable events. The
-[command-line guide](cli.md#interactive-explorer) lists every explorer command.
+`--list` prints one line per event and `--json` the event records. `--lane` and
+`--contains` also chart lanes that are otherwise left out, such as
+`--lane "Lab draws"`.
 
 ## Sources
 
-Dates come from the site's events and timeline sheet, specimen registry, T0–T3
+Dates come from the site's events and timeline sheet, sample registry, T0–T3
 summary, MRD results, flow-cytometry list, imaging and pathology indexes, and lab
 and cytometry tables. A snapshot saved before the timeline existed can't show it;
 run `osteosarc sync --refresh` for a new one.

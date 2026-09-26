@@ -14,7 +14,7 @@ nav:
   - Home: index.md
   - Key concepts: concepts.md
   - Guides:
-      - Find samples and files: explore.md
+      - Samples and files: samples.md
       - Select variants and peptides: variants.md
       - Extract reads: reads.md
       - Browse the timeline: timeline.md

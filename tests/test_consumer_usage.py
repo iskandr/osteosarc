@@ -9,10 +9,10 @@ from dataclasses import replace
 import pytest
 
 from osteosarc import (
-    Asset,
-    Assets,
     Cache,
     Dataset,
+    File,
+    Files,
     Region,
     Variant,
     Variants,
@@ -20,7 +20,7 @@ from osteosarc import (
     inspect_alignment,
 )
 from osteosarc.cache import stable_id
-from osteosarc.catalog import asset_type
+from osteosarc.catalog import file_type
 
 
 def cached_asset(dataset, tmp_path, name, text):
@@ -28,9 +28,9 @@ def cached_asset(dataset, tmp_path, name, text):
     original = tmp_path / name
     original.write_text(text)
     dataset.cache.import_file(original, url)
-    kind, format = asset_type(name)
-    asset = Asset(stable_id(url), name, url, kind, format)
-    dataset.assets = Assets([*dataset.assets, asset])
+    kind, format = file_type(name)
+    asset = File(stable_id(url), name, url, kind, format)
+    dataset.files = Files([*dataset.files, asset])
     return asset
 
 

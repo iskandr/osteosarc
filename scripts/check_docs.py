@@ -4,8 +4,8 @@
     python scripts/check_docs.py --cache DIR docs/tour.md
 
 Python blocks on one page share a namespace, in order, as a reader would run
-them. Shell blocks run their `osteosarc` lines (interactive commands receive
-"quit"; a trailing space-separated `> FILE` redirect is honored). Install, clone and development commands are listed but not run; CI
+them. Shell blocks run their `osteosarc` lines (with an empty standard input, so
+`osteosarc repl` exits at once; a trailing space-separated `> FILE` redirect is honored). Install, clone and development commands are listed but not run; CI
 covers the development commands. A block preceded by
 `<!-- docs-check: skip (reason) -->` is reported as skipped.
 """
@@ -105,7 +105,7 @@ def run_shell(block, env, cwd, timeout):
         arguments = shlex.split(redirect[1] if redirect else command)
         redirect = redirect and redirect[2]
         try:
-            process = subprocess.run(arguments, env=env, cwd=cwd, input="quit\n",
+            process = subprocess.run(arguments, env=env, cwd=cwd, input="",
                                      capture_output=True, text=True, timeout=timeout)
             status = "ok" if process.returncode == 0 else "failed"
             if redirect and status == "ok":

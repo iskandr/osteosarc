@@ -2,14 +2,16 @@
 
 Everything below imports from `osteosarc`. Importing never downloads anything or
 needs the OpenVax libraries. The guides show each call in context; this page lists
-them by task. In a REPL or notebook, datasets, variants, files, tables and the
-timeline show a readable preview, and text views display without quotes.
+them by task. In a REPL or notebook, datasets, samples, files, variants, tables and
+the timeline show a readable preview, and text views display without quotes.
+`osteosarc repl` opens Python with the newest snapshot loaded as `data`.
 
 [Snapshots and cache](#snapshots-and-cache) ·
+[Samples](#samples) ·
 [Files and tables](#files-and-tables) ·
 [Variants and vaccines](#variants-and-vaccines) ·
 [Reads](#reads) ·
-[Corrections, timelines and specimens](#corrections-timelines-and-specimens) ·
+[Corrections and the timeline](#corrections-and-the-timeline) ·
 [Fixtures and bundles](#fixtures-and-bundles) ·
 [Errors and limitations](#errors-and-limitations)
 
@@ -21,7 +23,7 @@ timeline show a readable preview, and text views display without quotes.
 | `Dataset.open(name=None, date=None, cache=None, offline=True, corrections=True)` | Verify and reopen the most recent snapshot, one with an exact name or ID prefix, or the newest downloaded on a UTC `date` (`2026-09-24`, `2026-09`, `2026`); `corrections=False` or a list of `Correction`s |
 | `Dataset.snapshots(cache=None)` | Table of saved snapshots, newest download first: `name`, `downloaded`, `created`, `id` |
 | `data.id`, `data.name`, `data.downloaded`, `data.receipts()` | Snapshot content identity, name, latest source download time, and source receipts |
-| `data.summary()`, `data.explore()` | What's in the snapshot and what to try next; the interactive explorer |
+| `data` (its repr), `data.summary()` | What the snapshot has and how to reach it; the same with counts |
 | `data.source_path(name)` | Verified local metadata path |
 | `Cache(root=None, offline=False, timeout=600)` | Shared local object cache |
 | `cache.fetch(url, refresh=False, sha256=None, md5=None, size=None, max_bytes=None)` | Download and check a file; returns a `Receipt` |
@@ -33,20 +35,38 @@ timeline show a readable preview, and text views display without quotes.
 
 See [Snapshots and cache](design.md).
 
+## Samples
+
+| Call / property | Returns / behavior |
+| --- | --- |
+| `data.samples` | `Samples`: every tumor, organoid and blood sample, shown as a table |
+| `data.samples["T1_tumor"]` | One `Sample`, shown with its BAMs, FASTQ folders and the calls that fetch them |
+| `samples.select(timepoint=..., tissue=..., assay=..., platform=...)` | Filter samples; sequencing uses the file filter names (`rna-seq`, `ont`, ...) |
+| `sample.id`, `.timepoint`, `.date`, `.tissue`, `.site`, `.description`, `.providers` | Where and when it was collected, and who sequenced it |
+| `sample.sequencing`, `sample.assays` | `(assay, platform)` pairs from the registry and the FASTQ table; the distinct assays |
+| `sample.bams`, `sample.fastq_folders`, `sample.missing_bams` | BAM keys, FASTQ folder keys, and BAMs the site names but the bucket lacks |
+| `sample.files` | The sample's BAMs and every file in its FASTQ folders, as `Files` |
+| `sample.disagreements`, `sample.corrections`, `sample.notes`, `sample.details` | Other sources' dates or sites, correction IDs, the site's note, and the original rows |
+
+Samples come from the site's sample registry, which needs a snapshot with the
+timeline sources. See [Samples and files](samples.md).
+
 ## Files and tables
 
 | Call / property | Returns / behavior |
 | --- | --- |
-| `data.assets`, `data.samples`, `data.timepoints` | Every file; what the site says about each file's sample; timepoint dates |
-| `data.describe_samples(timepoint=None, tissue=None, assay=None, platform=None, width=None)` | Readable sample and sequencing overview, with sequencing shown as filter names |
-| `data.assets_for_sample(sample_id, **filters)` | A sample's BAMs and the files in its FASTQ folders |
-| `data.asset(key_or_id)` | One file, by key, URL, ID or table name |
-| `data.download(asset, refresh=False, verify_size=True)` | Download one whole file and return its path |
-| `data.table(asset)`, `data.parse(asset)` | Parse a CSV/TSV table, or a supported JSON/FASTA resource |
-| `data.open_variants(asset)` | Open a VCF or BCF with pysam |
-| `assets.select(kind=..., format=..., prefix=..., contains=...)` | Filter files by type or path |
-| `assets.select(timepoint=..., assay=..., platform=..., tissue=..., provider=..., library=...)` | Filter files by sample and sequencing |
-| `asset.values(field)`, `asset.resolved(field)`, `asset.conflicts` | What the site says about a file, and where it disagrees |
+| `data.files` | `Files`: everything in the bucket, plus the site's tables |
+| `data.file(key_or_id)` | One `File`, by key, URL, ID or table name |
+| `data.claims`, `data.timepoints` | What each source says about files' samples, with `file_ids`; timepoint dates |
+| `data.download(file, to=None, refresh=False, verify_size=True)` | Download one whole file and return its path; `to=DIR` also puts it, and its index, in `DIR` under its own name |
+| `data.local_path(file)` | The downloaded copy, or `None`; never uses the network |
+| `data.downloads()` | Table of downloaded files and extracted reads: `kind`, `key`, `size`, `path`, `regions`, `downloaded` |
+| `data.table(file)`, `data.parse(file)` | Parse a CSV/TSV table, or a supported JSON/FASTA resource |
+| `data.open_variants(file)` | Open a VCF or BCF with pysam |
+| `files.select(kind=..., format=..., prefix=..., contains=..., sample=...)` | Filter files by type, path or sample |
+| `files.select(timepoint=..., assay=..., platform=..., tissue=..., provider=..., library=...)` | Filter files by what the sources say about them |
+| `file.key`, `.url`, `.kind`, `.format`, `.size`, `.index_urls`, `.samples` | A file's bucket key, download URL, type, size, indexes and sample IDs |
+| `file.values(field)`, `file.resolved(field)`, `file.conflicts` | What the site says about a file, and where it disagrees |
 | `collection.where(predicate)`, `collection[:n]`, `collection.to_records()` | Filter with a function, slice, or convert to dictionaries |
 | `table.select(**fields)`, `table.where(predicate)` | Filter rows; values stay as text |
 | `table.rows`, `table.columns`, `table.source`, `table.to_dataframe()` | The rows, columns, source, or a pandas DataFrame |
@@ -54,12 +74,13 @@ See [Snapshots and cache](design.md).
 | `parse_table(text, delimiter="\t", strict=True)` | Parse CSV or TSV text; `strict=False` keeps broken rows |
 | `parse_file(path, format=None)` | Parse a local JSON, CSV, TSV or FASTA file |
 
-Asset selections accept `include_conflicts` and `include_inferred` opt-ins. An
-assay, platform or tissue that no file uses raises `ValueError` listing the valid
-values; a registry label such as `scRNA_ONT` names the filters to use instead.
-The named tables are `vafs`, `vaf_columns`, `snv_top`, `dna_fusions`, and
-`rna_fusions`. Other tables use exact asset keys or Asset instances.
-See [Find samples and files](explore.md).
+File kinds are `alignment`, `reads`, `variants`, `expression`, `annotation`,
+`table`, `reference`, `index`, `image` and `other`. File selections accept
+`include_conflicts` and `include_inferred` opt-ins. An assay, platform or tissue
+that no file uses raises `ValueError` listing the valid values; a registry label
+such as `scRNA_ONT` names the filters to use instead. The named tables are `vafs`,
+`vaf_columns`, `snv_top`, `dna_fusions`, and `rna_fusions`. Other tables use exact
+file keys or `File`s. See [Samples and files](samples.md).
 
 ## Variants and vaccines
 
@@ -93,8 +114,8 @@ RecoveryPolicy(mates=True, supplementary=True, max_rounds=4,
 
 | Call | Returns / behavior |
 | --- | --- |
-| `data.inspect_alignment(asset)` | `AlignmentInfo`: original `.header`, `.assembly`, `.path`, `.receipt` |
-| `data.extract_reads(asset, regions=None, variants=None, padding=0, **options)` | Supply regions or selected variants; returns `ReadSubset` with `.path`, `.index_path`, `.receipt`, `.open()` |
+| `data.inspect_alignment(file)` | `AlignmentInfo`: original `.header`, `.assembly`, `.path`, `.receipt` |
+| `data.extract_reads(file, regions=None, variants=None, padding=0, **options)` | Supply regions or selected variants; returns `ReadSubset` with `.path`, `.index_path`, `.receipt`, `.open()` |
 | `inspect_alignment(source, cache=None, snapshot_id=None, timeout=600)` | Same inspection for local files or HTTP(S) URLs |
 | `extract_reads(source, regions, cache=None, index=None, filters=None, reference=None, fetch_pairs=False, snapshot_id=None, timeout=600, recovery=None, max_records=None)` | Explicit indexed region union |
 | `recover_reads(source, regions, policy=None, cache=None, **options)` | Bounded mate/SA partner recovery; the same as `extract_reads(..., recovery=policy)` |
@@ -108,7 +129,7 @@ its own cache and snapshot ID and accepts the remaining extraction options.
 `ReadSubset.open()` is a pysam context manager. `max_records` stops acquisition
 on overflow and discards the partial output. See [Extract reads](reads.md).
 
-## Corrections, timelines and specimens
+## Corrections and the timeline
 
 | Call / property | Returns / behavior |
 | --- | --- |
@@ -120,16 +141,15 @@ on overflow and discards the partial output. See [Extract reads](reads.md).
 | `data.timeline` | `Timeline` of `Event`s from every dated source |
 | `timeline.select(lane=, category=, kind=, source=, track=, timepoint=, contains=, since=, until=)` | Filtered Timeline; dates are `YYYY`, `YYYY-MM`, or `YYYY-MM-DD` |
 | `timeline.around(date, days=7)`, `timeline.lanes()` | Neighborhood of a date; ordered lane names |
-| `timeline.render(width=None, since=None, until=None, legend=True)`, `timeline.listing()` | ASCII chart; one line per event |
+| `timeline.render(width=None, since=None, until=None, everything=False, legend=True)` | Text chart: a row per treatment, over months; `everything=True` adds lab draws, DICOM studies, cytometry, flow draws, slides and sequencing runs |
+| `timeline.listing()` | One line per event |
 | `event.date`, `.end`, `.precision`, `.open_end`, `.timepoint`, `.value`, `.source`, `.corrections`, `.details` | Published precision, correction IDs, and the original record |
 | `timeline.source["undated"]` | Source rows left off the timeline because their dates could not be read |
-| `data.specimens` | Table: registry rows with `assets`, `fastq_folders`, `disagreements`, `corrections` |
 | `data.measurements` | Table: MRD, lab, and cytometry values with raw strings and `kind` |
-| `osteosarc.explore.Explorer(data)` | Interactive shell (`osteosarc explore`) |
-| `osteosarc.explore.specimen_view`, `specimens_view`, `assets_view`, `variants_view`, `corrections_view`, `summary_view` | The shell's views as strings |
+| `osteosarc.views` | The command line's text views as functions returning strings, such as `sample_view`, `files_overview` and `variant_view` |
 
 A snapshot made before the timeline sources existed raises `SchemaError` from
-`timeline`, `specimens`, and `measurements`; everything else works.
+`timeline`, `samples`, and `measurements`; everything else works.
 See [Source corrections](curation.md) and [Browse the timeline](timeline.md).
 
 ## Fixtures and bundles
