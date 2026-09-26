@@ -5,6 +5,12 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.11.1 (2026-09-26)
+
+- `osteosarc test-data check` reads both SAM fields of records kept in JSON, sam and
+  partner_sam, as Isovar stores its fusion corpus, so those fixtures no longer look
+  half missing ([#61](https://github.com/iskandr/osteosarc/issues/61)).
+
 ## 0.11.0 (2026-09-26)
 
 The OpenVax libraries can take their test reads from one place: **openvax-v1**, chosen

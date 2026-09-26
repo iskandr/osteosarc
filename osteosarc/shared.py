@@ -675,13 +675,7 @@ def _local_sam(value, root=Path(".")):
         document = read_json(root / value["json"])
         for part in value["pointer"].strip("/").split("/"):
             document = document[int(part) if isinstance(document, list) else part]
-        if isinstance(document, dict):
-            document = list(document.values())  # e.g. {digest: SAM line}
-        lines = [document] if isinstance(document, str) else [
-            item.get("sam") if isinstance(item, dict) else item for item in document]
-        if not all(isinstance(line, str) for line in lines):
-            raise SchemaError(f"{value['json']}#{value['pointer']} holds neither SAM lines nor objects with a sam field")
-        return lines
+        return list(_sam_lines(document, f"{value['json']}#{value['pointer']}"))
     path = root / value
     if path.suffix == ".gz" and path.name.endswith(".sam.gz"):
         import tempfile
@@ -692,6 +686,25 @@ def _local_sam(value, root=Path(".")):
                 return [read.to_string() for read in handle]
     with pysam.AlignmentFile(str(path), check_sq=False) as handle:
         return [read.to_string() for read in handle.fetch(until_eof=True)]
+
+
+def _sam_lines(value, where):
+    """SAM lines kept in JSON: a line, a list, a record object's sam and partner_sam
+    fields (as Isovar stores them), or a {digest: line} map, nested in any mix."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, list):
+        for item in value:
+            yield from _sam_lines(item, where)
+    elif isinstance(value, dict) and ("sam" in value or "partner_sam" in value):
+        for key in ("sam", "partner_sam"):
+            if value.get(key):
+                yield from _sam_lines(value[key], where)
+    elif isinstance(value, dict):
+        for item in value.values():
+            yield from _sam_lines(item, where)
+    else:
+        raise SchemaError(f"{where} holds something other than SAM lines: {type(value).__name__}")
 
 
 def check_fixtures(bundle, fixtures, *, root=Path(".")):

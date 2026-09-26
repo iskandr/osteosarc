@@ -172,11 +172,14 @@ def test_fixtures_kept_in_json_are_read_in_each_layout(tmp_path):
     from osteosarc import SchemaError
     from osteosarc.shared import _local_sam
     line = "r1\t0\tchr1\t3\t60\t4M\t*\t0\t0\tACGT\tIIII"
+    partner = "r1\t2048\tchr2\t9\t60\t4M\t*\t0\t0\tACGT\tIIII"
     (tmp_path / "f.json").write_text(json.dumps(dict(
         lines=[line, line], single=line, by_digest={"a" * 64: line},
-        objects=[dict(sam=line, note="x")], numbers=[1, 2])))
+        objects=[dict(sam=line, note="x")], numbers=[1, 2],
+        # Isovar's fusion corpus keeps each split read with its partner alignment.
+        pairs=[dict(sam=line, partner_sam=partner, read_id="r1"), dict(sam=line, partner_sam=None)])))
     for pointer, expected in [("/lines", [line, line]), ("/single", [line]), ("/by_digest", [line]),
-                              ("/objects", [line])]:
+                              ("/objects", [line]), ("/pairs", [line, partner, line])]:
         assert _local_sam(dict(json="f.json", pointer=pointer), tmp_path) == expected
-    with pytest.raises(SchemaError, match="neither SAM lines"):
+    with pytest.raises(SchemaError, match="other than SAM lines"):
         _local_sam(dict(json="f.json", pointer="/numbers"), tmp_path)
