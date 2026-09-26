@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 import copy
+import functools
 import json
+import os
+import pickle
 import re
+import tempfile
 import warnings
+import zlib
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -33,7 +38,7 @@ from .curation import (
     unrecognized_values,
 )
 from .errors import CoordinateError, IntegrityError, NoSnapshotsError, OfflineError, SchemaError
-from .models import File, Region
+from .models import File, Files, Region
 from .parsing import (
     PARSE_FORMATS,
     Table,
@@ -124,6 +129,41 @@ def choose_snapshot(rows, name=None, *, date=None, root=None):
         raise FileNotFoundError(f"No snapshot {wanted}; saved: " + ", ".join(r["name"] for r in rows))
     return matches[0]["name"]
 
+
+
+#: The snapshot sources the timeline is built from.
+TIMELINE_EVENT_SOURCES = ("events", "events_sheet", "mrd", "flow", "imaging", "pathology", "specimens",
+                          "labs", "cytometry")
+#: The snapshot sources the variant catalogue is built from.
+VARIANT_SOURCES = ("variant_index", "source_variants", "vaccine_overlap", "vafs")
+
+
+def _files_by_sample(files):
+    by_sample = defaultdict(list)
+    for file in files:
+        for sample in file.samples:
+            by_sample[sample].append(file)
+    return dict(by_sample)
+
+
+def _index_files(files):
+    """Files by ID, key, URL and resource name."""
+    index = defaultdict(list)
+    for file in files:
+        for name in dict.fromkeys((file.id, file.key, file.url, file.metadata.get("resource"))):
+            if name:
+                index[name].append(file)
+    return index
+
+
+@functools.lru_cache(maxsize=1)
+def _code_key():
+    """A fingerprint of osteosarc's code, so a saved catalogue is rebuilt whenever it changes."""
+    import hashlib
+    digest = hashlib.sha256()
+    for path in sorted(Path(__file__).parent.glob("*.py")):
+        digest.update(path.name.encode() + b"\0" + path.read_bytes())
+    return digest.hexdigest()[:12]
 
 class Dataset:
     """A pinned set of metadata receipts plus lazily parsed public resources.
@@ -366,7 +406,7 @@ class Dataset:
                                            undated=undated)]
         # Rows whose dates cannot be read are kept out of the chart but reported here.
         return Timeline(sorted(items, key=lambda e: (e.first_day, e.lane, e.label, e.id)),
-                        source={"snapshot_id": self.id, "corrections": self.curation.applied(),
+                        source={"snapshot_id": self.id, "corrections": self.curation.applied(TIMELINE_EVENT_SOURCES),
                                 "undated": undated})
 
     @cached_property
@@ -545,9 +585,50 @@ class Dataset:
     @cached_property
     def files(self):
         """All listed files plus metadata-only catalog objects and site tables."""
+        return self._catalog[0]
+
+    @cached_property
+    def _catalog(self):
+        """The files, an index of them by ID, key, URL and resource name, and by sample."""
+        def build():
+            files = self._build_files()
+            return files, _index_files(files), _files_by_sample(files)
+        return self._saved("files", build)
+
+    def _saved(self, name, build):
+        """A catalogue built once and kept in the cache, compressed. Building one takes
+        seconds (the bucket holds some 400,000 objects), and a snapshot never changes,
+        so a copy serves this snapshot, this osteosarc code and this set of corrections."""
+        folder = self.cache.workspace / "catalogs"
+        stem = f"{self.id}-{name}-{self._corrections_key}"
+        path = folder / f"{stem}-{_code_key()}.pickle.z"
+        try:
+            return pickle.loads(zlib.decompress(path.read_bytes()))
+        except (OSError, zlib.error, pickle.UnpicklingError, EOFError, AttributeError, ImportError, ValueError):
+            pass
+        value = build()
+        try:
+            folder.mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile(dir=folder, prefix=".catalog-", delete=False) as handle:
+                handle.write(zlib.compress(pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL), 1))
+            os.replace(handle.name, path)
+            # Copies made by other versions of osteosarc for this snapshot are stale.
+            for old in folder.glob(f"{stem}-*.pickle.z"):
+                if old != path:
+                    old.unlink(missing_ok=True)
+        except OSError:
+            pass  # a read-only cache still works; it builds the catalogue each time
+        return value
+
+    @cached_property
+    def _corrections_key(self):
+        chosen = self.curation.corrections if self.curation.enabled else ()
+        return stable_id(repr(chosen))[:12]
+
+    def _build_files(self):
         bams = self._json("bams")
         objects, bucket_touched = self.curation.records("bucket")
-        listing = self._download_header
+        listing = self._raw_download_header()
         rows, bams_touched = self.curation.records("bams")
         metadata, metadata_touched = self.curation.records("bam_metadata")
         rows = iter(rows)
@@ -578,6 +659,9 @@ class Dataset:
     @cached_property
     def _download_header(self):
         """The bucket listing's fields other than its file rows (download_base, dates)."""
+        return self._saved("header", self._raw_download_header)
+
+    def _raw_download_header(self):
         if self._bucket_header is None:
             self.curation.raw("bucket")
             self.curation.release("bucket")
@@ -585,6 +669,9 @@ class Dataset:
 
     @cached_property
     def _variants(self):
+        return self._saved("variants", self._build_variants)
+
+    def _build_variants(self):
         index, index_touched = self.curation.records("variant_index")
         records, record_touched = self.curation.records("source_variants")
         mutations, overlap_touched = self.curation.records("vaccine_overlap")
@@ -596,7 +683,7 @@ class Dataset:
                                   source_variants=records,
                                   vaccine_overlap=dict(self._json("vaccine_overlap"), mutations=mutations),
                                   source={"snapshot_id": self.id, "receipts": self.manifest["sources"],
-                                          "corrections": self.curation.applied()})
+                                          "corrections": self.curation.applied(VARIANT_SOURCES)})
         # A correction belongs to a variant when it touches the variant's own records
         # or all of its count rows. One that touches only some count rows (e.g. one
         # BAM's counts) is listed separately as a count correction.
@@ -663,12 +750,18 @@ class Dataset:
 
     @cached_property
     def _file_index(self):
-        index = defaultdict(list)
-        for file in self.files:
-            for name in dict.fromkeys((file.id, file.key, file.url, file.metadata.get("resource"))):
-                if name:
-                    index[name].append(file)
-        return index
+        files = self.files
+        catalog = self.__dict__.get("_catalog")
+        # The saved index, unless files were replaced (tests do).
+        return catalog[1] if catalog is not None and files is catalog[0] else _index_files(files)
+
+    def _sample_files(self, sample_id):
+        """A sample's files, as files.select(sample=...) gives them, from the saved index."""
+        files = self.files
+        catalog = self.__dict__.get("_catalog")
+        if catalog is not None and files is catalog[0]:
+            return Files(catalog[2].get(sample_id, ()), source=files.source)
+        return files.select(sample=sample_id)
 
     def file(self, key_or_id):
         """Resolve an exact bucket key, URL, resource name, or file ID."""
@@ -761,7 +854,30 @@ class Dataset:
         counts as downloaded exactly when local_path finds it.
         """
         from .views import regions_text
-        by_url = {f.url: f for f in self.files}
+        base = self._download_header.get("download_base", BUCKET)
+        rows = self._downloaded_files()
+        for receipt_path in sorted((self.cache.workspace / "derived").glob("*/receipt.json")):
+            try:
+                receipt = json.loads(receipt_path.read_text())
+                source = receipt["request"]["source"]
+                regions = receipt["request"].get("regions", ())
+            except (OSError, ValueError, KeyError, TypeError):
+                continue
+            bam = receipt_path.parent / "reads.bam"
+            file = self._url_file(source)
+            if not bam.is_file() or not (file or str(source).startswith(base)):
+                continue
+            rows.append(dict(kind="reads", key=file.key if file else source, url=source, size=bam.stat().st_size,
+                             path=str(bam), regions=regions_text(regions),
+                             downloaded=datetime.fromtimestamp(bam.stat().st_mtime, timezone.utc).isoformat()))
+        return Table(rows, columns=("kind", "key", "url", "size", "path", "regions", "downloaded"))
+
+    def _url_file(self, url):
+        """The file at this URL, or None."""
+        return next((f for f in self._file_index.get(url, ()) if f.url == url), None)
+
+    def _downloaded_files(self):
+        """downloads()' rows for whole files."""
         sources = {r["url"] for r in self.manifest["sources"].values()}
         base = self._download_header.get("download_base", BUCKET)
         receipts = {}
@@ -773,7 +889,7 @@ class Dataset:
                     receipts.setdefault(receipt.url, []).append(receipt)
         rows = []
         for url, candidates in sorted(receipts.items()):
-            file = by_url.get(url)
+            file = self._url_file(url)
             if url in sources or not (file or url.startswith(base)):
                 continue
             for receipt in candidates:
@@ -782,25 +898,11 @@ class Dataset:
                     rows.append(dict(kind="file", key=file.key if file else url, url=url, size=receipt.size,
                                      path=str(path), regions="", downloaded=receipt.retrieved_at))
                     break
-        for receipt_path in sorted((self.cache.workspace / "derived").glob("*/receipt.json")):
-            try:
-                receipt = json.loads(receipt_path.read_text())
-                source = receipt["request"]["source"]
-                regions = receipt["request"].get("regions", ())
-            except (OSError, ValueError, KeyError, TypeError):
-                continue
-            bam = receipt_path.parent / "reads.bam"
-            file = by_url.get(source)
-            if not bam.is_file() or not (file or str(source).startswith(base)):
-                continue
-            rows.append(dict(kind="reads", key=file.key if file else source, url=source, size=bam.stat().st_size,
-                             path=str(bam), regions=regions_text(regions),
-                             downloaded=datetime.fromtimestamp(bam.stat().st_mtime, timezone.utc).isoformat()))
-        return Table(rows, columns=("kind", "key", "url", "size", "path", "regions", "downloaded"))
+        return rows
 
     def local_urls(self):
         """URLs of every file with a local copy: downloads and the snapshot's own tables."""
-        return ({r["url"] for r in self.downloads() if r["kind"] == "file"}
+        return ({r["url"] for r in self._downloaded_files()}
                 | {r["url"] for r in self.manifest["sources"].values()})
 
     def _download(self, file, *, cache, refresh=False, verify_size=True):

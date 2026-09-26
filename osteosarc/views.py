@@ -292,7 +292,7 @@ def example_variant(data):
 
 def corrected_lines(data, ids):
     """Each correction's summary, wrapped, under its ID."""
-    summaries = {r["id"]: r["summary"] for r in data.corrections}
+    summaries = {c.id: c.summary for c in data.curation.corrections}  # no need to evaluate them
     return [textwrap.fill(f"Corrected by {i}: {summaries.get(i, '')}", 100, subsequent_indent="  ")
             for i in ids]
 

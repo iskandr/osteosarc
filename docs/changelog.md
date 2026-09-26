@@ -5,6 +5,21 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.13.1 (2026-09-26)
+
+Faster commands ([#78](https://github.com/iskandr/osteosarc/issues/78)).
+
+- **A snapshot's catalogues are built once.** The file catalogue (some 400,000 bucket
+  objects), its indexes and the variant catalogue are saved in the cache the first
+  time, for that snapshot, osteosarc version and set of corrections. `osteosarc reads`
+  on a cached result drops from about 20 s to 1.4 s, `samples` from 1.6 s to 0.3 s,
+  `variants` and `timeline` from about 1.7 s to 0.2 s, and `files` from 6 s to 1.8 s.
+- Corrections find their records through an index instead of scanning every record,
+  and only the corrections a result depends on are evaluated.
+- A cached file's checksum is remembered on disk by its size, time and inode, so
+  opening a snapshot no longer re-hashes its 57 MB of sources, and osteosarc imports
+  pandas only to download a file: `osteosarc --version` takes 0.2 s, not 0.9 s.
+
 ## 0.13.0 (2026-09-26)
 
 A simpler site, and less code ([#75](https://github.com/iskandr/osteosarc/issues/75)).

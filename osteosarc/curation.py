@@ -29,6 +29,7 @@ A correction applies atomically: if any of its changes is stale, none is made.
 
 from __future__ import annotations
 
+import bisect
 import copy
 import fnmatch
 import functools
@@ -317,6 +318,7 @@ class Curation:
         self._matched = {}
         self._selected = {}
         self._records = {}
+        self._indexes = {}
 
     def raw(self, source):
         if source not in self._raw:
@@ -360,7 +362,8 @@ class Curation:
                                     state="unavailable", records=0, differing=[]))
                 matches.append([])
                 continue
-            matched = [i for i, record in enumerate(records) if _matches(record, change.match)]
+            matched = sorted(i for i in self._candidates(change.source, change.match)
+                             if _matches(records[i], change.match))
             matches.append(matched)
             differing = sorted({name for i in matched for name, value in change.expect.items()
                                 if not _same(_get(records[i], name), value)})
@@ -390,6 +393,50 @@ class Curation:
         else:
             status = "applied"
         return status, details, matches
+
+    def _candidates(self, source, match):
+        """Indices of the records that could match: by one exact field through an index of
+        that field's values, or by a wildcard's literal prefix through a sorted index,
+        so a correction doesn't scan every record of a large source."""
+        records = self.raw(source)
+        exact = [(name, wanted) for name, wanted in match.items() if not isinstance(wanted, Glob)]
+        if exact:
+            name, wanted = exact[0]
+            index = self._index(source, name)
+            try:
+                return index.get(wanted, ())
+            except TypeError:  # an unhashable value to match: look at every record
+                return range(len(records))
+        if not match:
+            return range(len(records))
+        name, pattern = next(iter(match.items()))
+        prefix = _literal_prefix(pattern.pattern)
+        values = self._index(source, name, ordered=True)
+        start = bisect.bisect_left(values, (prefix,))
+        found = []
+        for value, i in values[start:]:
+            if not value.startswith(prefix):
+                break
+            found.append(i)
+        return found
+
+    def _index(self, source, name, ordered=False):
+        key = source, name, ordered
+        if key not in self._indexes:
+            records = self.raw(source)
+            if ordered:  # (value, index) for string values, sorted
+                self._indexes[key] = sorted((v, i) for i, r in enumerate(records)
+                                            if isinstance(v := _get(r, name), str))
+            else:
+                index = defaultdict(list)
+                for i, record in enumerate(records):
+                    value = _get(record, name)
+                    try:
+                        index[value].append(i)
+                    except TypeError:  # unhashable values never equal a hashable match
+                        continue
+                self._indexes[key] = index
+        return self._indexes[key]
 
     def records(self, source):
         """Corrected records plus, per record index, the IDs of corrections touching it."""
@@ -421,9 +468,15 @@ class Curation:
         """Drop cached records of a large source; they are reloaded if needed again."""
         self._raw.pop(source, None)
         self._records.pop(source, None)
+        for key in [k for k in self._indexes if k[0] == source]:
+            del self._indexes[key]
 
-    def applied(self):
-        return tuple(c.id for c in self.corrections if self.enabled and self.evaluate(c)[0] == "applied")
+    def applied(self, sources=None):
+        """IDs of the corrections applied, or of those applied to any of these sources."""
+        return tuple(c.id for c in self.corrections if self.enabled
+                     and (sources is None or any(change.source in sources
+                                                 for group in c.versions for change in group))
+                     and self.evaluate(c)[0] == "applied")
 
     def report(self):
         rows = []

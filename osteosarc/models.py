@@ -256,7 +256,7 @@ class Sample:
         dataset = getattr(self, "_dataset", None)
         if dataset is None:
             raise ValueError(f"{self.id} is not attached to a Dataset")
-        return dataset.files.select(sample=self.id)
+        return dataset._sample_files(self.id)
 
     def __repr__(self):
         from .display import Text

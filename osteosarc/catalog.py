@@ -90,9 +90,15 @@ def file_type(key):
     return "other", suffix
 
 
+_TIMEPOINT = re.compile(r"(?:^|[/_ .-])(T[0-3])(?=[/_ .-]|$)")
+_LIBRARY = re.compile(r"\b(?:BG\d{6}|SARC\d{4}|TL-\d{2}-[A-Z0-9]+)\b")
+_PLAIN_KEY = re.compile(r"[A-Za-z0-9_.~/-]*")
+
+
 def bucket_url(key, base=BUCKET):
     """Encode an exact S3 object key once; '+' and spaces remain distinct."""
-    return base.rstrip("/") + "/" + quote(key, safe="/")
+    # Most keys need no quoting at all; quote() is the slow part of building the catalogue.
+    return base.rstrip("/") + "/" + (key if _PLAIN_KEY.fullmatch(key) else quote(key, safe="/"))
 
 
 def object_key(value, base=BUCKET):
@@ -175,12 +181,10 @@ def build_files(listing, bams, metadata, vafs, path_claims=(), *, tables=None):
             elif by_basename[basename]:
                 info["ambiguous_vaf_basename"] = basename
         # This inference is useful for discovery, but never establishes identity.
-        points = sorted(set(re.findall(r"(?:^|[/_ .-])(T[0-3])(?=[/_ .-]|$)", key)))
-        libraries = sorted(set(re.findall(r"\b(?:BG\d{6}|SARC\d{4}|TL-\d{2}-[A-Z0-9]+)\b", key)))
         if kind not in ("other", "image"):
-            for point in points:
+            for point in sorted(set(_TIMEPOINT.findall(key))):
                 records.append(SampleClaim("bucket_path", key, timepoint=point, basis="inferred"))
-            for library in libraries:
+            for library in sorted(set(_LIBRARY.findall(key))):
                 records.append(SampleClaim("bucket_path", key, library=library, basis="inferred"))
         suffixes = [key + ".bai", key[:-4] + ".bai", key + ".csi"] if format == "bam" else (
             [key + ".crai", key[:-5] + ".crai", key + ".csi"] if format == "cram" else

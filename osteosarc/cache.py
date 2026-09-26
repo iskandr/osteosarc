@@ -26,7 +26,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-import datacache
 import requests
 
 from .errors import IntegrityError, OfflineError, OsteosarcError
@@ -190,8 +189,8 @@ class Cache:
     def path(self, receipt, *, verify=True):
         """Resolve a receipt, detecting missing or modified bytes.
 
-        Each object is hashed once per Cache instance; a rewritten file (new
-        size, mtime or inode) is hashed again.
+        An object is hashed once, and its checksum remembered on disk by its
+        size, mtime and inode (see file_digest); a rewritten file is hashed again.
         """
         if not isinstance(receipt, Receipt):
             receipt = Receipt(**receipt)
@@ -207,10 +206,8 @@ class Cache:
                 raise IntegrityError(f"Cached object size differs from receipt: {path}")
             identity = json.dumps(current)
             if self._verified.get(identity) != receipt.sha256:
-                try:
-                    datacache.validate_file(path, expected_sha256=receipt.sha256, expected_size=receipt.size)
-                except datacache.FileValidationError as error:
-                    raise IntegrityError(f"Cached object was modified: {path}") from error
+                if self.file_digest(path) != receipt.sha256:
+                    raise IntegrityError(f"Cached object was modified: {path}")
                 self._verified[identity] = receipt.sha256
         return path
 
@@ -290,6 +287,7 @@ class Cache:
                                                  (total is not None and total > max_bytes)):
                         raise IntegrityError(f"Download exceeds {max_bytes} bytes: {url}")
 
+                import datacache  # it imports pandas: only when a file is fetched
                 try:
                     datacache.fetch_file(url, destination=path, decompress=False,
                                          expected_sha256=sha256, expected_size=size,
