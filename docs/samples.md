@@ -86,7 +86,7 @@ print(t1.fastq_folders[:2])
 ```
 
 `disagreements` lists dates or sites that other sources give differently, and
-`corrections` names the [corrections](curation.md) that changed the sample.
+`corrections` names the [corrections](corrections.md) that changed the sample.
 
 ### Where sequencing comes from
 
@@ -259,5 +259,5 @@ print(len(listing["files"]))
 ```
 
 `osteosarc discover ONT/` does the same from the command line. This lists everything
-under the prefix without changing your snapshot. See [snapshots and cache](design.md)
+under the prefix without changing your snapshot. See [snapshots and cache](snapshots.md)
 to refresh metadata or import files you already have.

@@ -41,7 +41,7 @@ Global options go before the command, as in `osteosarc --offline variants`.
 | --- | --- |
 | `--cache DIR` | Use this cache root instead of `OSTEOSARC_CACHE` or the shared OpenVax cache |
 | `--offline` | Never use the network |
-| `--no-corrections` | Show the website's values unchanged; see [corrections](curation.md) |
+| `--no-corrections` | Show the website's values unchanged; see [corrections](corrections.md) |
 | `--version` | Print the installed version |
 
 Only `sync`, `download`, `table`, `reads`, `discover`, `repl` (when you haven't
@@ -124,7 +124,7 @@ variant with its corrections and the read counts the site published.
 `--strict` exits with an error if a correction no longer matches the snapshot's
 data, or the data uses a label Osteosarc doesn't know. It checks the snapshot you
 have; run `osteosarc sync --refresh` first to check the live website. See
-[Source corrections](curation.md).
+[Source corrections](corrections.md).
 
 ## Get data
 
@@ -196,7 +196,7 @@ osteosarc repl
 
 `repl` opens Python (IPython, if it's installed) with the newest snapshot loaded as
 `data`, and shows what it holds. If you haven't synced yet, it offers to download
-the website's metadata first. See the [Python API](api.md).
+the website's metadata first. See the [Python API](python-api.md).
 
 ## Test fixtures
 
@@ -206,7 +206,7 @@ osteosarc fixtures panel vaccine-loci-v1
 
 | Command | Effect |
 | --- | --- |
-| `fixtures panel NAME` | Print a shipped target panel: `vaccine-loci-v1`, `sv-regressions-v1` or `sv-interest-v1` |
+| `fixtures panel NAME` | Print a shipped target panel: `vaccine-loci-v1`, `sv-regressions-v1` or `sv-candidates-v1` |
 | `fixtures select RECIPE --source ID=BAM` | Show which reads a recipe picks, and why |
 | `fixtures generate RECIPE OUTPUT` | Fetch the reads, apply the recipe, and write a bundle |
 | `fixtures pack RECIPE OUTPUT --source ID=BAM` | Write a bundle from local BAMs |
@@ -214,7 +214,7 @@ osteosarc fixtures panel vaccine-loci-v1
 | `fixtures list BUNDLE` | Each member's status, read count and reasons |
 | `fixtures export BUNDLE OUTPUT --member NAME` | Write a member as an indexed BAM (or `--format sam`) |
 
-These print JSON. See [Read fixtures and bundles](fixtures.md).
+These print JSON. See [Read fixtures and bundles](test-data.md).
 
 ## List newer bucket files
 

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "id": "sv-interest-v1",
+  "id": "sv-candidates-v1",
   "assembly": "GRCh38",
   "source_snapshot_date": "2026-09-22",
   "expression_scope": "January 2025 T2 UCLA RSEM; gene abundance, not mutant transcript or protein abundance",

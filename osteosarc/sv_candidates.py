@@ -1,11 +1,11 @@
-"""Shared, source-pinned SV nominations and their scoped evidence snapshot."""
+"""637 candidate structural variants worth a closer look, with their evidence."""
 
 import json
 from pathlib import Path
 
 
-def load_sv_interest():
-    """Load the complete versioned SV interest catalogue without network I/O.
+def load_sv_candidates():
+    """Load the SV candidates (sv-candidates-v1); needs no network.
 
     Returns
     -------
@@ -25,5 +25,5 @@ def load_sv_interest():
     Protein hypotheses and ranking are produced by Isovar/Topiary, not inferred
     from membership in this catalogue.
     """
-    path = Path(__file__).with_name("data") / "sv_interest.json"
+    path = Path(__file__).with_name("data") / "sv_candidates.json"
     return json.loads(path.read_text())

@@ -1,4 +1,4 @@
-# Extract reads
+# Reads
 
 Copy just the reads around some variants or regions out of a remote BAM into a
 small local BAM, without downloading the whole file. The examples open your most
@@ -179,7 +179,7 @@ quality, and keeps every record in the input that shares their read group and na
 such as a mate that's also in the input. It never fetches missing mates; start from
 a `fetch_pairs=True` result if you want them. The receipt marks the result as
 sampled, so don't use it to estimate VAF. For test data with specific reads and controls, use
-[fixture recipes](fixtures.md).
+[fixture recipes](test-data.md).
 
 ## Generate a panel for every sample
 

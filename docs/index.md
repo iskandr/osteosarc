@@ -13,16 +13,16 @@ errors in it, and downloads only the reads you ask for.
 | Get variants, read counts, vaccine peptides and ELISPOT results | [Select variants](variants.md) |
 | Copy the reads around variants out of remote BAMs, without downloading them whole | [Extract reads](reads.md) |
 | Chart every treatment, procedure, scan and MRD result | [Browse the timeline](timeline.md) |
-| Do all of this from a terminal | [Command line](cli.md) |
-| Pass data to Varcode, Isovar, Topiary or Vaxrank | [Use other libraries](consumers.md) |
-| Build small, reproducible test BAMs | [Read fixtures](fixtures.md) |
-| Look through 637 candidate structural variants | [SV catalogue](sv-interest.md) |
+| Do all of this from a terminal | [Command line](command-line.md) |
+| Pass data to Varcode, Isovar, Topiary or Vaxrank | [Use other libraries](openvax.md) |
+| Build small, reproducible test BAMs | [Read fixtures](test-data.md) |
+| Look through 637 candidate structural variants | [SV catalogue](sv-candidates.md) |
 
 !!! note "Corrections are on by default"
     Osteosarc fixes 35 known problems in the published data, each with its
-    evidence ([corrections](curation.md)). For example, it replaces the MAP2 vaccine target's
+    evidence ([corrections](corrections.md)). For example, it replaces the MAP2 vaccine target's
     allele with the complex event that Tempus and CeGaT report and that the
-    [tumor reads support](tour.md). Each load checks every correction against
+    [tumor reads support](map2.md). Each load checks every correction against
     the snapshot's source records. Pass `corrections=False` to
     `Dataset.open`, or use `osteosarc --no-corrections`, to see the published values.
 
@@ -41,7 +41,7 @@ osteosarc timeline            # Treatments, procedures, scans and MRD
 ```
 
 Every command prints text for people, and `--json` for scripts; the
-[command-line guide](cli.md) lists them all. `osteosarc repl` opens Python with the
+[command-line guide](command-line.md) lists them all. `osteosarc repl` opens Python with the
 data loaded as `data`.
 
 In Python or a notebook, the dataset, samples, files, variants, tables and the
@@ -126,7 +126,7 @@ print(reads.path)
 
 This copies the reads around those variants into a small local BAM, after checking
 that the BAM and the variants use the same genome build. Asking again reuses the
-cached copy. [Isovar](consumers.md#isovar) can tell you which reads carry the variant.
+cached copy. [Isovar](openvax.md#isovar) can tell you which reads carry the variant.
 
 ### 5. Pick up where you left off
 
@@ -140,7 +140,7 @@ The website changes over time; your snapshot doesn't. Run `Dataset.sync()` on a
 later day to save a new one, and `Dataset.snapshots()` to list them.
 `Dataset.open(date="2026-09")` reopens the newest from that month. Pass
 `offline=False` to download more files or fetch new reads. See
-[snapshots and cache](design.md) for more.
+[snapshots and cache](snapshots.md) for more.
 
 ## Prefer the terminal?
 
@@ -153,4 +153,4 @@ osteosarc downloads
 ```
 
 Every command uses your most recent snapshot; `--snapshot 2026-09` picks the newest
-from that month. The [command-line guide](cli.md) lists every command.
+from that month. The [command-line guide](command-line.md) lists every command.

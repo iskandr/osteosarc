@@ -1,14 +1,14 @@
-# SV catalogue
+# SV candidates
 
 A list of 637 candidate structural variants (SVs) worth a closer look, with their
 calls, breakpoints, nearby genes, expression and RNA support. It ships with the
 package and loads without a network connection:
 
 ```python
-from osteosarc import load_panel, load_sv_interest
+from osteosarc import load_panel, load_sv_candidates
 
-catalogue = load_sv_interest()
-targets = load_panel("sv-interest-v1")  # The same entries, for fixture recipes
+catalogue = load_sv_candidates()
+targets = load_panel("sv-candidates-v1")  # The same entries, for fixture recipes
 macrod2 = targets["SV0203"]
 print(len(targets), macrod2["kind"])
 ```
@@ -54,9 +54,9 @@ To rebuild and rank the proteins these SVs might make, use Isovar and Topiary.
 
 ## Use it in fixtures
 
-`load_panel("sv-interest-v1")` gives the same entries as fixture targets. Listing a
-target doesn't fetch any reads; write a [fixture recipe](fixtures.md) for that.
+`load_panel("sv-candidates-v1")` gives the same entries as fixture targets. Listing a
+target doesn't fetch any reads; write a [fixture recipe](test-data.md) for that.
 
 ```sh
-osteosarc --offline fixtures panel sv-interest-v1 > targets.json
+osteosarc --offline fixtures panel sv-candidates-v1 > targets.json
 ```

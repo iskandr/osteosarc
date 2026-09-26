@@ -71,5 +71,5 @@ The 2026-09-18 snapshot, from before the site renamed five variants and merged t
 USH2A entries, still applies all 35 corrections to its 182 entries. Every allele
 correction was checked against the reference genome, and none only rewrites an
 equivalent form of the published allele. These checks don't download every BAM, or
-test every scientific claim in the sources. The [MAP2 example](tour.md) checks one
+test every scientific claim in the sources. The [MAP2 example](map2.md) checks one
 correction against the reads.

@@ -55,13 +55,13 @@ from .reads import (
 )
 from .records import RECORD_ENCODING, bam_record_digests, read_records, record_multiset
 from .recovery import RecoveryPolicy, recover_reads
-from .sv_interest import load_sv_interest
+from .sv_candidates import load_sv_candidates
 from .timeline import Event, Timeline
 
 __version__ = "0.9.0"
 
 __all__ = [
-    "load_sv_interest",
+    "load_sv_candidates",
     "FixtureSelection", "load_panel", "select_fixture_records", "select_fixtures", "validate_recipe",
     "RECORD_ENCODING", "bam_record_digests", "read_records", "record_multiset",
     "RecoveryPolicy", "recover_reads",

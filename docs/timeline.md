@@ -1,4 +1,4 @@
-# Browse the timeline
+# Timeline
 
 See treatments, procedures, scans, sample collection, MRD and lab results on one
 timeline. The examples open your most recent snapshot; see
@@ -58,7 +58,7 @@ print(data.timeline.around("2025-01-28", days=5).listing())
 ```
 
 `listing()` prints one line per event, with its date or date range, lane and any
-[corrections](curation.md). Each event keeps the record it came from.
+[corrections](corrections.md). Each event keeps the record it came from.
 
 ## Filter events
 

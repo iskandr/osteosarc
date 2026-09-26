@@ -1,4 +1,4 @@
-# Select variants and vaccine peptides
+# Variants and vaccines
 
 Pick variants from the website's catalogue by gene, vaccine, pipeline or status,
 then get their alleles, read counts and vaccine peptides. The examples open your most recent snapshot;
@@ -71,7 +71,7 @@ unresolved = site.where(lambda v: v.status != "ready")
 print([(v.id, v.status) for v in unresolved])
 ```
 
-[Corrections](curation.md) are on by default and can change an entry's allele
+[Corrections](corrections.md) are on by default and can change an entry's allele
 and status. Open the snapshot with `corrections=False` to see the published ones.
 
 ## Read counts and annotations
@@ -125,7 +125,7 @@ if calls:
 
 This downloads the whole VCF and its index, and returns a pysam reader with the
 original headers, genotypes and records.
-For native Varcode objects, see [Use other libraries](consumers.md#varcode).
+For native Varcode objects, see [Use other libraries](openvax.md#varcode).
 
 ## Entries with reviewed alleles
 

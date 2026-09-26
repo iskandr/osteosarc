@@ -33,7 +33,7 @@ the timeline show a readable preview, and text views display without quotes.
 | `digest(path, algorithm="sha256")` | A file's checksum |
 | `SNAPSHOT_SOURCES`, `TABLE_SOURCES`, `TIMELINE_SOURCES` | The URLs a snapshot downloads |
 
-See [Snapshots and cache](design.md).
+See [Snapshots and cache](snapshots.md).
 
 ## Samples
 
@@ -90,7 +90,7 @@ file keys or `File`s. See [Samples and files](samples.md).
 | `variants.select(gene=..., ids=..., vaccine=..., pipeline=..., status=...)` | Filter variants |
 | `variant.allele`, `variant.region(padding=0)` | The allele, and the region it covers; error if not `ready` |
 | `variants.regions(padding=0)` | The regions of several variants |
-| `variants.to_varcode(genome=..., assembly=None, ...)` | Varcode variants, with the original entries in their metadata; see [naming options](consumers.md#varcode) |
+| `variants.to_varcode(genome=..., assembly=None, ...)` | Varcode variants, with the original entries in their metadata; see [naming options](openvax.md#varcode) |
 | `data.annotations`, `data.vafs` | The site's variant records and read counts |
 | `data.vaccines`, `data.vaccine_names`, `data.vaccine_peptides(vaccine=None)` | Vaccine rows, vaccine names, and the peptides with their ELISPOT experiments |
 | `data.pipeline_names` | The pipelines that detected variants |
@@ -135,7 +135,7 @@ on overflow and discards the partial output. See [Extract reads](reads.md).
 | --- | --- |
 | `data.corrections` | Table: each correction's `status` (`applied`, `fixed_upstream`, `stale`, `unavailable`, `disabled`), `changes`, `summary`, `evidence` |
 | `data.unrecognized` | Table of source labels outside the vocabulary (upstream drift) |
-| `CORRECTIONS`, `Correction(id, summary, changes, evidence, verified, alternatives=())`, `Change(source, match, expect, set, absent=False)`, `glob(pattern)` | The built-in registry and its building blocks ([details](curation.md)) |
+| `CORRECTIONS`, `Correction(id, summary, changes, evidence, verified, alternatives=())`, `Change(source, match, expect, set, absent=False)`, `glob(pattern)` | The built-in registry and its building blocks ([details](corrections.md)) |
 | `CurationWarning` | Warning emitted when a correction no longer matches its source |
 | `variant.annotations["corrections"]`, `["count_corrections"]` | Corrections to the variant itself, and to only some of its count rows |
 | `data.timeline` | `Timeline` of `Event`s from every dated source |
@@ -150,7 +150,7 @@ on overflow and discards the partial output. See [Extract reads](reads.md).
 
 A snapshot made before the timeline sources existed raises `SchemaError` from
 `timeline`, `samples`, and `measurements`; everything else works.
-See [Source corrections](curation.md) and [Browse the timeline](timeline.md).
+See [Source corrections](corrections.md) and [Browse the timeline](timeline.md).
 
 ## Fixtures and bundles
 
@@ -159,8 +159,8 @@ See [Source corrections](curation.md) and [Browse the timeline](timeline.md).
 | `validate_recipe(recipe)` | Validated copy of a v1 recipe; raises `SchemaError` |
 | `select_fixtures(recipe, sources)`, `data.select_fixtures(recipe, sources)` | `FixtureSelection` from local BAMs or `ReadSubset`s; `.manifest` holds membership and reasons |
 | `select_fixture_records(records, policy, regions=(), context_regions=())` | Execute one policy over records: counts, reasons and status |
-| `load_panel(name)` | Shipped target panel: `vaccine-loci-v1`, `sv-regressions-v1` or `sv-interest-v1` |
-| `load_sv_interest()` | The SV interest catalogue with targets and source pins ([details](sv-interest.md)) |
+| `load_panel(name)` | Shipped target panel: `vaccine-loci-v1`, `sv-regressions-v1` or `sv-candidates-v1` |
+| `load_sv_candidates()` | The SV candidates with targets and source pins ([details](sv-candidates.md)) |
 | `generate_bundle(recipe, destination, sources=None, cache=None, **options)`, `data.generate_bundle(recipe, destination, **options)` | Acquire, select and publish a bundle; returns its manifest |
 | `pack_bundle(selection, destination, header_policy="full", size_budget=64 MiB)` | Publish a bundle from an existing selection |
 | `verify_bundle(directory, sha256=None)`, `list_bundle(directory)` | Offline verification; member status, counts and reasons |
@@ -173,7 +173,7 @@ The historical consumer formats live in their own modules:
 `osteosarc.legacy_fixtures` (Isovar exact-SAM fixtures), `osteosarc.regional_corpus`
 (Topiary regional corpora), `osteosarc.cohort_bundle` (Vaxrank cohorts) and
 `osteosarc.fixture_assets` (Topiary asset manifests). See
-[Read fixtures and bundles](fixtures.md) and [OpenVax fixture adoption](fixture-migration.md).
+[Read fixtures and bundles](test-data.md) and [OpenVax fixture adoption](test-data.md#how-the-libraries-build-their-test-data).
 
 ## Errors and limitations
 
@@ -189,4 +189,4 @@ diagnostic output; callers can record it in acquisition manifests.
 
 No implicit full-BAM fallback, liftover, biological sample deduplication,
 reference installation, variant-effect calculation, or peptide ranking occurs.
-See [snapshots and cache](design.md) for storage and refresh behavior.
+See [snapshots and cache](snapshots.md) for storage and refresh behavior.

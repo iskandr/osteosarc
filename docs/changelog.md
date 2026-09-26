@@ -144,7 +144,7 @@ review:
 ## 0.2.6 (2026-09-24)
 
 - Reorganized documentation with [key concepts](concepts.md), a
-  [command-line guide](cli.md), a complete [API reference](api.md) and this
+  [command-line guide](command-line.md), a complete [API reference](python-api.md) and this
   changelog. The README is a shorter landing page that lists the main features
   ([#32](https://github.com/iskandr/osteosarc/issues/32)).
 - The documentation example checker covers every published page and the strict
@@ -152,7 +152,7 @@ review:
 
 ## 0.2.5 (2026-09-24)
 
-- The [SV interest catalogue](sv-interest.md): 637 structural-variant nominations with
+- The [SV interest catalogue](sv-candidates.md): 637 structural-variant nominations with
   original calls, breakend geometry, Ensembl 115 annotation, T2 expression and
   scoped RNA evidence. It loads offline with `load_sv_interest()` or
   `load_panel("sv-interest-v1")` ([#29](https://github.com/iskandr/osteosarc/pull/29)).
@@ -169,7 +169,7 @@ review:
 ## 0.2.3 (2026-09-23)
 
 - Shared historical fixture adapters for Isovar, Topiary and Vaxrank, and the
-  additional SV research panel. See [OpenVax fixture adoption](fixture-migration.md)
+  additional SV research panel. See [OpenVax fixture adoption](test-data.md#how-the-libraries-build-their-test-data)
   ([#15](https://github.com/iskandr/osteosarc/issues/15)).
 - Python 3.9 support.
 
@@ -185,7 +185,7 @@ review:
 
 ## 0.2.0 (2026-09-23)
 
-- Versioned [fixture recipes](fixtures.md) and one selection executor shared by the
+- Versioned [fixture recipes](test-data.md) and one selection executor shared by the
   Python API, `Dataset` and CLI ([#12](https://github.com/iskandr/osteosarc/issues/12)).
 
 ## 0.1.4 (2026-09-22)

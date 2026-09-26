@@ -1,4 +1,4 @@
-# Use other libraries
+# OpenVax libraries
 
 Pass variants, reads and reports to the OpenVax libraries: Varcode for variant
 effects, Isovar for RNA evidence and protein sequences, Topiary for epitope
@@ -125,7 +125,7 @@ for peptide in data.vaccine_peptides("mRNA"):
     print(peptide["variant_id"], peptide["sequence"])
 ```
 
-[Corrections](curation.md) change some alleles, including a MAP2 vaccine target.
+[Corrections](corrections.md) change some alleles, including a MAP2 vaccine target.
 Use `corrections=False` to reproduce results from the published values.
 
 ## Topiary
@@ -155,6 +155,42 @@ Downloaded files keep their original extensions, so format detection works.
 Header-only
 reports remain empty reports.
 
-For reproducible test data, use [read fixtures](fixtures.md). See
-[migration](migration.md) to replace existing download helpers and
-[testing](validation.md) for integration coverage.
+For reproducible test data, see [test data](test-data.md).
+
+## Move your own code to osteosarc
+
+If your project downloads osteosarc.com data with its own code, switch the
+downloading first, and change references, allele selection or analysis settings in
+a separate step.
+
+| Your code does | Use |
+| --- | --- |
+| Download the website's metadata | `Dataset.sync()` |
+| Reopen it later | `Dataset.open()` |
+| Parse the variants page and read counts | `data.variants()` |
+| List a sample's BAMs and FASTQs | `data.samples["T1_tumor"].files` |
+| Find files by assay, time point or folder | `data.files.select(...)` |
+| Download a whole file | `data.download(file, to=DIR)` |
+| Check a BAM's genome build | `data.inspect_alignment(file)` |
+| Fetch the reads in some regions | `data.extract_reads(file, regions)` |
+| Make Varcode variants | `variants.to_varcode(genome=...)` |
+
+Keep your project's own reference releases, transcripts, read filters and scoring.
+Before dropping an old read extractor, compare whole records, tags included, and
+how often each appears: matching read counts aren't enough. Osteosarc fixes some
+of the website's alleles by default; open a snapshot with corrections turned off to
+compare against results from the published values (see [corrections](corrections.md)).
+
+Files you already downloaded can go straight into the cache, so nothing is fetched
+twice (see [snapshots and cache](snapshots.md#import-a-file-you-already-downloaded)).
+
+### Names changed in 0.9
+
+| Before 0.9 | Now |
+| --- | --- |
+| `data.assets`, `data.asset(key)`, `Asset` | `data.files`, `data.file(key)`, `File` |
+| `data.specimens`, `data.describe_samples()` | `data.samples` |
+| `data.assets_for_sample(...)` | `data.samples[ID].files` |
+| the old `data.samples` | `data.claims` |
+| `osteosarc explore` | `osteosarc repl` |
+| `osteosarc assets`, `specimens`, `curation` | `osteosarc files`, `samples`, `corrections` |

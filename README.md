@@ -7,8 +7,8 @@ fetch the reads around a variant without downloading a whole BAM.
 
 [Documentation](https://iskandr.github.io/osteosarc/) ·
 [Key concepts](https://iskandr.github.io/osteosarc/concepts/) ·
-[Command line](https://iskandr.github.io/osteosarc/cli/) ·
-[Python API](https://iskandr.github.io/osteosarc/api/) ·
+[Command line](https://iskandr.github.io/osteosarc/command-line/) ·
+[Python API](https://iskandr.github.io/osteosarc/python-api/) ·
 [Changelog](https://iskandr.github.io/osteosarc/changelog/)
 
 ## Features
@@ -111,13 +111,13 @@ osteosarc downloads
 | Get alleles, read counts or vaccine peptides | [Select variants](https://iskandr.github.io/osteosarc/variants/) |
 | Fetch, filter or pair reads by variant or region | [Extract reads](https://iskandr.github.io/osteosarc/reads/) |
 | Browse treatments, MRD and labs | [Browse the timeline](https://iskandr.github.io/osteosarc/timeline/) |
-| Pass data to Varcode, Isovar, Topiary or Vaxrank | [Use other libraries](https://iskandr.github.io/osteosarc/consumers/) |
-| Build small, verifiable test BAMs | [Read fixtures](https://iskandr.github.io/osteosarc/fixtures/) |
-| Explore candidate structural variants | [SV interest catalogue](https://iskandr.github.io/osteosarc/sv-interest/) |
+| Pass data to Varcode, Isovar, Topiary or Vaxrank | [Use other libraries](https://iskandr.github.io/osteosarc/openvax/) |
+| Build small, verifiable test BAMs | [Read fixtures](https://iskandr.github.io/osteosarc/test-data/) |
+| Explore candidate structural variants | [SV candidates](https://iskandr.github.io/osteosarc/sv-candidates/) |
 
 ## Data, license and citation
 
-Osteosarc applies [source corrections](https://iskandr.github.io/osteosarc/curation/)
+Osteosarc applies [source corrections](https://iskandr.github.io/osteosarc/corrections/)
 by default. Use `Dataset.open(corrections=False)` or
 `osteosarc --no-corrections` to see the published values.
 
@@ -133,5 +133,5 @@ ruff check osteosarc tests scripts
 python -m pytest -q
 ```
 
-See [testing](https://iskandr.github.io/osteosarc/validation/) for documentation
+See [testing](https://iskandr.github.io/osteosarc/testing/) for documentation
 builds and live-example checks.

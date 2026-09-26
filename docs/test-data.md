@@ -1,4 +1,4 @@
-# Read fixtures and bundles
+# Test data
 
 A fixture recipe describes a small test BAM: which reads to take from which files,
 and why. Osteosarc turns the recipe into a bundle that anyone can rebuild and
@@ -150,7 +150,7 @@ osteosarc fixtures panel vaccine-loci-v1
 | --- | --- |
 | `vaccine-loci-v1` | The vaccine target alleles used in earlier fixtures |
 | `sv-regressions-v1` | RNA fusion events and five candidate SVs used in regression tests |
-| `sv-interest-v1` | All 637 entries of the [SV catalogue](sv-interest.md) |
+| `sv-candidates-v1` | All 637 entries of the [SV candidates](sv-candidates.md) |
 
 A panel only lists targets; a recipe decides which reads to fetch.
 
@@ -197,3 +197,30 @@ package. Existing destinations are never overwritten.
 
 `tests/test_fixtures.py` and `tests/test_bundles.py` build recipes and BAMs without a
 network connection, and cover each rule above.
+
+## How the libraries build their test data
+
+Osteosarc fetches, selects, packs and checks reads; each library keeps its own
+science: which variants it tests, how it reads alleles, and what results it expects.
+Osteosarc never imports Isovar, Topiary or Vaxrank.
+
+| Library | Its test data | Built with |
+| --- | --- | --- |
+| Isovar | 311 fixtures of exact records, plus vaccine, fusion and SV cases | `legacy_fixtures`, `select_window_segments` |
+| Topiary | variant, indel, fusion and pVACseq fixtures | `regional_corpus` |
+| Vaxrank | 58 read cohorts | `cohort_bundle` |
+| Varcode | variants and SV records, no reads | a snapshot of the variant catalogue |
+
+Isovar, Topiary and Vaxrank each take the same recipe in their builders
+(`--panel-recipe recipe.json --panel-source rna=archive.bam --output DIR --offline`).
+From an osteosarc checkout, this checks that all three select exactly the same
+reads for the same reasons, with the network turned off:
+
+```sh
+python -m scripts.check_fixture_consumers --isovar /path/to/isovar \
+  --topiary /path/to/topiary --vaxrank /path/to/vaxrank
+```
+
+A change to a library's expected results needs its own review, even when its test
+data rebuilds cleanly.
+

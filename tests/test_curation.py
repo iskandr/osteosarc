@@ -127,7 +127,7 @@ def test_registry_is_complete_and_documented():
     from osteosarc.catalog import TIMELINE_SOURCES
     sources = {"vafs", "bam_metadata", "source_variants", "vaccine_overlap", "variant_index", "bams",
                "bucket", *TIMELINE_SOURCES}
-    docs = (Path(__file__).parents[1] / "docs" / "curation.md").read_text()
+    docs = (Path(__file__).parents[1] / "docs" / "corrections.md").read_text()
     assert len({c.id for c in CORRECTIONS}) == len(CORRECTIONS)
     for correction in CORRECTIONS:
         assert correction.summary and correction.evidence and correction.verified

@@ -1,4 +1,4 @@
-# Key concepts
+# Concepts
 
 The ideas the rest of the documentation assumes, each linking to its full guide.
 
@@ -39,7 +39,7 @@ files stay remote until you ask for them.
 On the command line, `osteosarc sync` and `osteosarc snapshots` do the same, and every
 other command takes `--snapshot`. Every read extraction and fixture bundle records the
 ID of the snapshot it came from (`data.id`). Downloads go in a shared OpenVax cache
-that other tools can reuse. See [Snapshots and cache](design.md).
+that other tools can reuse. See [Snapshots and cache](snapshots.md).
 
 ## Samples and files
 
@@ -99,7 +99,7 @@ measured in the wrong place, and accession typos. Others are only flagged. Each 
 is checked against the snapshot when it's opened: one the website has since fixed
 shows as `fixed_upstream`, and one whose data changed unexpectedly is skipped as
 `stale`. Open a snapshot with `corrections=False` to see the published values. See
-[Source corrections](curation.md).
+[Source corrections](corrections.md).
 
 ## Missing is not zero
 
@@ -116,5 +116,5 @@ Osteosarc keeps values exactly as published and never fills in a gap with zero:
 Every download and read extraction keeps a receipt with checksums and sizes, and
 repeating a request reuses the cached result, even offline. If a cached file no
 longer matches its receipt you get an `IntegrityError`; if you're offline and a
-file isn't cached, an `OfflineError`. See [Snapshots and cache](design.md) and
+file isn't cached, an `OfflineError`. See [Snapshots and cache](snapshots.md) and
 [Reuse the result offline](reads.md#reuse-the-result-offline).

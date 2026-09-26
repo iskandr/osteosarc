@@ -1,4 +1,4 @@
-# Source corrections
+# Corrections
 
 Osteosarc fixes 35 known problems in the website's data, and does it by default.
 Every time a snapshot is opened, each fix is checked against the data. You can see
@@ -20,7 +20,7 @@ print(map2.annotations["corrections"])
 When a fix changes a variant's allele, it usually clears that variant's read counts,
 because they were measured for a different allele or position. MAP2 is the exception
 (see below). Variant IDs are the snapshot's own; newer snapshots may rename them. The
-[MAP2 example](tour.md) checks a correction against the reads.
+[MAP2 example](map2.md) checks a correction against the reads.
 
 ## See every correction
 

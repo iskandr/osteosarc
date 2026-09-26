@@ -1,8 +1,8 @@
-# Worked example: check MAP2 against the reads
+# Example: MAP2
 
 The website's MAP2 vaccine target is a 22-bp deletion, but Tempus and CeGaT both
 call a different, complex change there. This example checks both against T1 tumor
-WGS reads, and shows how to check any [correction](curation.md) against the data. It
+WGS reads, and shows how to check any [correction](corrections.md) against the data. It
 needs `samtools`.
 
 ## Compare the alleles
@@ -25,7 +25,7 @@ Published: ('chr2', 209694768, 'CCTGGGCTACTGTGTGTTCAATA', 'C')
 Corrected: ('chr2', 209694768, 'CCTGGGCTACTGTGTGTTCAATAAGTACACAGT', 'CAGGG')
 ```
 
-The variant keeps its website ID. See [the corrections](curation.md#variants-and-read-counts)
+The variant keeps its website ID. See [the corrections](corrections.md#variants-and-read-counts)
 for the evidence.
 
 ## Fetch the surrounding reads
@@ -74,4 +74,4 @@ Counter({'no exact match': 55, 'reference': 37, 'corrected allele': 30})
 
 Thirty reads match the corrected allele and none match the published one. Reads
 with `no exact match` may stop short of the change or have sequencing errors. For
-RNA evidence and protein sequences, use [Isovar](consumers.md#isovar).
+RNA evidence and protein sequences, use [Isovar](openvax.md#isovar).
