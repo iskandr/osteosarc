@@ -487,23 +487,29 @@ def get_data(args, dataset):
         if args.to and file.index_urls:
             print(dataset.download(file.index_urls[0], to=args.to))  # already placed; this names it
     elif args.command == "reads":
+        from concurrent.futures import ThreadPoolExecutor
         targets, sources = read_targets(dataset, args), read_sources(dataset, args)
+
+        def extract(file):
+            return dataset.extract_reads(file, **targets, reference=args.reference, index=args.index,
+                                         filters=ReadFilter(args.min_mapq, args.exclude_flags),
+                                         fetch_pairs=args.fetch_pairs,
+                                         recovery={} if args.recover_linked else None, to=args.to)
         results = []
-        for file in sources:
-            try:
-                subset = dataset.extract_reads(file, **targets, reference=args.reference, index=args.index,
-                                               filters=ReadFilter(args.min_mapq, args.exclude_flags),
-                                               fetch_pairs=args.fetch_pairs,
-                                               recovery={} if args.recover_linked else None, to=args.to)
-            except CoordinateError as error:
-                if len(sources) == 1:
-                    raise
-                print(f"skipping {file.key}: {error}", file=sys.stderr)  # e.g. a GRCh37 BAM
-                continue
-            results.append(dict(file=file.key, path=str(subset.path), index=str(subset.index_path),
-                                receipt=subset.receipt))
-            if not args.json:
-                print(subset.path)
+        # A sample's BAMs are read at the same time, and reported in order.
+        with ThreadPoolExecutor(max_workers=max(1, min(4, len(sources)))) as pool:
+            for file, extracted in [(file, pool.submit(extract, file)) for file in sources]:
+                try:
+                    subset = extracted.result()
+                except CoordinateError as error:
+                    if len(sources) == 1:
+                        raise
+                    print(f"skipping {file.key}: {error}", file=sys.stderr)  # e.g. a GRCh37 BAM
+                    continue
+                results.append(dict(file=file.key, path=str(subset.path), index=str(subset.index_path),
+                                    receipt=subset.receipt))
+                if not args.json:
+                    print(subset.path, flush=True)
         if not results:
             raise ValueError(f"No reads extracted: every BAM of {args.file} was skipped")
         if args.json:

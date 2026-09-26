@@ -746,3 +746,25 @@ def test_a_sample_whose_bams_are_all_skipped_is_an_error(dataset, monkeypatch, c
                  "--variant", variant]) == 1
     err = capsys.readouterr().err
     assert err.count("skipping") == 2 and "every BAM of T1_tumor was skipped" in err
+
+
+def test_a_samples_bams_are_read_together_and_reported_in_order(dataset, bam, monkeypatch, capsys):
+    import threading
+    import time
+
+    import osteosarc.cli as cli
+    from osteosarc import ReadSubset
+    bams = list(dataset.files.select(kind="alignment"))[:2]
+    monkeypatch.setattr(cli, "read_sources", lambda data, args: bams)
+    together = threading.Barrier(len(bams), timeout=10)  # broken unless both are being read at once
+
+    def extract(self, file, **kwargs):
+        together.wait()
+        if file == bams[0]:
+            time.sleep(0.2)  # the first finishes last
+        return ReadSubset(Path(f"{file.id}.bam"), Path(f"{file.id}.bam.bai"), {"records": 1})
+    monkeypatch.setattr(Dataset, "extract_reads", extract)
+    variant = dataset.variants(status="ready")[0].id
+    assert main(["--cache", str(dataset.cache.root), "reads", "--snapshot", "fixture", "T1_tumor",
+                 "--variant", variant]) == 0
+    assert capsys.readouterr().out.split() == [f"{file.id}.bam" for file in bams]

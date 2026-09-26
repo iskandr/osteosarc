@@ -1001,7 +1001,9 @@ class Dataset:
             except OfflineError:
                 if self.cache.offline:
                     raise
-                require_samtools(fetch_pairs=kwargs.get("fetch_pairs", False), filters=kwargs.get("filters"))
+                pairs, every_mate = kwargs.get("fetch_pairs", False), kwargs.get("unplaced_mates", True)
+                require_samtools(fetch_pairs=pairs and every_mate, names=pairs and not every_mate,
+                                 filters=kwargs.get("filters"))
                 index_path = self.download(file.index_urls[0])
             kwargs["index"] = str(index_path)
         subset = extract_reads(file, regions, cache=self.cache, snapshot_id=self.id, **kwargs)

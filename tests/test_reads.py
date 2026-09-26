@@ -79,11 +79,10 @@ def test_remote_extraction_refuses_changed_header_source(bam, tmp_path, monkeypa
     identity = {"etag": '"original"', "content-length": str(bam.stat().st_size), "last-modified": None}
     monkeypatch.setattr(reads, "_remote_identity", lambda *a: dict(identity))
 
-    def remote_header(command, timeout):
-        assert command[:4] == ["samtools", "view", "--no-PG", "-H"] or command in (["samtools", "--version"], ["samtools", "view", "--help"])
+    def remote(command, timeout):  # the local BAM stands in for the remote one
         return real_run([str(bam) if c == url else c for c in command], timeout)
 
-    monkeypatch.setattr(reads, "_run", remote_header)
+    monkeypatch.setattr(reads, "_run", remote)
     cache = Cache(tmp_path / "cache")
     info = inspect_alignment(url, cache=cache, snapshot_id="snapshot")
     assert info.assembly == "GRCh38"
@@ -93,6 +92,7 @@ def test_remote_extraction_refuses_changed_header_source(bam, tmp_path, monkeypa
     with pytest.raises(IntegrityError, match="since header inspection"):
         extract_reads(url, [Region("chr1", 100, 160, "GRCh38")], cache=cache,
                       index=str(bam) + ".bai", snapshot_id="snapshot")
+    assert not list((cache.workspace / "derived").glob("*/receipt.json"))  # nothing kept
 
 
 def test_samtools_version_ignores_non_utf8_distribution_build_flags(monkeypatch):
@@ -169,6 +169,7 @@ def test_a_single_barcode_string_is_not_split_into_characters():
     (b"--no-PG -M", {}, "-X"),
     (b"--no-PG -M -X", {"filters": ReadFilter(barcodes=("A",))}, "-D"),
     (b"--no-PG -M -X", {"filters": ReadFilter(query_names=("q",))}, "-N"),
+    (b"--no-PG -M -X --fetch-pairs", {"fetch_pairs": True, "unplaced_mates": False}, "-N"),
 ])
 def test_missing_samtools_options_fail_before_any_acquisition(dataset, monkeypatch, help_text, options, missing):
     from subprocess import CompletedProcess
@@ -225,3 +226,48 @@ def test_query_name_filter_is_canonical_and_scopes_cache(bam, tmp_path):
     assert ReadFilter(query_names=["b", "a", "a"]).query_names == ("a", "b")
     absent = extract_reads(bam, regions, cache=tmp_path, filters=ReadFilter(query_names="absent"))
     assert absent.receipt["records"] == 0
+
+
+def test_mates_with_no_position_can_be_left_out(bam, tmp_path):
+    import pysam
+    paired = tmp_path / "paired.bam"
+    with pysam.AlignmentFile(bam) as template, pysam.AlignmentFile(paired, "wb", template=template) as output:
+        # (name, flag, contig, start, mate contig, mate start); -1 is no position.
+        for name, flag, contig, start, mate_contig, mate_start in [
+            ("placed", 99, 0, 100, 0, 1000), ("placed", 147, 0, 1000, 0, 100),
+            ("other-contig", 65, 0, 130, 1, 500), ("other-contig", 129, 1, 500, 0, 130),
+            ("beside", 73, 0, 120, 0, 120), ("beside", 133, 0, 120, 0, 120),  # unmapped, at its mate's place
+            ("straddling", 97, 0, 140, 0, 70), ("straddling", 145, 0, 70, 0, 140),  # starts before, runs in
+            ("nowhere", 73, 0, 110, -1, -1), ("nowhere", 133, -1, -1, -1, -1),  # unmapped, no position
+            ("bystander", 0, 0, 1000, -1, -1),  # at a mate's position, but not asked for
+        ]:
+            read = pysam.AlignedSegment(output.header)
+            read.query_name, read.flag = name, flag
+            read.query_sequence = "ACGT" * 10
+            read.query_qualities = pysam.qualitystring_to_array("I" * 40)
+            read.reference_id, read.reference_start = contig, start
+            read.next_reference_id, read.next_reference_start = mate_contig, mate_start
+            if not flag & 4:
+                read.mapping_quality, read.cigarstring = 60, "40M"
+            output.write(read)
+    pysam.sort("-o", str(tmp_path / "sorted.bam"), str(paired))
+    paired = tmp_path / "sorted.bam"
+    pysam.index(str(paired))
+    cache = Cache(tmp_path / "cache")
+    regions = [Region("chr1", 100, 160, "GRCh38")]
+    every = extract_reads(paired, regions, cache=cache, fetch_pairs=True)
+    placed = extract_reads(paired, regions, cache=cache, fetch_pairs=True, unplaced_mates=False)
+    unplaced = [r for r in records(every.path) if r.split("\t")[2] == "*"]
+    assert len(unplaced) == 1 and unplaced[0].startswith("nowhere\t")
+    assert Counter(records(placed.path)) == Counter(r for r in records(every.path) if r not in unplaced)
+    assert {r.split("\t")[0] for r in records(placed.path)} == {"placed", "other-contig", "beside", "nowhere",
+                                                                "straddling"}
+    # Asking for every mate is the request it always was; leaving some out is another.
+    assert "unplaced_mates" not in every.receipt["request"]
+    assert placed.receipt["request"]["unplaced_mates"] is False and placed.path != every.path
+    assert "--fetch-pairs" not in placed.receipt["command"] and placed.receipt["mates_command"]
+    # With every mate already in the regions (or no reads), one read of the BAM does.
+    around_every_mate = [Region("chr1", 60, 1100, "GRCh38"), Region("chr2", 500, 540, "GRCh38")]
+    for regions, count in [(around_every_mate, 10), ([Region("chr2", 10, 20, "GRCh38")], 0)]:
+        subset = extract_reads(paired, regions, cache=cache, fetch_pairs=True, unplaced_mates=False)
+        assert subset.receipt["records"] == count and "mates_command" not in subset.receipt
