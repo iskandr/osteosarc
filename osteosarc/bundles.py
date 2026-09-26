@@ -6,6 +6,7 @@ import copy
 import gzip
 import json
 import os
+import re
 import tempfile
 from collections import Counter
 from contextlib import contextmanager
@@ -78,6 +79,24 @@ def _publication(destination):
             work = Path(temporary)
             yield work
             os.rename(work, destination)
+
+
+def portable_receipts(value):
+    """Receipts without this machine's paths, so bundles built from different caches
+    match: a path into a cache becomes relative to it (objects/sha256/..., whose
+    name is its checksum), and a temporary work folder's files keep just their names.
+    Only whole strings that are absolute paths change (commands list each argument)."""
+    if isinstance(value, dict):
+        return {key: portable_receipts(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [portable_receipts(item) for item in value]
+    if isinstance(value, str) and re.match(r"(?:[A-Za-z]:)?[/\\]", value):
+        path = value.replace("\\", "/")
+        for marker in ("/objects/sha256/", "/osteosarc/derived/"):
+            if marker in path:
+                inside = path[path.index(marker) + 1:]
+                return re.sub(r"^osteosarc/derived/\.reads-[^/]+/", "", inside)
+    return value
 
 
 def compact_header(header, records):
@@ -161,7 +180,7 @@ def pack_bundle(selection, destination, *, header_policy="full", size_budget=DEF
     from . import __version__
     with _publication(destination) as work:
         write_json(work / "recipe.json", selection.recipe)
-        write_json(work / "acquisition.json", selection.receipts)
+        write_json(work / "acquisition.json", portable_receipts(selection.receipts))
         manifest = dict(schema_version=1, kind="osteosarc-fixture-bundle", recipe_sha256=stable_id(selection.recipe),
                         record_encoding=RECORD_ENCODING, members=selection.members, sources={},
                         parent=parent, header_policy=header_policy, suitable_for_abundance=False,
@@ -324,7 +343,8 @@ def list_bundle(directory):
 def export_bundle(directory, to, *, members=None, format="bam"):
     """Write a bundle's members into a folder, each as a file named after it.
 
-    A BAM export (NAME.bam, with its index) holds exactly the member's records,
+    A BAM export (NAME.bam, with its index; a member already named x.bam is
+    written as x.bam) holds exactly the member's records,
     repeats included. SAM text (NAME.sam or NAME.sam.gz) keeps every field but
     can't promise binary float and tag types. The folder may already exist: a
     file there that holds the same records is kept, and one that differs is an
@@ -345,7 +365,8 @@ def export_bundle(directory, to, *, members=None, format="bam"):
         member = manifest["members"][name]
         if member["status"] not in ("unresolved", "omitted"):
             by_source.setdefault(member["source"], []).append(name)
-            targets[name] = safe_path(to, f"{name}.{format}")  # checks every name before writing any
+            # A member named after its file (reads.bam) keeps its name; checks every name before writing any.
+            targets[name] = safe_path(to, name if name.endswith("." + format) else f"{name}.{format}")
     to.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=to, prefix=".export-") as temporary:
         work, moves = Path(temporary), []
@@ -356,7 +377,7 @@ def export_bundle(directory, to, *, members=None, format="bam"):
                 header = bam.header.to_dict()
             for name in group:
                 counts, target = manifest["members"][name]["records"], targets[name]
-                made = safe_path(work, f"{name}.{format}")
+                made = safe_path(work, target.relative_to(to).as_posix())
                 made.parent.mkdir(parents=True, exist_ok=True)
                 if format == "bam":
                     _write_bam(made, header, records, counts)

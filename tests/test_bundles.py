@@ -478,3 +478,47 @@ def test_fresh_lists_replace_a_librarys_carried_fixtures(tmp_path):
     clash = required("topiary.json.gz", "topiary", {"varcode/b": dict(source="s", sam=[line])})
     with pytest.raises(SchemaError, match="share names"):
         merge_required(carried, [clash])
+
+
+def test_acquisition_receipts_hold_no_local_cache_paths(bam, tmp_path):
+    from osteosarc import Region, extract_reads
+    texts = []
+    for name in ("first cache", "second"):
+        cache = tmp_path / name
+        subset = extract_reads(str(bam), [Region("chr1", 0, 2000, "GRCh38")], cache=cache)
+        bundle = tmp_path / ("bundle " + name)
+        generate_bundle(bundle_recipe(bam), bundle, sources={"rna": subset})
+        text = (bundle / "acquisition.json").read_text()
+        assert str(cache) not in text and ".reads-" not in text
+        texts.append(text)
+    assert texts[0] == texts[1]  # the same reads from two caches make the same bundle
+
+
+def test_members_named_after_their_files_keep_their_names(bam, tmp_path):
+    recipe = bundle_recipe(bam)
+    recipe["members"]["topiary/reads.bam"] = recipe["members"].pop("duplicates")
+    generate_bundle(recipe, tmp_path / "bundle", sources={"rna": bam})
+    assert export_bundle(tmp_path / "bundle", tmp_path / "bam") == {
+        "topiary/reads.bam": tmp_path / "bam/topiary/reads.bam"}
+    assert (tmp_path / "bam/topiary/reads.bam.bai").is_file()
+    assert export_bundle(tmp_path / "bundle", tmp_path / "sam", format="sam") == {
+        "topiary/reads.bam": tmp_path / "sam/topiary/reads.bam.sam"}
+
+
+def test_an_offline_fetch_never_downloads(bam, tmp_path, monkeypatch):
+    import osteosarc.shared as shared
+    from osteosarc import Cache, OfflineError
+    bundle = tmp_path / "bundle"
+    generate_bundle(bundle_recipe(bam), bundle, sources={"rna": bam})
+    release = shared.pack_release(bundle, tmp_path / "tiny.tar.gz")
+    published_dir = tmp_path / "bundles"
+    published_dir.mkdir()
+    url = "https://example.test/tiny.tar.gz"
+    (published_dir / "tiny-v1.release.json").write_text(json.dumps(dict(release, url=url)))
+    monkeypatch.setattr(shared, "BUNDLES", published_dir)
+    with pytest.raises(OfflineError):
+        shared.fetch_bundle("tiny-v1", cache=tmp_path / "empty", offline=True)
+    with pytest.raises(OfflineError):
+        shared.fetch_bundle("tiny-v1", cache=Cache(tmp_path / "empty"), offline=True)
+    Cache(tmp_path / "full", offline=True).import_file(tmp_path / "tiny.tar.gz", url)
+    assert (shared.fetch_bundle("tiny-v1", cache=tmp_path / "full", offline=True) / "manifest.json").is_file()

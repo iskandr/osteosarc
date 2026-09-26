@@ -51,7 +51,7 @@ names, such as isovar/chimeric/osteosarc-ont.sam. Export writes each member as
 an indexed BAM. In Python, `fetch_bundle("openvax-v1")` returns the bundle's folder.
 
 To check that your library's copies match, list them in a JSON file that maps
-member names to your files: a BAM, SAM or SAM.gz path, or, for SAM lines kept inside
+member names to your files, with paths relative to that JSON file: a BAM, SAM or SAM.gz path, or, for SAM lines kept inside
 JSON, `{"json": path, "pointer": "/path/to/lines"}`. Every SAM line under the pointer
 counts, whatever fields hold it, such as Isovar's sam and partner_sam; leave the
 pointer out for the whole file. Then:
@@ -230,27 +230,19 @@ file already there with different contents is never replaced. A bundle's size li
 | sv-regressions-v1 | Three RNA fusions and five candidate SVs used in regression tests |
 | sv-candidates-v1 | All 637 [SV candidates](sv-candidates.md) |
 
-## Each library's own test data
+## How the libraries use it
 
 Osteosarc fetches, selects, packs and checks reads; each library keeps its own science:
 which variants it tests, how it reads alleles, and what results it expects. Osteosarc
-never imports Isovar, Topiary or Vaxrank. The libraries are moving their test reads
-onto openvax-v1, Isovar first (isovar#398); until each does, it builds its own:
+never imports Isovar, Topiary or Vaxrank. All four take their test reads from openvax-v1
+and keep only their non-read test data (variants, expected results, recipes):
 
-| Library | Its test data | Built with |
-| --- | --- | --- |
-| Isovar | 311 fixtures of exact records, plus vaccine, fusion and SV cases | osteosarc.legacy_fixtures, until isovar#398 |
-| Topiary | Variant, indel, fusion and pVACseq fixtures | osteosarc.regional_corpus |
-| Vaxrank | 58 read cohorts | osteosarc.cohort_bundle |
-| Varcode | Variants and SV records, no reads | a snapshot of the variant catalogue |
-
-The libraries' builders each accept the same recipe. From an osteosarc checkout, this
-checks, with the network off, that those you give select exactly the same reads for the
-same reasons:
-
-```sh
-python -m scripts.check_fixture_consumers --topiary /path/to/topiary --vaxrank /path/to/vaxrank
-```
+| Library | From openvax-v1 |
+| --- | --- |
+| Isovar (1.39.0) | Every Sid read file, exported under its original name |
+| Topiary (5.75.0) | 14 read files; its rearrangement fixtures are checked against their members |
+| Vaxrank (3.26.0) | Read cohorts, rebuilt byte for byte from members with its packaged recipe |
+| Varcode (10.5.8) | No read files; its 3 junction fixtures are checked against their members |
 
 A change to a library's expected results needs its own review, even when its test data
 rebuilds cleanly. The tests in tests/test_fixtures.py and tests/test_bundles.py build

@@ -726,11 +726,13 @@ def pack_release(bundle, archive):
                 manifest_sha256=digest(bundle / "manifest.json"))
 
 
-def fetch_bundle(name, *, cache=None):
+def fetch_bundle(name, *, cache=None, offline=False):
     """Download a published bundle into the cache, verify it, and return its directory.
 
     The bundle is verified in full when it arrives, and its files are made
-    read-only; later calls reuse it offline, checking only its manifest.
+    read-only; later calls reuse it offline, checking only its manifest. With
+    offline=True it never downloads, and raises OfflineError if the bundle
+    isn't cached yet.
     """
     import os
     import tarfile
@@ -738,7 +740,9 @@ def fetch_bundle(name, *, cache=None):
     from .bundles import _publication, safe_path, verify_bundle
     from .cache import Cache, digest
     release = published(name)
-    cache = cache if isinstance(cache, Cache) else Cache(cache)
+    cache = cache if isinstance(cache, Cache) else Cache(cache, offline=offline)
+    if offline and not cache.offline:
+        cache = Cache(cache.root, offline=True)
     root = cache.workspace / "bundles" / f"{name}-{release['manifest_sha256'][:16]}"
     if not root.exists():
         receipt = cache.fetch(release["url"], sha256=release["sha256"], size=release["size_bytes"])
