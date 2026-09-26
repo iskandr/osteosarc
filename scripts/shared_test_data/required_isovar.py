@@ -1,8 +1,9 @@
 """Isovar's required records for the shared test data: every fixture made of original Sid reads.
 
-python scripts/shared_test_data/required_isovar.py ~/code/isovar required-isovar.json.gz [--rev REV]
+python scripts/shared_test_data/required_isovar.py ~/code/isovar required-isovar.json.gz REV
 
-Reads the committed Isovar tree at --rev (git show, not the working tree) and
+Reads the committed Isovar tree at REV (git show, not the working tree; openvax-v1
+means the commit openvax-v1 was built from) and
 writes one subset per fixture, with its source BAM's URL and its SAM lines
 (repeats kept), for osteosarc.shared.build_shared_recipe:
 
@@ -36,8 +37,9 @@ import pysam
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from osteosarc.shared import sam_lines  # noqa: E402
 
-# The Isovar commit openvax-v1 was built from; the library has since moved its
-# test reads into openvax-v1, so later revisions may not have these files.
+# The Isovar commit openvax-v1 was built from; pass openvax-v1 as the revision to
+# read it. The libraries are moving their test reads into openvax-v1 and deleting their
+# own copies, so later revisions may not have these files.
 OPENVAX_V1 = "8cec8eefeb4ad1b47f21b66b3731c440ae77c803"
 BUCKET = "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/"
 # Directories of fixtures made of Sid reads, audited for records no subset covers.
@@ -165,9 +167,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("isovar", type=Path, help="An Isovar checkout")
     parser.add_argument("output", type=Path, help="Where to write the required records (.json.gz)")
-    parser.add_argument("--rev", default=OPENVAX_V1, help="The committed Isovar revision to read")
+    parser.add_argument("rev", help="The committed Isovar revision to read, or openvax-v1")
     args = parser.parse_args()
-    tree = Tree(args.isovar, args.rev)
+    tree = Tree(args.isovar, OPENVAX_V1 if args.rev == "openvax-v1" else args.rev)
     subsets = recipe_subsets(tree)
     added = {**three_fusion_subsets(tree), **dlg5_partner_subsets(tree)}
     if set(added) & set(subsets):

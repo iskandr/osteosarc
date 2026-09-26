@@ -7,14 +7,18 @@ snapshot (by name or download date) for reproducible analyses. Full release note
 
 ## 0.11.2 (2026-09-26)
 
-- **Rebuilding shared test data no longer needs the libraries' own copies.** The build
-  script's `--carry openvax-v1` keeps each library's members from the previous bundle,
-  so the next version builds even after a library deletes its test files
-  ([#63](https://github.com/iskandr/osteosarc/issues/63)).
-- The required_*.py scripts read, by default, the library commits openvax-v1 was built
-  from, and reproduce its inputs exactly.
-- The cross-library builder check now covers Topiary and Vaxrank; Isovar takes its
-  test reads from openvax-v1.
+- **Rebuilding shared test data no longer needs the libraries' own copies**
+  ([#63](https://github.com/iskandr/osteosarc/issues/63)). The build script's
+  `--carry openvax-v1` keeps each library's members from the previous bundle, pinned by
+  checksum, so the next version builds after a library deletes its test files; a
+  `--required` list replaces all a library had. Fixture targets now record the regions
+  they were planned from, so later carries plan them the same way.
+- `osteosarc test-data` treats a published bundle's name as that bundle, even when a
+  folder of the same name exists; write ./NAME for the folder.
+- The required_*.py scripts take the library revision to read; openvax-v1 means the
+  commits openvax-v1 was built from, and reproduces its inputs exactly. A rebuild never
+  replaces a published release record.
+- The cross-library builder check compares whichever libraries you give it.
 
 ## 0.11.1 (2026-09-26)
 

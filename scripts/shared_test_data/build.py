@@ -4,20 +4,22 @@ python scripts/shared_test_data/build.py openvax-v2 OUT_DIR --carry openvax-v1 [
 
 1. Selects every member's records from the snapshot that
    osteosarc/data/bundles/NAME.spec.json pins (osteosarc.shared.build_shared_recipe),
-   keeping each library's required records exactly: those it had in the bundles
-   given with --carry, except where a --required file (made by a required_*.py
-   script here) gives that library's records afresh. The first run streams reads
-   from the public BAMs, which takes about an hour for openvax-v1; reruns reuse
-   the cache.
+   keeping each library's required records exactly: those it had in the bundle
+   given with --carry, pinned by checksum, except for a library a --required
+   file (made by a required_*.py script here) lists afresh. The first run
+   streams reads from the public BAMs, which takes about an hour for openvax-v1;
+   reruns reuse the cache.
 2. Builds the bundle, with that frozen recipe in it, into OUT_DIR/NAME. The
    bundle takes the same records from the public BAMs, or fails if any changed
    upstream.
-3. Packs the bundle as OUT_DIR/NAME.tar.gz and writes
-   osteosarc/data/bundles/NAME.release.json, pointing at the GitHub release NAME.
+3. Packs the bundle as OUT_DIR/NAME.tar.gz and writes its release record,
+   pointing at the GitHub release NAME, to OUT_DIR/NAME.release.json, and to
+   osteosarc/data/bundles/NAME.release.json unless NAME is already published
+   (a published record is never replaced: users' downloads are checked against it).
 
 Then publish the archive:
 
-    gh release create NAME OUT_DIR/NAME.tar.gz --title "Test data: NAME"
+    gh release create NAME OUT_DIR/NAME.tar.gz --title "Test data: NAME" --latest=false
 """
 
 import argparse
@@ -34,8 +36,8 @@ from osteosarc.shared import (  # noqa: E402
     BUNDLES,
     build_shared_recipe,
     bundle_fixtures,
-    fetch_bundle,
-    load_required,
+    bundle_folder,
+    merge_required,
     pack_release,
     read_json,
 )
@@ -45,27 +47,22 @@ REPOSITORY = "https://github.com/iskandr/osteosarc"
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("name", help="A spec in osteosarc/data/bundles, such as openvax-v1")
+    parser.add_argument("name", help="A spec in osteosarc/data/bundles, such as openvax-v2")
     parser.add_argument("output", type=Path, help="Folder for the bundle and its archive")
-    parser.add_argument("--carry", action="append", default=[], metavar="BUNDLE",
-                        help="Keep the library members of this published bundle (or folder); repeat for several")
+    parser.add_argument("--carry", metavar="BUNDLE",
+                        help="The previous bundle, whose library members to keep: a published name, or a folder's path")
     parser.add_argument("--required", action="append", default=[], metavar="FILE",
-                        help="A library's required records, replacing what --carry gives for that library")
+                        help="A library's required records, replacing all that --carry gives for that library")
     parser.add_argument("--size-budget", type=int, default=1024 * 1024 * 1024)
     parser.add_argument("--cache", help="Cache directory (default: the usual one)")
     args = parser.parse_args()
 
     spec = read_json(BUNDLES / f"{args.name}.spec.json")
+    if spec["id"] != args.name:
+        parser.error(f"{args.name}.spec.json has id {spec['id']!r}; a new version needs its own id")
     dataset = Dataset.open(spec["snapshot"]["name"], cache=args.cache, offline=False)
-    carried = {}
-    for bundle in args.carry:
-        carried.update(bundle_fixtures(bundle if Path(bundle).is_dir() else fetch_bundle(bundle, cache=args.cache)))
-    required = load_required(args.required)
-    fresh = {subset["consumer"] for subset in required.values()}
-    kept = {name: s for name, s in carried.items() if s["consumer"] not in fresh}
-    if clash := sorted(set(kept) & set(required)):
-        parser.error(f"carried and required both name {', '.join(clash)}")
-    required.update(kept)
+    carried = bundle_fixtures(bundle_folder(args.carry, cache=args.cache)) if args.carry else {}
+    required = merge_required(carried, args.required)
     recipe = build_shared_recipe(spec, dataset, required=required, log=lambda text: print(text, file=sys.stderr))
     args.output.mkdir(parents=True, exist_ok=True)
     bundle = args.output / args.name
@@ -74,7 +71,13 @@ def main():
     release = pack_release(bundle, archive)
     release = dict(url=f"{REPOSITORY}/releases/download/{args.name}/{archive.name}", spec_sha256=stable_id(spec),
                    **release)
-    (BUNDLES / f"{args.name}.release.json").write_text(json.dumps(release, indent=1) + "\n")
+    text = json.dumps(release, indent=1) + "\n"
+    (args.output / f"{args.name}.release.json").write_text(text)
+    published = BUNDLES / f"{args.name}.release.json"
+    if published.exists():
+        print(f"{published} already pins the published {args.name}; left as it is", file=sys.stderr)
+    else:
+        published.write_text(text)
     print(json.dumps(dict(bundle=str(bundle), archive=str(archive), **release), indent=1))
 
 
