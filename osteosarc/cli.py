@@ -585,7 +585,7 @@ def test_data(args, cache):
         else:
             from .views import table
             rows = [dict(member=name, status=m["status"], records=m["record_count"]) for name, m in members.items()]
-            print(table(rows, ["member", "status", "records"], fixed=("member",)))
+            print(table(rows, ["status", "records", "member"], fixed=("member",)))
     else:
         for path in export_bundle(args.bundle, args.output, members=args.member, format=args.format).values():
             print(path)

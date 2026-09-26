@@ -405,7 +405,7 @@ def test_the_cli_lists_and_checks_a_published_bundle(bam, tmp_path, monkeypatch,
     assert main(["--cache", str(root), "--offline", "test-data", "check", "tiny-v1", str(tmp_path / "wrong.json")]) == 1
     assert "not a member" in capsys.readouterr().out
     assert main(["--cache", str(root), "--offline", "test-data", "list", "tiny-v1"]) == 0
-    assert capsys.readouterr().out.split("\n")[2].split() == ["duplicates", "selected", "7"]
+    assert capsys.readouterr().out.split("\n")[2].split() == ["selected", "7", "duplicates"]
     assert main(["--cache", str(root), "--offline", "test-data", "list", "tiny-v1", "--json"]) == 0
     assert "duplicates" in json.loads(capsys.readouterr().out)
     out = tmp_path / "tests/data"

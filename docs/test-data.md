@@ -31,17 +31,19 @@ openvax-v1, chosen once, here. It holds:
 
 - reads at every variant on the site, plus other alleles the libraries test, such as
   MAP2's allele before its correction and mitochondrial alleles on GRCh37;
-- reads that join the breakends of 7 RNA fusions and 14 DNA SVs;
+- reads that join the breakends of all 7 RNA fusions and 8 of 14 DNA SVs (the other
+  six have unresolved breakends or no joining reads in these BAMs, and stay listed,
+  empty);
 - every read in the libraries' current test files, record for record, so a library
   that moves onto openvax-v1 keeps every assertion it has.
 
-<!-- docs-check: skip (downloads the bundle, about SIZE) -->
+<!-- docs-check: skip (downloads the bundle, 28 MB) -->
 ```sh
 osteosarc test-data list openvax-v1
 osteosarc test-data export openvax-v1 tests/data --member IPISRC044_tumor_T2_ucla.redux.DYNC1H1-chr14-101980529
 ```
 
-The first command downloads the bundle (about SIZE), checks it against checksums
+The first command downloads the bundle (28 MB), checks it against checksums
 that ship with osteosarc, and keeps it in the cache; later commands work offline.
 Each member is one target in one BAM, named like the files osteosarc reads --to
 writes: the BAM's name, then the target. A library's own test files keep their
@@ -65,10 +67,12 @@ read with its mate) by what it shows across the allele: alt, ref, something else
 nothing, when it doesn't span it. Indels are judged across any repeat they could
 slide within. It keeps up to 20 alt, 10 ref, 5 other and 2 uncallable templates, in
 an order fixed by a hash of each read's group and name, plus the two lowest-quality
-alt templates. At a fusion or SV it keeps up to 50 templates whose alignments join
-the breakends, within 1 kb of each: split reads, discordant pairs and chimeric long
-reads. A read or a proper pair that simply runs across them doesn't count. A kept
-template keeps all its records. Reads come from the T2 tumor RNA-seq and WGS BAMs for
+alt templates. At a fusion or SV it keeps up to 50 templates with aligned bases within
+1 kb of every breakend that join them: split and chimeric reads, pairs the aligner
+didn't call proper, and reads spliced or deleted exactly from one breakend to another.
+A read that simply runs across the breakends, a proper pair on either side, or a read
+spliced between exons that merely lie near them doesn't count. A kept template keeps
+all its records. Reads come from the T2 tumor RNA-seq and WGS BAMs for
 every target, from any BAM a library already uses there, and from each RNA BAM the
 [SV candidates](sv-candidates.md) saw a junction in. Each record is pinned by
 checksum, so rebuilding gives the same bytes, and any change upstream fails loudly.

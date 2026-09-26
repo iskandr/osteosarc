@@ -12,7 +12,7 @@ once here ([#56](https://github.com/iskandr/osteosarc/issues/56)). See
 [shared test data](test-data.md#shared-test-data-openvax-v1).
 
 - **What it holds:** reads at every variant on the site plus other alleles the
-  libraries test, reads joining the breakends of 7 RNA fusions and 14 DNA SVs, and
+  libraries test, reads joining the breakends of 7 RNA fusions and 8 DNA SVs, and
   every record in Isovar's, Topiary's, Vaxrank's and Varcode's current test files,
   exactly as they are.
 - **Using it:** `osteosarc test-data list openvax-v1` downloads it the first time, and
