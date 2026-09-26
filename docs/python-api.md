@@ -71,7 +71,8 @@ see [Reads](reads.md).
 
 | Call | What it does |
 | --- | --- |
-| `fetch_bundle("openvax-v1")` | Download the OpenVax libraries' shared test reads once, and return their folder |
+| `fetch_bundle("openvax-v1")` | Download the OpenVax libraries' shared test reads once, and return their folder (`offline=True` never downloads) |
+| `check_fixtures("openvax-v1", {"member": "file.bam"}, root="tests/data")` | Compare your own files with a bundle's members; returns those that differ |
 | `generate_bundle(recipe, "bundle", dataset=data)` | Fetch a recipe's reads and write a bundle anyone can check offline |
 | `verify_bundle("bundle")` | Check every file, record and index |
 | `list_bundle("bundle")` | Each member, with its records and why they were kept |
@@ -80,7 +81,9 @@ see [Reads](reads.md).
 | `load_panel("vaccine-loci-v1")` | A shipped list of targets to build a recipe from |
 | `load_sv_candidates()` | The [SV candidates](sv-candidates.md), with their evidence |
 
-See [Test data](test-data.md).
+`osteosarc.shared.published("openvax-v1")` gives a published bundle's release
+record, with the manifest checksum to record alongside your results. See
+[Test data](test-data.md).
 
 ## Corrections
 

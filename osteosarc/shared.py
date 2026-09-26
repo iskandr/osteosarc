@@ -33,6 +33,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+import os
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -699,9 +700,12 @@ def bundle_folder(value, *, cache=None):
     A published name always means the published bundle; write ./NAME for a
     local folder that shares its name.
     """
-    if (BUNDLES / f"{value}.release.json").is_file() or not Path(value).exists():
-        return fetch_bundle(value, cache=cache)  # an unknown name raises, listing the published ones
-    return Path(value)
+    text = str(value)
+    if "/" not in text and os.sep not in text and (BUNDLES / f"{text}.release.json").is_file():
+        return fetch_bundle(text, cache=cache)
+    if Path(value).exists():
+        return Path(value)
+    return fetch_bundle(text, cache=cache)  # an unknown name raises, listing the published ones
 
 
 def pack_release(bundle, archive):
@@ -726,19 +730,22 @@ def pack_release(bundle, archive):
                 manifest_sha256=digest(bundle / "manifest.json"))
 
 
-def fetch_bundle(name, *, cache=None):
+def fetch_bundle(name, *, cache=None, offline=False):
     """Download a published bundle into the cache, verify it, and return its directory.
 
     The bundle is verified in full when it arrives, and its files are made
-    read-only; later calls reuse it offline, checking only its manifest.
+    read-only; later calls reuse it offline, checking only its manifest. With
+    offline=True it never downloads, and raises OfflineError if the bundle
+    isn't cached yet.
     """
-    import os
     import tarfile
 
     from .bundles import _publication, safe_path, verify_bundle
     from .cache import Cache, digest
     release = published(name)
     cache = cache if isinstance(cache, Cache) else Cache(cache)
+    if offline and not cache.offline:
+        cache = Cache(cache.root, offline=True)
     root = cache.workspace / "bundles" / f"{name}-{release['manifest_sha256'][:16]}"
     if not root.exists():
         receipt = cache.fetch(release["url"], sha256=release["sha256"], size=release["size_bytes"])
@@ -821,14 +828,17 @@ def _local_sam(value, root=Path(".")):
         return [read.to_string() for read in handle.fetch(until_eof=True)]
 
 
-def check_fixtures(bundle, fixtures, *, root=Path(".")):
+def check_fixtures(bundle, fixtures, *, root=Path("."), cache=None):
     """Compare a library's local fixtures with a bundle's members, as multisets of SAM text.
 
-    fixtures maps member names to local files (see _local_sam). Returns
-    {member: dict(missing=n, extra=n)} for every member that differs, and
+    bundle is a published bundle's name (such as openvax-v1, fetched with cache)
+    or a bundle folder.
+    fixtures maps member names to local files (see _local_sam), relative to root.
+    Returns {member: dict(missing=n, extra=n)} for every member that differs, and
     {member: dict(error=why)} for one that isn't a member or can't be read.
     """
     from .bundles import verify_bundle
+    bundle = bundle_folder(bundle, cache=cache)
     manifest = verify_bundle(bundle)
     by_source = {}
     problems = {}

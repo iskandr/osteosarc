@@ -5,6 +5,31 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.11.3 (2026-09-26)
+
+Follow-ups from moving Isovar, Topiary, Vaxrank and Varcode onto openvax-v1, which
+all four now use.
+
+- **Receipts and bundles hold no local paths**
+  ([#65](https://github.com/iskandr/osteosarc/issues/65)). Read receipts record a file
+  by its place in the cache (objects/sha256/..., named by checksum) or else by its
+  name, beside its checksum, and bundles leave out download times. So the same reads,
+  extracted with the same tools from any cache, make the same bundle, and Isovar's and
+  Vaxrank's recorded receipts lose their local paths too. Cache keys no longer depend
+  on where the cache is, so reads extracted by earlier versions are fetched once more.
+  openvax-v1 keeps its published bytes; the next version will be clean.
+- `fetch_bundle(name, offline=True)` never downloads, and raises OfflineError if the
+  bundle isn't cached ([#66](https://github.com/iskandr/osteosarc/issues/66)).
+- `osteosarc test-data check --help` says fixture paths are relative to the fixtures
+  file ([#67](https://github.com/iskandr/osteosarc/issues/67)).
+- `check_fixtures` is importable from osteosarc and takes a published bundle's name,
+  and the Python API page shows it and osteosarc.shared.published
+  ([#68](https://github.com/iskandr/osteosarc/issues/68)).
+- Export keeps the name of a member already named after its file: topiary/reads.bam
+  is written as reads.bam, not reads.bam.bam; two members that would share a file
+  are an error ([#69](https://github.com/iskandr/osteosarc/issues/69)).
+- The cross-library builder check is gone, with the builders it compared.
+
 ## 0.11.2 (2026-09-26)
 
 - **Rebuilding shared test data no longer needs the libraries' own copies**
@@ -248,7 +273,7 @@ review:
 ## 0.2.3 (2026-09-23)
 
 - Shared historical fixture adapters for Isovar, Topiary and Vaxrank, and the
-  additional SV research panel. See [OpenVax fixture adoption](test-data.md#each-librarys-own-test-data)
+  additional SV research panel. See [OpenVax fixture adoption](test-data.md#how-the-libraries-use-it)
   ([#15](https://github.com/iskandr/osteosarc/issues/15)).
 - Python 3.9 support.
 

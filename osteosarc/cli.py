@@ -218,7 +218,8 @@ def parser():
     check = actions.add_parser("check", help="Compare your library's test files with a bundle's members")
     check.add_argument("bundle", help="A published bundle such as openvax-v1, or a bundle folder's path")
     check.add_argument("fixtures", help='JSON mapping member names to your files: a BAM, SAM or SAM.gz path, '
-                                        'or {"json": path, "pointer": "/path/to/lines"}')
+                                        'or {"json": path, "pointer": "/path/to/lines"}; paths are relative '
+                                        "to this JSON file's folder")
     return root
 
 

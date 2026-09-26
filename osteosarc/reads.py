@@ -155,6 +155,30 @@ def _run(command, timeout):
     return subprocess.run(command, check=True, capture_output=True, timeout=timeout)
 
 
+def _recorded(path, cache):
+    """A local file as receipts and cache keys record it: its path within the cache
+    (objects/sha256/<checksum>..., osteosarc/...), or else its file name. Its checksum
+    is recorded beside it, so neither depends on where the cache or the file lives."""
+    path = Path(path).resolve()
+    try:
+        return path.relative_to(cache.root).as_posix()
+    except ValueError:
+        return path.name
+
+
+def _recorded_command(command, work, cache):
+    """A command as receipts record it: files in the work folder by their names there,
+    other local files as _recorded gives them (also after a samtools TAG: prefix)."""
+    def record(arg):
+        tag, rest = (arg[:3], arg[3:]) if re.fullmatch(r"[A-Za-z][A-Za-z0-9]:/.+", arg) else ("", arg)
+        if rest.startswith(str(work) + os.sep):
+            rest = Path(rest).relative_to(work).as_posix()
+        elif rest.startswith("/"):
+            rest = _recorded(rest, cache)
+        return tag + rest
+    return [record(arg) for arg in command]
+
+
 def _run_bounded(command, output, max_records, timeout):
     """Stop indexed acquisition on overflow; never publish a partial BAM."""
     import pysam
@@ -281,7 +305,8 @@ def inspect_alignment(source, *, cache=None, snapshot_id=None, timeout=600):
     import pysam
     cache = cache if isinstance(cache, Cache) else Cache(cache)
     file, location, remote = _alignment_source(source)
-    request = dict(schema_version=1, operation="inspect_alignment", source=location,
+    request = dict(schema_version=1, operation="inspect_alignment",
+                   source=location if remote else _recorded(location, cache),
                    source_sha256=None if remote else cache.file_digest(location),
                    source_size=file.size if file else None,
                    source_modified=file.modified if file else None, snapshot_id=snapshot_id)
@@ -308,7 +333,7 @@ def inspect_alignment(source, *, cache=None, snapshot_id=None, timeout=600):
                 work = Path(temporary)
                 (work / "header.sam").write_text(header_text)
                 receipt = dict(request=request, files={"header.sam": digest(work / "header.sam")},
-                               remote_identity=before, command=command,
+                               remote_identity=before, command=_recorded_command(command, work, cache),
                                samtools_version=_samtools_version())
                 write_json(work / "receipt.json", receipt)
                 share(work)
@@ -372,11 +397,13 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
         raise CoordinateError("Reference FASTA must already have a .fai index")
     local_identities = [file_identity(p) for p in ([] if remote else [location])
                         + ([] if remote_index else [index])]
-    request = dict(schema_version=1, operation="extract_reads", source=location,
+    request = dict(schema_version=1, operation="extract_reads",
+                   source=location if remote else _recorded(location, cache),
                    source_sha256=None if remote else cache.file_digest(location),
                    source_size=file.size if file else None,
                    source_modified=file.modified if file else None,
-                   index=index, index_sha256=None if remote_index else cache.file_digest(index),
+                   index=index if remote_index or index is None else _recorded(index, cache),
+                   index_sha256=None if remote_index else cache.file_digest(index),
                    snapshot_id=snapshot_id,
                    regions=sorted((asdict(r) for r in regions), key=lambda r: json.dumps(r, sort_keys=True)),
                    filters=asdict(filters), fetch_pairs=fetch_pairs,
@@ -453,7 +480,7 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
                            header_receipt=info.receipt,
                            index_receipt=index_receipt.to_dict() if index_receipt else None,
                            samtools_version=_samtools_version(),
-                           pysam_version=pysam.__version__, command=command,
+                           pysam_version=pysam.__version__, command=_recorded_command(command, work, cache),
                            scope="regional_records_and_paired_mates" if fetch_pairs else "regional_records")
             write_json(work / "receipt.json", receipt)
             # Only a complete directory becomes visible. No receipt means no cache hit.
