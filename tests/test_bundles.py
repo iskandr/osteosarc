@@ -380,6 +380,11 @@ def test_check_compares_members_without_reads_too(bam, tmp_path):
     (tmp_path / "empty.sam").write_text("@HD\tVN:1.6\n")
     assert shared.check_fixtures(bundle, {"pending": "empty.sam"}, root=tmp_path) == {}
     assert shared.check_fixtures(bundle, {"pending": str(bam)}, root=tmp_path) == {"pending": dict(missing=0, extra=7)}
+    # One unreadable fixture is reported without stopping the others.
+    (tmp_path / "lines.json").write_text(json.dumps({"records": []}))
+    problems = shared.check_fixtures(bundle, {"pending": dict(json="lines.json", pointer="/record"),
+                                              "duplicates": str(bam)}, root=tmp_path)
+    assert list(problems) == ["pending"] and "nothing at /record" in problems["pending"]["error"]
 
 
 def test_the_cli_lists_and_checks_a_published_bundle(bam, tmp_path, monkeypatch, capsys):

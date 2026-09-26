@@ -24,12 +24,17 @@ import argparse
 import gzip
 import json
 import subprocess
+import sys
 import tempfile
 from collections import Counter
 from hashlib import sha256
 from pathlib import Path
 
 import pysam
+
+# This checkout's osteosarc, whatever is installed.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from osteosarc.shared import sam_lines  # noqa: E402
 
 BUCKET = "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/"
 # Directories of fixtures made of Sid reads, audited for records no subset covers.
@@ -130,20 +135,6 @@ def dlg5_partner_subsets(tree):
     return subsets
 
 
-def sam_strings(value):
-    if isinstance(value, str):
-        for line in value.split("\n"):
-            fields = line.split("\t")
-            if len(fields) >= 11 and fields[1].isdigit() and fields[3].isdigit():
-                yield line
-    elif isinstance(value, dict):
-        for item in value.values():
-            yield from sam_strings(item)
-    elif isinstance(value, list):
-        for item in value:
-            yield from sam_strings(item)
-
-
 def uncovered(tree, subsets):
     """SAM records in Isovar's Sid fixture files that no subset lists, by file."""
     covered = {line for s in subsets.values() for line in s["sam"]}
@@ -158,7 +149,7 @@ def uncovered(tree, subsets):
                 with pysam.AlignmentFile(str(local), check_sq=False) as handle:
                     lines = [record.to_string() for record in handle]
             elif path.endswith((".json", ".json.gz")):
-                lines = list(sam_strings(tree.json(path)))
+                lines = list(sam_lines(tree.json(path)))
             else:
                 continue
             absent = [line for line in lines if line not in covered]

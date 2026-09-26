@@ -172,11 +172,26 @@ def test_fixtures_kept_in_json_are_read_in_each_layout(tmp_path):
     from osteosarc import SchemaError
     from osteosarc.shared import _local_sam
     line = "r1\t0\tchr1\t3\t60\t4M\t*\t0\t0\tACGT\tIIII"
-    (tmp_path / "f.json").write_text(json.dumps(dict(
-        lines=[line, line], single=line, by_digest={"a" * 64: line},
-        objects=[dict(sam=line, note="x")], numbers=[1, 2])))
-    for pointer, expected in [("/lines", [line, line]), ("/single", [line]), ("/by_digest", [line]),
-                              ("/objects", [line])]:
-        assert _local_sam(dict(json="f.json", pointer=pointer), tmp_path) == expected
-    with pytest.raises(SchemaError, match="neither SAM lines"):
-        _local_sam(dict(json="f.json", pointer="/numbers"), tmp_path)
+    partner = "r1\t2048\tchr2\t9\t60\t4M\t*\t0\t0\tACGT\tIIII"
+    (tmp_path / "f.json").write_text(json.dumps({
+        "lines": [line, line], "single": line, "by_digest": {"a" * 64: line},
+        # Isovar keeps each split read with its partner; field names don't matter.
+        "pairs": [dict(sam=line, partner_sam=partner, read_id="r1"), dict(sam=line, partner_sam=None)],
+        "lost_sam": [dict(sam=None, partner_sam=partner)],
+        "records_by_digest": {"b" * 64: dict(sam=line, partner_sam=partner)},
+        "other_field": [dict(read=line, id="r1")],
+        "with_metadata": dict(version="1.0", source="https://example.test/x.bam", records=[line]),
+        "joined": line + "\n" + partner + "\r\n", "a/b": [line], "numbers": [1, 2, None]}))
+    keys = [("/lines", [line, line]), ("/single", [line]), ("/by_digest", [line]),
+            ("/pairs", [line, partner, line]), ("/lost_sam", [partner]), ("/records_by_digest", [line, partner]),
+            ("/other_field", [line]), ("/with_metadata", [line]), ("/joined", [line, partner]),
+            ("/a~1b", [line]), ("/numbers", [])]
+    for pointer, expected in keys + [("/pairs/0", [line, partner])]:
+        assert _local_sam(dict(json="f.json", pointer=pointer), tmp_path) == expected, pointer
+    whole = _local_sam(dict(json="f.json", pointer=""), tmp_path)
+    assert whole == _local_sam(dict(json="f.json", pointer="/"), tmp_path) == _local_sam(dict(json="f.json"), tmp_path)
+    assert whole == [x for _, expected in keys for x in expected]
+    for pointer, where in [("/record", "/record"), ("/lines/2", "/lines/2"), ("/single/x", "/single/x"),
+                           ("/a/b", "/a"), ("lines", None)]:
+        with pytest.raises(SchemaError, match="nothing at " + where if where else "must start with"):
+            _local_sam(dict(json="f.json", pointer=pointer), tmp_path)

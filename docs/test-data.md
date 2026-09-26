@@ -52,7 +52,9 @@ an indexed BAM. In Python, `fetch_bundle("openvax-v1")` returns the bundle's fol
 
 To check that your library's copies match, list them in a JSON file that maps
 member names to your files: a BAM, SAM or SAM.gz path, or, for SAM lines kept inside
-JSON, `{"json": path, "pointer": "/path/to/lines"}`. Then:
+JSON, `{"json": path, "pointer": "/path/to/lines"}`. Every SAM line under the pointer
+counts, whatever fields hold it, such as Isovar's sam and partner_sam; leave the
+pointer out for the whole file. Then:
 
 <!-- docs-check: skip (needs your own files) -->
 ```sh
