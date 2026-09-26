@@ -177,7 +177,7 @@ def test_topiary_rsem_download_and_raw_table(dataset, tmp_path):
     asset = cached_asset(dataset, tmp_path, "sample.genes.results",
                          "gene_id\ttranscript_id(s)\tTPM\nENSG000001\tENST000001\t0\n")
     assert asset.kind == "expression"
-    assert list(dataset.table(asset.key)) == [{"gene_id": "ENSG000001", "transcript_id(s)": "ENST000001", "TPM": "0"}]
+    assert list(dataset.parse(asset.key)) == [{"gene_id": "ENSG000001", "transcript_id(s)": "ENST000001", "TPM": "0"}]
     path = dataset.download(asset)
     assert path.name.endswith(".genes.results")  # shared OpenVax name: <sha256><original suffixes>
     pytest.importorskip("topiary")
@@ -190,7 +190,7 @@ def test_topiary_rsem_download_and_raw_table(dataset, tmp_path):
 def test_topiary_pvac_original_columns_and_header_only_reports(dataset, tmp_path, body):
     asset = cached_asset(dataset, tmp_path, "sample.all_epitopes.aggregated.tsv",
                          "Best Peptide\tAllele\tIC50 MT\t%ile MT\tGene\n" + body)
-    raw = dataset.table(asset)
+    raw = dataset.parse(asset)
     assert raw.columns == ("Best Peptide", "Allele", "IC50 MT", "%ile MT", "Gene")
     assert len(raw) == bool(body)
     topiary = pytest.importorskip("topiary")

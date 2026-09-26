@@ -3,17 +3,8 @@ from dataclasses import replace
 
 import pytest
 
-from osteosarc import (
-    Cache,
-    CoordinateError,
-    IntegrityError,
-    ReadFilter,
-    Region,
-    extract_reads,
-    inspect_alignment,
-    resolve_regions,
-    subset_templates,
-)
+from osteosarc import Cache, CoordinateError, IntegrityError, ReadFilter, Region, extract_reads
+from osteosarc.reads import inspect_alignment, resolve_regions, subset_templates
 
 
 def records(path):

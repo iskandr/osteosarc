@@ -12,25 +12,23 @@ theme:
   hljs_languages: [python, bash]
 nav:
   - Home: index.md
-  - Key concepts: concepts.md
+  - Concepts: concepts.md
   - Guides:
       - Samples and files: samples.md
-      - Select variants and peptides: variants.md
-      - Extract reads: reads.md
-      - Browse the timeline: timeline.md
-      - Command line: cli.md
-      - Use other libraries: consumers.md
-      - Replace download helpers: migration.md
-      - "Worked example: MAP2": tour.md
-  - Fixtures and SVs:
-      - Read fixtures and bundles: fixtures.md
-      - SV interest catalogue: sv-interest.md
-      - OpenVax fixture adoption: fixture-migration.md
+      - Variants and vaccines: variants.md
+      - Reads: reads.md
+      - Timeline: timeline.md
+      - SV candidates: sv-candidates.md
+      - Command line: command-line.md
+      - "Example: MAP2": map2.md
+  - OpenVax:
+      - OpenVax libraries: openvax.md
+      - Test data: test-data.md
   - Reference:
-      - Python API: api.md
-      - Snapshots and cache: design.md
-      - Source corrections: curation.md
-      - Testing and data checks: validation.md
+      - Python API: python-api.md
+      - Snapshots and cache: snapshots.md
+      - Corrections: corrections.md
+      - Testing: testing.md
       - Changelog: changelog.md
 validation:
   anchors: warn

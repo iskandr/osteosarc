@@ -10,7 +10,6 @@ from dataclasses import asdict
 from . import __version__
 from .cache import Cache
 from .dataset import DATE_SELECTOR, Dataset
-from .discovery import list_bucket
 from .errors import NoSnapshotsError, OsteosarcError
 from .models import Region
 from .reads import ReadFilter
@@ -22,21 +21,18 @@ COMMANDS = (
         ("files", "Files in the S3 bucket: an overview, or a list with --kind, --sample or --prefix"),
         ("variants [ID]", "The variant catalogue, with alleles, vaccines and read counts"),
         ("vaccines", "Vaccine targets and ELISPOT results"),
-        ("timeline", "Treatments, procedures, scans and MRD over time"),
-        ("on DATE", "Everything within a week of a date"),
+        ("timeline", "Treatments, procedures, scans and MRD over time (--around DATE for one week)"),
         ("corrections [ID]", "Known problems in the website's data, and the fixes applied"))),
     ("Get data", (
-        ("download FILE", "Download a whole file (--to DIR puts it, and its index, in DIR)"),
-        ("reads FILE REGION", "Stream the reads in a region, or around a variant, into a small local BAM"),
-        ("downloads", "What's already on this computer, and where"),
-        ("table NAME", "Print one of the site's tables, or a bucket CSV/TSV, as TSV"))),
+        ("reads FILE|SAMPLE", "The reads around variants or in regions, as a small BAM: test data in seconds"),
+        ("download FILE", "A whole file (--to DIR puts it, and its index, in DIR)"),
+        ("downloads", "What's already on this computer, and where"))),
+    ("Test data for libraries", (
+        ("test-data ...", "Build, check and export bundles of test reads from a recipe"),)),
     ("Snapshots of the website's metadata", (
         ("sync", "Download the current metadata (about 57 MB); commands use the newest"),
-        ("snapshots", "Saved snapshots, by download date"))),
-    ("More", (
-        ("repl", "Python with the newest snapshot loaded as `data`"),
-        ("discover PREFIX", "List a bucket folder live, without a snapshot"),
-        ("fixtures ...", "Build and check read fixtures for tests"))),
+        ("snapshots", "Saved snapshots, by download date"),
+        ("repl", "Python with the newest snapshot loaded as `data`"))),
 )
 
 
@@ -67,7 +63,7 @@ def parser():
     snapshot.add_argument("--snapshot", help="A UTC download date, month or year for the newest snapshot "
                                              "downloaded then (2026-09-24, 2026-09), or a snapshot name or ID "
                                              "prefix (default: the most recent; see osteosarc snapshots)")
-    described = {name.split()[0]: what for _, group in COMMANDS for name, what in group}
+    described = {name.split()[0].split("|")[0]: what for _, group in COMMANDS for name, what in group}
 
     def command(name, *, data=True, epilog=None):
         return commands.add_parser(name, parents=[snapshot] if data else [], description=described[name],
@@ -128,6 +124,7 @@ def parser():
 
     timeline = command("timeline", epilog="examples:\n  osteosarc timeline\n"
                                           "  osteosarc timeline --since 2024-05 --until 2024-09\n"
+                                          "  osteosarc timeline --around 2025-01-28\n"
                                           "  osteosarc timeline --lane MRD --list")
     timeline.add_argument("--since", help="YYYY, YYYY-MM or YYYY-MM-DD")
     timeline.add_argument("--until", help="YYYY, YYYY-MM or YYYY-MM-DD")
@@ -138,9 +135,8 @@ def parser():
     timeline.add_argument("--width", type=int, help="Chart width (default: the terminal's)")
     timeline.add_argument("--list", action="store_true", help="One line per event instead of a chart")
     timeline.add_argument("--json", action="store_true", help="Event records as JSON")
-    around = command("on")
-    around.add_argument("date", help="YYYY-MM-DD")
-    around.add_argument("--days", type=int, default=7, help="Days either side (default 7)")
+    timeline.add_argument("--around", metavar="DATE", help="List everything within a week of this date")
+    timeline.add_argument("--days", type=int, default=7, help="Days either side of --around (default 7)")
     corrections = command("corrections")
     corrections.add_argument("id", nargs="?", help="One correction, with its evidence")
     corrections.add_argument("--strict", action="store_true",
@@ -155,10 +151,17 @@ def parser():
     download.add_argument("--refresh", action="store_true",
                           help="Download again, for a file this snapshot hasn't downloaded yet")
     reads = command("reads", epilog="examples:\n"
-                    "  osteosarc reads KEY --variant MAP2-chr2-209694768 --padding 100\n"
+                    "  osteosarc reads T1_tumor --assay rna-seq --variant MAP2-chr2-209694768 --padding 100 --to tests/data\n"
                     "  osteosarc reads KEY chr17:7661779-7687538 --assembly GRCh38\n\n"
-                    "Prints the path of the BAM it writes; the same request reuses it.")
-    reads.add_argument("file", help="An indexed BAM/CRAM: its key (see osteosarc files), URL or ID")
+                    "Streams only those reads (never the whole BAM) and prints the path of each small BAM it\n"
+                    "writes; asking again reuses it.")
+    reads.add_argument("file", metavar="FILE|SAMPLE",
+                       help="An indexed BAM: its key (see osteosarc files), URL or ID; or a sample ID, for each of "
+                            "its BAMs")
+    reads.add_argument("--assay", help="With a sample: only its BAMs of this assay, such as rna-seq")
+    reads.add_argument("--platform", help="With a sample: only its BAMs from this platform, such as ont")
+    reads.add_argument("--to", metavar="DIR", help="Also put each BAM and its index in DIR, named for the source "
+                                                   "file and what was asked for")
     reads.add_argument("regions", nargs="*", help="contig:start-end, one-based inclusive (or use --variant)")
     reads.add_argument("--variant", action="append", default=[], metavar="ID",
                        help="A catalogue variant with a ready allele; repeat for several")
@@ -174,10 +177,6 @@ def parser():
     reads.add_argument("--json", action="store_true", help="The extract's paths and receipt as JSON")
     downloads = command("downloads")
     downloads.add_argument("--json", action="store_true")
-    table = command("table", epilog="examples:\n  osteosarc table vafs\n  osteosarc table dna_fusions --json")
-    table.add_argument("file", help="A site table's name (see osteosarc files --prefix site/) or a CSV/TSV key")
-    table.add_argument("--json", action="store_true", help="Rows as JSON")
-
     sync = command("sync", data=False)
     sync.add_argument("name", nargs="?", help="Optional name (default: today's UTC date)")
     sync.add_argument("--refresh", action="store_true", help="Download again even if today's snapshot exists")
@@ -186,33 +185,30 @@ def parser():
     snapshots = command("snapshots", data=False)
     snapshots.add_argument("--json", action="store_true")
     command("repl")
-    discover = command("discover", data=False)
-    discover.add_argument("prefix")
-    discover.add_argument("--refresh", action="store_true")
-    discover.add_argument("--json", action="store_true")
-    fixtures = command("fixtures", data=False)
-    actions = fixtures.add_subparsers(dest="fixture_command", required=True)
-    select = actions.add_parser("select", help="Return record membership and inclusion reasons")
-    select.add_argument("recipe")
-    select.add_argument("--source", action="append", default=[], metavar="ID=LOCAL_BAM")
-    panel = actions.add_parser("panel", help="Print a shipped named target panel")
-    panel.add_argument("name")
-    for name in ("generate", "pack"):
-        action = actions.add_parser(name, help="Select and publish a portable bundle")
-        action.add_argument("recipe")
-        action.add_argument("output")
-        action.add_argument("--source", action="append", default=[], metavar="ID=LOCAL_BAM")
-        action.add_argument("--header-policy", choices=("full", "compact"), default="full")
-        action.add_argument("--size-budget", type=int, default=64 * 1024 * 1024)
-    for name in ("verify", "list", "export"):
-        action = actions.add_parser(name, help="Work with a bundle entirely offline")
+    test_data = command("test-data", data=False, epilog="examples:\n"
+                        "  osteosarc test-data generate recipe.json bundle\n"
+                        "  osteosarc test-data list bundle\n"
+                        "  osteosarc test-data export bundle exported --member DYNC1H1-rna")
+    actions = test_data.add_subparsers(dest="test_data_command", required=True, metavar="ACTION")
+    generate = actions.add_parser("generate", help="Fetch a recipe's reads and write a bundle")
+    generate.add_argument("recipe")
+    generate.add_argument("output", help="A new directory")
+    generate.add_argument("--source", action="append", default=[], metavar="ID=LOCAL_BAM",
+                          help="Use a BAM you already have for one of the recipe's sources")
+    generate.add_argument("--size-budget", type=int, default=64 * 1024 * 1024)
+    generate.add_argument("--header-policy", choices=("full", "compact"), default="full",
+                          help="compact keeps only the header lines the records need")
+    for name, what in (("list", "Each member of a bundle, with its records and why"),
+                       ("verify", "Check a bundle's files, records and indexes"),
+                       ("export", "Write a bundle's members as indexed BAMs (or SAM)")):
+        action = actions.add_parser(name, help=what)
         action.add_argument("bundle")
         if name == "export":
-            action.add_argument("output")
-            action.add_argument("--member", action="append")
+            action.add_argument("output", help="A new directory")
+            action.add_argument("--member", action="append", help="Only these members; repeat for several")
             action.add_argument("--format", choices=("bam", "sam", "sam.gz"), default="bam")
         if name == "verify":
-            action.add_argument("--sha256", help="Pinned manifest digest")
+            action.add_argument("--sha256", help="The manifest checksum you expect")
     return root
 
 
@@ -231,12 +227,14 @@ def read_targets(dataset, args):
         raise ValueError("Supply either regions (with --assembly) or --variant, not both; "
                          "variants carry their own assembly")
     if args.variant:
-        variants = dataset.variants("all", ids=args.variant)
-        missing = sorted(set(args.variant) - {v.id for v in variants})
+        found = dataset.variants("all", ids=args.variant)
+        missing = sorted(set(args.variant) - {v.id for v in found})
         if missing:
             raise ValueError(f"Unknown variant ID(s): {', '.join(missing)}; "
                              "list them with `osteosarc variants --set all"
                              + (f" --snapshot {args.snapshot}" if args.snapshot else "") + "`")
+        order = {v: i for i, v in enumerate(dict.fromkeys(args.variant))}
+        variants = type(found)(sorted(found, key=lambda v: order[v.id]), source=found.source)  # as given
         return dict(variants=variants, padding=args.padding)
     if args.regions and args.assembly is None:
         raise ValueError("--assembly is required with explicit regions")
@@ -382,6 +380,12 @@ def browse(args, dataset):
         return 0
     if args.command == "timeline":
         events = dataset.timeline.select(lane=args.lane, contains=args.contains, since=args.since, until=args.until)
+        if args.days != 7 and not args.around:
+            raise ValueError("--days sets the window around --around DATE; give a date too")
+        if args.around:
+            events = events.around(args.around, args.days)
+            print_json(events.to_records()) if args.json else print(events.listing() or "(no events)")
+            return 0
         if args.json:
             print_json(events.to_records())
         elif args.list:
@@ -390,9 +394,6 @@ def browse(args, dataset):
             # Asking for a lane or text shows it even when it's one the chart leaves out.
             print(events.render(width=args.width, since=args.since, until=args.until,
                                 everything=args.all or bool(args.lane or args.contains)))
-        return 0
-    if args.command == "on":
-        print(dataset.timeline.around(args.date, args.days).listing() or "(no events)")
         return 0
     rows = list(dataset.corrections)
     if args.id:
@@ -419,35 +420,64 @@ def browse(args, dataset):
     return 0
 
 
+def is_sample(dataset, name):
+    """Whether a reads command's FILE|SAMPLE names a sample (file keys and URLs have slashes)."""
+    return "/" not in name and name in {sample.id for sample in dataset.samples}
+
+
+def read_sources(dataset, args):
+    """The BAMs a reads command reads from: one file, or a sample's BAMs."""
+    if not is_sample(dataset, args.file):
+        if args.assay or args.platform:
+            raise ValueError("--assay and --platform choose among a sample's BAMs; give a sample ID")
+        return [dataset.file(args.file)]
+    if args.index:
+        raise ValueError("--index belongs to one BAM; give a file's key, not a sample, to use it")
+    bams = dataset.samples[args.file].files.select(kind="alignment", assay=args.assay, platform=args.platform)
+    indexed = [f for f in bams if f.index_urls]
+    for file in bams:
+        if not file.index_urls:
+            print(f"skipping {file.key}: it has no index in the bucket", file=sys.stderr)
+    if not indexed:
+        raise ValueError(f"{args.file} has no indexed BAMs" + (" of that kind" if args.assay or args.platform else ""))
+    return indexed
+
+
 def get_data(args, dataset):
-    """download, reads, downloads and table. Returns the exit code."""
+    """reads, download and downloads. Returns the exit code."""
     from . import views
+    from .errors import CoordinateError
     if args.command == "download":
         file = dataset.file(args.file)
         print(dataset.download(file, to=args.to, refresh=args.refresh))
         if args.to and file.index_urls:
             print(dataset.download(file.index_urls[0], to=args.to))  # already placed; this names it
     elif args.command == "reads":
-        subset = dataset.extract_reads(args.file, **read_targets(dataset, args),
-                                       reference=args.reference, index=args.index,
-                                       filters=ReadFilter(args.min_mapq, args.exclude_flags),
-                                       fetch_pairs=args.fetch_pairs,
-                                       recovery={} if args.recover_linked else None)
+        targets, sources = read_targets(dataset, args), read_sources(dataset, args)
+        results = []
+        for file in sources:
+            try:
+                subset = dataset.extract_reads(file, **targets, reference=args.reference, index=args.index,
+                                               filters=ReadFilter(args.min_mapq, args.exclude_flags),
+                                               fetch_pairs=args.fetch_pairs,
+                                               recovery={} if args.recover_linked else None, to=args.to)
+            except CoordinateError as error:
+                if len(sources) == 1:
+                    raise
+                print(f"skipping {file.key}: {error}", file=sys.stderr)  # e.g. a GRCh37 BAM
+                continue
+            results.append(dict(file=file.key, path=str(subset.path), index=str(subset.index_path),
+                                receipt=subset.receipt))
+            if not args.json:
+                print(subset.path)
+        if not results:
+            raise ValueError(f"No reads extracted: every BAM of {args.file} was skipped")
         if args.json:
-            print_json(dict(path=str(subset.path), index=str(subset.index_path), receipt=subset.receipt))
-        else:
-            print(subset.path)
-    elif args.command == "downloads":
+            # A sample always gives a list, however many of its BAMs it has.
+            print_json(results if is_sample(dataset, args.file) else results[0])
+    else:
         rows = list(dataset.downloads())
         print_json(rows) if args.json else print(views.downloads_view(rows, dataset.cache.root))
-    else:
-        parsed = dataset.parse(args.file)
-        if args.json or not hasattr(parsed, "rows"):
-            print_json(list(parsed) if hasattr(parsed, "rows") else parsed)
-        else:
-            print("\t".join(parsed.columns))
-            for row in parsed:
-                print("\t".join("" if row.get(c) is None else str(row.get(c)) for c in parsed.columns))
     return 0
 
 
@@ -466,8 +496,8 @@ def main(argv=None):
         args.regions = [*args.regions, *extra]
     cache = Cache(args.cache, offline=args.offline)
     try:
-        if args.command == "fixtures":
-            return fixtures(args, cache)
+        if args.command == "test-data":
+            return test_data(args, cache)
         if args.command == "sync":
             sources = pinned_sources(args.source_revision) if args.source_revision else None
             dataset = Dataset.sync(args.name, cache=cache, refresh=args.refresh, sources=sources,
@@ -481,25 +511,13 @@ def main(argv=None):
             rows = list(Dataset.snapshots(cache=cache))
             print_json(rows) if args.json else print(snapshots_view(rows))
             return 0
-        if args.command == "discover":
-            listing = list_bucket(cache, args.prefix, refresh=args.refresh)
-            if args.json:
-                print_json(listing)
-            else:
-                from .views import size_text, table
-                rows = [dict(size=size_text(size), modified=modified[:10], key=key)
-                        for key, size, modified in listing["files"]]
-                print(f"{len(rows):,} files under {args.prefix} (live, not from a snapshot)\n"
-                      + table(rows, ("size", "modified", "key"), fixed=("key",)) if rows
-                      else f"Nothing under {args.prefix}")
-            return 0
         # Browsing stays offline; commands that fetch bytes may use the network unless --offline.
-        online = args.command in ("download", "table", "reads", "repl") and not args.offline
+        online = args.command in ("download", "reads", "repl") and not args.offline
         dataset = open_snapshot(args, cache, online)
         if args.command == "repl":
             repl(dataset)
             return 0
-        if args.command in ("download", "reads", "downloads", "table"):
+        if args.command in ("download", "reads", "downloads"):
             return get_data(args, dataset)
         return browse(args, dataset)
     except BrokenPipeError:
@@ -516,31 +534,22 @@ def main(argv=None):
         return 1
 
 
-def fixtures(args, cache):
-    from .fixtures import load_panel, select_fixtures
-    if args.fixture_command == "panel":
-        value = load_panel(args.name)
-    elif args.fixture_command in ("select", "generate", "pack"):
-        from pathlib import Path
+def test_data(args, cache):
+    """test-data generate, list, verify and export."""
+    from pathlib import Path
 
-        from .bundles import generate_bundle, pack_bundle
+    from .bundles import export_bundle, generate_bundle, list_bundle, verify_bundle
+    action = args.test_data_command
+    if action == "generate":
         recipe = json.loads(Path(args.recipe).read_text())
         sources = dict(item.split("=", 1) for item in args.source)
-        if args.fixture_command == "select":
-            value = select_fixtures(recipe, sources).manifest
-        elif args.fixture_command == "generate":
-            value = generate_bundle(recipe, args.output, sources=sources, cache=cache,
-                                    header_policy=args.header_policy, size_budget=args.size_budget)
-        else:
-            value = pack_bundle(select_fixtures(recipe, sources), args.output,
-                                header_policy=args.header_policy, size_budget=args.size_budget)
+        value = generate_bundle(recipe, args.output, sources=sources, cache=cache, size_budget=args.size_budget,
+                                header_policy=args.header_policy)
+    elif action == "verify":
+        value = verify_bundle(args.bundle, sha256=args.sha256)
+    elif action == "list":
+        value = list_bundle(args.bundle)
     else:
-        from .bundles import export_bundle, list_bundle, verify_bundle
-        if args.fixture_command == "verify":
-            value = verify_bundle(args.bundle, sha256=args.sha256)
-        elif args.fixture_command == "list":
-            value = list_bundle(args.bundle)
-        else:
-            value = export_bundle(args.bundle, args.output, members=args.member, format=args.format)
+        value = export_bundle(args.bundle, args.output, members=args.member, format=args.format)
     print_json(value)
     return 0

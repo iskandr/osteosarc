@@ -8,23 +8,21 @@
 Importing performs no network I/O.
 """
 
-from .bundles import (
-    compact_header,
+from .bundles import (  # noqa: F401
     export_bundle,
     generate_bundle,
     list_bundle,
-    pack_bundle,
-    safe_path,
     verify_bundle,
     verify_digest,
     verify_gzip_digests,
     verify_manifest_files,
 )
-from .cache import Cache, Receipt, digest
-from .catalog import SNAPSHOT_SOURCES, TABLE_SOURCES, TIMELINE_SOURCES
+from .cache import (
+    Cache,
+    digest,  # noqa: F401
+)
 from .curation import CORRECTIONS, Change, Correction, CurationWarning, glob
 from .dataset import Dataset
-from .discovery import list_bucket
 from .errors import (
     CoordinateError,
     IntegrityError,
@@ -33,45 +31,38 @@ from .errors import (
     OsteosarcError,
     SchemaError,
 )
-from .fixtures import (
-    FixtureSelection,
-    load_panel,
-    select_fixture_records,
-    select_fixtures,
-    validate_recipe,
+from .fixtures import load_panel, validate_recipe
+from .models import File, Files, Region, Sample, Samples, Variant, Variants
+from .parsing import (
+    Table,
+    parse_variants,  # noqa: F401
 )
-from .models import File, Files, Region, Sample, SampleClaim, Samples, Variant, Variants
-from .parsing import Table, parse_file, parse_table, parse_variant_index, parse_variants
-from .reads import (
-    AlignmentInfo,
+from .reads import (  # noqa: F401
     ReadFilter,
     ReadSubset,
     assembly_from_header,
     extract_reads,
     inspect_alignment,
-    normalize_assembly,
-    resolve_regions,
-    subset_templates,
 )
-from .records import RECORD_ENCODING, bam_record_digests, read_records, record_multiset
-from .recovery import RecoveryPolicy, recover_reads
-from .sv_interest import load_sv_interest
+from .recovery import RecoveryPolicy
+from .sv_candidates import load_sv_candidates
 from .timeline import Event, Timeline
 
-__version__ = "0.9.0"
+__version__ = "0.10.0"
 
+# The public API. A few other helpers are importable from here because the OpenVax
+# libraries use them (digest, parse_variants, inspect_alignment, ...); everything
+# else lives in its module: osteosarc.bundles, osteosarc.reads, osteosarc.records ...
 __all__ = [
-    "load_sv_interest",
-    "FixtureSelection", "load_panel", "select_fixture_records", "select_fixtures", "validate_recipe",
-    "RECORD_ENCODING", "bam_record_digests", "read_records", "record_multiset",
-    "RecoveryPolicy", "recover_reads",
-    "compact_header", "export_bundle", "generate_bundle", "list_bundle", "pack_bundle",
-    "safe_path", "verify_bundle", "verify_digest", "verify_gzip_digests", "verify_manifest_files",
-    "AlignmentInfo", "File", "Files", "CORRECTIONS", "Cache", "Change", "CoordinateError", "Correction",
-    "CurationWarning", "Dataset", "Event", "IntegrityError", "NoSnapshotsError", "TIMELINE_SOURCES", "Timeline", "glob",
-    "OfflineError", "OsteosarcError", "ReadFilter", "ReadSubset", "Receipt", "Region",
-    "SNAPSHOT_SOURCES", "Sample", "SampleClaim", "Samples", "SchemaError", "TABLE_SOURCES", "Table", "Variant",
-    "Variants", "assembly_from_header", "digest", "extract_reads", "inspect_alignment", "list_bucket",
-    "normalize_assembly", "parse_file", "parse_table", "parse_variant_index", "parse_variants",
-    "resolve_regions", "subset_templates",
+    # Browsing and downloading
+    "Dataset", "Sample", "Samples", "File", "Files", "Variant", "Variants", "Event", "Timeline", "Table", "Region",
+    "Cache",
+    # Reads and test data
+    "extract_reads", "ReadFilter", "ReadSubset", "RecoveryPolicy",
+    "generate_bundle", "verify_bundle", "list_bundle", "export_bundle", "validate_recipe", "load_panel",
+    "load_sv_candidates",
+    # Corrections
+    "CORRECTIONS", "Change", "Correction", "CurationWarning", "glob",
+    # Errors
+    "OsteosarcError", "CoordinateError", "IntegrityError", "NoSnapshotsError", "OfflineError", "SchemaError",
 ]

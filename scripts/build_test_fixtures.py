@@ -1,7 +1,7 @@
 """Make small public-source excerpts from a locally acquired metadata directory.
 
 No network. Usage: python scripts/build_test_fixtures.py .cache/audit
-The input filenames match docs/validation.md. Each source digest is recorded.
+The input filenames match docs/testing.md. Each source digest is recorded.
 """
 
 import csv

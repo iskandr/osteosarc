@@ -3,7 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from osteosarc import SNAPSHOT_SOURCES, TIMELINE_SOURCES, Cache, Dataset
+from osteosarc import Cache, Dataset
+from osteosarc.catalog import SNAPSHOT_SOURCES, TIMELINE_SOURCES
 
 DATA = Path(__file__).parent / "data"
 FILES = {"bams": "bams.json", "bucket": "bucket_listing.json", "variant_index": "variants.html",

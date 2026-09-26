@@ -2,155 +2,81 @@
 
 Osteosarc is a Python library and command-line tool for the public
 [osteosarc.com](https://osteosarc.com/data/) dataset: one patient's osteosarcoma
-sequencing, variant calls, cancer vaccines and clinical history. It keeps a fixed
-copy of the site's metadata so your results don't change under you, fixes known
-errors in it, and downloads only the reads you ask for.
+sequencing, variant calls, cancer vaccines and clinical history. It does two things
+well:
 
-| You can… | Guide |
-| --- | --- |
-| See every sample, what was sequenced, and its BAMs and FASTQs with the commands that fetch them | [Samples and files](samples.md) |
-| Search nearly 400,000 files without downloading them, and see which you have | [Samples and files](samples.md#find-any-file) |
-| Get variants, read counts, vaccine peptides and ELISPOT results | [Select variants](variants.md) |
-| Copy the reads around variants out of remote BAMs, without downloading them whole | [Extract reads](reads.md) |
-| Chart every treatment, procedure, scan and MRD result | [Browse the timeline](timeline.md) |
-| Do all of this from a terminal | [Command line](cli.md) |
-| Pass data to Varcode, Isovar, Topiary or Vaxrank | [Use other libraries](consumers.md) |
-| Build small, reproducible test BAMs | [Read fixtures](fixtures.md) |
-| Look through 637 candidate structural variants | [SV catalogue](sv-interest.md) |
+- **Exploring.** See every sample and what was sequenced, every file in the bucket,
+  the variant catalogue and the clinical timeline, from a terminal or Python.
+- **Making test data.** Pull just the reads around a few variants out of a remote
+  BAM into a small local one, ready for a unit test, without downloading the BAM.
 
-!!! note "Corrections are on by default"
-    Osteosarc fixes 35 known problems in the published data, each with its
-    evidence ([corrections](curation.md)). For example, it replaces the MAP2 vaccine target's
-    allele with the complex event that Tempus and CeGaT report and that the
-    [tumor reads support](tour.md). Each load checks every correction against
-    the snapshot's source records. Pass `corrections=False` to
-    `Dataset.open`, or use `osteosarc --no-corrections`, to see the published values.
+It keeps a dated copy of the website's metadata, so results don't change under
+you, and fixes [known errors](corrections.md) in it.
 
-New to the dataset? [Key concepts](concepts.md) explains where the data comes from,
-sample IDs, variant statuses and coordinates.
-
-## Look around
+## Get started
 
 ```sh
 python -m pip install osteosarc
-osteosarc sync                # Once: about 57 MB of the website's metadata
-osteosarc                     # Which snapshot you're using, and every command
-osteosarc samples             # Samples and what was sequenced
-osteosarc samples T1_tumor    # One sample's files, and commands to get them
-osteosarc timeline            # Treatments, procedures, scans and MRD
+osteosarc sync                # once: about 57 MB of the website's metadata
+osteosarc                     # the snapshot in use, and every command
+osteosarc samples             # samples and what was sequenced
+osteosarc samples T1_tumor    # one sample's files, and commands to get them
+osteosarc variants --gene MAP2
+osteosarc timeline            # treatments, procedures, scans and MRD
 ```
 
-Every command prints text for people, and `--json` for scripts; the
-[command-line guide](cli.md) lists them all. `osteosarc repl` opens Python with the
-data loaded as `data`.
-
-In Python or a notebook, the dataset, samples, files, variants, tables and the
-timeline all show readable previews, and `data` itself lists what's there:
+Every command prints text for people, or JSON with `--json`. In Python or a
+notebook, everything shows a readable preview, and the dataset itself lists what's
+there:
 
 ```python
 from osteosarc import Dataset
 
-data = Dataset.sync()
+data = Dataset.sync()   # later: Dataset.open(), offline
 data
 data.samples["T1_tumor"]
 print(data.variants(gene="MAP2"))
 ```
 
-## Get started
+`osteosarc repl` opens Python with the data already loaded as `data`.
 
-### Install
+## Make test data
+
+The reads around a variant in each of a sample's RNA-seq BAMs, saved in a folder
+with readable names:
 
 ```sh
-python -m pip install osteosarc
+osteosarc reads T0_tumor --assay rna-seq --variant DYNC1H1-chr14-101980529 --padding 100 --to tests/data
 ```
 
-You need Python 3.9+ on Linux or macOS, and `samtools` on your PATH to fetch
-reads.
-
-### 1. Save the metadata
-
-```python
-from osteosarc import Dataset
-
-data = Dataset.sync()
-```
-
-This downloads about 57 MB of the website's metadata, saved as a snapshot named
-by today's date (UTC). Sequencing files stay remote. Running it again the same day
-reuses the snapshot.
-
-### 2. Choose a sample and assay
-
-```python
-print(data.samples)
-```
-
-`T0_tumor` is the primary tumor, collected at timepoint **T0** (2022-12-16), and
-`T0_blood` is blood from the same visit. The sample type is its `tissue` (`tumor`,
-`blood` or `organoid`), and what was sequenced is its `assay`.
-
-`T0_tumor` has **bulk RNA-seq, whole-exome (WES) and whole-genome (WGS)** data.
-`data.samples["T0_tumor"]` shows all of its files; its bulk RNA alignments are:
+Only those reads are fetched, with an index, so each file is a few hundred
+kilobytes. A BAM on another genome build is skipped with a note. The same in
+Python, for one BAM:
 
 ```python
 rna = data.samples["T0_tumor"].files.select(kind="alignment", assay="rna-seq")
-for file in rna:
-    print(file.key)
-```
-
-`rna-seq` means bulk RNA and `scrna-seq` single-cell RNA; `T1_tumor` has both.
-You can also pick by platform, such as `platform="ont"` or `platform="pacbio"`. See
-[Samples and files](samples.md)
-for more filters and the full assay vocabulary.
-
-### 3. Select variants
-
-```python
-targets = data.variants(gene="DYNC1H1", status="ready")
-for variant in targets:
-    print(variant.id, variant.allele)
-```
-
-`status="ready"` keeps variants with one usable allele, given as
-`(chromosome, one-based position, REF, ALT)`. It doesn't mean the variant has
-reads, is somatic or changes the protein. Leave it out to see every entry; see
-[all statuses](variants.md#variant-status).
-
-### 4. Fetch reads for those variants
-
-```python
 source = rna["rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"]
-reads = data.extract_reads(source, variants=targets, padding=100)
+dync1h1 = data.variants(gene="DYNC1H1", status="ready")
+reads = data.extract_reads(source, variants=dync1h1, padding=100, to="tests/data")
 print(reads.path)
 ```
 
-This copies the reads around those variants into a small local BAM, after checking
-that the BAM and the variants use the same genome build. Asking again reuses the
-cached copy. [Isovar](consumers.md#isovar) can tell you which reads carry the variant.
+Asking again reuses the cached result, even offline. [Reads](reads.md) covers
+regions, filters and mates; [test data](test-data.md) covers bundles of test reads
+that other libraries can check.
 
-### 5. Pick up where you left off
+## Where to go next
 
-```python
-data = Dataset.open()  # Your most recent snapshot, offline
-counts = data.table("vafs").select(gene="SMC5")
-print(counts.rows[:2])
-```
+| To | Read |
+| --- | --- |
+| Understand samples, variants, coordinates and corrections | [Concepts](concepts.md) |
+| Find a sample's files, and download them | [Samples and files](samples.md) |
+| Get alleles, read counts and vaccine peptides | [Variants and vaccines](variants.md) |
+| Fetch reads by variant or region | [Reads](reads.md) |
+| Chart treatments, scans and MRD | [Timeline](timeline.md) |
+| Use every command | [Command line](command-line.md) |
+| Pass data to Varcode, Isovar, Topiary or Vaxrank | [OpenVax libraries](openvax.md) |
 
-The website changes over time; your snapshot doesn't. Run `Dataset.sync()` on a
-later day to save a new one, and `Dataset.snapshots()` to list them.
-`Dataset.open(date="2026-09")` reopens the newest from that month. Pass
-`offline=False` to download more files or fetch new reads. See
-[snapshots and cache](design.md) for more.
-
-## Prefer the terminal?
-
-```sh
-osteosarc sync
-osteosarc samples T0_tumor
-osteosarc files --sample T0_tumor --kind alignment --assay rna-seq
-osteosarc variants --gene SMC5
-osteosarc downloads
-```
-
-Every command uses your most recent snapshot; `--snapshot 2026-09` picks the newest
-from that month. The [command-line guide](cli.md) lists every command.
+You need Python 3.9+ on Linux or macOS, and SAMtools on your PATH to fetch reads.
+The website changes over time; a snapshot doesn't. Run `osteosarc sync` on a later
+day for a new one; see [snapshots and cache](snapshots.md).

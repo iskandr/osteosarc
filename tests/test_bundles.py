@@ -5,18 +5,12 @@ from pathlib import Path
 
 import pytest
 
-from osteosarc import (
-    IntegrityError,
-    digest,
-    export_bundle,
-    generate_bundle,
-    list_bundle,
-    pack_bundle,
-    record_multiset,
-    select_fixtures,
-    verify_bundle,
-)
+from osteosarc import IntegrityError, export_bundle, generate_bundle, list_bundle, verify_bundle
+from osteosarc.bundles import pack_bundle
+from osteosarc.cache import digest
 from osteosarc.cli import main
+from osteosarc.fixtures import select_fixtures
+from osteosarc.records import record_multiset
 
 
 def bundle_recipe(bam):
@@ -59,11 +53,11 @@ def test_cli_and_dataset_produce_same_bundle(bam, dataset, tmp_path, capsys):
     recipe = bundle_recipe(bam)
     path = tmp_path / "recipe.json"
     path.write_text(json.dumps(recipe))
-    expected = dataset.generate_bundle(recipe, tmp_path / "api", sources={"rna": bam})
-    assert main(["--cache", str(tmp_path / "cache"), "--offline", "fixtures", "generate", str(path),
+    expected = generate_bundle(recipe, tmp_path / "api", sources={"rna": bam}, dataset=dataset)
+    assert main(["--cache", str(tmp_path / "cache"), "--offline", "test-data", "generate", str(path),
                  str(tmp_path / "cli"), "--source", f"rna={bam}"]) == 0
     assert json.loads(capsys.readouterr().out) == expected
-    assert main(["--cache", str(tmp_path / "cache"), "--offline", "fixtures", "verify", str(tmp_path / "cli")]) == 0
+    assert main(["--cache", str(tmp_path / "cache"), "--offline", "test-data", "verify", str(tmp_path / "cli")]) == 0
 
 
 @pytest.mark.parametrize("corruption", ["record", "index", "recipe", "nested", "duplicate", "traversal"])
@@ -109,7 +103,8 @@ def test_atomic_failure_size_budget_and_no_overwrite(bam, tmp_path):
 
 
 def test_compact_keeps_verified_assembly_and_full_header_provenance(bam, tmp_path):
-    from osteosarc import Region, resolve_regions
+    from osteosarc import Region
+    from osteosarc.reads import resolve_regions
     manifest = generate_bundle(bundle_recipe(bam), tmp_path / "bundle", sources={"rna": bam}, header_policy="compact")
     source = manifest["sources"]["rna"]
     import pysam
@@ -140,7 +135,7 @@ def test_swapped_index_detected_even_if_file_hash_is_relisted(bam, tmp_path):
 def test_compact_retains_pg_ancestry_and_unresolved_metadata():
     import pysam
 
-    from osteosarc import compact_header
+    from osteosarc.bundles import compact_header
     from osteosarc.records import FixtureRecord
     header = dict(SQ=[dict(SN="chr1", LN=248956422), dict(SN="chr2", LN=242193529)],
                   RG=[dict(ID="rg", SM="sample", LB="library", PG="aligned")],
@@ -287,7 +282,7 @@ def test_dataset_acquisition_accepts_identity_without_url(bam, dataset, tmp_path
     original = reads._run
     monkeypatch.setattr(reads, "_run", lambda command, timeout: original(
         [str(bam) if arg == asset.url else arg for arg in command], timeout))
-    manifest = dataset.generate_bundle(recipe, tmp_path / "bundle")
+    manifest = generate_bundle(recipe, tmp_path / "bundle", dataset=dataset)
     assert manifest["members"]["duplicates"]["records"] == dict(record_multiset(bam))
     acquired = json.loads((tmp_path / "bundle/acquisition.json").read_text())["rna"]
     assert acquired["request"]["source"] == asset.url

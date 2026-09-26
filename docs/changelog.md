@@ -5,6 +5,37 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.10.0 (unreleased)
+
+A smaller, more consistent osteosarc, centered on exploring the data and making
+test data ([#58](https://github.com/iskandr/osteosarc/issues/58)).
+
+- **Test data in one command.** `osteosarc reads T1_tumor --assay rna-seq --variant ID
+  --padding 100 --to tests/data` streams just those reads from each of a sample's
+  BAMs, and saves each as a small indexed BAM named for its source and variant.
+  `data.extract_reads(..., to="tests/data")` does the same in Python.
+- **Command line.** `osteosarc timeline --around DATE` replaces `osteosarc on`, and
+  `osteosarc test-data` (generate, list, verify, export) replaces `fixtures`; its
+  select, pack and panel actions are gone (use the Python functions). `table` and
+  `discover` are gone.
+- **No silent overwrites.** Saving a download or reads into a folder never replaces
+  a file with different contents; it stops and says so.
+- **Python.**
+  - Dataset loses `table` (use `parse`), `claims`, `timepoints`, `annotations`,
+    `vaccine_names`, `pipeline_names`, `receipts`, `open_variants`, and the
+    `generate_bundle` and `select_fixtures` shortcuts (use the functions).
+  - The package's top-level names are the core API. Helpers such as
+    `list_bucket`, `read_records` and `SNAPSHOT_SOURCES` now come from their modules.
+- **Names.** The SV interest catalogue is now **SV candidates**: `load_sv_candidates()`
+  and the `sv-candidates-v1` panel. FASTQ folder tables name assays and platforms
+  as everywhere else, with a library column (gene expression, TCR, BCR, antibody
+  tags, long reads).
+- **Docs.**
+  - Page addresses match their titles (command-line, python-api, snapshots,
+    corrections, testing, map2, sv-candidates, test-data, openvax).
+  - The three pages about moving code onto osteosarc are merged into two.
+  - Every page has much less code formatting.
+
 ## 0.9.0 (2026-09-26)
 
 The command line and the Python API now use the same two nouns, samples and files,
@@ -144,7 +175,7 @@ review:
 ## 0.2.6 (2026-09-24)
 
 - Reorganized documentation with [key concepts](concepts.md), a
-  [command-line guide](cli.md), a complete [API reference](api.md) and this
+  [command-line guide](command-line.md), a complete [API reference](python-api.md) and this
   changelog. The README is a shorter landing page that lists the main features
   ([#32](https://github.com/iskandr/osteosarc/issues/32)).
 - The documentation example checker covers every published page and the strict
@@ -152,7 +183,7 @@ review:
 
 ## 0.2.5 (2026-09-24)
 
-- The [SV interest catalogue](sv-interest.md): 637 structural-variant nominations with
+- The [SV interest catalogue](sv-candidates.md): 637 structural-variant nominations with
   original calls, breakend geometry, Ensembl 115 annotation, T2 expression and
   scoped RNA evidence. It loads offline with `load_sv_interest()` or
   `load_panel("sv-interest-v1")` ([#29](https://github.com/iskandr/osteosarc/pull/29)).
@@ -169,7 +200,7 @@ review:
 ## 0.2.3 (2026-09-23)
 
 - Shared historical fixture adapters for Isovar, Topiary and Vaxrank, and the
-  additional SV research panel. See [OpenVax fixture adoption](fixture-migration.md)
+  additional SV research panel. See [OpenVax fixture adoption](test-data.md#how-the-libraries-build-their-test-data)
   ([#15](https://github.com/iskandr/osteosarc/issues/15)).
 - Python 3.9 support.
 
@@ -185,7 +216,7 @@ review:
 
 ## 0.2.0 (2026-09-23)
 
-- Versioned [fixture recipes](fixtures.md) and one selection executor shared by the
+- Versioned [fixture recipes](test-data.md) and one selection executor shared by the
   Python API, `Dataset` and CLI ([#12](https://github.com/iskandr/osteosarc/issues/12)).
 
 ## 0.1.4 (2026-09-22)

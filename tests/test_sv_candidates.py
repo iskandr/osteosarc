@@ -1,13 +1,11 @@
 """The shared interest set must retain unproductive and unassessed SVs too."""
 
-import json
 
-from osteosarc import load_panel, load_sv_interest, validate_recipe
-from osteosarc.cli import main
+from osteosarc import load_panel, load_sv_candidates, validate_recipe
 
 
 def test_interest_set_keeps_requested_candidates_and_all_nomination_outcomes():
-    catalogue = load_sv_interest()
+    catalogue = load_sv_candidates()
     targets = catalogue["targets"]
     requested = {"SV0203", "SV0089", "SV0085", "SV0078", "SV0368", "SV0381",
                  "SV0281", "SV0111", "SV0499", "SV0172", "SV0377"}
@@ -23,17 +21,15 @@ def test_interest_set_keeps_requested_candidates_and_all_nomination_outcomes():
 
 
 def test_api_panel_and_cli_preserve_identical_metadata_and_return_copies(capsys):
-    catalogue = load_sv_interest()
+    catalogue = load_sv_candidates()
     expected = catalogue["targets"]
-    assert load_panel("sv-interest-v1") == expected
-    assert main(["--offline", "fixtures", "panel", "sv-interest-v1"]) == 0
-    assert json.loads(capsys.readouterr().out) == expected
+    assert load_panel("sv-candidates-v1") == expected
     catalogue["targets"].clear()
-    assert len(load_sv_interest()["targets"]) == 637
+    assert len(load_sv_candidates()["targets"]) == 637
 
 
 def test_expression_and_missing_rna_remain_sample_and_source_scoped():
-    targets = load_sv_interest()["targets"]
+    targets = load_sv_candidates()["targets"]
     t = targets["SV0203"]
     expression, = [r for r in t["gene_expression"] if r["gene"] == "MACROD2"]
     assert expression["sample_id"] == "T2"

@@ -4,15 +4,10 @@ import json
 import pysam
 import pytest
 
-from osteosarc import (
-    IntegrityError,
-    load_panel,
-    read_records,
-    record_multiset,
-    select_fixture_records,
-    select_fixtures,
-)
+from osteosarc import IntegrityError, load_panel
 from osteosarc.cli import main
+from osteosarc.fixtures import select_fixture_records, select_fixtures
+from osteosarc.records import read_records, record_multiset
 
 
 def recipe_for(bam):
@@ -30,11 +25,11 @@ def test_api_dataset_cli_and_input_order_agree(bam, dataset, tmp_path, capsys):
     recipe["members"]["background"] = dict(source="rna", target="snv", regions=[dict(
         contig="chr1", start=90, end=160, assembly="GRCh38")], policy=dict(kind="regional", version=1, cap=2, seed="pinned"))
     selected = select_fixtures(recipe, {"rna": bam})
-    assert selected.manifest == dataset.select_fixtures(recipe, {"rna": bam}).manifest
     path = tmp_path / "recipe.json"
     path.write_text(json.dumps(recipe))
-    assert main(["--cache", str(tmp_path / "cache"), "--offline", "fixtures", "select", str(path), "--source", f"rna={bam}"]) == 0
-    assert json.loads(capsys.readouterr().out) == selected.manifest
+    assert main(["--cache", str(tmp_path / "cache"), "--offline", "test-data", "generate", str(path),
+                 str(tmp_path / "bundle"), "--source", f"rna={bam}"]) == 0
+    assert json.loads(capsys.readouterr().out)["members"] == selected.manifest["members"]
     assert selected.members["alt"]["records"] == record_multiset(bam)
     records = list(read_records(bam))
     policy = dict(kind="stratified", version=1, seed="0", cap=1, assignments=[dict(

@@ -1,7 +1,7 @@
 """Run every example in README.md and the mkdocs nav pages against the live public sources.
 
     python scripts/check_docs.py                      # all pages, fresh temporary cache
-    python scripts/check_docs.py --cache DIR docs/tour.md
+    python scripts/check_docs.py --cache DIR docs/map2.md
 
 Python blocks on one page share a namespace, in order, as a reader would run
 them. Shell blocks run their `osteosarc` lines (with an empty standard input, so

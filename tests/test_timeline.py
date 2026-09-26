@@ -130,7 +130,9 @@ def test_cli_timeline_samples_and_on(dataset, capsys):
     assert "Time points" in capsys.readouterr().out
     assert main(["--cache", root, "timeline", "--snapshot", "fixture", "--lane", "MRD", "--json"]) == 0
     assert all(e["category"] == "MRD" for e in json.loads(capsys.readouterr().out))
-    assert main(["--cache", root, "on", "--snapshot", "fixture", "2025-01-28", "--days", "0"]) == 0
+    assert main(["--cache", root, "timeline", "--snapshot", "fixture", "--days", "3"]) == 1
+    assert "--around DATE" in capsys.readouterr().err
+    assert main(["--cache", root, "timeline", "--snapshot", "fixture", "--around", "2025-01-28", "--days", "0"]) == 0
     assert "T2" in capsys.readouterr().out
     assert main(["--cache", root, "samples", "--snapshot", "fixture", "T3_tumor"]) == 0
     assert "MSKCC" in capsys.readouterr().out

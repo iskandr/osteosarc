@@ -2,7 +2,8 @@ from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
-from osteosarc import Cache, SchemaError, list_bucket
+from osteosarc import Cache, SchemaError
+from osteosarc.discovery import list_bucket
 
 
 def page(prefix, key, *, token=None, truncated=False):
