@@ -241,7 +241,7 @@ class Sample:
     fastq_folders: tuple[str, ...] = ()
     missing_bams: tuple[str, ...] = ()
     notes: str = ""
-    disagreements: tuple[dict, ...] = ()
+    disagreements: tuple[dict, ...] = field(default=(), compare=False)
     corrections: tuple[str, ...] = ()
     details: dict = field(default_factory=dict, compare=False, repr=False)
 

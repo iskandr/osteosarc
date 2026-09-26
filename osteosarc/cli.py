@@ -6,7 +6,6 @@ import os
 import subprocess
 import sys
 from dataclasses import asdict
-from pathlib import PurePosixPath
 
 from . import __version__
 from .cache import Cache
@@ -153,6 +152,8 @@ def parser():
                        "  osteosarc download vafs")
     download.add_argument("file", help="A file's key (see osteosarc files), URL or ID")
     download.add_argument("--to", metavar="DIR", help="Also put the file, and its index, in DIR under its own name")
+    download.add_argument("--refresh", action="store_true",
+                          help="Download again, for a file this snapshot hasn't downloaded yet")
     reads = command("reads", epilog="examples:\n"
                     "  osteosarc reads KEY --variant MAP2-chr2-209694768 --padding 100\n"
                     "  osteosarc reads KEY chr17:7661779-7687538 --assembly GRCh38\n\n"
@@ -355,9 +356,7 @@ def browse(args, dataset):
             return 0
         selection = dataset.files.select(**filters)
         if args.downloaded:
-            # One pass over the cache, rather than a lookup per file.
-            local = {r["url"] for r in dataset.downloads() if r["kind"] == "file"}
-            local |= {r["url"] for r in dataset.manifest["sources"].values()}
+            local = dataset.local_urls()
             selection = selection.where(lambda f: f.url in local)
         if args.json:
             print_json(dict(total=len(selection), files=selection[:args.limit].to_records()))
@@ -425,10 +424,9 @@ def get_data(args, dataset):
     from . import views
     if args.command == "download":
         file = dataset.file(args.file)
-        path = dataset.download(file, to=args.to)
-        print(path)
+        print(dataset.download(file, to=args.to, refresh=args.refresh))
         if args.to and file.index_urls:
-            print(path.parent / PurePosixPath(dataset.file(file.index_urls[0]).key).name)
+            print(dataset.download(file.index_urls[0], to=args.to))  # already placed; this names it
     elif args.command == "reads":
         subset = dataset.extract_reads(args.file, **read_targets(dataset, args),
                                        reference=args.reference, index=args.index,
@@ -496,7 +494,7 @@ def main(argv=None):
                       else f"Nothing under {args.prefix}")
             return 0
         # Browsing stays offline; commands that fetch bytes may use the network unless --offline.
-        online = args.command in ("download", "table", "reads") and not args.offline
+        online = args.command in ("download", "table", "reads", "repl") and not args.offline
         dataset = open_snapshot(args, cache, online)
         if args.command == "repl":
             repl(dataset)

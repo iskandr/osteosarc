@@ -13,7 +13,7 @@ from pathlib import PurePosixPath
 
 from .curation import ASSAY_NAMES, ASSAYS
 from .errors import OsteosarcError
-from .urls import S3_BUCKET
+from .urls import BUCKET, S3_BUCKET
 
 #: Display order of file kinds.
 KINDS = ("alignment", "reads", "variants", "expression", "annotation", "table", "reference", "index",
@@ -168,7 +168,7 @@ def _fastq_folders(sample, files):
                                        r["library"], r["folder"]))
 
 
-def _bam_rows(sample, data):
+def _bam_rows(sample, data, local):
     rows = []
     for key in sample.bams:
         try:
@@ -178,14 +178,19 @@ def _bam_rows(sample, data):
         rows.append(dict(
             assay=_text(file.values("assay")) if file else "", platform=_text(file.values("platform")) if file else "",
             provider=_text(file.values("provider")) if file else "", size=size_text(file.size) if file else "",
-            local="yes" if file and data.local_path(file) else "", key=key, indexed=bool(file and file.index_urls)))
+            local="yes" if file and file.url in local else "", key=key, indexed=bool(file and file.index_urls)))
     order = {name: i for i, name in enumerate(ASSAY_NAMES)}
     return sorted(rows, key=lambda r: (order.get(r["assay"].split(", ")[0], len(order)), r["key"]))
 
 
-def sample_files_view(sample, data, *, width=None):
-    """A sample's BAMs and FASTQ folders as two tables."""
-    bams = _bam_rows(sample, data)
+def sample_files_view(sample, data, *, width=None, files=None, local=None):
+    """A sample's BAMs and FASTQ folders as two tables.
+
+    files (the sample's files) and local (URLs with a local copy) save looking
+    them up again when showing many samples.
+    """
+    local = data.local_urls() if local is None else local
+    bams = _bam_rows(sample, data, local)
     lines = []
     if bams:
         downloaded = sum(r["local"] == "yes" for r in bams)
@@ -197,7 +202,7 @@ def sample_files_view(sample, data, *, width=None):
         lines.append("BAMs: none")
     if sample.missing_bams:
         lines.append("The site names BAMs the bucket doesn't have: " + "; ".join(sample.missing_bams))
-    folders = _fastq_folders(sample, sample.files if data is not None else None)
+    folders = _fastq_folders(sample, sample.files if files is None else files)
     lines.append("")
     if folders:
         lines.append(f"FASTQ folders, raw reads ({len(folders)}):")
@@ -250,13 +255,15 @@ def get_data_hints(data, bams, folders, *, python=False):
                           "reads around a variant, streamed into a small local BAM"))
         lines.append((f'data.download("{bam["key"]}", to=".")' if python else
                       f"osteosarc download {bam['key']} --to .",
-                      f"the whole BAM ({bam['size'] or 'size unknown'}) and its index, into this folder"))
+                      f"the whole BAM ({bam['size'] or 'size unknown'})"
+                      + (" and its index" if bam["indexed"] else "") + ", into this folder"))
     if folders:
         folder = folders[0]["folder"]
         lines.append((f'data.files.select(prefix="{folder}")' if python else f"osteosarc files --prefix {folder}",
                       "the files in a FASTQ folder"))
-        lines.append((f"aws s3 cp --recursive --no-sign-request {S3_BUCKET}{folder} "
-                      f"{PurePosixPath(folder).name}/", "a whole folder, with the AWS CLI (in a shell)"))
+        if data._download_header.get("download_base", BUCKET) == BUCKET:  # not for a mirror
+            lines.append((f"aws s3 cp --recursive --no-sign-request {S3_BUCKET}{folder} "
+                          f"{PurePosixPath(folder).name}/", "a whole folder, with the AWS CLI (in a shell)"))
     if not lines:
         return "  (no files)"
     return "\n".join(f"  {command}\n      {what}" for command, what in lines)
@@ -284,10 +291,14 @@ def _first_sentence(text):
 
 
 def all_sample_files_view(samples, data, *, width=None):
+    by_sample, local = defaultdict(list), data.local_urls()
+    for file in data.files:  # one pass, rather than one per sample
+        for sample in file.samples:
+            by_sample[sample].append(file)
     parts = []
     for sample in samples:
         what = ", ".join(x for x in (sample.description or sample.tissue, sample.site, sample.date) if x)
-        files, _, _ = sample_files_view(sample, data, width=width)
+        files, _, _ = sample_files_view(sample, data, width=width, files=by_sample[sample.id], local=local)
         parts.append(f"== {sample.id}: {what}\n{files}")
     parts.append("Get a file: osteosarc download KEY --to .   Reads in a region: osteosarc reads KEY REGION"
                  "\nOne sample, with commands written out: osteosarc samples SAMPLE")
@@ -333,11 +344,12 @@ def files_overview(data, *, width=None):
 
 
 def files_view(files, data, *, limit=50, width=None, more="Use --limit N to show more, or --json for records."):
+    local = data.local_urls()
     order = {kind: i for i, kind in enumerate(KINDS)}
     files = sorted(files, key=lambda f: (order.get(f.kind, len(order)), f.key))
     rows = [dict(kind=f.kind, sample=_text(f.samples), assay=_text(f.values("assay")),
                  provider=_text(f.values("provider")), size=size_text(f.size),
-                 local="yes" if data.local_path(f) else "", notes=_text(f.metadata.get("corrections")), key=f.key)
+                 local="yes" if f.url in local else "", notes=_text(f.metadata.get("corrections")), key=f.key)
             for f in (files if limit is None else files[:limit])]
     columns = [c for c in ("kind", "sample", "assay", "provider") if any(r[c] for r in rows) or c == "kind"]
     if len({f.kind for f in files}) == 1:
@@ -358,7 +370,7 @@ def downloads_view(rows, cache_root, *, width=None):
         out.append(table([dict(r, size=size_text(r["size"])) for r in files], ("key", "size", "path"),
                          width=width, fixed=("key", "path")))
         out.append("Cached files are named by content. Put one in a folder under its own name with\n"
-                   "osteosarc download KEY --to DIR (a hard link, so no second copy).")
+                   "osteosarc download KEY --to DIR (a read-only hard link, so no second copy).")
     else:
         out.append("Downloaded files: none yet (osteosarc download FILE)")
     out.append("")

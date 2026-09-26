@@ -75,6 +75,14 @@ DATE_SELECTOR = re.compile(r"\d{4}(-\d{2}(-\d{2})?)?")
 DATED_NAME = re.compile(r"\d{4}-\d{2}-\d{2}(\.\d+)?")
 
 
+def _read_receipt(path):
+    """A receipt stored as JSON, or None if it's missing or unreadable."""
+    try:
+        return Receipt(**json.loads(Path(path).read_text()))
+    except (OSError, ValueError, TypeError):
+        return None
+
+
 def downloaded_at(manifest):
     """UTC time of a snapshot's latest source download (its creation time if it has none)."""
     return max((r["retrieved_at"] for r in manifest["sources"].values()), default=manifest.get("created_at"))
@@ -359,6 +367,8 @@ class Dataset:
         """Registry rows, with each sample's BAM keys, missing BAM names and FASTQ table rows."""
         self._require_timeline()
         rows, touched = self.curation.records("specimens")
+        if any(not row.get("sample_id") for row in rows):
+            raise SchemaError("Every row of the sample registry needs a sample_id")
         metadata = {r["display_name"]: r for r in self.curation.records("bam_metadata")[0]}
         fastqs, related = defaultdict(list), defaultdict(list)
         fastq_rows, fastq_touched = self.curation.records("fastqs")
@@ -410,12 +420,13 @@ class Dataset:
             labels = [a.strip() for a in row.get("assays_run", "").split(";") if a.strip()]
             labels += [f["assay"] for f in source["fastqs"] if f.get("assay")]
             providers = [v.strip() for v in row.get("vendors_involved", "").split(";") if v.strip()]
-            providers += [normalize_provider(f["provider"]) for f in source["fastqs"] if f.get("provider")]
+            providers += [f["provider"] for f in source["fastqs"] if f.get("provider")]
             sample = Sample(
                 id=row["sample_id"], timepoint=row.get("timepoint") or None,
                 date=row.get("collection_date") or None, tissue=tissue,
                 site=row.get("collection_site") or None, description=row.get("tissue_source") or None,
-                providers=tuple(sorted(set(providers))), sequencing=sequencing_pairs(labels),
+                providers=tuple(sorted({normalize_provider(p) for p in providers})),
+                sequencing=sequencing_pairs(labels),
                 bams=source["bams"], missing_bams=source["missing"],
                 fastq_folders=tuple(dict.fromkeys(self._object_key(f["s3_folder"]).rstrip("/")
                                                   for f in source["fastqs"])),
@@ -432,8 +443,11 @@ class Dataset:
         """Record on each file the samples whose BAM it is or whose FASTQ folder holds it."""
         try:
             sources = self._sample_sources
-        except SchemaError:
-            return  # an older snapshot without the sample registry
+        except SchemaError as error:
+            # An older snapshot has no sample registry; any other problem is worth saying.
+            if set(TIMELINE_SOURCES) <= set(self.manifest["sources"]):
+                warnings.warn(f"Files aren't linked to samples: {error}", stacklevel=3)
+            return
         owners, folders = defaultdict(list), defaultdict(list)
         for source in sources:
             sample = source["row"]["sample_id"]
@@ -698,8 +712,8 @@ class Dataset:
 
         to names a directory to put the file in under its own name, and the
         path returned is then that one; a BAM's or VCF's index goes there too.
-        Each is a hard link to the cached copy where possible (so don't edit
-        it in place), else a copy.
+        Each is a read-only hard link to the cached copy where possible (so
+        it takes no space and can't corrupt the cache), else a copy.
 
         The download is bound to this snapshot: after the first, changes on
         the server can't alter this snapshot's bytes (use a new snapshot for
@@ -728,39 +742,51 @@ class Dataset:
         pointers = (self.cache.workspace / "bindings" / self.id / (file.id + ".json"),
                     self.cache.workspace / "urls" / (stable_id(file.url) + ".json"))
         for pointer in pointers:
-            try:
-                receipt = Receipt(**json.loads(pointer.read_text()))
-                path = self.cache.path(receipt, verify=False)
-            except (OSError, ValueError, TypeError, OfflineError, IntegrityError):
-                continue
-            if receipt.url == file.url and (file.size is None or receipt.size == file.size):
+            path = self._local_copy(file, _read_receipt(pointer))
+            if path is not None:
                 return path
         return None
+
+    def _local_copy(self, file, receipt):
+        """The cached object behind a receipt, if it's this file's bytes (same URL and size)."""
+        if receipt is None or receipt.url != file.url or (file.size is not None and receipt.size != file.size):
+            return None
+        try:
+            return self.cache.path(receipt, verify=False)
+        except (OfflineError, IntegrityError):
+            return None
 
     def downloads(self):
         """Files downloaded into the cache and reads extracted from BAMs, with local paths.
 
         Rows have kind ('file' or 'reads'), key (the file's key, or its URL if
         this snapshot doesn't list it), url, size, path and, for extracted
-        reads, regions. The snapshot's own metadata sources aren't listed.
+        reads, regions. Only this dataset's bucket is listed (the cache is
+        shared with other tools), and not the snapshot's own metadata. A file
+        counts as downloaded exactly when local_path finds it.
         """
         from .views import regions_text
         by_url = {f.url: f for f in self.files}
         sources = {r["url"] for r in self.manifest["sources"].values()}
-        # The cache is shared with other tools; only this dataset's bucket is listed.
         base = self._download_header.get("download_base", BUCKET)
+        receipts = {}
+        # This snapshot's own downloads first, then what the cache has for other snapshots.
+        for folder in (self.cache.workspace / "bindings" / self.id, self.cache.workspace / "urls"):
+            for pointer in sorted(folder.glob("*.json")):
+                receipt = _read_receipt(pointer)
+                if receipt is not None:
+                    receipts.setdefault(receipt.url, []).append(receipt)
         rows = []
-        for pointer in sorted((self.cache.workspace / "urls").glob("*.json")):
-            try:
-                receipt = Receipt(**json.loads(pointer.read_text()))
-                path = self.cache.path(receipt, verify=False)
-            except (OSError, ValueError, TypeError, OfflineError, IntegrityError):
+        for url, candidates in sorted(receipts.items()):
+            file = by_url.get(url)
+            if url in sources or not (file or url.startswith(base)):
                 continue
-            if receipt.url in sources or not (receipt.url in by_url or receipt.url.startswith(base)):
-                continue
-            file = by_url.get(receipt.url)
-            rows.append(dict(kind="file", key=file.key if file else receipt.url, url=receipt.url,
-                             size=receipt.size, path=str(path), regions="", downloaded=receipt.retrieved_at))
+            for receipt in candidates:
+                path = self._local_copy(file or File(stable_id(url), url, url, "", ""), receipt)
+                if path is not None:
+                    rows.append(dict(kind="file", key=file.key if file else url, url=url, size=receipt.size,
+                                     path=str(path), regions="", downloaded=receipt.retrieved_at))
+                    break
         for receipt_path in sorted((self.cache.workspace / "derived").glob("*/receipt.json")):
             try:
                 receipt = json.loads(receipt_path.read_text())
@@ -769,13 +795,18 @@ class Dataset:
             except (OSError, ValueError, KeyError, TypeError):
                 continue
             bam = receipt_path.parent / "reads.bam"
-            if not bam.is_file():
-                continue
             file = by_url.get(source)
+            if not bam.is_file() or not (file or str(source).startswith(base)):
+                continue
             rows.append(dict(kind="reads", key=file.key if file else source, url=source, size=bam.stat().st_size,
                              path=str(bam), regions=regions_text(regions),
                              downloaded=datetime.fromtimestamp(bam.stat().st_mtime, timezone.utc).isoformat()))
         return Table(rows, columns=("kind", "key", "url", "size", "path", "regions", "downloaded"))
+
+    def local_urls(self):
+        """URLs of every file with a local copy: downloads and the snapshot's own tables."""
+        return ({r["url"] for r in self.downloads() if r["kind"] == "file"}
+                | {r["url"] for r in self.manifest["sources"].values()})
 
     def _download(self, file, *, cache, refresh=False, verify_size=True):
         """Acquire a snapshot-bound file with the supplied cache's network policy."""
@@ -806,9 +837,14 @@ class Dataset:
             md5s = {r.get("md5sum") for r in file.metadata.get("metadata_rows", []) if r.get("md5sum")}
             if len(md5s) > 1:
                 raise IntegrityError("Conflicting published MD5 claims")
-            receipt = cache.fetch(file.url, refresh=refresh,
-                                  size=file.size if verify_size else None,
-                                  md5=next(iter(md5s), None))
+            try:
+                receipt = cache.fetch(file.url, refresh=refresh,
+                                      size=file.size if verify_size else None,
+                                      md5=next(iter(md5s), None))
+            except OfflineError as error:
+                raise OfflineError(f"{error}. This snapshot was opened offline; reopen it with "
+                                   "Dataset.open(offline=False), or use osteosarc download, "
+                                   "to download it") from None
             _check_inventory_time(file, receipt)
             write_json(binding, receipt.to_dict())
             return cache.path(receipt)

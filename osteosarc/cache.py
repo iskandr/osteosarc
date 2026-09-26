@@ -17,6 +17,7 @@ import hashlib
 import json
 import os
 import shutil
+import stat
 import sys
 import tempfile
 from contextlib import contextmanager
@@ -76,10 +77,11 @@ def share(path):
 
 
 def place(path, destination):
-    """Put a cached object at destination, as a hard link where possible, else a copy.
+    """Put a cached object at destination, as a read-only hard link where possible, else a copy.
 
-    An existing destination is replaced only once the new copy is complete.
-    Returns the destination path.
+    A hard link is the cached object itself, so it's made read-only: editing it
+    in place would corrupt the cache. An existing destination is replaced only
+    once the new one is complete. Returns the destination path.
     """
     destination = Path(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -91,6 +93,11 @@ def place(path, destination):
             os.link(path, staged)
         except OSError:
             shutil.copyfile(path, staged)
+        else:
+            try:
+                os.chmod(staged, stat.S_IMODE(os.stat(staged).st_mode) & ~0o222)
+            except OSError:
+                pass  # another user's cache object, which we can't write anyway
         os.replace(staged, destination)
     return destination
 

@@ -616,3 +616,55 @@ def test_text_commands_for_vaccines_tables_and_sync(dataset, capsys):
     assert "site/vafs" in capsys.readouterr().out  # the snapshot's own tables are on this computer
     assert main(["--cache", root, "--offline", "sync", "fixture"]) == 0
     assert capsys.readouterr().out.startswith("Saved snapshot fixture (")
+
+
+def test_review_fixes_for_samples_links_and_offline_downloads(dataset, tmp_path, monkeypatch, capsys):
+    import os
+    import stat
+
+    from osteosarc import CORRECTIONS, Change, Correction, OfflineError
+    from osteosarc.cache import place
+    # Samples with disagreements are hashable, and providers are named one way.
+    raw = Dataset.open("fixture", cache=dataset.cache, corrections=False)
+    assert raw.samples["T2_tumor"].disagreements and len(set(raw.samples)) == len(raw.samples)
+    boston = Correction("spelling", "simulate the registry's spelling", (
+        Change("specimens", {"sample_id": "T1_tumor"}, set={"vendors_involved": "Boston Gene"}),))
+    spelled = Dataset.open("fixture", cache=dataset.cache, corrections=[*CORRECTIONS, boston])
+    assert "Boston Gene" not in spelled.samples["T1_tumor"].providers
+    # A registry problem leaves files unlinked, with a warning, instead of breaking every file operation.
+    broken = Correction("broken", "simulate a registry row without an ID", (
+        Change("specimens", {"sample_id": "T3_tumor"}, set={"sample_id": ""}),))
+    unlinked = Dataset.open("fixture", cache=dataset.cache, corrections=[*CORRECTIONS, broken])
+    with pytest.warns(UserWarning, match="aren't linked to samples"):
+        assert len(unlinked.files) == len(dataset.files)
+    # A hard-linked copy is read-only, so editing it can't corrupt the cache.
+    cached = tmp_path / "object.bam"
+    cached.write_bytes(b"bytes")
+    placed = place(cached, tmp_path / "out" / "copy.bam")
+    assert placed.samefile(cached) and not os.stat(cached).st_mode & (stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH)
+    assert place(cached, placed) == placed
+    # Offline, a download that needs the network says how to allow it.
+    key = dataset.files.select(format="bam")[0].key
+    with pytest.raises(OfflineError, match="opened offline; reopen it with Dataset.open"):
+        dataset.download(key)
+    # The REPL opens its snapshot able to download; --offline keeps it offline.
+    import osteosarc.cli as cli
+    opened = []
+    monkeypatch.setattr(cli, "repl", opened.append)
+    root = str(dataset.cache.root)
+    assert main(["--cache", root, "repl", "--snapshot", "fixture"]) == 0
+    assert main(["--cache", root, "--offline", "repl", "--snapshot", "fixture"]) == 0
+    assert [d.cache.offline for d in opened] == [False, True]
+    assert main(["--cache", root, "--offline", "download", "--snapshot", "fixture", key, "--refresh"]) == 1
+    assert "Cannot refresh in offline mode" in capsys.readouterr().err
+
+
+def test_sample_hints_promise_only_what_download_does(dataset):
+    from osteosarc.views import get_data_hints
+    rows = [dict(key="a.bam", size="1 GB", indexed=False, local="")]
+    text = get_data_hints(dataset, rows, [])
+    assert "osteosarc download a.bam --to ." in text and "its index" not in text
+    assert "osteosarc reads" not in text  # an unindexed BAM can't be read by region
+    folders = [dict(folder="x/y/")]
+    assert "aws s3 cp --recursive --no-sign-request s3://sid-sijbrandij-osteosarc-dataset/x/y/ y/" in \
+        get_data_hints(dataset, [], folders)

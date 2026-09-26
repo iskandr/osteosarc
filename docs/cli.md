@@ -141,7 +141,7 @@ osteosarc table vaf_columns
 
 `download` saves one whole file in the cache and prints its path. With `--to DIR`
 it also puts the file, and a BAM's or VCF's index, in `DIR` under their own names
-(as hard links where possible, so they aren't stored twice). `downloads` lists
+(as read-only hard links where possible, so they aren't stored twice). `downloads` lists
 what you've downloaded and the reads you've extracted, with their local paths.
 
 `table` prints a named table (`vafs`, `vaf_columns`, `snv_top`, `dna_fusions`,

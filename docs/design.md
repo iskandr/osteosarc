@@ -79,8 +79,8 @@ with its local path; `osteosarc downloads` prints the same, and
 
 To put a file in a folder under its own name, use `data.download(file, to="data")`
 or `osteosarc download KEY --to data`. A BAM's or VCF's index comes too. Each is a
-hard link to the cached copy when the folder is on the same disk, so it takes no
-more space; don't edit it in place.
+read-only hard link to the cached copy when the folder is on the same disk, so it
+takes no more space and can't be changed by accident; otherwise it's a copy.
 
 ## Refresh metadata
 

@@ -193,8 +193,8 @@ osteosarc files --downloaded
 ```
 
 Downloads are kept in the cache under names derived from their contents; `to` puts a
-file in a folder of your choice under its own name, as a hard link where it can, so
-the file isn't stored twice. For a whole FASTQ folder, the AWS command line is
+file in a folder of your choice under its own name, as a read-only hard link where it
+can, so the file isn't stored twice. For a whole FASTQ folder, the AWS command line is
 faster; `osteosarc samples SAMPLE` prints the command, such as:
 
 ```sh
