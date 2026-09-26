@@ -1,62 +1,59 @@
 # SV candidates
 
-A list of 637 candidate structural variants (SVs) worth a closer look, with their
-calls, breakpoints, nearby genes, expression and RNA support. It ships with the
-package and loads without a network connection:
+637 structural variants (SVs) in the patient's tumor that are worth a closer
+look: deletions, duplications, inversions, translocations and RNA fusions. Each
+comes with its calls, breakpoints, nearby genes, the genes' expression and the RNA
+reads that cross it. The list ships with osteosarc and needs no network:
 
 ```python
-from osteosarc import load_panel, load_sv_candidates
+from osteosarc import load_sv_candidates
 
-catalogue = load_sv_candidates()
-targets = load_panel("sv-candidates-v1")  # The same entries, for fixture recipes
-macrod2 = targets["SV0203"]
-print(len(targets), macrod2["kind"])
+candidates = load_sv_candidates()["targets"]
+macrod2 = candidates["SV0203"]
+print(len(candidates), macrod2["genes"], macrod2["breakends"])
 ```
 
-## Where the candidates come from
+## Why these
 
-633 candidates come from files on osteosarc.com or in its data bucket, as of
-2026-09-22:
+It collects every SV call in the public data so the OpenVax libraries test the
+same set, and so none is dropped without a look:
 
-- 523 PASS calls from the oncoanalyser SV tables (ESVEE, PURPLE and LINX)
-- 32 DRAGEN SV calls
-- 78 long-read RNA fusions from the CTAT tables
+- 523 SV calls from oncoanalyser (ESVEE, PURPLE and LINX) that pass its filters;
+- 32 DRAGEN SV calls;
+- 78 long-read RNA fusions from CTAT;
+- 4 fusions added by hand: FOXO3–STRADA–CCDC47, PARD3B–CDKN2B, GABBR1–SLC29A1 and
+  OTUD7A–FMN1.
 
-The other 4 were added by hand, as named fusions: FOXO3–STRADA–CCDC47,
-PARD3B–CDKN2B, GABBR1–SLC29A1 and OTUD7A–FMN1. One of the CTAT fusions,
-TPST1–CRCP, is also on that hand-made list.
-
-`catalogue["sources"]` gives the URL and SHA-256 checksum of every downloaded input.
-Two entries, the candidate list and the RNA read counts, were derived from those
-inputs and have only a checksum.
-
-A candidate is on the list because it's worth investigating. That doesn't mean
-it's real, expressed or makes a protein, and no candidate was dropped for lacking
-RNA support or a gene. The list includes breaks that join an expressed gene to
-an intergenic region, such as MACROD2 (SV0203), ITGBL1 (SV0089) and KMT2C (SV0377).
+Being on the list doesn't make a candidate real, expressed or protein-coding, and
+none was dropped for lacking RNA support or a gene. The files it was built from,
+as of 2026-09-22, are listed with their checksums in
+`load_sv_candidates()["sources"]`.
 
 ## Reading an entry
 
-- **Coordinates.** `original_coordinates` are the caller's one-based positions.
-  `breakends` are zero-based positions between bases. Single breakends and other
-  unclear shapes are `kind="unresolved"`, with the original call kept.
-- **Duplicates.** Entries with the same `adjacency_group_id` join the same two
-  ends, often reported by different callers. Don't add up their counts.
-- **Genes.** Genes come from Ensembl 115. A caller's gene name can be a nearby
-  gene rather than one the break falls in.
-- **Expression.** `gene_expression` is gene-level TPM from the T2 (January 2025)
-  bulk RNA-seq. It says how much the gene is expressed, not the fusion transcript.
-- **RNA support.** `rna_evidence` counts reads that cross each breakpoint in
-  RNA-seq BAMs from the bucket, one entry per BAM. Counts are reads, not molecules,
-  and a missing count means that BAM wasn't checked, not that it had no reads.
+- **Coordinates.** original_coordinates are the caller's one-based positions;
+  breakends are zero-based positions between bases. A single breakend or an
+  unclear shape is marked unresolved, and keeps the original call.
+- **Duplicates.** Entries with the same adjacency group join the same two ends,
+  often from different callers. Don't add up their counts.
+- **Genes** come from Ensembl 115. A caller's gene name can be a nearby gene the
+  break doesn't touch.
+- **Expression** is gene-level TPM from the T2 bulk RNA-seq: how much the gene is
+  expressed, not the fusion.
+- **RNA support** counts reads crossing each breakpoint, per RNA BAM in the bucket.
+  A missing count means the BAM wasn't checked.
 
-To rebuild and rank the proteins these SVs might make, use Isovar and Topiary.
+Isovar and Topiary rebuild and rank the proteins these SVs might make.
 
-## Use it in fixtures
+## As test targets
 
-`load_panel("sv-candidates-v1")` gives the same entries as fixture targets. Listing a
-target doesn't fetch any reads; write a [fixture recipe](test-data.md) for that.
+The sv-candidates-v1 panel gives the same entries as targets for a
+[test-data recipe](test-data.md):
 
-```sh
-osteosarc --offline fixtures panel sv-candidates-v1 > targets.json
+```python
+from osteosarc import load_panel
+
+targets = load_panel("sv-candidates-v1")
 ```
+
+A target is only a place; a recipe says which reads to fetch there.

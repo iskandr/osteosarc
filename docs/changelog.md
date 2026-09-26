@@ -5,6 +5,34 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.10.0 (unreleased)
+
+A smaller, more consistent osteosarc, centered on exploring the data and making
+test data ([#58](https://github.com/iskandr/osteosarc/issues/58)).
+
+- **Test data in one command.** `osteosarc reads T1_tumor --assay rna-seq --variant ID
+  --padding 100 --to tests/data` streams just those reads from each of a sample's
+  BAMs, and saves each as a small indexed BAM named for its source and variant.
+  `data.extract_reads(..., to="tests/data")` does the same in Python.
+- **Command line.** `osteosarc timeline --around DATE` replaces `osteosarc on`, and
+  `osteosarc test-data` (generate, list, verify, export) replaces `fixtures`.
+  `table` and `discover` are gone.
+- **Python.**
+  - Dataset loses `table` (use `parse`), `claims`, `timepoints`, `annotations`,
+    `vaccine_names`, `pipeline_names`, `receipts`, `open_variants`, and the
+    `generate_bundle` and `select_fixtures` shortcuts (use the functions).
+  - The package's top-level names are the core API. Helpers such as
+    `list_bucket`, `read_records` and `SNAPSHOT_SOURCES` now come from their modules.
+- **Names.** The SV interest catalogue is now **SV candidates**: `load_sv_candidates()`
+  and the `sv-candidates-v1` panel. FASTQ folder tables name assays and platforms
+  as everywhere else, with a library column (gene expression, TCR, BCR, antibody
+  tags, long reads).
+- **Docs.**
+  - Page addresses match their titles (command-line, python-api, snapshots,
+    corrections, testing, map2, sv-candidates, test-data, openvax).
+  - The three pages about moving code onto osteosarc are merged into two.
+  - Every page has much less code formatting.
+
 ## 0.9.0 (2026-09-26)
 
 The command line and the Python API now use the same two nouns, samples and files,

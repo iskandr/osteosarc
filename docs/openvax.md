@@ -1,16 +1,15 @@
 # OpenVax libraries
 
-Pass variants, reads and reports to the OpenVax libraries: Varcode for variant
-effects, Isovar for RNA evidence and protein sequences, Topiary for epitope
-predictions and Vaxrank for vaccine ranking. Install the ones you need. The
-examples open your most recent snapshot (see [Get started](index.md#get-started)),
-and the Varcode and Isovar ones need the Ensembl 95 human annotation:
+Osteosarc hands variants, reads and reports to the OpenVax libraries: Varcode for
+variant effects, Isovar for RNA evidence and protein sequences, Topiary for epitope
+predictions and Vaxrank for vaccine ranking. Install the ones you need. The Varcode and
+Isovar examples need the Ensembl 95 human annotation:
 
 ```sh
 pyensembl install --release 95 --species homo_sapiens
 ```
 
-Start each example by opening your snapshot:
+Each example starts from your newest snapshot (see [Get started](index.md#get-started)):
 
 ```python
 from osteosarc import Dataset
@@ -31,16 +30,12 @@ for variant in native:
     print(variant, native.metadata[variant]["entries"][0]["id"])
 ```
 
-This downloads no reference data. Every source entry is kept in the metadata, even
-when Varcode merges two entries into one variant. Unusable alleles and genome
-build mismatches raise an error.
+This downloads no reference data. Every source entry stays in the metadata, even when
+Varcode merges two into one variant, and unusable alleles or mismatched genome builds
+raise an error. Varcode renames chr1 to 1 and chrM to MT; each variant keeps its
+original name too.
 
-By default, Varcode converts `chr1` to `1` and `chrM` (or `M`) to `MT`.
-Use `variant.contig` for the annotation name and `variant.original_contig`
-for the source name. If several entries become one variant, all their names
-remain in `native.metadata[variant]["entries"]`.
-
-For a reference with a custom name, say which build it is:
+For a reference with its own name, say which build it is:
 
 ```python
 from pyensembl import Genome
@@ -50,11 +45,8 @@ genome = Genome(reference_name="GRCh38-osteosarc-six-transcript-subset",
 custom = selected.to_varcode(genome=genome, assembly="GRCh38")
 ```
 
-Annotating the variants later needs that reference's files, such as `subset.gtf`
-above, to be installed and indexed.
-
-If your GTF uses the same chromosome names as the source, such as `chrM`, turn
-off both renaming options:
+Annotating the variants later needs that reference's files installed and indexed. If
+your GTF keeps the source's chromosome names, such as chrM, turn renaming off:
 
 ```python
 custom = selected.to_varcode(
@@ -63,14 +55,12 @@ custom = selected.to_varcode(
 )
 ```
 
-The names must still match `genome.contigs()`; PyEnsembl can change their case when
-it indexes a GTF. Renaming never converts between genome builds, and names such as
-`chrUn_KI270442v1` or `NC_012920.1` are left as they are, so your reference must
-use them too.
+Renaming never converts between genome builds, and names such as chrUn_KI270442v1 are
+left as they are, so your reference must use them too.
 
 ## Isovar
 
-Fetch the reads and hand the BAM to Isovar:
+Fetch the reads around a variant and hand them to Isovar:
 
 ```python
 from isovar import ReadCollector
@@ -96,8 +86,6 @@ with subset.open() as bam:
     results = list(run_isovar(native, bam))
 ```
 
-Set transcript and read-collection options in Isovar as usual.
-
 ## Vaxrank
 
 Check the BAM's genome build, then fetch reads with their mates:
@@ -115,18 +103,17 @@ if info.assembly == "GRCh38":
     print(corpus.path, corpus.receipt["scope"])
 ```
 
-Run the reads through Isovar, then rank with Vaxrank as usual. Fetching mates
-needs a recent SAMtools; see [requirements](reads.md#requirements).
-
-Compare your ranking with the peptides that were actually used:
+Run the reads through Isovar, then rank with Vaxrank as usual. Fetching mates needs a
+recent SAMtools ([requirements](reads.md#requirements)). To compare your ranking with
+the peptides the vaccines actually used:
 
 ```python
 for peptide in data.vaccine_peptides("mRNA"):
     print(peptide["variant_id"], peptide["sequence"])
 ```
 
-[Corrections](corrections.md) change some alleles, including a MAP2 vaccine target.
-Use `corrections=False` to reproduce results from the published values.
+[Corrections](corrections.md) change some alleles, including a MAP2 vaccine target; open
+the snapshot with `corrections=False` to reproduce results from the published values.
 
 ## Topiary
 
@@ -141,7 +128,7 @@ if aggregated:
     predictions = read_pvacseq(data.download(aggregated[0]))
 ```
 
-Or load RSEM expression:
+Or RSEM expression:
 
 ```python
 from topiary.rna.expression_loader import load_expression
@@ -151,17 +138,15 @@ if rsem:
     expression = load_expression(data.download(rsem[0]))
 ```
 
-Downloaded files keep their original extensions, so format detection works.
-Header-only
-reports remain empty reports.
+Downloads keep their file extensions, so format detection works. Reports with only a
+header load as empty reports.
 
-For reproducible test data, see [test data](test-data.md).
+For small, reproducible test BAMs, see [test data](test-data.md).
 
 ## Move your own code to osteosarc
 
-If your project downloads osteosarc.com data with its own code, switch the
-downloading first, and change references, allele selection or analysis settings in
-a separate step.
+If your project downloads osteosarc.com data with its own code, switch the downloading
+first, and change references, allele selection or analysis settings in a separate step.
 
 | Your code does | Use |
 | --- | --- |
@@ -175,14 +160,12 @@ a separate step.
 | Fetch the reads in some regions | `data.extract_reads(file, regions)` |
 | Make Varcode variants | `variants.to_varcode(genome=...)` |
 
-Keep your project's own reference releases, transcripts, read filters and scoring.
-Before dropping an old read extractor, compare whole records, tags included, and
-how often each appears: matching read counts aren't enough. Osteosarc fixes some
-of the website's alleles by default; open a snapshot with corrections turned off to
-compare against results from the published values (see [corrections](corrections.md)).
-
-Files you already downloaded can go straight into the cache, so nothing is fetched
-twice (see [snapshots and cache](snapshots.md#import-a-file-you-already-downloaded)).
+Keep your own reference releases, transcripts, read filters and scoring. Before
+dropping an old read extractor, compare whole records, tags included, and how often
+each appears: matching read counts aren't enough. Osteosarc fixes some of the website's
+alleles by default; turn corrections off to compare with results from the published
+values. Files you already downloaded can go straight into the cache, so nothing is
+fetched twice (see [snapshots and cache](snapshots.md#import-a-file-you-already-downloaded)).
 
 ### Names changed in 0.9
 
@@ -191,6 +174,5 @@ twice (see [snapshots and cache](snapshots.md#import-a-file-you-already-download
 | `data.assets`, `data.asset(key)`, `Asset` | `data.files`, `data.file(key)`, `File` |
 | `data.specimens`, `data.describe_samples()` | `data.samples` |
 | `data.assets_for_sample(...)` | `data.samples[ID].files` |
-| the old `data.samples` | `data.claims` |
 | `osteosarc explore` | `osteosarc repl` |
 | `osteosarc assets`, `specimens`, `curation` | `osteosarc files`, `samples`, `corrections` |

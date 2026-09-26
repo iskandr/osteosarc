@@ -48,7 +48,7 @@ from .recovery import RecoveryPolicy
 from .sv_candidates import load_sv_candidates
 from .timeline import Event, Timeline
 
-__version__ = "0.9.0"
+__version__ = "0.10.0"
 
 # The public API. A few other helpers are importable from here because the OpenVax
 # libraries use them (digest, parse_variants, inspect_alignment, ...); everything

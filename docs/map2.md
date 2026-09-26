@@ -3,7 +3,7 @@
 The website's MAP2 vaccine target is a 22-bp deletion, but Tempus and CeGaT both
 call a different, complex change there. This example checks both against T1 tumor
 WGS reads, and shows how to check any [correction](corrections.md) against the data. It
-needs `samtools`.
+needs SAMtools.
 
 ## Compare the alleles
 
@@ -73,5 +73,5 @@ Counter({'no exact match': 55, 'reference': 37, 'corrected allele': 30})
 ```
 
 Thirty reads match the corrected allele and none match the published one. Reads
-with `no exact match` may stop short of the change or have sequencing errors. For
+with no exact match may stop short of the change or have sequencing errors. For
 RNA evidence and protein sequences, use [Isovar](openvax.md#isovar).

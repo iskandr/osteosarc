@@ -1,8 +1,8 @@
 # Variants and vaccines
 
-Pick variants from the website's catalogue by gene, vaccine, pipeline or status,
-then get their alleles, read counts and vaccine peptides. The examples open your most recent snapshot;
-see [Get started](index.md#get-started) to save one.
+The website lists the patient's tumor variants, which pipelines found them, how
+many reads support them in each BAM, and which went into the cancer vaccines.
+The examples open your most recent snapshot; see [Get started](index.md#get-started).
 
 ## Select variants
 
@@ -11,164 +11,109 @@ from osteosarc import Dataset
 
 data = Dataset.open()
 site = data.variants()
-vaccine_targets = data.variants("vaccine", status="ready")
 dynein = site.select(gene="DYNC1H1", status="ready")
 for variant in dynein:
     print(variant.id, variant.allele)
 ```
 
-`data.variants()` gives every variant on the website's variants page, including
-ones without a usable allele. `"vaccine"` gives the ones in at least one vaccine,
-and `"all"` adds entries that appear only in the site's read-count table or
-variant data file.
+`data.variants()` gives every variant on the website's variants page.
+`data.variants("vaccine")` gives the ones in at least one vaccine, and
+`data.variants("all")` adds entries found only in the site's read-count table.
+Select by gene, vaccine, pipeline or status.
 
-From the command line:
+From a terminal:
 
 ```sh
 osteosarc variants --gene DYNC1H1 --status ready
-osteosarc variants --set vaccine --vaccine mRNA
+osteosarc variants --vaccine mRNA
 osteosarc variants DYNC1H1-chr14-101980529
 ```
 
 The last shows one variant with its allele, effect, vaccines, corrections and the
-site's read counts. Add `--json` for full records.
+site's read counts.
 
-## Get an allele and its read-extraction region
+## Alleles
 
 ```python
 variant = site["DYNC1H1-chr14-101980529"]
-print(variant.allele)  # (chromosome, one-based position, REF, ALT)
-print(variant.region(padding=100))
-regions = dynein.regions(padding=100)
+print(variant.allele)               # (chromosome, one-based position, REF, ALT)
+print(variant.region(padding=100))  # zero-based, half-open
 ```
 
-`region()` covers the REF allele, in zero-based, half-open coordinates. To fetch
-reads, pass the variants straight to [read extraction](reads.md).
+Pass variants straight to [read extraction](reads.md) to get the reads around them.
 
 ## Variant status
 
-`status` says whether an entry has a usable genomic allele. It says nothing
-about samples or read support.
+A variant's status says whether it has one usable allele. It says nothing about
+samples or read support.
 
-| `variant.status` | Meaning |
+| Status | Meaning |
 | --- | --- |
-| `ready` | One allele, written in DNA bases, at a consistent position |
-| `missing_literal_allele` | No allele given |
-| `non_literal_allele` | REF or ALT is a placeholder such as `dup` or `not_reported` |
-| `ambiguous_literal_allele` | More than one allele given for the entry |
-| `conflicting_coordinates` | The site's pages and files disagree on the position or allele |
-| `malformed_source_row` | A read-count row has a broken position or the wrong number of fields |
+| ready | One allele, written in DNA bases |
+| missing_literal_allele | No allele given |
+| non_literal_allele | REF or ALT is a placeholder, such as dup or not_reported |
+| ambiguous_literal_allele | More than one allele given |
+| conflicting_coordinates | The site's pages disagree on the position or allele |
+| malformed_source_row | A read-count row is broken; the other entries are unaffected |
 
-Only `ready` entries have `.allele`, `.region()` and Varcode conversion. `ready`
-doesn't mean the variant is checked against the genome, somatic, expressed or
-changes the protein.
+Only ready variants have an allele and a region. Ready doesn't mean the variant is
+somatic, expressed or changes the protein. [Corrections](corrections.md), on by
+default, fix some alleles and statuses; open the snapshot with
+`corrections=False` to see the published ones.
 
-Without the `status` filter you get every entry; `.allele` and `.region()` raise
-an error on the unusable ones:
-
-```python
-unresolved = site.where(lambda v: v.status != "ready")
-print([(v.id, v.status) for v in unresolved])
-```
-
-[Corrections](corrections.md) are on by default and can change an entry's allele
-and status. Open the snapshot with `corrections=False` to see the published ones.
-
-## Read counts and annotations
+## Read counts
 
 ```python
 counts = data.vafs.select(variant_id=variant.id)
 print(counts.rows[:2])
-print(variant.annotations["source_record"])
-print(data.pipeline_names)
-detected = data.variants(pipeline="oncoanalyser")
 ```
 
-Counts are kept exactly as published. A missing count isn't zero. Counts that
-were measured for the wrong allele or position are cleared by a correction, so
-they read as not measured. `data.vafs.diagnostics` lists rows with too few or too
-many fields, with their line numbers.
+Counts are kept as published, one row per variant and BAM. A missing count isn't
+zero: counts measured at the wrong allele or position are cleared by a correction,
+so they read as not measured.
 
-## Get vaccine peptides
+## Vaccines
 
 ```python
-print(data.vaccine_names)
-mrna = data.variants(vaccine="mRNA")
 for row in data.vaccine_peptides("mRNA"):
-    print(row["variant_id"], row["sequence"], row["experiments"])
-```
+    print(row["variant_id"], row["sequence"])
 
-Which vaccines contain a variant comes from the site's vaccine-overlap file. The
-site's variant data file flags vaccines separately; use
-`vaccine_source="source_variants"` for those flags. The two can disagree, and the
-annotations keep both.
-
-```python
 for row in data.vaccines.select(gene="SMC5"):
-    print(row["elispot_status"], row["elispot_response"])
+    print(row["vaccines"], row["elispot_status"])
 ```
 
-An ELISPOT that wasn't run, or has no recorded response, isn't a negative result.
+The vaccines table has one row per vaccine target: which vaccines include it, and
+its ELISPOT result. An ELISPOT that wasn't run, or has no recorded response, isn't
+a negative result. `osteosarc vaccines` prints the same table.
 
-## Open a VCF
+Which vaccines contain a variant comes from the site's vaccine-overlap file. Its
+variant data file flags vaccines separately, and the two can disagree; select
+with `vaccine_source="source_variants"` to use the flags.
 
-```python
-data = Dataset.open(offline=False)
-calls = data.files.select(kind="variants", format="vcf")
-if calls:
-    with data.open_variants(calls[0]) as vcf:
-        print(vcf.header)
-        for record in vcf:
-            print(record.contig, record.pos, record.ref, record.alts)
-            break
-```
+## Reviewed alleles
 
-This downloads the whole VCF and its index, and returns a pysam reader with the
-original headers, genotypes and records.
-For native Varcode objects, see [Use other libraries](openvax.md#varcode).
-
-## Entries with reviewed alleles
-
-Five entries were reviewed in [issue #5](https://github.com/iskandr/osteosarc/issues/5).
-Their `allele_resolution` annotation records the outcome and evidence:
+Five entries needed their alleles reviewed
+([issue #5](https://github.com/iskandr/osteosarc/issues/5)); each variant's
+annotations hold the outcome and evidence:
 
 ```python
-for v in site:
-    resolution = v.annotations.get("allele_resolution")
-    if resolution:
-        print(v.id, resolution["status"], resolution["summary"])
-
 fam157a = site["FAM157A-p_W70_Q71ins_14"]
 print(fam157a.allele)
-print(fam157a.annotations["allele_resolution"]["protein_interpretation"])
+print(fam157a.annotations["allele_resolution"]["summary"])
 ```
 
 | Entry | Outcome |
 | --- | --- |
-| FAM157A | Verified 42-base insertion at GRCh38 chr3:198153259. The protein model was withdrawn; a usable genomic allele does not establish a neoantigen. |
-| COL3A1 | Verified 737-base deletion anchored at GRCh38 chr2:189010889, matching the catalogue's cDNA annotation. |
-| MUC3A | Public GRCh37 duplication; GRCh38 placement remains unresolved across an assembly gap. |
-| OTUD4 | Source unavailable: the protein label alone does not identify a genomic allele. |
-| USH2A-chr1-215560752 | A typo of USH2A-chr1-215650752: its position is outside the USH2A gene. Older snapshots have both; the site has since merged them. |
+| FAM157A | A 42-base insertion at chr3:198153259, from a public Tempus call. NCBI withdrew the protein model, so it isn't known to make a neoantigen. |
+| COL3A1 | A 737-base deletion at chr2:189010889 that removes intron 50, as the catalogue's cDNA says. |
+| MUC3A | A GRCh37 duplication whose GRCh38 position can't be settled: it sits in a repeat that differs between builds. |
+| OTUD4 | No public call gives its allele. |
+| USH2A-chr1-215560752 | A typo of USH2A-chr1-215650752. The site has since merged the two. |
 
-The two filled-in alleles come from a public Tempus VCF in the bucket; the
-annotation holds the reference checks and file checksums. Neither has published
-read counts; use [read extraction](reads.md) to look at the reads.
+## VCFs and your own parsing
 
-In newer snapshots, the kept USH2A entry has its published `C>A` allele and counts.
-`annotations["source_record"]["upstream_merge"]` records the retired ID and the
-site's commit, and the location label and sequence context taken from the typo are
-fixed.
-
-Three different statuses appear here. `variant.status` describes allele
-usability, as listed under [Variant status](#variant-status). The `status` column of `data.corrections`
-describes whether a correction applied. The nested `allele_resolution["status"]`
-describes the evidence review's outcome.
-
-## Malformed source rows
-
-A broken row in the site's read-count table marks its entry
-`malformed_source_row` and leaves the other entries alone.
-`variant.annotations["parse_errors"]` shows the row and what was wrong. To parse the
-files yourself, use `parse_variants(index, vaf_tsv)`. A table missing a required
-column raises `SchemaError`.
+The bucket's VCFs are ordinary files: find them with
+`data.files.select(kind="variants")`, download one with `data.download(file)` and
+open it with pysam. For Varcode variants, see
+[OpenVax libraries](openvax.md#varcode). To parse the site's variant files yourself,
+use `osteosarc.parsing.parse_variants`.

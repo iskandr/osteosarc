@@ -1,29 +1,39 @@
 # Test data
 
-A fixture recipe describes a small test BAM: which reads to take from which files,
-and why. Osteosarc turns the recipe into a bundle that anyone can rebuild and
-check offline. Isovar, Topiary and Vaxrank build their test data this way.
+Unit tests need small, real sets of reads that anyone can rebuild. Osteosarc makes
+them two ways: a quick BAM of the reads around some variants, or a bundle built from
+a recipe, which pins every record so rebuilding gives the same bytes.
 
-A recipe has three parts:
+## A quick test BAM
 
-- **Targets**: what each fixture is about: a small variant, a structural variant
-  (SV), or an entry marked unresolved.
-- **Sources**: the BAMs that reads come from, with their sample and assembly.
-- **Members**: one target and one source, plus a rule for picking reads.
+```sh
+osteosarc reads rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam --variant DYNC1H1-chr14-101980529 --padding 100 --to test-data
+```
 
-Osteosarc only follows the rule. Deciding which reads support an allele is up to
-the library that uses the fixture, and a fixture is never an estimate of VAF.
+This streams just those reads from the public BAM and saves them, with an index, as
+test-data/BG003082.DYNC1H1-chr14-101980529.bam. Give a sample ID instead of a file to
+do the same for each of that sample's BAMs:
 
-## Build a bundle
+<!-- docs-check: skip (streams reads from several BAMs) -->
+```sh
+osteosarc reads T0_tumor --assay rna-seq --variant DYNC1H1-chr14-101980529 --padding 100 --to test-data
+```
 
-This recipe keeps up to 25 reads (with their mates) around DYNC1H1 from a T0
-tumor RNA-seq BAM:
+In Python, `data.extract_reads(file, variants=..., to="test-data")` does the same. See
+[reads](reads.md) for regions, filters and mates.
+
+## A bundle from a recipe
+
+A recipe says which reads to take from which BAMs, and why. Osteosarc turns it into a
+bundle: indexed BAMs plus a manifest listing every record and the reason it was kept.
+Anyone can rebuild the bundle and check it offline. This recipe keeps up to 25 reads,
+with their mates, around one variant in a T0 tumor RNA-seq BAM:
 
 ```python
 import json
 from pathlib import Path
 
-from osteosarc import Dataset, verify_bundle
+from osteosarc import Dataset, generate_bundle, verify_bundle
 
 data = Dataset.open(offline=False)
 source = data.file("rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam")
@@ -57,170 +67,111 @@ recipe = {
     },
 }
 Path("recipe.json").write_text(json.dumps(recipe, indent=2))
-data.generate_bundle(recipe, "dync1h1-bundle")
+generate_bundle(recipe, "dync1h1-bundle", dataset=data)
 member = verify_bundle("dync1h1-bundle")["members"]["DYNC1H1-rna"]
 print(member["status"], member["record_count"])
 ```
 
-`truncated` means more reads overlapped the window than the cap allowed. Mates
-are kept together, so the record count can be larger than the cap. The
-destination directory must not exist yet.
-
-Check, list and export the bundle offline:
+The status is truncated when more reads overlapped than the cap allowed. Mates stay
+together, so there can be more records than the cap. Then, offline:
 
 ```sh
-osteosarc fixtures verify dync1h1-bundle
-osteosarc fixtures list dync1h1-bundle
-osteosarc fixtures export dync1h1-bundle dync1h1-exported --member DYNC1H1-rna
+osteosarc test-data list dync1h1-bundle
+osteosarc test-data verify dync1h1-bundle
+osteosarc test-data export dync1h1-bundle dync1h1-exported --member DYNC1H1-rna
 ```
 
-To run a recipe on BAMs you already have, use `select_fixtures(recipe, sources)`
-or the CLI:
+The same recipe runs from the command line, fetching the reads, or on BAMs you already
+have:
 
-<!-- docs-check: skip (needs your own local BAM) -->
+<!-- docs-check: skip (needs your own BAM) -->
 ```sh
-osteosarc --offline fixtures select recipe.json --source rna=archive.bam
+osteosarc test-data generate recipe.json bundle
+osteosarc --offline test-data generate recipe.json bundle --source rna=archive.bam
 ```
 
-## Recipe fields
+## Recipes
 
-A recipe is a dictionary with `schema_version: 1`, an `id`, and `targets`,
-`sources` and `members`. `validate_recipe(recipe)` checks it before any reads are
-touched. `select_fixtures` and `fixtures select` only read BAMs you already have
-locally; `generate_bundle` and `fixtures generate` fetch remote ones for you, with
-the same indexed extraction as [`extract_reads`](reads.md).
+A recipe has targets (what each piece of test data is about), sources (the BAMs its
+reads come from) and members (one target in one source, with a rule for picking
+reads). Osteosarc only follows the rule: deciding which reads support an allele is up
+to the library that uses them, and a member's reads are never an estimate of VAF.
 
-**Targets.** A small variant has `kind: small_variant`, `assembly`, `reference`
-(where the target came from), `coordinates: one-based`, `contig`, `position`,
-`ref` and `alt`. An SV has `kind: sv`, `coordinates: zero-based-interbase`, and two
-or more `breakends` with `contig`, `position` and `orientation` (`+`, `-` or null).
-An `unresolved` target needs a `reason` and gets no reads.
-
-**Sources.** Each source has an `identity` object that says which file it is,
-such as `{"key": "rna-seq/..."}` or `{"url": "https://..."}`, plus `assembly`,
-`sample`, `library` and `product`; use null for anything unknown. Two processed
-versions of one library are separate sources. `archive_sha256` pins a local file.
-
-**Members.** Each member names a `target` and `source` and has a `policy` with
-`version: 1` and one of these kinds:
-
-| `kind` | Picks |
-| --- | --- |
-| `regional` | Reads overlapping `regions`, optionally capped |
-| `exact` | Specific records, by checksum and count |
-| `witnesses` | Named reads (read group, read name, mate), each with a reason |
-| `stratified` | Named reads plus a reproducible sample of others, by group |
-| `empty` | Nothing, on purpose |
-| `omitted` | Nothing, with a `reason` |
-
-`regions` use `Region` fields (`contig`, `start`, `end`, `assembly`), zero-based
-and half-open. Reads in `context_regions` are kept as context, never as support.
-
-**Named reads and caps.** A witness or stratum `assignment` has a `selector`
-(`rg`, `qname`, and optionally `segment`, the read's FLAG & 0xc0), a `reason`,
-and the `producer` name and version that chose it. Required reads (the default)
-must be present, or selection fails. `cap` limits the optional reads per stratum;
-`strata` sets per-stratum caps. Sampling is reproducible from `seed` (default
-`"0"`) and doesn't depend on read order.
-
-**Duplicates.** Repeated identical records are kept as repeats unless
-`duplicate_policy` is `identical-record-once`. Members that share records
-shouldn't be counted as independent evidence.
-
-Each member ends up `selected`, `truncated`, `empty`, `unresolved` or `omitted`,
-with the reason every record was picked.
-
-## Record identity
-
-`record_multiset(path)` fingerprints every record of a BAM from its stored bytes
-(the `bam-record-v1` encoding), so two BAMs compare equal only if they hold the
-same records the same number of times, regardless of compression or order. An
-`exact` recipe can instead use `encoding: sam-text-v1` to match older SAM-text
-checksums; that's weaker, because SAM text can hide differences in tag types.
-
-## Named panels
-
-```sh
-osteosarc fixtures panel vaccine-loci-v1
+```text
+targets:   small_variant   one-based position, ref and alt, and where it came from
+           sv              two or more breakends (zero-based, with orientation + / - / null)
+           unresolved      a reason; gets no reads
+sources:   identity        which file: {"key": ...} or {"url": ...}
+           assembly, sample, library, product   (null when unknown)
+members:   target, source, regions (zero-based, half-open), and a policy:
+           regional        reads overlapping the regions, optionally capped
+           exact           specific records, by checksum and count
+           witnesses       named reads, each with a reason
+           stratified      named reads, plus a reproducible sample of others by group
+           empty, omitted  nothing, on purpose (omitted says why)
 ```
 
-`load_panel(name)` returns a set of shipped targets:
+Named reads give their read group and name (and optionally which mate), a reason, and
+the tool that chose them; they must be present unless marked optional. Caps sample the
+optional reads reproducibly from the policy's seed, whatever the read order. Identical
+records keep their repeats. `validate_recipe(recipe)` checks a recipe before any reads
+are touched.
 
-| Panel | Contents |
-| --- | --- |
-| `vaccine-loci-v1` | The vaccine target alleles used in earlier fixtures |
-| `sv-regressions-v1` | RNA fusion events and five candidate SVs used in regression tests |
-| `sv-candidates-v1` | All 637 entries of the [SV candidates](sv-candidates.md) |
+Each member ends up selected, truncated, empty, unresolved or omitted, and the
+manifest gives the reason each record was kept.
 
-A panel only lists targets; a recipe decides which reads to fetch.
+**Mates and split reads.** A member can also keep the mates and split alignments of its
+reads, when its source was fetched with mate and split-read recovery
+([reads](reads.md#recover-mates-and-split-alignments)). A recovery that timed out is
+recorded as incomplete: finding no reads then isn't evidence that there are none.
 
-## Keep mates and split reads
-
-A member with `retain_partners: true` also keeps the mates and split alignments of
-its reads, if its source was fetched with a
-[`RecoveryPolicy`](reads.md#recover-mates-and-split-alignments). A source's
-`acquisition` can set `{"recovery": {"on_timeout": "incomplete"}}` to keep going
-when a partner query times out. The bundle then records the acquisition as
-`incomplete`. Zero reads from a limited or incomplete fetch isn't evidence of zero
-support.
+**Records.** Bundles identify each record by a checksum of its stored bytes, so two BAMs
+match only when they hold the same records the same number of times, whatever their
+compression or order. Older checksums of SAM text still work in exact members, but can
+miss differences in tag types.
 
 ## Bundles
 
-`generate_bundle(recipe, destination, sources=..., cache=...)` fetches the reads,
-applies the recipe and writes a self-contained directory. `pack_bundle(selection,
-destination)` starts from a selection you already made. `Dataset.generate_bundle`
-also checks each source against the snapshot.
+A bundle holds each source's records once, as indexed BAMs, with the original headers,
+the recipe, what was fetched, file checksums, and every member's records and reasons.
+Verifying checks every file, record and index offline; give the manifest's checksum
+when using someone else's bundle, since without it the check shows the bundle is
+intact but not who made it. Exporting writes one sorted, indexed BAM per member (or SAM),
+and empty members become valid empty BAMs. The size limit is 64 MiB unless you set
+another, and nothing is ever overwritten. Installing osteosarc never downloads data.
 
-**Fetching.** A source can point to a small pinned `archive` (`url`, `sha256`,
-`size_bytes`), or to a BAM by `identity.url` with an `index`, fetched around the
-members' regions. `acquisition` passes read filters and recovery settings.
-Installing the package never downloads data.
+## Target lists
 
-**Contents.** A bundle holds each source's records once, indexed BAMs, the original
-headers, the recipe, fetch receipts, file checksums, and every member's records and
-reasons. The recipe's `redistribution` field carries license and citation notes.
+`load_panel(name)` returns a shipped list of targets to build recipes from:
 
-**Headers.** `header_policy="full"` (the default) keeps the source headers.
-`"compact"` keeps only what's needed: every sequence line, read groups, and the
-programs that produced the reads. The full header is archived either way.
-
-**Checking.** `verify_bundle(directory, sha256=...)` checks every file, record and
-index offline. Pass the manifest's SHA-256 when using someone else's bundle;
-without it, the check shows the bundle is intact but not who made it.
-
-**Exporting.** `export_bundle(bundle, destination, members=[...])` writes one sorted,
-indexed BAM per member (or SAM with `format="sam"`). Empty members become valid
-empty BAMs. The default size limit is 64 MiB; set `size_budget` for a smaller
-package. Existing destinations are never overwritten.
-
-## Tests as examples
-
-`tests/test_fixtures.py` and `tests/test_bundles.py` build recipes and BAMs without a
-network connection, and cover each rule above.
+| Name | Holds |
+| --- | --- |
+| vaccine-loci-v1 | The vaccine target alleles |
+| sv-regressions-v1 | Three RNA fusions and five candidate SVs used in regression tests |
+| sv-candidates-v1 | All 637 [SV candidates](sv-candidates.md) |
 
 ## How the libraries build their test data
 
-Osteosarc fetches, selects, packs and checks reads; each library keeps its own
-science: which variants it tests, how it reads alleles, and what results it expects.
-Osteosarc never imports Isovar, Topiary or Vaxrank.
+Osteosarc fetches, selects, packs and checks reads; each library keeps its own science:
+which variants it tests, how it reads alleles, and what results it expects. Osteosarc
+never imports Isovar, Topiary or Vaxrank.
 
 | Library | Its test data | Built with |
 | --- | --- | --- |
-| Isovar | 311 fixtures of exact records, plus vaccine, fusion and SV cases | `legacy_fixtures`, `select_window_segments` |
-| Topiary | variant, indel, fusion and pVACseq fixtures | `regional_corpus` |
-| Vaxrank | 58 read cohorts | `cohort_bundle` |
-| Varcode | variants and SV records, no reads | a snapshot of the variant catalogue |
+| Isovar | 311 fixtures of exact records, plus vaccine, fusion and SV cases | osteosarc.legacy_fixtures |
+| Topiary | Variant, indel, fusion and pVACseq fixtures | osteosarc.regional_corpus |
+| Vaxrank | 58 read cohorts | osteosarc.cohort_bundle |
+| Varcode | Variants and SV records, no reads | a snapshot of the variant catalogue |
 
-Isovar, Topiary and Vaxrank each take the same recipe in their builders
-(`--panel-recipe recipe.json --panel-source rna=archive.bam --output DIR --offline`).
-From an osteosarc checkout, this checks that all three select exactly the same
-reads for the same reasons, with the network turned off:
+Isovar, Topiary and Vaxrank each accept the same recipe in their builders. From an
+osteosarc checkout, this checks, with the network off, that all three select exactly
+the same reads for the same reasons:
 
 ```sh
 python -m scripts.check_fixture_consumers --isovar /path/to/isovar \
   --topiary /path/to/topiary --vaxrank /path/to/vaxrank
 ```
 
-A change to a library's expected results needs its own review, even when its test
-data rebuilds cleanly.
-
+A change to a library's expected results needs its own review, even when its test data
+rebuilds cleanly. The tests in tests/test_fixtures.py and tests/test_bundles.py build
+recipes and BAMs offline, and cover each rule above.
