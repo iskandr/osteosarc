@@ -420,10 +420,14 @@ def browse(args, dataset):
     return 0
 
 
+def is_sample(dataset, name):
+    """Whether a reads command's FILE|SAMPLE names a sample (file keys and URLs have slashes)."""
+    return "/" not in name and name in {sample.id for sample in dataset.samples}
+
+
 def read_sources(dataset, args):
     """The BAMs a reads command reads from: one file, or a sample's BAMs."""
-    ids = {sample.id for sample in dataset.samples} if not args.file.count("/") else set()
-    if args.file not in ids:
+    if not is_sample(dataset, args.file):
         if args.assay or args.platform:
             raise ValueError("--assay and --platform choose among a sample's BAMs; give a sample ID")
         return [dataset.file(args.file)]
@@ -470,7 +474,7 @@ def get_data(args, dataset):
             raise ValueError(f"No reads extracted: every BAM of {args.file} was skipped")
         if args.json:
             # A sample always gives a list, however many of its BAMs it has.
-            print_json(results if args.file not in {f.key for f in sources} else results[0])
+            print_json(results if is_sample(dataset, args.file) else results[0])
     else:
         rows = list(dataset.downloads())
         print_json(rows) if args.json else print(views.downloads_view(rows, dataset.cache.root))
