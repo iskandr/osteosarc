@@ -234,8 +234,8 @@ file already there with different contents is never replaced. A bundle's size li
 
 Osteosarc fetches, selects, packs and checks reads; each library keeps its own science:
 which variants it tests, how it reads alleles, and what results it expects. Osteosarc
-never imports Isovar, Topiary or Vaxrank. All four take their test reads from openvax-v1
-and keep only their non-read test data (variants, expected results, recipes):
+never imports Isovar, Topiary or Vaxrank. All four rely on openvax-v1 for their Sid
+reads, and keep only their non-read test data (variants, expected results, recipes):
 
 | Library | From openvax-v1 |
 | --- | --- |

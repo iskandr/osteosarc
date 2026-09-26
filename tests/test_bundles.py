@@ -324,25 +324,33 @@ def test_legacy_full_header_bundles_remain_readable_and_exportable(bam, tmp_path
         verify_bundle(directory)
 
 
-def test_a_published_bundle_is_fetched_verified_and_checked_offline(bam, tmp_path, monkeypatch):
+@pytest.fixture
+def tiny_release(bam, tmp_path, monkeypatch):
+    """A bundle published as tiny-v1: (its archive, and the URL its release record gives)."""
+    import osteosarc.shared as shared
+    bundle = tmp_path / "bundle"
+    generate_bundle(bundle_recipe(bam), bundle, sources={"rna": bam})
+    archive = tmp_path / "tiny.tar.gz"
+    release = shared.pack_release(bundle, archive)
+    assert shared.pack_release(bundle, tmp_path / "again.tar.gz") == release  # reproducible
+    published_dir = tmp_path / "bundles"
+    published_dir.mkdir()
+    url = "https://example.test/tiny.tar.gz"
+    (published_dir / "tiny-v1.release.json").write_text(json.dumps(dict(release, url=url)))
+    monkeypatch.setattr(shared, "BUNDLES", published_dir)
+    return archive, url
+
+
+def test_a_published_bundle_is_fetched_verified_and_checked_offline(bam, tmp_path, tiny_release):
     import gzip
-    import json
 
     import pysam
 
     import osteosarc.shared as shared
     from osteosarc import Cache
-    bundle = tmp_path / "bundle"
-    generate_bundle(bundle_recipe(bam), bundle, sources={"rna": bam})
-    release = shared.pack_release(bundle, tmp_path / "panel.tar.gz")
-    assert shared.pack_release(bundle, tmp_path / "again.tar.gz") == release  # reproducible
-    published_dir = tmp_path / "bundles"
-    published_dir.mkdir()
-    url = "https://example.test/panel.tar.gz"
-    (published_dir / "tiny-v1.release.json").write_text(json.dumps(dict(release, url=url)))
-    monkeypatch.setattr(shared, "BUNDLES", published_dir)
+    archive, url = tiny_release
     cache = Cache(tmp_path / "cache", offline=True)
-    cache.import_file(tmp_path / "panel.tar.gz", url)
+    cache.import_file(archive, url)
     fetched = shared.fetch_bundle("tiny-v1", cache=cache)
     assert fetched == shared.fetch_bundle("tiny-v1", cache=cache)  # reused
     with pytest.raises(KeyError, match="published: tiny-v1"):
@@ -387,22 +395,14 @@ def test_check_compares_members_without_reads_too(bam, tmp_path):
     assert list(problems) == ["pending"] and "nothing at /record" in problems["pending"]["error"]
 
 
-def test_the_cli_lists_and_checks_a_published_bundle(bam, tmp_path, monkeypatch, capsys):
-    import json
-
-    import osteosarc.shared as shared
-    from osteosarc import Cache
+def test_the_cli_lists_and_checks_a_published_bundle(bam, tmp_path, capsys, tiny_release):
+    from osteosarc import Cache, check_fixtures
     from osteosarc.cli import main
-    bundle = tmp_path / "bundle"
-    generate_bundle(bundle_recipe(bam), bundle, sources={"rna": bam})
-    release = shared.pack_release(bundle, tmp_path / "panel.tar.gz")
-    published_dir = tmp_path / "bundles"
-    published_dir.mkdir()
-    url = "https://example.test/panel.tar.gz"
-    (published_dir / "tiny-v1.release.json").write_text(json.dumps(dict(release, url=url)))
-    monkeypatch.setattr(shared, "BUNDLES", published_dir)
+    archive, url = tiny_release
     root = tmp_path / "cache"
-    Cache(root, offline=True).import_file(tmp_path / "panel.tar.gz", url)
+    Cache(root, offline=True).import_file(archive, url)
+    # The Python check takes the published name too.
+    assert check_fixtures("tiny-v1", {"duplicates": str(bam)}, cache=Cache(root, offline=True)) == {}
     (tmp_path / "fixtures.json").write_text(json.dumps({"duplicates": str(bam)}))
     assert main(["--cache", str(root), "--offline", "test-data", "check", "tiny-v1", str(tmp_path / "fixtures.json")]) == 0
     assert "matches the bundle" in capsys.readouterr().out
@@ -480,18 +480,25 @@ def test_fresh_lists_replace_a_librarys_carried_fixtures(tmp_path):
         merge_required(carried, [clash])
 
 
-def test_acquisition_receipts_hold_no_local_cache_paths(bam, tmp_path):
-    from osteosarc import Region, extract_reads
-    texts = []
+def test_receipts_and_bundles_hold_no_local_paths(bam, tmp_path):
+    from osteosarc import ReadFilter, Region, extract_reads
+    texts, keys = [], []
     for name in ("first cache", "second"):
         cache = tmp_path / name
         subset = extract_reads(str(bam), [Region("chr1", 0, 2000, "GRCh38")], cache=cache)
+        keys.append(subset.path.parent.name)
         bundle = tmp_path / ("bundle " + name)
         generate_bundle(bundle_recipe(bam), bundle, sources={"rna": subset})
         text = (bundle / "acquisition.json").read_text()
-        assert str(cache) not in text and ".reads-" not in text
+        for local in (str(cache), str(bam.parent), ".reads-", "retrieved_at"):
+            assert local not in text
         texts.append(text)
-    assert texts[0] == texts[1]  # the same reads from two caches make the same bundle
+    # The same reads from two caches: the same cache key and the same bundle.
+    assert keys[0] == keys[1] and texts[0] == texts[1]
+    filtered = extract_reads(str(bam), [Region("chr1", 0, 2000, "GRCh38")], cache=tmp_path / "third",
+                             filters=ReadFilter(barcodes=("AAACCTG-1",)))
+    receipt = json.dumps(filtered.receipt)
+    assert "CB:barcodes.txt" in filtered.receipt["command"] and str(tmp_path) not in receipt
 
 
 def test_members_named_after_their_files_keep_their_names(bam, tmp_path):
@@ -505,20 +512,24 @@ def test_members_named_after_their_files_keep_their_names(bam, tmp_path):
         "topiary/reads.bam": tmp_path / "sam/topiary/reads.bam.sam"}
 
 
-def test_an_offline_fetch_never_downloads(bam, tmp_path, monkeypatch):
+def test_an_offline_fetch_never_downloads(tmp_path, tiny_release):
     import osteosarc.shared as shared
     from osteosarc import Cache, OfflineError
-    bundle = tmp_path / "bundle"
-    generate_bundle(bundle_recipe(bam), bundle, sources={"rna": bam})
-    release = shared.pack_release(bundle, tmp_path / "tiny.tar.gz")
-    published_dir = tmp_path / "bundles"
-    published_dir.mkdir()
-    url = "https://example.test/tiny.tar.gz"
-    (published_dir / "tiny-v1.release.json").write_text(json.dumps(dict(release, url=url)))
-    monkeypatch.setattr(shared, "BUNDLES", published_dir)
+    archive, url = tiny_release
     with pytest.raises(OfflineError):
         shared.fetch_bundle("tiny-v1", cache=tmp_path / "empty", offline=True)
     with pytest.raises(OfflineError):
         shared.fetch_bundle("tiny-v1", cache=Cache(tmp_path / "empty"), offline=True)
-    Cache(tmp_path / "full", offline=True).import_file(tmp_path / "tiny.tar.gz", url)
+    Cache(tmp_path / "full", offline=True).import_file(archive, url)
     assert (shared.fetch_bundle("tiny-v1", cache=tmp_path / "full", offline=True) / "manifest.json").is_file()
+
+
+def test_export_refuses_two_members_that_would_share_a_file(bam, tmp_path):
+    recipe = bundle_recipe(bam)
+    recipe["members"]["reads"] = copy.deepcopy(recipe["members"]["duplicates"])
+    recipe["members"]["reads.bam"] = recipe["members"].pop("duplicates")
+    generate_bundle(recipe, tmp_path / "bundle", sources={"rna": bam})
+    with pytest.raises(IntegrityError, match="both be written"):
+        export_bundle(tmp_path / "bundle", tmp_path / "out")
+    assert not (tmp_path / "out").exists()
+    assert set(export_bundle(tmp_path / "bundle", tmp_path / "out", members=["reads"])) == {"reads"}

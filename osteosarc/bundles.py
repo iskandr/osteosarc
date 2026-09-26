@@ -6,7 +6,6 @@ import copy
 import gzip
 import json
 import os
-import re
 import tempfile
 from collections import Counter
 from contextlib import contextmanager
@@ -82,20 +81,13 @@ def _publication(destination):
 
 
 def portable_receipts(value):
-    """Receipts without this machine's paths, so bundles built from different caches
-    match: a path into a cache becomes relative to it (objects/sha256/..., whose
-    name is its checksum), and a temporary work folder's files keep just their names.
-    Only whole strings that are absolute paths change (commands list each argument)."""
+    """Acquisition receipts as a bundle keeps them: without download times, which
+    differ between otherwise identical builds. (Receipts already record local files
+    by their place in the cache or their name, never by this machine's paths.)"""
     if isinstance(value, dict):
-        return {key: portable_receipts(item) for key, item in value.items()}
+        return {key: portable_receipts(item) for key, item in value.items() if key != "retrieved_at"}
     if isinstance(value, list):
         return [portable_receipts(item) for item in value]
-    if isinstance(value, str) and re.match(r"(?:[A-Za-z]:)?[/\\]", value):
-        path = value.replace("\\", "/")
-        for marker in ("/objects/sha256/", "/osteosarc/derived/"):
-            if marker in path:
-                inside = path[path.index(marker) + 1:]
-                return re.sub(r"^osteosarc/derived/\.reads-[^/]+/", "", inside)
     return value
 
 
@@ -367,6 +359,12 @@ def export_bundle(directory, to, *, members=None, format="bam"):
             by_source.setdefault(member["source"], []).append(name)
             # A member named after its file (reads.bam) keeps its name; checks every name before writing any.
             targets[name] = safe_path(to, name if name.endswith("." + format) else f"{name}.{format}")
+    by_target = {}
+    for name, target in targets.items():
+        if target in by_target:
+            raise IntegrityError(f"Members {by_target[target]} and {name} would both be written to {target}; "
+                                 "export them separately")
+        by_target[target] = name
     to.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=to, prefix=".export-") as temporary:
         work, moves = Path(temporary), []
