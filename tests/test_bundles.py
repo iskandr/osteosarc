@@ -299,8 +299,8 @@ def test_dataset_acquisition_accepts_identity_without_url(bam, dataset, tmp_path
 
 
 def test_frozen_additional_sv_panel_generates_offline(tmp_path):
-    recipe = json.loads((Path(__file__).parent / "data/additional_svs/recipe.json").read_text())
     root = Path(__file__).parent / "data/additional_svs"
+    recipe = json.loads((root / "recipe.json").read_text())
     sources = {sid: root / (sid + ".bam") for sid in recipe["sources"]}
     manifest = generate_bundle(recipe, tmp_path / "additional", sources=sources, size_budget=4_000_000)
     assert len(manifest["members"]) == 24
@@ -548,3 +548,17 @@ def test_bundle_file_gives_each_member_its_own_file_and_exports_a_source_once(ba
     assert first != second and first.is_file() and second.is_file()
     with pytest.raises(ValueError, match="bam, sam or sam.gz"):
         bundle_file(tmp_path / "bundle", "reads", format="cram", cache=tmp_path / "cache")
+
+
+def test_a_changed_or_unrecorded_header_is_refused(bam, tmp_path):
+    directory = tmp_path / "bundle"
+    manifest = generate_bundle(bundle_recipe(bam), directory, sources={"rna": bam})
+    source = manifest["sources"]["rna"]
+    source["header_sha256"] = "0" * 64
+    (directory / "manifest.json").write_text(json.dumps(manifest))
+    with pytest.raises(IntegrityError, match="Exported header differs"):
+        verify_bundle(directory)
+    del source["header_sha256"]
+    (directory / "manifest.json").write_text(json.dumps(manifest))
+    with pytest.raises(IntegrityError, match="make the bundle again"):
+        verify_bundle(directory)

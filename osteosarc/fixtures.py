@@ -187,6 +187,8 @@ def select_fixture_records(records, policy, *, regions=(), context_regions=()):
     refer to the same source records. Required witnesses bypass sampling caps.
     A cap limits optional templates, never records belonging to a kept template.
     """
+    if policy.get("encoding", RECORD_ENCODING) != RECORD_ENCODING:
+        raise SchemaError(f"Unsupported record identity encoding: {policy['encoding']}")
     # Public callers may pass read_records() directly. Selection revisits the
     # input for witnesses, strata and context, so consume an iterator only once.
     records = tuple(records)

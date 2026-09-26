@@ -1,8 +1,7 @@
-"""Historical exact-SAM fixture format, migrated from openvax/isovar.
+"""Helpers from Isovar's historical exact-SAM fixtures, kept because Isovar imports them.
 
-These adapters preserve reviewed SAM membership/order and header policy. They
-promise SAM-text fidelity, not BAM auxiliary-bit equality. New binary bundles
-use osteosarc.bundles. No Isovar import or sibling checkout is required.
+read_json, write_json, sam_digest, sam_regions, minimal_header, segment_key and
+select_window_segments; new test data uses osteosarc.bundles and osteosarc.shared.
 Original implementation: Isovar contributors, Apache-2.0.
 """
 

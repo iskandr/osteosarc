@@ -10,6 +10,9 @@ theme:
   nav_style: light
   highlightjs: true
   hljs_languages: [python, bash]
+# concepts.md only points old links at the Overview.
+not_in_nav: |
+  /concepts.md
 nav:
   - Overview: index.md
   - Guides:

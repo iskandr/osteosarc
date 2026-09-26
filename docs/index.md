@@ -63,9 +63,9 @@ the site doesn't offer as downloads. Reference genomes (Ensembl, NCBI, UCSC) che
 alleles.
 
 **Snapshots.** The website changes; a snapshot, its metadata as downloaded on one
-day, doesn't. Commands use the newest; `--snapshot 2026-09` picks another, and every
-read extraction records the snapshot it came from. See
-[snapshots and cache](snapshots.md).
+day, doesn't. Run `osteosarc sync` again on a later day for a new one. Commands use
+the newest; `--snapshot 2026-09` picks another, and every read extraction records the
+snapshot it came from. See [snapshots and cache](snapshots.md).
 
 **Samples and files.** A sample is something collected from the patient: a tumor, an
 organoid grown from one, or a blood draw, with a time point such as T0. A file is
@@ -101,7 +101,8 @@ checksums, and a cached file that no longer matches it is an error.
 | Find a sample's files, and download them | [Samples and files](samples.md) |
 | Get alleles, read counts and vaccine peptides | [Variants and vaccines](variants.md) |
 | Fetch reads by variant or region | [Reads](reads.md) |
-| Make test data, or use the OpenVax libraries' | [Test data](test-data.md) |
+| Make a bundle of test reads, or use the shared openvax-v1 | [Test data](test-data.md) |
 | Chart treatments, scans and MRD | [Timeline](timeline.md) |
+| Look through 637 candidate structural variants | [SV candidates](sv-candidates.md) |
 | Use every command | [Command line](command-line.md) |
 | Pass data to Varcode, Isovar, Topiary or Vaxrank | [OpenVax libraries](openvax.md) |

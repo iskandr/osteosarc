@@ -5,7 +5,7 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
-## 0.13.0 (unreleased)
+## 0.13.0 (2026-09-26)
 
 A simpler site, and less code ([#75](https://github.com/iskandr/osteosarc/issues/75)).
 
@@ -13,12 +13,16 @@ A simpler site, and less code ([#75](https://github.com/iskandr/osteosarc/issues
   fits together" there, linking to each topic's page.
 - **Removed, now that the OpenVax libraries take their reads from openvax-v1:**
   - osteosarc.regional_corpus;
-  - the generators in legacy_fixtures and cohort_bundle (the functions Isovar and
-    Vaxrank import stay);
+  - the generators in legacy_fixtures (generate, pack, verify, export_fixture and
+    their helpers) and cohort_bundle (generate_cohort_bundle, retrieval_regions);
+    the functions Isovar and Vaxrank import stay;
+  - osteosarc.bundles.generate_panel; `osteosarc test-data make --recipe`, or
+    generate_bundle, does the same;
+  - osteosarc.records.sam_digest, and SAM-text record identities in recipes;
   - osteosarc.reads.subset_templates, a random sample that make_bundle's balanced
     sets replace;
-  - SAM-text record identities in recipes, and reading full headers in bundles made
-    by 0.2.2, which no recipe or bundle uses any more.
+  - reading bundles made by osteosarc 0.2 or earlier, which now says to make them
+    again.
 - The frozen SV test recipe moves from the package into tests/data.
 
 ## 0.12.0 (2026-09-26)

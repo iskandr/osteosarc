@@ -297,7 +297,10 @@ def verify_bundle(bundle, *, sha256=None, cache=None):
             raise IntegrityError(f"Source record multiset/multiplicity differs: {sid}")
         with pysam.AlignmentFile(path) as bam:
             exported_header = bam.header.to_dict()
-            if stable_id(exported_header) != source.get("header_sha256"):
+            if "header_sha256" not in source:
+                raise IntegrityError(f"Source {sid} comes from a bundle made by osteosarc 0.2 or earlier; "
+                                     "make the bundle again with this osteosarc")
+            if stable_id(exported_header) != source["header_sha256"]:
                 raise IntegrityError(f"Exported header differs: {sid}")
         original = json.loads(safe_path(root, source["original_header"]).read_text())
         source_records[sid] = list(read_records(path))
@@ -321,7 +324,7 @@ def verify_bundle(bundle, *, sha256=None, cache=None):
         declared = recipe["members"][name]
         if member["status"] in ("unresolved", "omitted"):
             continue
-        if declared["policy"]["kind"] == "exact" and declared["policy"].get("encoding", RECORD_ENCODING) == RECORD_ENCODING:
+        if declared["policy"]["kind"] == "exact":
             expected = Counter(declared["policy"].get("records", {}))
             if declared["policy"].get("duplicate_policy") == "identical-record-once":
                 expected = Counter(dict.fromkeys(expected, 1))
