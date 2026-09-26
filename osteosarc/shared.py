@@ -182,11 +182,30 @@ def match_named(records, names):
     return counts
 
 
+def match_records(records, wanted):
+    """Pinned records ({bam-record-v1 checksum: count}) a source must still hold, matched by checksum."""
+    available = Counter(r.digest for r in (records.records if isinstance(records, RecordIndex) else records))
+    if missing := Counter(wanted) - available:
+        raise IntegrityError(f"{len(missing)} pinned records aren't in the source, e.g. {sorted(missing)[:3]}")
+    return Counter(wanted)
+
+
 def required_spans(subset):
     """Where a required subset's records lie: its SAM lines' spans, or the regions it names."""
     if "sam" in subset:
         return [span for span in map(sam_span, subset["sam"]) if span]
     return [tuple(region) for region in subset.get("regions", ())]
+
+
+def merge_spans(spans):
+    """Overlapping or touching (contig, start, end) spans merged, sorted: the same bases, fewer spans."""
+    merged = []
+    for contig, start, end in sorted(spans):
+        if merged and merged[-1][0] == contig and start <= merged[-1][2]:
+            merged[-1][2] = max(merged[-1][2], end)
+        else:
+            merged.append([contig, start, end])
+    return merged
 
 
 def sam_span(line):
@@ -351,12 +370,67 @@ def select_breakend_templates(templates, breakends, *, pad=1000, cap=50):
     return {t: "joins the breakends (hash order)" for t in chosen}, len(joined)
 
 
-def load_required(paths):
-    """Each library's required records, as {subset name: dict(consumer, source, sam or names)}.
+def bundle_fixtures(bundle):
+    """A bundle's library fixtures as required subsets pinned by checksum, so the
+    next bundle keeps exactly their records once libraries no longer keep their
+    own copies: {name: dict(consumer, source, records, regions, description)}.
 
-    A subset lists its records' SAM lines ("sam"), or names whole reads
-    ("names") together with the regions they lie in ("regions": [contig,
-    start, end], zero-based).
+    Each fixture is planned from the regions its target records; bundles built
+    before targets recorded them (openvax-v1) use the spans of their records.
+    """
+    from .bundles import verify_bundle
+    bundle = Path(bundle)
+    manifest = verify_bundle(bundle)
+    recipe = read_json(bundle / "recipe.json")
+    subsets, unplanned = {}, defaultdict(list)
+    for name, member in sorted(recipe["members"].items()):
+        target = recipe["targets"][member["target"]]
+        if target["kind"] != "fixture":
+            continue
+        url = recipe["sources"][member["source"]]["identity"].get("url")
+        if member["policy"]["kind"] != "exact" or not target.get("consumer") or not url:
+            raise SchemaError(f"Can't carry {name}: only exact fixtures of a named library, from a source "
+                              "with a URL, carry forward")
+        subsets[name] = dict(consumer=target["consumer"], source=url, records=dict(manifest["members"][name]["records"]),
+                             description=target.get("description", name))
+        if "regions" in target:
+            subsets[name]["regions"] = target["regions"]
+        else:
+            unplanned[member["source"]].append(name)
+    for sid, names in unplanned.items():
+        wanted = {key for name in names for key in subsets[name]["records"]}
+        spans = {r.digest: (r.read.reference_name, r.read.reference_start, r.read.reference_end)
+                 for r in _source_records(bundle, manifest, sid) if r.digest in wanted and not r.read.is_unmapped}
+        for name in names:
+            subsets[name]["regions"] = merge_spans(spans[key] for key in subsets[name]["records"] if key in spans)
+    return subsets
+
+
+def merge_required(carried, paths):
+    """Required subsets for the next bundle: the carried ones, except that each
+    library with a required file (even one listing nothing) gets that file's
+    subsets in place of all it had."""
+    documents = [read_json(path) for path in paths]
+    required = load_required(paths)
+    fresh = {document["consumer"] for document in documents}
+    kept = {name: subset for name, subset in carried.items() if subset["consumer"] not in fresh}
+    if clash := sorted(set(kept) & set(required)):
+        raise SchemaError(f"Carried and required subsets share names: {clash[:3]}")
+    return {**kept, **required}
+
+
+def _source_records(bundle, manifest, sid):
+    from .bundles import safe_path
+    return read_records(safe_path(Path(bundle), manifest["sources"][sid]["bam"]))
+
+
+def load_required(paths):
+    """Each library's required records, as {subset name: dict(consumer, source, sam, names or records)}.
+
+    A subset lists its records' SAM lines ("sam"), names whole reads ("names"),
+    or pins records by bam-record-v1 checksum and count ("records", as carried
+    from a previous bundle); names and records come with the regions they lie
+    in ("regions": [contig, start, end], zero-based).
     """
     subsets = {}
     for path in paths:
@@ -364,8 +438,11 @@ def load_required(paths):
         for name, subset in document["subsets"].items():
             if name in subsets:
                 raise SchemaError(f"Required subset {name!r} is named twice")
-            if ("sam" in subset) == ("names" in subset) or ("names" in subset and not subset.get("regions")):
-                raise SchemaError(f"Required subset {name!r} needs either sam, or names with regions")
+            kinds = [kind for kind in ("sam", "names", "records") if kind in subset]
+            if len(kinds) != 1 or ("names" in subset and not subset.get("regions")) or (
+                    "records" in subset and subset["records"] and not subset.get("regions")):
+                raise SchemaError(f"Required subset {name!r} needs one of sam, names with regions, "
+                                  "or records with regions")
             subsets[name] = dict(subset, consumer=document["consumer"])
     return subsets
 
@@ -465,8 +542,12 @@ def _select_source(plan, index, windows, targets, caps, low_quality_alt, cap):
                                           policy=dict(exact(chosen), reason="templates joining the breakends"))
     for subset_name, required_subset in sorted(plan["mine"].items()):
         try:
-            counts = (match_required(index, required_subset["sam"]) if "sam" in required_subset
-                      else match_named(index, set(required_subset["names"])))
+            if "sam" in required_subset:
+                counts = match_required(index, required_subset["sam"])
+            elif "records" in required_subset:
+                counts = match_records(index, required_subset["records"])
+            else:
+                counts = match_named(index, set(required_subset["names"]))
         except IntegrityError as error:
             problems.append(f"{subset_name}: {error}")
             continue
@@ -558,7 +639,9 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6):
             targets[target] = dict(kind="fixture", assembly=plan["source"]["assembly"],
                                    reference=dict(source="library", consumer=required_subset["consumer"]),
                                    consumer=required_subset["consumer"],
-                                   description=required_subset.get("description", subset_name))
+                                   description=required_subset.get("description", subset_name),
+                                   # So a later bundle that carries this one plans it the same way.
+                                   regions=merge_spans(required_spans(required_subset)))
             add(subset_name, dict(
                 target=target, source=label,
                 policy=dict(version=1, kind="exact", records=dict(sorted(counts.items())),
@@ -608,6 +691,17 @@ def published(name):
         known = sorted(p.name.removesuffix(".release.json") for p in BUNDLES.glob("*.release.json"))
         raise KeyError(f"No published bundle {name!r}; published: {', '.join(known) or 'none'}")
     return json.loads(path.read_text())
+
+
+def bundle_folder(value, *, cache=None):
+    """The folder of a published bundle's name (fetched and verified), or else of a bundle path.
+
+    A published name always means the published bundle; write ./NAME for a
+    local folder that shares its name.
+    """
+    if (BUNDLES / f"{value}.release.json").is_file() or not Path(value).exists():
+        return fetch_bundle(value, cache=cache)  # an unknown name raises, listing the published ones
+    return Path(value)
 
 
 def pack_release(bundle, archive):
@@ -734,7 +828,7 @@ def check_fixtures(bundle, fixtures, *, root=Path(".")):
     {member: dict(missing=n, extra=n)} for every member that differs, and
     {member: dict(error=why)} for one that isn't a member or can't be read.
     """
-    from .bundles import safe_path, verify_bundle
+    from .bundles import verify_bundle
     manifest = verify_bundle(bundle)
     by_source = {}
     problems = {}
@@ -746,8 +840,8 @@ def check_fixtures(bundle, fixtures, *, root=Path(".")):
         sid = member["source"]
         expected = Counter()
         if member["records"] and sid not in by_source:
-            path = safe_path(Path(bundle), manifest["sources"][sid]["bam"])
-            by_source[sid] = {record.digest: record.read.to_string() for record in read_records(path)}
+            by_source[sid] = {record.digest: record.read.to_string()
+                              for record in _source_records(bundle, manifest, sid)}
         for key, n in member["records"].items():
             expected[by_source[sid][key]] += n
         try:

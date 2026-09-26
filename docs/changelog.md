@@ -5,6 +5,21 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.11.2 (2026-09-26)
+
+- **Rebuilding shared test data no longer needs the libraries' own copies**
+  ([#63](https://github.com/iskandr/osteosarc/issues/63)). The build script's
+  `--carry openvax-v1` keeps each library's members from the previous bundle, pinned by
+  checksum, so the next version builds after a library deletes its test files; a
+  `--required` list replaces all a library had. Fixture targets now record the regions
+  they were planned from, so later carries plan them the same way.
+- `osteosarc test-data` treats a published bundle's name as that bundle, even when a
+  folder of the same name exists; write ./NAME for the folder.
+- The required_*.py scripts take the library revision to read; openvax-v1 means the
+  commits openvax-v1 was built from, and reproduces its inputs exactly. A rebuild never
+  replaces a published release record.
+- The cross-library builder check compares whichever libraries you give it.
+
 ## 0.11.1 (2026-09-26)
 
 - `osteosarc test-data check` counts every SAM line under a JSON pointer, whatever

@@ -1,8 +1,8 @@
 """Vaxrank's required records: each Sid read cohort's SAM lines, with its source file.
 
-python scripts/shared_test_data/required_vaxrank.py VAXRANK_CHECKOUT OUT.json.gz [REF]
+python scripts/shared_test_data/required_vaxrank.py VAXRANK_CHECKOUT OUT.json.gz REF
 
-Reads REF (default origin/main) of the checkout: the package bundle
+Reads REF (openvax-v1 means the commit openvax-v1 was built from) of the checkout: the package bundle
 vaxrank/data/sid-test-data.zip and its cohort recipe
 examples/osteosarc_test_data/recipe/selection.json.gz. Every line is what
 pysam's AlignedSegment.to_string() prints for the record. BAM cohorts are read
@@ -24,8 +24,12 @@ import pysam
 from osteosarc.cohort_bundle import extract_bundle, record_digest
 
 S3 = "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/"
+# The Vaxrank commit openvax-v1 was built from; pass openvax-v1 as the revision to
+# read it. The libraries are moving their test reads into openvax-v1 and deleting their
+# own copies, so later revisions may not have these files.
+OPENVAX_V1 = "0565cf15754fa3ac45b82fa5fc7fd5ddfbe06cfa"
 root, output = sys.argv[1], Path(sys.argv[2])
-ref = sys.argv[3] if len(sys.argv) > 3 else "origin/main"
+ref = OPENVAX_V1 if sys.argv[3] == "openvax-v1" else sys.argv[3]
 
 
 def git(*args):

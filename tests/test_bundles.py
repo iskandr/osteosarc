@@ -11,7 +11,7 @@ from osteosarc.bundles import pack_bundle
 from osteosarc.cache import digest
 from osteosarc.cli import main
 from osteosarc.fixtures import select_fixtures
-from osteosarc.records import record_multiset
+from osteosarc.records import read_records, record_multiset
 
 
 def bundle_recipe(bam):
@@ -420,3 +420,61 @@ def test_the_cli_lists_and_checks_a_published_bundle(bam, tmp_path, monkeypatch,
     assert record_multiset(out / "duplicates.bam") == record_multiset(bam)
     assert main(["--cache", str(root), "--offline", "test-data", "list", "no-such-bundle"]) == 1
     assert "published: tiny-v1" in capsys.readouterr().err
+
+
+def test_a_bundles_library_fixtures_carry_forward_by_checksum(bam, tmp_path):
+    from osteosarc import SchemaError
+    from osteosarc.shared import bundle_fixtures, match_records
+    recipe = bundle_recipe(bam)
+    fixture = dict(kind="fixture", assembly="GRCh38", reference=dict(source="library", consumer="isovar"),
+                   consumer="isovar", description="Isovar fixture x.sam")
+    recipe["targets"]["fixture:isovar/x.sam"] = fixture
+    recipe["targets"]["fixture:isovar/planned.sam"] = dict(fixture, regions=[["chr1", 0, 5000]])
+    recipe["targets"]["fixture:isovar/none.sam"] = dict(fixture)
+    exact = recipe["members"]["duplicates"]["policy"]
+    for name in ("x.sam", "planned.sam"):
+        recipe["members"]["isovar/" + name] = dict(target="fixture:isovar/" + name, source="rna",
+                                                   policy=copy.deepcopy(exact))
+    recipe["members"]["isovar/none.sam"] = dict(target="fixture:isovar/none.sam", source="rna",
+                                                policy=dict(kind="exact", version=1, records={}))
+    generate_bundle(recipe, tmp_path / "bundle", sources={"rna": bam})
+    carried = bundle_fixtures(tmp_path / "bundle")
+    assert list(carried) == ["isovar/none.sam", "isovar/planned.sam", "isovar/x.sam"]  # not selected members
+    subset = carried["isovar/x.sam"]
+    assert subset["records"] == exact["records"]  # the exact records, repeats kept, by checksum
+    assert (subset["consumer"], subset["source"], subset["description"]) == (
+        "isovar", "https://example.test/source.bam", "Isovar fixture x.sam")
+    # Planned from the target's recorded regions, or else from the records' own spans.
+    assert carried["isovar/planned.sam"]["regions"] == [["chr1", 0, 5000]]
+    assert all(contig == "chr1" for contig, _, _ in subset["regions"]) and subset["regions"]
+    assert carried["isovar/none.sam"] == dict(subset, records={}, regions=[])
+    records = list(read_records(bam))
+    assert match_records(records, subset["records"]) == subset["records"]
+    with pytest.raises(IntegrityError, match="pinned records"):
+        match_records(records[:1], subset["records"])
+    recipe["targets"]["fixture:isovar/x.sam"].pop("consumer")
+    generate_bundle(recipe, tmp_path / "anonymous", sources={"rna": bam})
+    with pytest.raises(SchemaError, match="Can't carry isovar/x.sam"):
+        bundle_fixtures(tmp_path / "anonymous")
+
+
+def test_fresh_lists_replace_a_librarys_carried_fixtures(tmp_path):
+    import gzip
+
+    from osteosarc import SchemaError
+    from osteosarc.shared import merge_required
+    carried = {"isovar/a": dict(consumer="isovar", source="s", records={}, regions=[]),
+               "varcode/b": dict(consumer="varcode", source="s", records={}, regions=[])}
+
+    def required(name, consumer, subsets):
+        path = tmp_path / name
+        path.write_bytes(gzip.compress(json.dumps(dict(consumer=consumer, subsets=subsets)).encode()))
+        return path
+    line = "r\t0\tchr1\t1\t60\t4M\t*\t0\t0\tACGT\tIIII"
+    fresh = required("isovar.json.gz", "isovar", {"isovar/c": dict(source="s", sam=[line])})
+    assert set(merge_required(carried, [fresh])) == {"isovar/c", "varcode/b"}
+    nothing = required("varcode.json.gz", "varcode", {})  # a library that needs no reads any more
+    assert set(merge_required(carried, [nothing])) == {"isovar/a"}
+    clash = required("topiary.json.gz", "topiary", {"varcode/b": dict(source="s", sam=[line])})
+    with pytest.raises(SchemaError, match="share names"):
+        merge_required(carried, [clash])

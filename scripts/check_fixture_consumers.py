@@ -1,7 +1,10 @@
-"""Drive one pinned panel through the real Isovar/Topiary/Vaxrank CLIs offline.
+"""Drive one pinned recipe through the libraries' own bundle builders, offline.
 
-python -m scripts.check_fixture_consumers --isovar /checkout --topiary /checkout --vaxrank /checkout
-This is an explicit adoption check, not a dependency of ordinary Osteosarc tests.
+python -m scripts.check_fixture_consumers --topiary /checkout --vaxrank /checkout [--isovar /checkout]
+An explicit adoption check, not a dependency of ordinary Osteosarc tests, for the
+libraries that still build their own bundles (give at least two). A library that
+has moved its test reads onto openvax-v1, as Isovar does from isovar#398, has no
+builder to compare.
 """
 
 import argparse
@@ -21,8 +24,11 @@ from osteosarc.records import record_multiset
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("isovar", "topiary", "vaxrank"):
-        parser.add_argument("--" + name, type=Path, required=True)
+        parser.add_argument("--" + name, type=Path)
     args = parser.parse_args()
+    given = [name for name in ("isovar", "topiary", "vaxrank") if getattr(args, name)]
+    if len(given) < 2:
+        parser.error("give at least two library checkouts to compare")
     with tempfile.TemporaryDirectory() as temporary:
         work = Path(temporary)
         path = work / "input.bam"
@@ -46,15 +52,16 @@ def main():
             "vaxrank": ["examples/osteosarc_test_data/build.py", "--cache", str(work / "cache")],
         }
         manifests = []
-        for consumer, command in commands.items():
+        for consumer, command in ((name, commands[name]) for name in given):
             destination = work / consumer
             subprocess.run([sys.executable, *command, "--panel-recipe", str(work / "recipe.json"),
                             "--panel-source", f"rna={path}", "--output", str(destination), "--offline"],
                            cwd=getattr(args, consumer), env=env, check=True)
             manifest = verify_bundle(destination)
             manifests.append((manifest["recipe_sha256"], manifest["members"], manifest["sources"]))
-        assert manifests[0] == manifests[1] == manifests[2]
-        print("Three consumer CLIs agree on recipe, complete record multiset, reasons and source/header provenance")
+        assert all(manifest == manifests[0] for manifest in manifests)
+        print(f"{', '.join(given)} builders agree on recipe, complete record multiset, reasons and "
+              "source/header provenance")
 
 
 if __name__ == "__main__":

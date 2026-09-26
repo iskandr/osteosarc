@@ -204,7 +204,7 @@ def parser():
                        ("verify", "Check a bundle's files, records and indexes"),
                        ("export", "Write members into a folder as indexed BAMs (or SAM), named after them")):
         action = actions.add_parser(name, help=what)
-        action.add_argument("bundle", help="A bundle directory, or a published bundle such as openvax-v1")
+        action.add_argument("bundle", help="A published bundle such as openvax-v1, or a bundle folder's path")
         if name == "export":
             action.add_argument("output", help="Folder to write the members into; it may already exist")
             action.add_argument("--member", action="append", help="Only these members; repeat for several")
@@ -216,7 +216,7 @@ def parser():
                                 help="Every member's records and reasons as JSON" if name == "list"
                                 else "The bundle's manifest as JSON")
     check = actions.add_parser("check", help="Compare your library's test files with a bundle's members")
-    check.add_argument("bundle", help="A bundle directory, or a published bundle such as openvax-v1")
+    check.add_argument("bundle", help="A published bundle such as openvax-v1, or a bundle folder's path")
     check.add_argument("fixtures", help='JSON mapping member names to your files: a BAM, SAM or SAM.gz path, '
                                         'or {"json": path, "pointer": "/path/to/lines"}')
     return root
@@ -549,7 +549,7 @@ def test_data(args, cache):
     from pathlib import Path
 
     from .bundles import export_bundle, generate_bundle, list_bundle, verify_bundle
-    from .shared import check_fixtures, fetch_bundle, read_json
+    from .shared import bundle_folder, check_fixtures, read_json
     action = args.test_data_command
     if action == "generate":
         recipe = read_json(args.recipe)
@@ -561,8 +561,7 @@ def test_data(args, cache):
         else:
             print(bundle_summary(args.output, manifest))
         return 0
-    if not Path(args.bundle).exists():
-        args.bundle = fetch_bundle(args.bundle, cache=cache)
+    args.bundle = bundle_folder(args.bundle, cache=cache)
     if action == "check":
         manifest = Path(args.fixtures)
         problems = check_fixtures(args.bundle, read_json(manifest), root=manifest.parent)

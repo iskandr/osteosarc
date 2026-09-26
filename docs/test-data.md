@@ -79,22 +79,26 @@ every target, from any BAM a library already uses there, and from each RNA BAM t
 [SV candidates](sv-candidates.md) saw a junction in. Each record is pinned by
 checksum, so rebuilding gives the same bytes, and any change upstream fails loudly.
 
-**Rebuilding.** Maintainers rebuild openvax-v1 from its spec, in
-osteosarc/data/bundles, and each library's current test files:
+**Rebuilding.** As the libraries move their test reads here and delete their own
+copies, each new version carries their members forward from the one before, pinned by
+checksum. To make openvax-v2, copy osteosarc/data/bundles/openvax-v1.spec.json to
+openvax-v2.spec.json, set its id to openvax-v2 (and its snapshot or targets, if they
+change), then:
 
 <!-- docs-check: skip (streams reads from about 40 BAMs; takes about an hour) -->
 ```sh
-python scripts/shared_test_data/required_isovar.py ~/code/isovar required-isovar.json.gz
-python scripts/shared_test_data/required_topiary.py ~/code/topiary required-topiary.json.gz
-python scripts/shared_test_data/required_vaxrank.py ~/code/vaxrank required-vaxrank.json.gz
-python scripts/shared_test_data/required_varcode.py ~/code/varcode required-varcode.json.gz
-python scripts/shared_test_data/build.py openvax-v1 build --required required-isovar.json.gz \
-    --required required-topiary.json.gz --required required-vaxrank.json.gz --required required-varcode.json.gz
+python scripts/shared_test_data/build.py openvax-v2 build --carry openvax-v1
 ```
 
-The first four scripts list the SAM lines in each library's committed test files (for
-Varcode, the read names behind its junctions). The build finds those records in the
-public BAMs, chooses the rest, builds the bundle and packs it for a GitHub release.
+The build finds those records in the public BAMs again, chooses the rest, builds the
+bundle and packs it for a GitHub release. A library that needs different reads gives a
+fresh list with `--required`, which replaces everything it had.
+
+openvax-v1 itself came from the libraries' committed test files: the required_isovar.py,
+required_topiary.py, required_vaxrank.py and required_varcode.py scripts in
+scripts/shared_test_data list their SAM lines (for Varcode, the read names behind its
+junctions) at the revision you give, and openvax-v1 as the revision means the commits
+it was built from. Its published release record is never replaced by a rebuild.
 
 ## A bundle from a recipe
 
@@ -230,23 +234,22 @@ file already there with different contents is never replaced. A bundle's size li
 
 Osteosarc fetches, selects, packs and checks reads; each library keeps its own science:
 which variants it tests, how it reads alleles, and what results it expects. Osteosarc
-never imports Isovar, Topiary or Vaxrank. Until they move onto openvax-v1, the
-libraries build their own test data:
+never imports Isovar, Topiary or Vaxrank. The libraries are moving their test reads
+onto openvax-v1, Isovar first (isovar#398); until each does, it builds its own:
 
 | Library | Its test data | Built with |
 | --- | --- | --- |
-| Isovar | 311 fixtures of exact records, plus vaccine, fusion and SV cases | osteosarc.legacy_fixtures |
+| Isovar | 311 fixtures of exact records, plus vaccine, fusion and SV cases | osteosarc.legacy_fixtures, until isovar#398 |
 | Topiary | Variant, indel, fusion and pVACseq fixtures | osteosarc.regional_corpus |
 | Vaxrank | 58 read cohorts | osteosarc.cohort_bundle |
 | Varcode | Variants and SV records, no reads | a snapshot of the variant catalogue |
 
-Isovar, Topiary and Vaxrank each accept the same recipe in their builders. From an
-osteosarc checkout, this checks, with the network off, that all three select exactly
-the same reads for the same reasons:
+The libraries' builders each accept the same recipe. From an osteosarc checkout, this
+checks, with the network off, that those you give select exactly the same reads for the
+same reasons:
 
 ```sh
-python -m scripts.check_fixture_consumers --isovar /path/to/isovar \
-  --topiary /path/to/topiary --vaxrank /path/to/vaxrank
+python -m scripts.check_fixture_consumers --topiary /path/to/topiary --vaxrank /path/to/vaxrank
 ```
 
 A change to a library's expected results needs its own review, even when its test data

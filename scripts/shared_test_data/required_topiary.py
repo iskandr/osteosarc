@@ -1,8 +1,8 @@
 """Topiary's required records: every fixture of real Sid reads, with its source BAM.
 
-python scripts/shared_test_data/required_topiary.py ~/code/topiary OUT.json.gz [REV]
+python scripts/shared_test_data/required_topiary.py ~/code/topiary OUT.json.gz REV
 
-Reads the committed tree of REV (default origin/master) through git, never the
+Reads the committed tree of REV (openvax-v1 means the commit openvax-v1 was built from) through git, never the
 working tree, and changes nothing in the checkout. Each SAM line is pysam's
 AlignedSegment.to_string() for the record, repeats kept. Covers the recipe's
 13 read files (tests/data/sid-fixtures.json), isovar_repeats/reads.bam and each
@@ -19,8 +19,12 @@ from pathlib import Path
 
 import pysam
 
+# The Topiary commit openvax-v1 was built from; pass openvax-v1 as the revision to
+# read it. The libraries are moving their test reads into openvax-v1 and deleting their
+# own copies, so later revisions may not have these files.
+OPENVAX_V1 = "0cb75c7d8bbbcb0a0ccf815c10c73739261e2757"
 root, output = Path(sys.argv[1]).expanduser(), sys.argv[2]
-rev = sys.argv[3] if len(sys.argv) > 3 else "origin/master"
+rev = OPENVAX_V1 if sys.argv[3] == "openvax-v1" else sys.argv[3]
 commit = subprocess.run(["git", "-C", str(root), "rev-parse", rev + "^{commit}"],
                         check=True, capture_output=True, text=True).stdout.strip()
 
