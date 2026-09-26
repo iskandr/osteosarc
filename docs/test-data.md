@@ -122,7 +122,7 @@ manifest gives the reason each record was kept.
 
 **Mates and split reads.** A member can also keep the mates and split alignments of its
 reads, when its source was fetched with mate and split-read recovery
-([reads](reads.md#recover-mates-and-split-alignments)). A recovery that timed out is
+([reads](reads.md#mates-and-split-reads)). A recovery that timed out is
 recorded as incomplete: finding no reads then isn't evidence that there are none.
 
 **Records.** Bundles identify each record by a checksum of its stored bytes, so two BAMs

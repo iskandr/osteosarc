@@ -104,7 +104,7 @@ if info.assembly == "GRCh38":
 ```
 
 Run the reads through Isovar, then rank with Vaxrank as usual. Fetching mates needs a
-recent SAMtools ([requirements](reads.md#requirements)). To compare your ranking with
+recent SAMtools ([requirements](reads.md)). To compare your ranking with
 the peptides the vaccines actually used:
 
 ```python
@@ -165,7 +165,7 @@ dropping an old read extractor, compare whole records, tags included, and how of
 each appears: matching read counts aren't enough. Osteosarc fixes some of the website's
 alleles by default; turn corrections off to compare with results from the published
 values. Files you already downloaded can go straight into the cache, so nothing is
-fetched twice (see [snapshots and cache](snapshots.md#import-a-file-you-already-downloaded)).
+fetched twice (see [snapshots and cache](snapshots.md#import-a-file-you-already-have)).
 
 ### Names changed in 0.9
 
