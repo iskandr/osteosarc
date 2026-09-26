@@ -5,6 +5,17 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.11.2 (2026-09-26)
+
+- **Rebuilding shared test data no longer needs the libraries' own copies.** The build
+  script's `--carry openvax-v1` keeps each library's members from the previous bundle,
+  so the next version builds even after a library deletes its test files
+  ([#63](https://github.com/iskandr/osteosarc/issues/63)).
+- The required_*.py scripts read, by default, the library commits openvax-v1 was built
+  from, and reproduce its inputs exactly.
+- The cross-library builder check now covers Topiary and Vaxrank; Isovar takes its
+  test reads from openvax-v1.
+
 ## 0.11.1 (2026-09-26)
 
 - `osteosarc test-data check` counts every SAM line under a JSON pointer, whatever

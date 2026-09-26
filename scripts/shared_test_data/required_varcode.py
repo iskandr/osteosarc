@@ -1,6 +1,6 @@
 """Varcode's required records for the shared test data: the ONT reads behind its observed junctions.
 
-python scripts/shared_test_data/required_varcode.py ~/code/varcode required-varcode.json.gz
+python scripts/shared_test_data/required_varcode.py ~/code/varcode required-varcode.json.gz [REVISION]
 
 tests/data/osteosarc_observed_junctions.json keeps each junction's read name
 and sequence, not the read. This names each read, with the windows around both
@@ -13,6 +13,9 @@ import json
 import subprocess
 from pathlib import Path
 
+# The Varcode commit openvax-v1 was built from; the library has since moved its
+# test reads into openvax-v1, so later revisions may not have these files.
+OPENVAX_V1 = "e1816a3015fac03b9e8f5b7d5345f592e3dd01a0"
 BUCKET = "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/"
 #: The junction file names its sources by Isovar's source IDs; its source summary
 #: (tests/data/osteosarc/expansion/audit/SOURCE_SUMMARY.md) gives these labels.
@@ -29,7 +32,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("varcode", type=Path, help="A Varcode checkout")
     parser.add_argument("output", type=Path, help="Where to write the required records (.json.gz)")
-    parser.add_argument("revision", nargs="?", default="origin/main")
+    parser.add_argument("revision", nargs="?", default=OPENVAX_V1)
     args = parser.parse_args()
 
     def git(*command):

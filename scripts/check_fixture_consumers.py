@@ -1,7 +1,9 @@
-"""Drive one pinned panel through the real Isovar/Topiary/Vaxrank CLIs offline.
+"""Drive one pinned recipe through Topiary's and Vaxrank's own builders, offline.
 
-python -m scripts.check_fixture_consumers --isovar /checkout --topiary /checkout --vaxrank /checkout
-This is an explicit adoption check, not a dependency of ordinary Osteosarc tests.
+python -m scripts.check_fixture_consumers --topiary /checkout --vaxrank /checkout
+This is an explicit adoption check, not a dependency of ordinary Osteosarc tests,
+for libraries that still build their own bundles; Isovar takes its test reads
+from openvax-v1 instead (isovar#398).
 """
 
 import argparse
@@ -20,7 +22,7 @@ from osteosarc.records import record_multiset
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ("isovar", "topiary", "vaxrank"):
+    for name in ("topiary", "vaxrank"):
         parser.add_argument("--" + name, type=Path, required=True)
     args = parser.parse_args()
     with tempfile.TemporaryDirectory() as temporary:
@@ -41,7 +43,6 @@ def main():
         (work / "sitecustomize.py").write_text("import socket\ndef blocked(*a,**k): raise RuntimeError('network disabled')\nsocket.socket.connect=blocked\nsocket.create_connection=blocked\n")
         env = dict(os.environ, PYTHONPATH=os.pathsep.join([str(work), str(Path(__file__).resolve().parents[1]), os.environ.get("PYTHONPATH", "")]))
         commands = {
-            "isovar": ["-m", "isovar.sid_data", "generate"],
             "topiary": ["-m", "scripts.generate_sid_fixtures"],
             "vaxrank": ["examples/osteosarc_test_data/build.py", "--cache", str(work / "cache")],
         }
@@ -53,8 +54,9 @@ def main():
                            cwd=getattr(args, consumer), env=env, check=True)
             manifest = verify_bundle(destination)
             manifests.append((manifest["recipe_sha256"], manifest["members"], manifest["sources"]))
-        assert manifests[0] == manifests[1] == manifests[2]
-        print("Three consumer CLIs agree on recipe, complete record multiset, reasons and source/header provenance")
+        assert manifests[0] == manifests[1]
+        print("Topiary's and Vaxrank's builders agree on recipe, complete record multiset, reasons and "
+              "source/header provenance")
 
 
 if __name__ == "__main__":

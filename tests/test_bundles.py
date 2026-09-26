@@ -420,3 +420,24 @@ def test_the_cli_lists_and_checks_a_published_bundle(bam, tmp_path, monkeypatch,
     assert record_multiset(out / "duplicates.bam") == record_multiset(bam)
     assert main(["--cache", str(root), "--offline", "test-data", "list", "no-such-bundle"]) == 1
     assert "published: tiny-v1" in capsys.readouterr().err
+
+
+def test_a_bundles_library_fixtures_carry_forward_as_required_records(bam, tmp_path):
+    import pysam
+
+    from osteosarc.shared import bundle_fixtures
+    recipe = bundle_recipe(bam)
+    recipe["targets"]["fixture:isovar/x.sam"] = dict(
+        kind="fixture", assembly="GRCh38", reference=dict(source="library", consumer="isovar"),
+        consumer="isovar", description="Isovar fixture x.sam")
+    recipe["members"]["isovar/x.sam"] = dict(target="fixture:isovar/x.sam", source="rna",
+                                             policy=copy.deepcopy(recipe["members"]["duplicates"]["policy"]))
+    generate_bundle(recipe, tmp_path / "bundle", sources={"rna": bam})
+    carried = bundle_fixtures(tmp_path / "bundle")
+    assert list(carried) == ["isovar/x.sam"]  # only library fixtures, not selected members
+    with pysam.AlignmentFile(str(bam)) as handle:
+        lines = [read.to_string() for read in handle]
+    subset = carried["isovar/x.sam"]
+    assert sorted(subset["sam"]) == sorted(lines)  # repeats kept
+    assert (subset["consumer"], subset["source"], subset["description"]) == (
+        "isovar", "https://example.test/source.bam", "Isovar fixture x.sam")

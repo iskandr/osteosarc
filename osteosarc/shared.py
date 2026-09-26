@@ -351,6 +351,29 @@ def select_breakend_templates(templates, breakends, *, pad=1000, cap=50):
     return {t: "joins the breakends (hash order)" for t in chosen}, len(joined)
 
 
+def bundle_fixtures(bundle):
+    """A bundle's library fixtures as required subsets, so the next bundle can be
+    built from the previous one once libraries no longer keep their own copies:
+    {name: dict(consumer, source, sam, description)}, repeats kept."""
+    from .bundles import safe_path, verify_bundle
+    bundle = Path(bundle)
+    manifest = verify_bundle(bundle)
+    recipe = read_json(bundle / "recipe.json")
+    texts, subsets = {}, {}
+    for name, member in sorted(recipe["members"].items()):
+        target = recipe["targets"][member["target"]]
+        if target["kind"] != "fixture":
+            continue
+        counts, sid = manifest["members"][name]["records"], member["source"]
+        if counts and sid not in texts:
+            path = safe_path(bundle, manifest["sources"][sid]["bam"])
+            texts[sid] = {record.digest: record.read.to_string() for record in read_records(path)}
+        subsets[name] = dict(consumer=target["consumer"], source=recipe["sources"][sid]["identity"]["url"],
+                             sam=[texts[sid][key] for key, n in sorted(counts.items()) for _ in range(n)],
+                             description=target["description"])
+    return subsets
+
+
 def load_required(paths):
     """Each library's required records, as {subset name: dict(consumer, source, sam or names)}.
 

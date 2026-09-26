@@ -79,22 +79,24 @@ every target, from any BAM a library already uses there, and from each RNA BAM t
 [SV candidates](sv-candidates.md) saw a junction in. Each record is pinned by
 checksum, so rebuilding gives the same bytes, and any change upstream fails loudly.
 
-**Rebuilding.** Maintainers rebuild openvax-v1 from its spec, in
-osteosarc/data/bundles, and each library's current test files:
+**Rebuilding.** Now that the libraries keep their test reads here, the bundle is where
+they live: a new version is built from its spec, in osteosarc/data/bundles, carrying
+each library's members forward from the version before:
 
 <!-- docs-check: skip (streams reads from about 40 BAMs; takes about an hour) -->
 ```sh
-python scripts/shared_test_data/required_isovar.py ~/code/isovar required-isovar.json.gz
-python scripts/shared_test_data/required_topiary.py ~/code/topiary required-topiary.json.gz
-python scripts/shared_test_data/required_vaxrank.py ~/code/vaxrank required-vaxrank.json.gz
-python scripts/shared_test_data/required_varcode.py ~/code/varcode required-varcode.json.gz
-python scripts/shared_test_data/build.py openvax-v1 build --required required-isovar.json.gz \
-    --required required-topiary.json.gz --required required-vaxrank.json.gz --required required-varcode.json.gz
+python scripts/shared_test_data/build.py openvax-v2 build --carry openvax-v1
 ```
 
-The first four scripts list the SAM lines in each library's committed test files (for
-Varcode, the read names behind its junctions). The build finds those records in the
-public BAMs, chooses the rest, builds the bundle and packs it for a GitHub release.
+The build finds those records in the public BAMs again, chooses the rest, builds the
+bundle and packs it for a GitHub release. A library that needs different reads gives
+a fresh list with `--required`, which replaces what it had.
+
+openvax-v1 itself came from the libraries' committed test files. The
+required_isovar.py, required_topiary.py, required_vaxrank.py and required_varcode.py
+scripts in scripts/shared_test_data list those files' SAM lines (for Varcode, the
+read names behind its junctions), reading by default the commits openvax-v1 was
+built from, so they rebuild it exactly.
 
 ## A bundle from a recipe
 
@@ -230,23 +232,23 @@ file already there with different contents is never replaced. A bundle's size li
 
 Osteosarc fetches, selects, packs and checks reads; each library keeps its own science:
 which variants it tests, how it reads alleles, and what results it expects. Osteosarc
-never imports Isovar, Topiary or Vaxrank. Until they move onto openvax-v1, the
-libraries build their own test data:
+never imports Isovar, Topiary or Vaxrank. The libraries are moving their test reads
+onto openvax-v1 (Isovar first, in isovar#398); until they do, the others build their
+own:
 
 | Library | Its test data | Built with |
 | --- | --- | --- |
-| Isovar | 311 fixtures of exact records, plus vaccine, fusion and SV cases | osteosarc.legacy_fixtures |
+| Isovar | Reads from openvax-v1, plus vaccine, fusion and SV cases | osteosarc test-data |
 | Topiary | Variant, indel, fusion and pVACseq fixtures | osteosarc.regional_corpus |
 | Vaxrank | 58 read cohorts | osteosarc.cohort_bundle |
 | Varcode | Variants and SV records, no reads | a snapshot of the variant catalogue |
 
-Isovar, Topiary and Vaxrank each accept the same recipe in their builders. From an
-osteosarc checkout, this checks, with the network off, that all three select exactly
-the same reads for the same reasons:
+Topiary and Vaxrank each accept the same recipe in their builders. From an osteosarc
+checkout, this checks, with the network off, that both select exactly the same reads
+for the same reasons:
 
 ```sh
-python -m scripts.check_fixture_consumers --isovar /path/to/isovar \
-  --topiary /path/to/topiary --vaxrank /path/to/vaxrank
+python -m scripts.check_fixture_consumers --topiary /path/to/topiary --vaxrank /path/to/vaxrank
 ```
 
 A change to a library's expected results needs its own review, even when its test data
