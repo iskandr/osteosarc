@@ -512,6 +512,14 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6):
             f"{len(mine)} required fixtures, {len(plan['source']['regions'])} regions")
         plans.append(plan)
 
+    # Every member's name, checked before any reads are fetched.
+    names = {}
+    for plan in plans:
+        for name in plan["covered"] + plan["sv_covered"]:
+            _add_member(names, f"{plan['label']}.{name}", None)
+    for name in subsets:
+        _add_member(names, name, None)
+
     def extract(plan):
         subset = dataset.extract_reads(plan["file"], [Region(**r) for r in plan["source"]["regions"]],
                                        **plan["source"]["acquisition"])

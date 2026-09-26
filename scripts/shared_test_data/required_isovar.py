@@ -80,8 +80,9 @@ def recipe_subsets(tree):
     for name, fixture in sorted(recipe["fixtures"].items()):
         source = reads["sources"][fixture["source"]]
         lines = round_trip([source["records"][digest] for digest in fixture["records"]], source["header"], name)
-        subsets["isovar/" + name] = subset(source["asset"]["url"], lines, f"Isovar fixture {name} (tests: "
-                                           + ", ".join(fixture["tests"]) + ")")
+        # Members become file names, so a read name's colons become dashes.
+        subsets["isovar/" + name.replace(":", "-")] = subset(
+            source["asset"]["url"], lines, f"Isovar fixture {name} (tests: " + ", ".join(fixture["tests"]) + ")")
     return subsets
 
 

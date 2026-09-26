@@ -65,10 +65,11 @@ read with its mate) by what it shows across the allele: alt, ref, something else
 nothing, when it doesn't span it. Indels are judged across any repeat they could
 slide within. It keeps up to 20 alt, 10 ref, 5 other and 2 uncallable templates, in
 an order fixed by a hash of each read's group and name, plus the two lowest-quality
-alt templates. At a fusion or SV it keeps up to 50 templates that align within 1 kb
-of every breakend: split reads, discordant pairs and chimeric long reads. A kept
-template keeps all its records. Reads come from the T2 tumor RNA-seq BAM for every
-target, from any BAM a library already uses there, and from each RNA BAM the
+alt templates. At a fusion or SV it keeps up to 50 templates whose alignments join
+the breakends, within 1 kb of each: split reads, discordant pairs and chimeric long
+reads. A read or a proper pair that simply runs across them doesn't count. A kept
+template keeps all its records. Reads come from the T2 tumor RNA-seq and WGS BAMs for
+every target, from any BAM a library already uses there, and from each RNA BAM the
 [SV candidates](sv-candidates.md) saw a junction in. Each record is pinned by
 checksum, so rebuilding gives the same bytes, and any change upstream fails loudly.
 
