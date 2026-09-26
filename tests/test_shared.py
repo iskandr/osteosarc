@@ -119,3 +119,15 @@ def test_the_record_index_finds_what_a_scan_would():
     # Required lines match through the index as they do against the whole list.
     lines = [records[2].read.to_string(), records[5].read.to_string()]
     assert match_required(index, lines) == match_required(records, lines)
+
+
+def test_every_shipped_spec_has_a_published_bundle():
+    from osteosarc.shared import BUNDLES, published, read_json
+    specs = sorted(BUNDLES.glob("*.spec.json"))
+    assert specs
+    for path in specs:
+        name = path.name.removesuffix(".spec.json")
+        assert read_json(path)["id"] == name
+        release = published(name)
+        assert release["url"].endswith(f"/releases/download/{name}/{name}.tar.gz")
+        assert len(release["sha256"]) == len(release["manifest_sha256"]) == 64 and release["size_bytes"] > 0

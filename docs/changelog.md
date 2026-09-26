@@ -21,6 +21,10 @@ once here ([#56](https://github.com/iskandr/osteosarc/issues/56)). See
 - **How reads are chosen:** a new allele classifier sorts each read at a variant into
   alt, ref, other or uncallable, even for indels in repeats, and openvax-v1 keeps up
   to 20 alt, 10 ref, 5 other and 2 uncallable templates per variant and BAM, whole.
+- **Export writes just the members.** `osteosarc test-data export BUNDLE DIR --member
+  NAME` writes NAME.bam, with its index, into DIR, which may already exist; it no
+  longer copies the whole bundle, and never replaces a different file. Manifests no
+  longer record exports.
 - **Recipes:** an exact member can give each record its own reason, and a target can
   be one of a library's test files.
 - **Docs:** the example file names for reads saved with --to now match what it writes.

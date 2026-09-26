@@ -40,13 +40,13 @@ def test_generate_pack_export_verify_fresh_offline_directory(bam, tmp_path, monk
     fresh = tmp_path / "fresh"
     shutil.copytree(first, fresh)
     exported = export_bundle(fresh, tmp_path / "exported")
-    verify_bundle(tmp_path / "exported", sha256=digest(tmp_path / "exported/manifest.json"))
     assert list_bundle(fresh) == manifest["members"]
-    assert len(exported["exports"]) == 3
-    assert record_multiset(tmp_path / "exported/members/empty.bam") == {}
-    assert record_multiset(tmp_path / "exported/members/duplicates.bam") == recipe["members"]["duplicates"]["policy"]["records"]
+    assert exported == {name: tmp_path / "exported" / f"{name}.bam" for name in ("duplicates", "empty", "shared")}
+    assert record_multiset(tmp_path / "exported/empty.bam") == {}
+    assert record_multiset(tmp_path / "exported/duplicates.bam") == recipe["members"]["duplicates"]["policy"]["records"]
+    assert (tmp_path / "exported/duplicates.bam.bai").is_file()
     sam = export_bundle(fresh, tmp_path / "sam", members=["duplicates"], format="sam.gz")
-    assert sam["exports"]["duplicates"]["fidelity"] == "sam-text-v1"
+    assert sam == {"duplicates": tmp_path / "sam/duplicates.sam.gz"}
 
 
 def test_cli_and_dataset_produce_same_bundle(bam, dataset, tmp_path, capsys):
@@ -162,7 +162,7 @@ def test_sam_exports_are_coordinate_sorted_and_indexable(bam, tmp_path, format):
     dest = tmp_path / "export"
     export_bundle(source, dest, format=format)
     converted = tmp_path / "converted.bam"
-    with pysam.AlignmentFile(dest / ("members/duplicates." + format), "r") as sam:
+    with pysam.AlignmentFile(dest / ("duplicates." + format), "r") as sam:
         assert sam.header.to_dict()["HD"]["SO"] == "coordinate"
         with pysam.AlignmentFile(converted, "wb", template=sam) as out:
             positions = []
@@ -173,37 +173,21 @@ def test_sam_exports_are_coordinate_sorted_and_indexable(bam, tmp_path, format):
     pysam.index(str(converted))
 
 
-def test_reexport_replaces_export_set_without_stale_files(bam, tmp_path):
+def test_export_into_an_existing_folder_keeps_identical_files_and_refuses_different_ones(bam, tmp_path):
     source = tmp_path / "bundle"
     generate_bundle(bundle_recipe(bam), source, sources={"rna": bam})
-    first, second, third = [tmp_path / name for name in ("first", "second", "third")]
-    export_bundle(source, first)
-    export_bundle(first, second, members=["duplicates", "duplicates"])
-    assert record_multiset(first / "members/duplicates.bam") == record_multiset(second / "members/duplicates.bam")
-    changed = export_bundle(second, third, format="sam.gz")
-    assert sorted(p.name for p in (third / "members").iterdir()) == ["duplicates.sam.gz"]
-    assert changed["parent"]["manifest_sha256"] == digest(second / "manifest.json")
-    verify_bundle(third)
-    with pytest.raises(FileExistsError):
-        export_bundle(first, second)
-
-
-@pytest.mark.parametrize("corruption", ["record", "format"])
-def test_sam_export_semantics_checked_after_relisting_bytes(bam, tmp_path, corruption):
-    source, dest = tmp_path / "bundle", tmp_path / "export"
-    generate_bundle(bundle_recipe(bam), source, sources={"rna": bam})
-    manifest = export_bundle(source, dest, format="sam")
-    if corruption == "format":
-        manifest["exports"]["duplicates"]["format"] = "unknown"
-    else:
-        name = "members/duplicates.sam"
-        path = dest / name
-        path.write_text(path.read_text().replace("repeated", "modified", 1))
-        manifest["files"][name] = dict(sha256=digest(path), size_bytes=path.stat().st_size)
-        manifest["total_size_bytes"] = sum(v["size_bytes"] for v in manifest["files"].values())
-    (dest / "manifest.json").write_text(json.dumps(manifest))
-    with pytest.raises(IntegrityError, match="SAM export record|Unsupported export format"):
-        verify_bundle(dest)
+    to = tmp_path / "tests/data"
+    to.mkdir(parents=True)
+    (to / "other.txt").write_text("kept")
+    first = export_bundle(source, to, members=["duplicates", "duplicates"])
+    assert export_bundle(source, to) == first
+    assert sorted(p.name for p in to.iterdir()) == ["duplicates.bam", "duplicates.bam.bai", "other.txt"]
+    (to / "duplicates.sam").write_text("different")
+    with pytest.raises(FileExistsError, match="different contents"):
+        export_bundle(source, to, format="sam")
+    assert (to / "duplicates.sam").read_text() == "different"
+    assert sorted(p.name for p in to.iterdir()) == ["duplicates.bam", "duplicates.bam.bai", "duplicates.sam",
+                                                    "other.txt"]
 
 
 def test_exact_pins_remain_required_when_context_is_declared(bam, tmp_path):
@@ -237,7 +221,7 @@ def test_unavailable_exact_member_stays_explicit_without_fabricated_records(bam,
     manifest = generate_bundle(recipe, directory)
     assert manifest["members"]["duplicates"]["record_count"] == 0
     assert not manifest["sources"]
-    assert not export_bundle(directory, tmp_path / "export")["exports"]
+    assert export_bundle(directory, tmp_path / "export") == {}
 
 
 @pytest.mark.parametrize("url", ["https://example.test/source.bam", "https://example.test/alignment"])
@@ -300,7 +284,8 @@ def test_frozen_additional_sv_panel_generates_offline(tmp_path):
     assert {m["target"] for m in manifest["members"].values()} == {"SV0055", "SV0175", "SV0402", "SV0461", "SV0499"}
     assert manifest["total_size_bytes"] < 4_000_000
     exported = export_bundle(tmp_path / "additional", tmp_path / "exported", members=["SV0461/T1-PacBio"])
-    assert exported["exports"]["SV0461/T1-PacBio"]["format"] == "bam"
+    assert exported == {"SV0461/T1-PacBio": tmp_path / "exported/SV0461/T1-PacBio.bam"}
+    assert record_multiset(exported["SV0461/T1-PacBio"]) == manifest["members"]["SV0461/T1-PacBio"]["records"]
 
 
 def test_legacy_full_header_bundles_remain_readable_and_exportable(bam, tmp_path):
@@ -314,7 +299,7 @@ def test_legacy_full_header_bundles_remain_readable_and_exportable(bam, tmp_path
     (directory / "manifest.json").write_text(json.dumps(manifest))
     assert verify_bundle(directory)["members"] == manifest["members"]
     exported = export_bundle(directory, tmp_path / "export", format="sam")
-    assert exported["members"] == manifest["members"]
+    assert set(exported) == set(manifest["members"])
     source["exported_header"]["HD"]["SO"] = "unsorted"
     (directory / "manifest.json").write_text(json.dumps(manifest))
     with pytest.raises(IntegrityError, match="Exported header differs"):
@@ -382,5 +367,10 @@ def test_the_cli_lists_and_checks_a_published_bundle(bam, tmp_path, monkeypatch,
     assert "not a member" in capsys.readouterr().out
     assert main(["--cache", str(root), "--offline", "test-data", "list", "tiny-v1"]) == 0
     assert "duplicates" in json.loads(capsys.readouterr().out)
+    out = tmp_path / "tests/data"
+    assert main(["--cache", str(root), "--offline", "test-data", "export", "tiny-v1", str(out),
+                 "--member", "duplicates"]) == 0
+    assert capsys.readouterr().out.strip() == str(out / "duplicates.bam")
+    assert record_multiset(out / "duplicates.bam") == record_multiset(bam)
     assert main(["--cache", str(root), "--offline", "test-data", "list", "no-such-bundle"]) == 1
     assert "published: tiny-v1" in capsys.readouterr().err

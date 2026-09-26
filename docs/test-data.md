@@ -38,7 +38,7 @@ openvax-v1, chosen once, here. It holds:
 <!-- docs-check: skip (downloads the bundle, about SIZE) -->
 ```sh
 osteosarc test-data list openvax-v1
-osteosarc test-data export openvax-v1 tests/data --member BG003082.Aligned.sortedByCoord.out.md.DYNC1H1-chr14-101980529
+osteosarc test-data export openvax-v1 tests/data --member IPISRC044_tumor_T2_ucla.redux.DYNC1H1-chr14-101980529
 ```
 
 The first command downloads the bundle (about SIZE), checks it against checksums
@@ -204,9 +204,10 @@ A bundle holds each source's records once, as indexed BAMs, with the original he
 the recipe, what was fetched, file checksums, and every member's records and reasons.
 Verifying checks every file, record and index offline; give the manifest's checksum
 when using someone else's bundle, since without it the check shows the bundle is
-intact but not who made it. Exporting writes one sorted, indexed BAM per member (or SAM),
-and empty members become valid empty BAMs. The size limit is 64 MiB unless you set
-another, and nothing is ever overwritten. Installing osteosarc never downloads data.
+intact but not who made it. Exporting writes one sorted, indexed BAM per member (or SAM)
+into any folder, named after the member; empty members become valid empty BAMs, and a
+file already there with different contents is never replaced. A bundle's size limit is
+64 MiB unless you set another. Installing osteosarc never downloads data.
 
 ## Target lists
 

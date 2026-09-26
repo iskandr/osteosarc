@@ -6,7 +6,6 @@ import copy
 import gzip
 import json
 import os
-import shutil
 import tempfile
 from collections import Counter
 from contextlib import contextmanager
@@ -164,7 +163,7 @@ def pack_bundle(selection, destination, *, header_policy="full", size_budget=DEF
         write_json(work / "recipe.json", selection.recipe)
         write_json(work / "acquisition.json", selection.receipts)
         manifest = dict(schema_version=1, kind="osteosarc-fixture-bundle", recipe_sha256=stable_id(selection.recipe),
-                        record_encoding=RECORD_ENCODING, members=selection.members, sources={}, exports={},
+                        record_encoding=RECORD_ENCODING, members=selection.members, sources={},
                         parent=parent, header_policy=header_policy, suitable_for_abundance=False,
                         toolchain=dict(osteosarc=__version__, pysam=pysam.__version__, samtools=pysam.__samtools_version__),
                         redistribution=selection.recipe.get("redistribution", {"license": "unresolved"}))
@@ -267,7 +266,7 @@ def verify_bundle(directory, *, sha256=None):
     needed_sources = {m["source"] for m in manifest["members"].values() if m["status"] not in ("unresolved", "omitted")}
     if set(manifest["sources"]) != needed_sources:
         raise IntegrityError("Bundle source set differs from selected members")
-    source_records, source_headers, source_files = {}, {}, {"recipe.json", "acquisition.json"}
+    source_records = {}
     for sid, source in manifest["sources"].items():
         if source["identity"] != recipe["sources"][sid]:
             raise IntegrityError(f"Bundle source identity differs from recipe: {sid}")
@@ -275,7 +274,6 @@ def verify_bundle(directory, *, sha256=None):
         if type(source["record_count"]) is not int or sum(counts.values()) != source["record_count"] or stable_id(dict(counts)) != source["record_multiset_sha256"]:
             raise IntegrityError(f"Source multiset/count digest mismatch: {sid}")
         path, index = safe_path(root, source["bam"]), safe_path(root, source["index"])
-        source_files.update(source[k] for k in ("bam", "index", "original_header"))
         if record_multiset(path) != counts:
             raise IntegrityError(f"Source record multiset/multiplicity differs: {sid}")
         with pysam.AlignmentFile(path) as bam:
@@ -287,7 +285,6 @@ def verify_bundle(directory, *, sha256=None):
             if (stable_id(exported_header) != expected_digest
                     or ("exported_header" in source and exported_header != source["exported_header"])):
                 raise IntegrityError(f"Exported header differs: {sid}")
-            source_headers[sid] = exported_header
         original = json.loads(safe_path(root, source["original_header"]).read_text())
         source_records[sid] = list(read_records(path))
         expected_header = (compact_header(original, source_records[sid]) if manifest["header_policy"] == "compact" else original)
@@ -316,35 +313,6 @@ def verify_bundle(directory, *, sha256=None):
                 expected = Counter(dict.fromkeys(expected, 1))
             if expected - Counter(member["records"]) or (not declared.get("context_regions") and not declared.get("retain_partners") and Counter(member["records"]) != expected):
                 raise IntegrityError(f"Member differs from pinned exact recipe: {name}")
-    exported_files = set()
-    for name, exported in manifest.get("exports", {}).items():
-        if name not in manifest["members"] or manifest["members"][name]["status"] in ("unresolved", "omitted"):
-            raise IntegrityError(f"Export has no available member: {name}")
-        if exported.get("format") not in ("bam", "sam", "sam.gz"):
-            raise IntegrityError(f"Unsupported export format: {name}")
-        expected_fidelity = RECORD_ENCODING if exported["format"] == "bam" else "sam-text-v1"
-        if exported.get("fidelity") != expected_fidelity:
-            raise IntegrityError(f"Export fidelity differs: {name}")
-        names = [exported[k] for k in ("path", "index") if k in exported]
-        if any(n in source_files or n in exported_files or n not in files for n in names):
-            raise IntegrityError(f"Export file overlaps or is unlisted: {name}")
-        exported_files.update(names)
-        path = safe_path(root, exported["path"])
-        if exported["format"] == "bam":
-            if record_multiset(path) != Counter(manifest["members"][name]["records"]):
-                raise IntegrityError(f"Export record multiset differs: {name}")
-            _verify_index(path, safe_path(root, exported["index"]))
-        else:
-            member = manifest["members"][name]
-            by_id = {r.digest: r for r in source_records[member["source"]]}
-            expected = Counter()
-            for key, count in member["records"].items():
-                expected[by_id[key].read.to_string()] += count
-            with pysam.AlignmentFile(path, "r") as sam:
-                if sam.header.to_dict() != source_headers[member["source"]]:
-                    raise IntegrityError(f"SAM export header differs: {name}")
-                if Counter(r.to_string() for r in sam) != expected:
-                    raise IntegrityError(f"SAM export record multiset differs: {name}")
     return manifest
 
 
@@ -353,57 +321,61 @@ def list_bundle(directory):
     return verify_bundle(directory)["members"]
 
 
-def export_bundle(directory, destination, *, members=None, format="bam", size_budget=DEFAULT_SIZE_BUDGET):
-    """Publish a self-contained copy with named indexed BAM or legacy SAM exports.
+def export_bundle(directory, to, *, members=None, format="bam"):
+    """Write a bundle's members into a folder, each as a file named after it.
 
-    SAM export preserves SAM field values but cannot promise binary float/tag
-    fidelity. BAM export verifies the lossless record multiset. Parent lineage
-    and the original portable source pool travel with every export.
+    A BAM export (NAME.bam, with its index) holds exactly the member's records,
+    repeats included. SAM text (NAME.sam or NAME.sam.gz) keeps every field but
+    can't promise binary float and tag types. The folder may already exist: a
+    file there is kept if it's identical and is an error if it differs. Members
+    without reads (unresolved or omitted) are skipped; empty members give valid
+    empty files. Returns {member: path}.
     """
     import pysam
     if format not in ("bam", "sam", "sam.gz"):
         raise ValueError("Export format must be bam, sam or sam.gz")
-    root = Path(directory)
-    original = verify_bundle(root)
-    members = sorted(set(original["members"] if members is None else members))
-    if missing := set(members) - original["members"].keys():
+    root, to = Path(directory), Path(to)
+    manifest = verify_bundle(root)
+    names = sorted(set(manifest["members"] if members is None else members))
+    if missing := set(names) - manifest["members"].keys():
         raise KeyError(f"Unknown bundle members: {sorted(missing)}")
-    old_exports = {item[key] for item in original.get("exports", {}).values()
-                   for key in ("path", "index") if key in item}
-    with _publication(destination) as work:
-        for filename in original["files"]:
-            if filename in old_exports:
-                continue
-            target = safe_path(work, filename)
+    by_source, targets = {}, {}
+    for name in names:
+        member = manifest["members"][name]
+        if member["status"] not in ("unresolved", "omitted"):
+            by_source.setdefault(member["source"], []).append(name)
+            targets[name] = safe_path(to, f"{name}.{format}")  # checks every name before writing any
+    for sid, group in sorted(by_source.items()):
+        path = safe_path(root, manifest["sources"][sid]["bam"])
+        records = list(read_records(path))
+        with pysam.AlignmentFile(str(path)) as bam:
+            header = bam.header.to_dict()
+        for name in group:
+            counts, target = manifest["members"][name]["records"], targets[name]
             target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(safe_path(root, filename), target)
-        manifest = copy.deepcopy(original)
-        manifest["exports"] = {}
-        manifest["parent"] = dict(manifest_sha256=digest(root / "manifest.json"), parent=original.get("parent"))
-        for name in members:
-            member = manifest["members"][name]
-            if member["status"] in ("unresolved", "omitted"):
-                continue
-            source = manifest["sources"][member["source"]]
-            records = list(read_records(safe_path(root, source["bam"])))
-            with pysam.AlignmentFile(safe_path(root, source["bam"])) as bam:
-                header = bam.header.to_dict()
-            relative = f"members/{name}.{format}"
-            target = safe_path(work, relative)
-            if target.exists():
-                raise FileExistsError(target)
-            if format == "bam":
-                _write_bam(target, header, records, member["records"])
-                manifest["exports"][name] = dict(format=format, path=relative, index=relative + ".bai", fidelity=RECORD_ENCODING)
-            else:
-                by_id = {r.digest: r for r in records}
-                text = str(pysam.AlignmentHeader.from_dict(header))
-                ordered = sorted(member["records"], key=lambda k: _record_order(by_id[k], len(header["SQ"])))
-                text += "".join((by_id[key].read.to_string() + "\n") * member["records"][key] for key in ordered)
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes(gzip.compress(text.encode(), mtime=0) if format == "sam.gz" else text.encode())
-                manifest["exports"][name] = dict(format=format, path=relative, fidelity="sam-text-v1")
-        return _finish(work, manifest, size_budget)
+            with tempfile.TemporaryDirectory(dir=target.parent, prefix=".export-") as work:
+                made = Path(work) / target.name
+                if format == "bam":
+                    _write_bam(made, header, records, counts)
+                else:
+                    by_id = {r.digest: r for r in records}
+                    ordered = sorted(counts, key=lambda k: _record_order(by_id[k], len(header["SQ"])))
+                    text = str(pysam.AlignmentHeader.from_dict(header))
+                    text += "".join((by_id[key].read.to_string() + "\n") * counts[key] for key in ordered)
+                    made.write_bytes(gzip.compress(text.encode(), mtime=0) if format == "sam.gz" else text.encode())
+                _keep(made, target)
+                if format == "bam":
+                    _keep(Path(str(made) + ".bai"), Path(str(target) + ".bai"))
+    return targets
+
+
+def _keep(made, target):
+    """Move a new file into place, unless an identical one is already there."""
+    if target.exists():
+        if digest(target) != digest(made):
+            raise FileExistsError(f"{target} already exists with different contents; move it, or choose another folder")
+        return
+    os.replace(made, target)
 
 
 def generate_bundle(recipe, destination, *, sources=None, cache=None, dataset=None, **pack_options):

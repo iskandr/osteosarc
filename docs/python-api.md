@@ -75,7 +75,7 @@ see [Reads](reads.md).
 | `generate_bundle(recipe, "bundle", dataset=data)` | Fetch a recipe's reads and write a bundle anyone can check offline |
 | `verify_bundle("bundle")` | Check every file, record and index |
 | `list_bundle("bundle")` | Each member, with its records and why they were kept |
-| `export_bundle("bundle", "exported")` | Write the members as indexed BAMs (or SAM) |
+| `export_bundle("bundle", "tests/data", members=[...])` | Write members into a folder as indexed BAMs (or SAM), named after them |
 | `validate_recipe(recipe)` | Check a recipe before fetching anything |
 | `load_panel("vaccine-loci-v1")` | A shipped list of targets to build a recipe from |
 | `load_sv_candidates()` | The [SV candidates](sv-candidates.md), with their evidence |

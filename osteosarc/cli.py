@@ -187,7 +187,7 @@ def parser():
     command("repl")
     test_data = command("test-data", data=False, epilog="examples:\n"
                         "  osteosarc test-data list openvax-v1\n"
-                        "  osteosarc test-data export openvax-v1 tests/data --member DYNC1H1-rna\n"
+                        "  osteosarc test-data export openvax-v1 tests/data --member IPISRC044_tumor_T2_ucla.redux.DYNC1H1-chr14-101980529\n"
                         "  osteosarc test-data check openvax-v1 fixtures.json\n"
                         "  osteosarc test-data generate recipe.json bundle")
     actions = test_data.add_subparsers(dest="test_data_command", required=True, metavar="ACTION")
@@ -201,11 +201,11 @@ def parser():
                           help="compact keeps only the header lines the records need")
     for name, what in (("list", "Each member of a bundle, with its records and why"),
                        ("verify", "Check a bundle's files, records and indexes"),
-                       ("export", "Write a bundle's members as indexed BAMs (or SAM)")):
+                       ("export", "Write members into a folder as indexed BAMs (or SAM), named after them")):
         action = actions.add_parser(name, help=what)
         action.add_argument("bundle", help="A bundle directory, or a published bundle such as openvax-v1")
         if name == "export":
-            action.add_argument("output", help="A new directory")
+            action.add_argument("output", help="Folder to write the members into; it may already exist")
             action.add_argument("--member", action="append", help="Only these members; repeat for several")
             action.add_argument("--format", choices=("bam", "sam", "sam.gz"), default="bam")
         if name == "verify":
@@ -568,6 +568,8 @@ def test_data(args, cache):
     elif action == "list":
         value = list_bundle(args.bundle)
     else:
-        value = export_bundle(args.bundle, args.output, members=args.member, format=args.format)
+        for path in export_bundle(args.bundle, args.output, members=args.member, format=args.format).values():
+            print(path)
+        return 0
     print_json(value)
     return 0

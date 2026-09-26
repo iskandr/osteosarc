@@ -66,7 +66,8 @@ print(reads.path)
 ```
 
 Only the reads near the variants are fetched, into a small indexed BAM; asking again
-reuses it, even offline.
+reuses it, even offline. The OpenVax libraries share one ready-made bundle of test
+reads, openvax-v1: `osteosarc test-data list openvax-v1` shows what's in it.
 
 The website changes over time, so its metadata is saved as dated snapshots:
 `osteosarc snapshots` lists them, and `--snapshot 2026-09` picks the newest from that
@@ -81,6 +82,7 @@ in the website's data; `osteosarc --no-corrections` shows the published values.
 | Find a sample's files, and download them | [Samples and files](https://iskandr.github.io/osteosarc/samples/) |
 | Get alleles, read counts and vaccine peptides | [Variants and vaccines](https://iskandr.github.io/osteosarc/variants/) |
 | Fetch reads by variant or region | [Reads](https://iskandr.github.io/osteosarc/reads/) |
+| Use the shared test reads, or build your own bundle | [Test data](https://iskandr.github.io/osteosarc/test-data/) |
 | Chart treatments, scans and MRD | [Timeline](https://iskandr.github.io/osteosarc/timeline/) |
 | Pass data to Varcode, Isovar, Topiary or Vaxrank | [OpenVax libraries](https://iskandr.github.io/osteosarc/openvax/) |
 | Look through 637 candidate structural variants | [SV candidates](https://iskandr.github.io/osteosarc/sv-candidates/) |
