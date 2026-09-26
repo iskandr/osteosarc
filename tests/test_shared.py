@@ -219,7 +219,6 @@ def _dync1h1_bam(path):
 
 
 def test_a_bundle_is_made_from_variants_and_files_and_read_back(dataset, tmp_path, monkeypatch):
-    import os
     import shutil
 
     import osteosarc.shared as shared
@@ -239,7 +238,7 @@ def test_a_bundle_is_made_from_variants_and_files_and_read_back(dataset, tmp_pat
     assert list(list_bundle(folder)) == [member]
     # A test reads the member as a local, read-only BAM, exported once and then reused offline.
     bam = bundle_file(folder, member, cache=tmp_path / "cache")
-    assert sum(record_multiset(bam).values()) == 5 and not os.access(bam, os.W_OK)
+    assert sum(record_multiset(bam).values()) == 5 and not bam.stat().st_mode & 0o222
     assert bundle_file(folder, member, cache=tmp_path / "cache", offline=True) == bam
     with pytest.raises(KeyError, match="did you mean"):
         bundle_file(folder, member[:-1], cache=tmp_path / "cache")
@@ -270,20 +269,63 @@ def test_a_bundle_spec_says_what_it_needs(dataset):
 
 
 def test_the_cli_makes_a_bundle_from_a_sample_and_variants(dataset, tmp_path, monkeypatch, capsys):
+    import json
+
     import osteosarc.cli as cli
     import osteosarc.shared as shared
-    from osteosarc import File
-    made = {}
+    made, opened = {}, []
 
     def make_bundle(data, to, **kwargs):
         made.update(kwargs, to=to)
         raise shared.OfflineError("stop here")
+
+    def open_snapshot(args, cache, online):
+        opened.append(args.snapshot)
+        return dataset
     monkeypatch.setattr(shared, "make_bundle", make_bundle)
-    monkeypatch.setattr(cli, "open_snapshot", lambda args, cache, online: dataset)
-    assert cli.main(["--offline", "test-data", "make", str(tmp_path / "b"), "rna-seq/reprocessed/BG003082/"
-                     "BG003082.Aligned.sortedByCoord.out.md.bam", "--variant", "DYNC1H1-chr14-101980529",
-                     "--sv", "SV0461"]) == 1
+    monkeypatch.setattr(cli, "open_snapshot", open_snapshot)
+    # A sample ID stands for its indexed BAMs, and may come after an option.
+    assert cli.main(["--offline", "test-data", "make", str(tmp_path / "b"), "--variant", "DYNC1H1-chr14-101980529",
+                     "T2_tumor", "--sv", "SV0461"]) == 1
     assert "stop here" in capsys.readouterr().err
     assert made["variants"] == ["DYNC1H1-chr14-101980529"] and made["svs"] == ["SV0461"]
-    assert [f.key for f in made["files"]] == ["rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"]
-    assert all(isinstance(f, File) for f in made["files"])
+    assert [f.key for f in made["files"]] == ["rna-seq/reprocessed/SARC0277/SARC0277.Aligned.sortedByCoord.out.md.bam"]
+    # A recipe's sources come from the snapshot it names, unless given with --source.
+    recipe = tmp_path / "recipe.json"
+    recipe.write_text(json.dumps(dict(schema_version=1, id="x", snapshot=dict(name="2026-01-01", id="a" * 64),
+                                      targets={}, sources={"rna": {}}, members={})))
+    cli.main(["--offline", "test-data", "make", str(tmp_path / "c"), "--recipe", str(recipe)])
+    assert opened[-1] == "2026-01-01"
+
+
+def test_making_a_bundle_fails_early_and_clearly(dataset, tmp_path, monkeypatch):
+    import shutil
+
+    import osteosarc.shared as shared
+    from osteosarc import inspect_alignment
+    if shutil.which("samtools") is None:
+        pytest.skip("samtools required")
+    key = "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"
+    # A BAM on another genome build can't hold reads for a GRCh38 variant: an error, before any reads.
+    grch37 = tmp_path / "grch37.bam"
+    header = dict(HD={"VN": "1.6"}, SQ=[dict(SN="1", LN=249250621), dict(SN="2", LN=243199373)])
+    with pysam.AlignmentFile(str(grch37), "wb", header=header):
+        pass
+    pysam.index(str(grch37))
+    monkeypatch.setattr(shared, "reference_sequence", _dync1h1_bam(tmp_path / "unused.bam"))
+    monkeypatch.setattr(dataset, "inspect_alignment", lambda f, **kw: inspect_alignment(str(grch37), cache=dataset.cache))
+    monkeypatch.setattr(dataset, "extract_reads", lambda *a, **kw: pytest.fail("streamed reads for nothing"))
+    with pytest.warns(UserWarning, match="skip .*genome build"):
+        with pytest.raises(ValueError, match="No BAM given can hold reads for DYNC1H1-chr14-101980529"):
+            dataset.make_bundle(tmp_path / "b", variants=["DYNC1H1-chr14-101980529"], files=[key])
+    assert not (tmp_path / "b").exists()
+    with pytest.raises(ValueError, match="SV0021 has no two resolved breakends"):
+        dataset.make_bundle(tmp_path / "b", svs=["SV0021"], files=[key])
+    with pytest.raises(ValueError, match="Unknown caps"):
+        dataset.make_bundle(tmp_path / "b", variants=["DYNC1H1-chr14-101980529"], files=[key], caps=dict(alts=3))
+    with pytest.raises(ValueError, match="whole numbers"):
+        dataset.make_bundle(tmp_path / "b", variants=["DYNC1H1-chr14-101980529"], files=[key], caps=dict(alt=-1))
+    # A sample ID works in Python as on the command line.
+    spec = shared.bundle_spec(dataset, "x", variants=["DYNC1H1-chr14-101980529"], files="T2_tumor")
+    assert spec["sources"]["all_targets"] == [dataset.file(
+        "rna-seq/reprocessed/SARC0277/SARC0277.Aligned.sortedByCoord.out.md.bam").url]

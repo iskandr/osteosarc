@@ -5,7 +5,7 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
-## 0.12.0 (unreleased)
+## 0.12.0 (2026-09-26)
 
 Test data in a call or two ([#73](https://github.com/iskandr/osteosarc/issues/73)).
 
@@ -13,15 +13,19 @@ Test data in a call or two ([#73](https://github.com/iskandr/osteosarc/issues/73
   --variant ID --sv ID` and `data.make_bundle(dir, variants=..., files=...)` write a
   verified bundle with openvax-v1's selection: a balanced set of templates at each
   variant in each BAM, and templates joining each SV's breakends, every record pinned.
-  They say which BAMs they skip, and why. `test-data make DIR --recipe FILE` replaces
-  `test-data generate`.
+  Files can be BAMs or samples. They say which BAMs they skip and why, and stop,
+  before streaming any reads, if a requested variant or SV can't be read from the BAMs
+  given. `test-data make DIR --recipe FILE` replaces `test-data generate`, and fetches
+  the recipe's sources from the snapshot it names, so a bundle's own recipe.json
+  rebuilds it.
 - **Use a member in one call.** `osteosarc.bundle_file(bundle, member)` returns it as a
-  local indexed BAM (or SAM), exported once into the cache, read-only, and reused
-  offline, the helper each OpenVax library had written for itself. An unknown
-  member's error suggests close names.
+  local indexed BAM (or SAM), exported once into the cache with the other members from
+  its source BAM, read-only, and reused offline: the helper each OpenVax library had
+  written for itself. An unknown member's error suggests close names.
 - **One rule for bundles.** list_bundle, export_bundle, verify_bundle, check_fixtures
-  and bundle_file all take a bundle folder or a published bundle's name, such as
-  openvax-v1. Offline, a bundle that isn't cached yet says how to get it.
+  and bundle_file all take a bundle folder or a published bundle's bare name, such as
+  openvax-v1; a Path, or text with a slash, is always a folder. Offline, a bundle that
+  isn't cached yet says how to get it.
 - The package docstring, the `data` overview, `osteosarc --help` and the docs lead
   with these.
 

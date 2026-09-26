@@ -82,10 +82,13 @@ see [Reads](reads.md).
 | `validate_recipe(recipe)` | Check a recipe before fetching anything |
 | `load_panel("vaccine-loci-v1")`, `load_sv_candidates()` | Shipped lists of targets, and the [SV candidates](sv-candidates.md) |
 
-Each of these takes a bundle's folder or the name of a published bundle, such as
-openvax-v1, the reads the OpenVax libraries share.
-`osteosarc.shared.published("openvax-v1")` gives its release record, with the
-manifest checksum to record alongside your results. See [Test data](test-data.md).
+bundle_file, list_bundle, export_bundle, check_fixtures and verify_bundle take a
+bundle's folder or the name of a published bundle, such as openvax-v1, the reads the
+OpenVax libraries share; fetch_bundle takes a name. In make_bundle, files can also be
+samples, by ID or as data.samples[...].
+`osteosarc.shared.published("openvax-v1")` gives a published bundle's release
+record, with the manifest checksum to record alongside your results. See
+[Test data](test-data.md).
 
 ## Corrections
 

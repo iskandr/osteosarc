@@ -30,11 +30,11 @@ Required records are matched by SAM text and kept exactly, as they are.
 
 from __future__ import annotations
 
-import functools
 import gzip
 import hashlib
 import json
 import os
+import warnings
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -44,6 +44,7 @@ from .models import Region
 from .reads import resolve_regions
 from .records import read_records
 from .reference import reference_sequence
+from .views import plural
 
 DEFAULT_CAPS = {"alt": 20, "ref": 10, "other": 5, "uncallable": 2}
 #: Seconds one source's extraction may take; hundreds of regions with mates take minutes.
@@ -467,7 +468,7 @@ def _source_entry(dataset, file, header, regions, label):
 
 
 def _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, everywhere, sv_everywhere, pad):
-    """What one source covers, and the regions to extract for it; None if nothing."""
+    """What one source covers, and the regions to extract for it; if nothing, why not."""
     from .reads import assembly_from_header
     file = dataset.file(url)
     header = dataset.inspect_alignment(file).header
@@ -502,7 +503,10 @@ def _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, e
     wanted += [r for rs in breakend_regions.values() for r in rs]
     wanted += [region(contig, start, end) for contig, start, end in spans]
     if not wanted:
-        return None
+        builds = sorted({normalize(targets[n]["assembly"]) for n in [*windows, *breakends]})
+        if builds and assembly not in builds:
+            return f"its genome build ({assembly or 'unknown'}) isn't the targets' ({', '.join(builds)})"
+        return "none of the targets applies to it"
     label = dataset.short_name(file)  # names members as osteosarc reads --to names files
     return dict(file=file, label=label, mine=mine, covered=covered, sv_covered=sv_covered, pad=pad,
                 source=_source_entry(dataset, file, header, resolve_regions(wanted, header), label),
@@ -559,12 +563,22 @@ def _select_source(plan, index, windows, targets, caps, low_quality_alt, cap):
     return members, fixtures, problems
 
 
-def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6):
+def _uncovered(target):
+    """Why no source covers a target."""
+    if target["kind"] == "unresolved":
+        return target.get("reason", "unresolved")
+    if "unavailable" in target.get("window", {}):
+        return "its allele couldn't be placed: " + target["window"]["unavailable"]
+    return f"none of them is on its genome build, {target['assembly']}"
+
+
+def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, required_targets=()):
     """Select the spec's records and return its frozen recipe (see the module docs).
 
-    Sources are extracted in parallel (workers at a time). dataset must be
-    opened with offline=False the first time, to stream reads; extractions
-    are cached, so rebuilding is quick and offline.
+    Sources are extracted in parallel (workers at a time). Each name in
+    required_targets must be covered by some source, which is checked before any
+    reads are fetched. dataset must be opened with offline=False the first time,
+    to stream reads; extractions are cached, so rebuilding is quick and offline.
     """
     from concurrent.futures import ThreadPoolExecutor, as_completed
     spec = read_json(spec) if isinstance(spec, (str, Path)) else spec
@@ -582,7 +596,8 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6):
     sv_everywhere = set(spec.get("sources", {}).get("structural", []))
     # openvax-v1 also reads each RNA BAM the SV catalogue saw a junction in; a bundle
     # made from given files reads only those.
-    observed = {url for found in observed_in.values() for url in found} if spec["sources"].get("observed", True) else set()
+    observed = ({url for found in observed_in.values() for url in found}
+                if spec.get("sources", {}).get("observed", True) else set())
     urls = sorted(everywhere | sv_everywhere | {s["source"] for s in subsets.values()} | observed)
     recipe = dict(schema_version=1, id=spec["id"], kind="shared",
                   snapshot=dict(name=dataset.name, id=dataset.id),
@@ -595,12 +610,10 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6):
         mine = {n: s for n, s in subsets.items() if s["source"] == url}
         plan = _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, everywhere,
                             sv_everywhere, structural["window"])
-        if plan is None:
+        if isinstance(plan, str):
             if mine:
                 raise IntegrityError(f"Required fixtures with no aligned records to find them by: {sorted(mine)}")
-            key = dataset.file(url).key
-            log(f"skip {key}: " + ("none of the targets is on its genome build" if url in everywhere | sv_everywhere
-                                   else "no targets or library fixtures there"))
+            log(f"skip {dataset.file(url).key}: {plan}")
             continue
         if any(plan["label"] == other["label"] for other in plans):
             raise IntegrityError(f"Two sources share the name {plan['label']}")
@@ -609,7 +622,11 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6):
             + (f", {plural(len(mine), 'library fixture')}" if mine else ""))
         plans.append(plan)
 
-    # Every member's name, checked before any reads are fetched.
+    # Every requested target, and every member's name, checked before any reads are fetched.
+    covered = {name for plan in plans for name in plan["covered"] + plan["sv_covered"]}
+    if missing := [name for name in required_targets if name not in covered]:
+        raise ValueError("No BAM given can hold reads for " + "; ".join(
+            f"{name} ({_uncovered(targets[name])})" for name in missing))
     names = {}
     for plan in plans:
         for name in plan["covered"] + plan["sv_covered"]:
@@ -667,10 +684,6 @@ def _add_member(members, name, member):
     members[name] = member
 
 
-def plural(n, word, words=None):
-    return f"{n:,} {word if n == 1 else words or word + 's'}"
-
-
 def normalize(assembly):
     from .reads import normalize_assembly
     return normalize_assembly(assembly)
@@ -711,30 +724,32 @@ REDISTRIBUTION = {"license": "CC0-1.0", "source": "https://registry.opendata.aws
 
 
 def make_bundle(dataset, to, *, variants=(), svs=(), files=(), caps=None, size_budget=64 * 1024 * 1024,
-                log=None):
-    """Make a bundle of test reads with openvax-v1's selection, and return its folder.
+                header_policy="full", log=None):
+    """Make a bundle of test reads with openvax-v1's selection; return its manifest.
 
-    For each variant, each file gives up to caps templates of each allele class
-    (by default 20 alt, 10 ref, 5 other and 2 uncallable, plus the two
-    lowest-quality alt templates); for each SV or fusion, up to 50 templates that
-    join its breakends. Members are named FILE.TARGET, like the files osteosarc
-    reads --to writes. See Dataset.make_bundle.
+    See Dataset.make_bundle. log, if given, gets a line of progress for each BAM
+    and each BAM skipped; without it, skips are warnings. Every requested target
+    must be readable from some BAM given, which is checked before any reads are
+    streamed, and nothing is written unless the whole bundle is made.
     """
     from .bundles import generate_bundle
     to = Path(to)
     if to.exists():
         raise FileExistsError(f"{to} already exists; bundles go in a new folder")
-    spec = bundle_spec(dataset, to.name, variants=variants, svs=svs, files=files, caps=caps)
-    recipe = build_shared_recipe(spec, dataset, required={}, log=log or (lambda text: None))
-    generate_bundle(recipe, to, dataset=dataset, size_budget=size_budget)
-    return to
+    def progress(text):
+        if log:
+            log(text)
+        elif text.startswith(("skip ", "skipping ")):
+            warnings.warn(text, stacklevel=2)
+    spec = bundle_spec(dataset, to.name, variants=variants, svs=svs, files=files, caps=caps, warn=progress)
+    asked = spec["targets"]["ids"] + [entry["name"] for entry in spec["targets"]["structural"]]
+    recipe = build_shared_recipe(spec, dataset, required={}, required_targets=asked, log=progress)
+    return generate_bundle(recipe, to, dataset=dataset, size_budget=size_budget, header_policy=header_policy)
 
 
-def bundle_spec(dataset, name, *, variants=(), svs=(), files=(), caps=None):
+def bundle_spec(dataset, name, *, variants=(), svs=(), files=(), caps=None, warn=None):
     """The spec make_bundle builds from: these variants and SVs, read from these files only."""
     import difflib
-
-    from .models import File, Sample
     ids = [variant if isinstance(variant, str) else variant.id for variant in _items(variants)]
     svs = list(_items(svs))
     if not ids and not svs:
@@ -747,18 +762,48 @@ def bundle_spec(dataset, name, *, variants=(), svs=(), files=(), caps=None):
                              + (f"; did you mean {', '.join(close)}?" if close else ""))
         if found[vid].status != "ready":
             raise ValueError(f"{vid} has no usable allele ({found[vid].status}); see osteosarc variants {vid}")
+    caps = dict(caps or {})
+    if unknown := set(caps) - set(DEFAULT_CAPS):
+        raise ValueError(f"Unknown caps {sorted(unknown)}: caps are {', '.join(DEFAULT_CAPS)}")
+    if any(type(n) is not int or n < 0 for n in caps.values()):
+        raise ValueError("Caps are counts of templates: nonnegative whole numbers")
     urls = []
     for item in _items(files):
-        chosen = ([f for f in item.files.select(kind="alignment") if f.index_urls] if isinstance(item, Sample)
-                  else [item if isinstance(item, File) else dataset.file(item)])
-        urls += [f.url for f in chosen if f.url not in urls]
+        urls += [f.url for f in alignment_files(dataset, item, warn=warn) if f.url not in urls]
     if not urls:
         raise ValueError("Give the indexed BAMs to take reads from: files, keys, or samples")
+    from .sv_candidates import load_sv_candidates
+    candidates = load_sv_candidates()["targets"] if svs else {}
     return dict(id=name, snapshot=dict(name=dataset.name, id=dataset.id),
-                selection=dict(caps=dict(DEFAULT_CAPS, **(caps or {}))),
+                selection=dict(caps=dict(DEFAULT_CAPS, **caps)),
                 sources=dict(all_targets=urls, structural=urls if svs else [], observed=False),
-                targets=dict(ids=ids, structural=[_sv_entry(sv) for sv in svs]),
+                targets=dict(ids=ids, structural=[_sv_entry(sv, candidates) for sv in svs]),
                 redistribution=REDISTRIBUTION)
+
+
+def alignment_files(dataset, item, *, assay=None, platform=None, warn=None):
+    """The indexed BAMs an item names: a File, a file's key, URL or ID, or a sample
+    (a Sample or its ID) for each of its indexed BAMs of this assay and platform.
+    A sample's BAMs without an index are skipped, and warn says so."""
+    from .models import File, Sample
+    warn = warn or (lambda text: warnings.warn(text, stacklevel=3))
+    sample = item if isinstance(item, Sample) else (
+        dataset.samples[item] if isinstance(item, str) and "/" not in item
+        and item in {s.id for s in dataset.samples} else None)
+    if sample is None:
+        if assay or platform:
+            raise ValueError("assay and platform choose among a sample's BAMs; give a sample ID")
+        file = item if isinstance(item, File) else dataset.file(item)
+        if file.kind != "alignment" or not file.index_urls:
+            raise ValueError(f"{file.key} isn't an indexed BAM in the bucket")
+        return [file]
+    found = sample.files.select(kind="alignment", assay=assay, platform=platform)
+    for file in found:
+        if not file.index_urls:
+            warn(f"skipping {file.key}: it has no index in the bucket")
+    if not (indexed := [f for f in found if f.index_urls]):
+        raise ValueError(f"{sample.id} has no indexed BAMs" + (" of that kind" if assay or platform else ""))
+    return indexed
 
 
 def _items(value):
@@ -771,91 +816,100 @@ def _items(value):
     return list(value)
 
 
-def _sv_entry(sv):
-    """A spec's structural entry for an SV candidate or SV regression ID."""
+def _sv_entry(sv, candidates):
+    """A spec's structural entry for an SV candidate or SV regression ID, if it has breakends."""
     from .fixtures import load_panel
-    from .sv_candidates import load_sv_candidates
-    if sv in load_sv_candidates()["targets"]:
-        return dict(name=sv, label="sv", **{"from": {"sv_candidates": sv}})
-    if sv in load_panel("sv-regressions-v1"):
-        return dict(name=sv, label="sv", **{"from": {"panel": "sv-regressions-v1", "id": sv}})
-    raise ValueError(f"No SV {sv}: give an SV candidate ID, from load_sv_candidates() (see the SV candidates "
-                     "docs), or a regression target from load_panel('sv-regressions-v1')")
+    if sv in candidates:
+        base, origin = candidates[sv], {"sv_candidates": sv}
+    elif sv in (regressions := load_panel("sv-regressions-v1")):
+        base, origin = regressions[sv], {"panel": "sv-regressions-v1", "id": sv}
+    else:
+        raise ValueError(f"No SV {sv}: give an SV candidate ID, from load_sv_candidates() (see the SV candidates "
+                         "docs), or a regression target from load_panel('sv-regressions-v1')")
+    if base.get("kind") == "unresolved" or len(base.get("breakends", ())) < 2:
+        raise ValueError(f"{sv} has no two resolved breakends to take reads between"
+                         + (f" ({base['reason']})" if base.get("reason") else ""))
+    return dict(name=sv, label="sv", **{"from": origin})
 
 
 def bundle_file(bundle, member, *, format="bam", cache=None, offline=False):
     """One member of a bundle as a local file, for a test to read.
 
     bundle is a published bundle's name (such as openvax-v1, downloaded the
-    first time) or a bundle folder. The member is exported once into the cache
-    as an indexed BAM (or format="sam" or "sam.gz"), made read-only, and reused
-    afterward, offline. A member already named x.bam is exported as x.bam.
+    first time) or a bundle folder. The member comes back as an indexed BAM (or
+    format="sam" or "sam.gz") of exactly its records, exported into the cache
+    with the other members from its source BAM, made read-only, and reused
+    afterward, offline.
 
         bam = osteosarc.bundle_file("openvax-v1", "topiary/osteosarc/bulk_star_t0.sam.gz")
     """
     import difflib
     import tempfile
 
-    from .bundles import _write_members, export_target
-    from .cache import Cache, file_lock
+    from .bundles import _check_format, _write_members, safe_path, verify_bundle
+    from .cache import Cache, digest, file_lock
+    _check_format(format)
     cache = cache if isinstance(cache, Cache) else Cache(cache)
     if offline and not cache.offline:
         cache = Cache(cache.root, offline=True)
     folder = bundle_folder(bundle, cache=cache)
-    stat = (folder / "manifest.json").stat()
-    manifest_sha = _manifest_digest(str(folder), (stat.st_mtime_ns, stat.st_size))
-    exports = cache.workspace / "exports" / f"{folder.name}-{manifest_sha[:16]}"
-    target = export_target(exports / format, member, format)
-    index = Path(str(target) + ".bai")
-    if target.is_file() and (format != "bam" or index.is_file()):
-        return target
-    manifest = _verified_manifest(str(folder), manifest_sha)
+    published = published_name(bundle)  # its folder's name already carries its manifest checksum
+    exports = cache.workspace / "exports" / (
+        folder.name if published else f"{folder.name}-{digest(folder / 'manifest.json')[:16]}") / format
+
+    def target(name):
+        return safe_path(exports, f"{name}.{format}")  # one file per member, whatever its name
+
+    def ready(path):
+        return path.is_file() and (format != "bam" or Path(str(path) + ".bai").is_file())
+    if ready(target(member)):
+        return target(member)
+    # fetch_bundle verified a published bundle when it arrived and pins its manifest.
+    manifest = json.loads((folder / "manifest.json").read_text()) if published else verify_bundle(folder)
     if member not in manifest["members"]:
         close = difflib.get_close_matches(member, manifest["members"], n=3)
         raise KeyError(f"{member} isn't a member of {bundle}" + (f"; did you mean {', '.join(close)}?" if close
                        else f"; osteosarc test-data list {bundle} lists them"))
-    status = manifest["members"][member]["status"]
-    if status in ("unresolved", "omitted"):
-        raise KeyError(f"{member} has no reads in {bundle} ({status})")
+    if manifest["members"][member]["status"] in ("unresolved", "omitted"):
+        raise KeyError(f"{member} has no reads in {bundle} ({manifest['members'][member]['status']})")
+    source = manifest["members"][member]["source"]
+    group = [name for name, m in manifest["members"].items()
+             if m["source"] == source and m["status"] not in ("unresolved", "omitted")]
     exports.mkdir(parents=True, exist_ok=True)
-    with file_lock(exports / f".{format}.lock"):
-        if not (target.is_file() and (format != "bam" or index.is_file())):
-            with tempfile.TemporaryDirectory(dir=exports, prefix=".export-") as work:
-                made = _write_members(folder, manifest, [member], work, format)[member]
-                target.parent.mkdir(parents=True, exist_ok=True)
-                # The index first, so a BAM in place always has its index beside it.
-                for source, destination in ([(Path(str(made) + ".bai"), index)] if format == "bam" else []) + [
-                        (made, target)]:
-                    os.chmod(source, 0o444)
-                    os.replace(source, destination)
-    return target
+    with file_lock(exports.parent / f".{format}.lock"):
+        if not ready(target(member)):
+            # Every member from the same source BAM at once: one read of it serves them all.
+            with tempfile.TemporaryDirectory(dir=exports.parent, prefix=".export-") as work:
+                made = _write_members(folder, manifest, group, work, format, naming=lambda name: f"{name}.{format}")
+                for name, path in made.items():
+                    final = target(name)
+                    if ready(final):
+                        continue
+                    final.parent.mkdir(parents=True, exist_ok=True)
+                    # The index first, so a BAM in place always has its index beside it.
+                    for piece, destination in ([(Path(str(path) + ".bai"), Path(str(final) + ".bai"))]
+                                               if format == "bam" else []) + [(path, final)]:
+                        os.chmod(piece, 0o444)
+                        os.replace(piece, destination)
+    return target(member)
 
 
-@functools.lru_cache(maxsize=8)
-def _manifest_digest(folder, stamp):
-    from .cache import digest
-    return digest(Path(folder) / "manifest.json")
-
-
-@functools.lru_cache(maxsize=4)
-def _verified_manifest(folder, manifest_sha):
-    """A bundle's manifest, verified in full once per process."""
-    from .bundles import verify_bundle
-    return verify_bundle(folder, sha256=manifest_sha)
+def published_name(value):
+    """Whether value is a published bundle's bare name, such as openvax-v1."""
+    return (isinstance(value, str) and "/" not in value and os.sep not in value
+            and (BUNDLES / f"{value}.release.json").is_file())
 
 
 def bundle_folder(value, *, cache=None):
-    """The folder of a published bundle's name (fetched and verified), or else of a bundle path.
-
-    A published name always means the published bundle; write ./NAME for a
-    local folder that shares its name.
-    """
-    text = str(value)
-    if "/" not in text and os.sep not in text and (BUNDLES / f"{text}.release.json").is_file():
-        return fetch_bundle(text, cache=cache)
-    if Path(value).exists():
+    """A bundle's folder. A published bundle's bare name (such as openvax-v1) is
+    fetched and verified; a Path, or text with a slash, is a folder as given, and
+    so is other bare text naming an existing folder. Write ./NAME for a local
+    folder that shares a published bundle's name."""
+    if published_name(value):
+        return fetch_bundle(value, cache=cache)
+    if isinstance(value, os.PathLike) or "/" in str(value) or os.sep in str(value) or Path(value).exists():
         return Path(value)
-    return fetch_bundle(text, cache=cache)  # an unknown name raises, listing the published ones
+    return fetch_bundle(str(value), cache=cache)  # an unknown bare name raises, listing the published ones
 
 
 def pack_release(bundle, archive):

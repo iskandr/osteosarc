@@ -214,11 +214,13 @@ def parser():
                       help="An SV candidate (such as SV0461) or SV regression target; repeat for several")
     make.add_argument("--assay", help="With a sample: only its BAMs of this assay, such as rna-seq")
     make.add_argument("--platform", help="With a sample: only its BAMs from this platform, such as ont")
-    make.add_argument("--recipe", metavar="FILE", help="Make the bundle from a recipe instead (see the test data docs)")
+    make.add_argument("--recipe", metavar="FILE",
+                      help="Make the bundle from a recipe instead, such as another bundle's recipe.json; its "
+                           "sources are fetched from the snapshot it names, unless given with --source")
     make.add_argument("--source", action="append", default=[], metavar="ID=LOCAL_BAM",
                       help="With --recipe: use a BAM you already have for one of its sources")
     make.add_argument("--header-policy", choices=("full", "compact"), default="full",
-                      help="With --recipe: compact keeps only the header lines the records need")
+                      help="compact keeps only the header lines the records need")
     make.add_argument("--size-budget", type=int, default=64 * 1024 * 1024, help="Largest bundle, in bytes")
     make.add_argument("--json", action="store_true", help="The bundle's manifest as JSON")
     for name, what in (("list", "Each member of a bundle, with its records and why"),
@@ -459,18 +461,13 @@ def is_sample(dataset, name):
 
 def bams(dataset, name, *, assay=None, platform=None):
     """A FILE|SAMPLE argument's BAMs: that file, or a sample's indexed BAMs (of this assay and platform)."""
+    from .shared import alignment_files
     if not is_sample(dataset, name):
         if assay or platform:
             raise ValueError("--assay and --platform choose among a sample's BAMs; give a sample ID")
         return [dataset.file(name)]
-    found = dataset.samples[name].files.select(kind="alignment", assay=assay, platform=platform)
-    for file in found:
-        if not file.index_urls:
-            print(f"skipping {file.key}: it has no index in the bucket", file=sys.stderr)
-    indexed = [f for f in found if f.index_urls]
-    if not indexed:
-        raise ValueError(f"{name} has no indexed BAMs" + (" of that kind" if assay or platform else ""))
-    return indexed
+    return alignment_files(dataset, name, assay=assay, platform=platform,
+                           warn=lambda text: print(text, file=sys.stderr))
 
 
 def read_sources(dataset, args):
@@ -525,12 +522,15 @@ def main(argv=None):
         print(start(Cache(offline=True)))
         return 0
     args, extra = root.parse_known_args(arguments)
-    # Before Python 3.13, argparse binds the optional regions positional before any
-    # option, so regions written after an option arrive here as extra arguments.
-    if extra and (args.command != "reads" or any(item.startswith("-") for item in extra)):
+    # Before Python 3.13, argparse binds an optional list positional (reads' regions,
+    # test-data make's BAMs) before any option, so items written after an option
+    # arrive here as extra arguments.
+    trailing = ("regions" if args.command == "reads" else
+                "sources" if args.command == "test-data" and args.test_data_command == "make" else None)
+    if extra and (trailing is None or any(item.startswith("-") for item in extra)):
         root.error(f"unrecognized arguments: {' '.join(extra)}")
     if extra:
-        args.regions = [*args.regions, *extra]
+        setattr(args, trailing, [*getattr(args, trailing), *extra])
     cache = Cache(args.cache, offline=args.offline)
     try:
         if args.command == "test-data":
@@ -577,14 +577,20 @@ def test_data(args, cache):
 
     from .bundles import export_bundle, generate_bundle, list_bundle, verify_bundle
     from .shared import bundle_folder, check_fixtures, read_json
-    from .views import table
+    from .views import plural, table
     action = args.test_data_command
     if action == "make":
         if args.recipe:
             if args.sources or args.variant or args.sv or args.assay or args.platform:
                 raise ValueError("--recipe makes the bundle from the recipe alone; drop the BAMs, --variant and --sv")
-            manifest = generate_bundle(read_json(args.recipe), args.output,
-                                       sources=dict(item.split("=", 1) for item in args.source), cache=cache,
+            recipe = read_json(args.recipe)
+            given = dict(item.split("=", 1) for item in args.source)
+            dataset = None
+            if set(recipe.get("sources", {})) - set(given):
+                # Its other sources are fetched from the snapshot the recipe was made from.
+                args.snapshot = args.snapshot or recipe.get("snapshot", {}).get("name")
+                dataset = open_snapshot(args, cache, not args.offline)
+            manifest = generate_bundle(recipe, args.output, sources=given, cache=cache, dataset=dataset,
                                        size_budget=args.size_budget, header_policy=args.header_policy)
         else:
             if args.source:
@@ -593,12 +599,12 @@ def test_data(args, cache):
                 raise ValueError("Name the BAMs to read: a file's key, or a sample ID (see osteosarc samples)")
             dataset = open_snapshot(args, cache, not args.offline)
             files = [f for name in args.sources for f in bams(dataset, name, assay=args.assay, platform=args.platform)]
-            print(f"Reading {len(files)} BAM{'s' if len(files) != 1 else ''}; the first time, this streams "
-                  "the reads it needs from each.", file=sys.stderr)
+            print(f"Reading {plural(len(files), 'BAM')}; the first time, this streams the reads it needs "
+                  "from each.", file=sys.stderr)
             from .shared import make_bundle
-            folder = make_bundle(dataset, args.output, variants=args.variant, svs=args.sv, files=files,
-                                 size_budget=args.size_budget, log=lambda text: print(text, file=sys.stderr))
-            manifest = verify_bundle(folder)
+            manifest = make_bundle(dataset, args.output, variants=args.variant, svs=args.sv, files=files,
+                                   size_budget=args.size_budget, header_policy=args.header_policy,
+                                   log=lambda text: print(text, file=sys.stderr))
         if args.json:
             print_json(manifest)
             return 0

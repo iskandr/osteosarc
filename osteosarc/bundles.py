@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy
-import functools
 import gzip
 import json
 import os
@@ -251,10 +250,11 @@ def _folder(bundle, cache=None):
 def verify_bundle(bundle, *, sha256=None, cache=None):
     """Verify bytes, recipe/membership, original record multiplicity and indexes offline.
 
-    bundle is a published bundle's name (such as openvax-v1) or a folder. Pin
-    ``sha256`` to the manifest hash when loading an externally supplied data
-    version. Internal checks detect corruption; an unpinned manifest is not an
-    authenticity signature. This function needs neither SAMtools nor network.
+    bundle is a folder, or a published bundle's name (such as openvax-v1), which is
+    downloaded the first time. Pin ``sha256`` to the manifest hash when loading an
+    externally supplied data version. Internal checks detect corruption; an
+    unpinned manifest is not an authenticity signature. Verifying a folder needs
+    neither SAMtools nor network.
     """
     import pysam
     root = _folder(bundle, cache)
@@ -354,9 +354,15 @@ def export_bundle(bundle, to, *, members=None, format="bam", cache=None):
     members give valid empty files. Returns {member: path}. For one member in a
     test, bundle_file is simpler.
     """
+    _check_format(format)
     root = _folder(bundle, cache)
     manifest = verify_bundle(root)
     return _write_members(root, manifest, members, to, format)
+
+
+def _check_format(format):
+    if format not in ("bam", "sam", "sam.gz"):
+        raise ValueError(f"Export format must be bam, sam or sam.gz, not {format!r}")
 
 
 def export_target(to, name, format):
@@ -364,20 +370,11 @@ def export_target(to, name, format):
     return safe_path(Path(to), name if name.endswith("." + format) else f"{name}.{format}")
 
 
-@functools.lru_cache(maxsize=8)
-def _source_contents(path, stamp):
-    """A bundle source's records and header, read once per process (stamp: its mtime and size)."""
+def _write_members(root, manifest, members, to, format, *, naming=None):
+    """export_bundle's work, for a bundle already verified. naming gives each
+    member's path in the folder (by default export_target's)."""
     import pysam
-    records = list(read_records(path))
-    with pysam.AlignmentFile(path) as bam:
-        return records, bam.header.to_dict()
-
-
-def _write_members(root, manifest, members, to, format):
-    """export_bundle's work, for a bundle already verified."""
-    import pysam
-    if format not in ("bam", "sam", "sam.gz"):
-        raise ValueError("Export format must be bam, sam or sam.gz")
+    _check_format(format)
     to = Path(to)
     names = sorted(set(manifest["members"] if members is None else members))
     if missing := set(names) - manifest["members"].keys():
@@ -387,7 +384,8 @@ def _write_members(root, manifest, members, to, format):
         member = manifest["members"][name]
         if member["status"] not in ("unresolved", "omitted"):
             by_source.setdefault(member["source"], []).append(name)
-            targets[name] = export_target(to, name, format)  # checks every name before writing any
+            # Checks every name before writing any.
+            targets[name] = safe_path(to, naming(name)) if naming else export_target(to, name, format)
     by_target = {}
     for name, target in targets.items():
         if target in by_target:
@@ -399,8 +397,9 @@ def _write_members(root, manifest, members, to, format):
         work, moves = Path(temporary), []
         for sid, group in sorted(by_source.items()):
             path = safe_path(root, manifest["sources"][sid]["bam"])
-            stat = path.stat()
-            records, header = _source_contents(str(path), (stat.st_mtime_ns, stat.st_size))
+            records = list(read_records(path))
+            with pysam.AlignmentFile(str(path)) as bam:
+                header = bam.header.to_dict()
             for name in group:
                 counts, target = manifest["members"][name]["records"], targets[name]
                 made = safe_path(work, target.relative_to(to).as_posix())
