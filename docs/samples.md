@@ -40,8 +40,10 @@ The sequencing column uses the same names as the file filters below. One
 sequencing run can have several BAMs, such as a vendor's and a reprocessed one.
 
 `data.samples["T1_tumor"]` shows one sample: where it came from, each BAM (with its
-assay, provider, size and whether you've downloaded it) and each FASTQ folder (with
-its library type, file count and size), followed by the calls that fetch them.
+assay, platform, provider, size and whether you've downloaded it) and each FASTQ
+folder (with its assay, platform, library, file count and size), followed by the
+calls that fetch them. Assays and platforms use the filter names below everywhere;
+the library says which of a single-cell capture's libraries a folder holds.
 
 From the command line:
 
@@ -96,15 +98,16 @@ CITE-seq libraries.
 The site's labels map to the filter names like this. Using a site label as a filter
 gives an error that names the right one:
 
-| Site label | `assay` | Data |
-| --- | --- | --- |
-| `RNA`, `bulk RNA` | `rna-seq` | Bulk RNA sequencing |
-| `WES` | `wes` | Bulk whole-exome DNA sequencing |
-| `WGS` | `wgs` | Bulk whole-genome DNA sequencing |
-| `scRNA`, `scRNA_GEX`, `scRNA_TCR`, `scRNA_TCRgd`, `scRNA_BCR` | `scrna-seq` | Single-cell RNA, and T- and B-cell receptor libraries from the same cells |
-| `scRNA_ONT` | `scrna-seq`, with `platform="ont"` | Single-cell Oxford Nanopore RNA sequencing |
-| `PacBio` | `scrna-seq`, with `platform="pacbio"` | Single-cell PacBio RNA sequencing in this dataset |
-| `CITE` | `cite-seq` | Single-cell RNA and antibody-tag profiling |
+| Site label | `assay` | Library | Data |
+| --- | --- | --- | --- |
+| `RNA`, `bulk RNA` | `rna-seq` | | Bulk RNA sequencing |
+| `WES` | `wes` | | Bulk whole-exome DNA sequencing |
+| `WGS` | `wgs` | | Bulk whole-genome DNA sequencing |
+| `scRNA`, `scRNA_GEX` | `scrna-seq` | gene expression | Single-cell RNA sequencing |
+| `scRNA_TCR`, `scRNA_TCRgd`, `scRNA_BCR` | `scrna-seq` | αβ TCR, γδ TCR, BCR | T- and B-cell receptor libraries from the same cells |
+| `scRNA_ONT` | `scrna-seq`, with `platform="ont"` | long reads | Single-cell Oxford Nanopore RNA sequencing |
+| `PacBio` | `scrna-seq`, with `platform="pacbio"` | long reads | Single-cell PacBio RNA sequencing in this dataset |
+| `CITE` | `cite-seq` | antibody tags | The antibody-tag library of a CITE-seq capture |
 
 Single cells aren't samples: cell barcodes are inside the single-cell files.
 

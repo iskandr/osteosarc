@@ -11,7 +11,7 @@ import textwrap
 from collections import Counter, defaultdict
 from pathlib import PurePosixPath
 
-from .curation import ASSAY_NAMES, ASSAYS
+from .curation import ASSAY_NAMES, ASSAYS, normalize_provider
 from .errors import OsteosarcError
 from .urls import BUCKET, S3_BUCKET
 
@@ -142,8 +142,15 @@ def samples_view(samples, *, width=None, footer=None):
     return f"{title}\n\n{shown}\n\n{footer}"
 
 
+#: What kind of single-cell library a site label names; bulk libraries need no name.
+LIBRARIES = {"scRNA_GEX": "gene expression", "scRNA_TCR": "αβ TCR", "scRNA_TCRgd": "γδ TCR",
+             "scRNA_BCR": "BCR", "CITE": "antibody tags", "scRNA_ONT": "long reads", "scRNA": "gene expression",
+             "PacBio": "long reads"}
+
+
 def _fastq_folders(sample, files):
-    """One row per FASTQ folder: its library label, provider, and files and bytes in the bucket."""
+    """One row per FASTQ folder: its assay and platform (the names file filters use),
+    library, provider, and files and bytes in the bucket."""
     labels = {}
     for row in sample.details.get("fastqs", ()):
         labels.setdefault(row["folder"], (row.get("assay") or "", row.get("provider") or ""))
@@ -161,11 +168,15 @@ def _fastq_folders(sample, files):
     rows = []
     for folder in sample.fastq_folders:
         label, provider = labels.get(folder, ("", ""))
-        rows.append(dict(library=label, provider=provider, files=counts[folder] if files is not None else "",
+        assay, platform = ASSAYS.get(label, (label, None))
+        rows.append(dict(assay=assay, platform=platform or "", library=LIBRARIES.get(label, ""),
+                         provider=normalize_provider(provider) if provider else "",
+                         files=counts[folder] if files is not None else "",
                          size=size_text(sizes[folder]), folder=folder + "/"))
     order = {name: i for i, name in enumerate(ASSAY_NAMES)}
-    return sorted(rows, key=lambda r: (order.get(ASSAYS.get(r["library"], (r["library"],))[0], len(order)),
-                                       r["library"], r["folder"]))
+    kinds = {name: i for i, name in enumerate(dict.fromkeys(LIBRARIES.values()))}
+    return sorted(rows, key=lambda r: (order.get(r["assay"], len(order)), r["assay"],
+                                       kinds.get(r["library"], -1), r["folder"]))
 
 
 def _bam_rows(sample, data, local):
@@ -206,8 +217,8 @@ def sample_files_view(sample, data, *, width=None, files=None, local=None):
     lines.append("")
     if folders:
         lines.append(f"FASTQ folders, raw reads ({len(folders)}):")
-        lines.append(table(folders, ("library", "provider", "files", "size", "folder"), width=width,
-                           fixed=("folder",)))
+        lines.append(table(folders, ("assay", "platform", "library", "provider", "files", "size", "folder"),
+                           width=width, fixed=("folder", "library")))
     else:
         lines.append("FASTQ folders: none")
     return "\n".join(lines), bams, folders
