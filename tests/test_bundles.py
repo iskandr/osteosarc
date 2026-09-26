@@ -1,5 +1,6 @@
 import copy
 import json
+import os
 import shutil
 from pathlib import Path
 
@@ -55,9 +56,10 @@ def test_cli_and_dataset_produce_same_bundle(bam, dataset, tmp_path, capsys):
     path.write_text(json.dumps(recipe))
     expected = generate_bundle(recipe, tmp_path / "api", sources={"rna": bam}, dataset=dataset)
     assert main(["--cache", str(tmp_path / "cache"), "--offline", "test-data", "generate", str(path),
-                 str(tmp_path / "cli"), "--source", f"rna={bam}"]) == 0
+                 str(tmp_path / "cli"), "--source", f"rna={bam}", "--json"]) == 0
     assert json.loads(capsys.readouterr().out) == expected
     assert main(["--cache", str(tmp_path / "cache"), "--offline", "test-data", "verify", str(tmp_path / "cli")]) == 0
+    assert "1 member (1 with reads), 7 records from 1 BAM" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("corruption", ["record", "index", "recipe", "nested", "duplicate", "traversal"])
@@ -182,10 +184,26 @@ def test_export_into_an_existing_folder_keeps_identical_files_and_refuses_differ
     first = export_bundle(source, to, members=["duplicates", "duplicates"])
     assert export_bundle(source, to) == first
     assert sorted(p.name for p in to.iterdir()) == ["duplicates.bam", "duplicates.bam.bai", "other.txt"]
+    # The same records in differently compressed bytes are the same export; a lost index comes back.
+    import pysam
+    with pysam.AlignmentFile(str(to / "duplicates.bam")) as inp:
+        header, reads = inp.header, list(inp)
+    (to / "duplicates.bam.bai").unlink()
+    with pysam.AlignmentFile(str(to / "duplicates.bam"), "wb0", header=header) as out:
+        for read in reads:
+            out.write(read)
+    assert export_bundle(source, to) == first and (to / "duplicates.bam.bai").is_file()
+    # A conflict anywhere writes nothing: not the SAM, and not a BAM beside a stale index.
     (to / "duplicates.sam").write_text("different")
     with pytest.raises(FileExistsError, match="different contents"):
         export_bundle(source, to, format="sam")
     assert (to / "duplicates.sam").read_text() == "different"
+    other = tmp_path / "other"
+    other.mkdir()
+    (other / "duplicates.bam.bai").write_text("stale")
+    with pytest.raises(FileExistsError, match="duplicates.bam.bai"):
+        export_bundle(source, other)
+    assert sorted(p.name for p in other.iterdir()) == ["duplicates.bam.bai"]
     assert sorted(p.name for p in to.iterdir()) == ["duplicates.bam", "duplicates.bam.bai", "duplicates.sam",
                                                     "other.txt"]
 
@@ -341,6 +359,27 @@ def test_a_published_bundle_is_fetched_verified_and_checked_offline(bam, tmp_pat
     problems = shared.check_fixtures(fetched, dict(fixtures, duplicates=dict(json="evidence.json",
                                      pointer="/paths/0/records")), root=tmp_path)
     assert problems["duplicates"] == dict(missing=1, extra=0) and "not a member" in problems["empty"]["error"]
+    # The cached copy is read-only, and a change to it is noticed.
+    manifest = fetched / "manifest.json"
+    assert not os.access(manifest, os.W_OK)
+    manifest.chmod(0o644)
+    manifest.write_text(manifest.read_text() + " ")
+    with pytest.raises(IntegrityError, match="changed since it was downloaded"):
+        shared.fetch_bundle("tiny-v1", cache=cache)
+
+
+def test_check_compares_members_without_reads_too(bam, tmp_path):
+    import osteosarc.shared as shared
+    recipe = bundle_recipe(bam)
+    recipe["targets"]["pending"] = dict(kind="unresolved", reason="unreviewed breakends")
+    recipe["sources"]["other"] = copy.deepcopy(recipe["sources"]["rna"])
+    recipe["members"]["pending"] = dict(target="pending", source="other", policy=dict(kind="empty", version=1))
+    bundle = tmp_path / "bundle"
+    manifest = generate_bundle(recipe, bundle, sources={"rna": bam})
+    assert "other" not in manifest["sources"]
+    (tmp_path / "empty.sam").write_text("@HD\tVN:1.6\n")
+    assert shared.check_fixtures(bundle, {"pending": "empty.sam"}, root=tmp_path) == {}
+    assert shared.check_fixtures(bundle, {"pending": str(bam)}, root=tmp_path) == {"pending": dict(missing=0, extra=7)}
 
 
 def test_the_cli_lists_and_checks_a_published_bundle(bam, tmp_path, monkeypatch, capsys):
@@ -366,6 +405,8 @@ def test_the_cli_lists_and_checks_a_published_bundle(bam, tmp_path, monkeypatch,
     assert main(["--cache", str(root), "--offline", "test-data", "check", "tiny-v1", str(tmp_path / "wrong.json")]) == 1
     assert "not a member" in capsys.readouterr().out
     assert main(["--cache", str(root), "--offline", "test-data", "list", "tiny-v1"]) == 0
+    assert capsys.readouterr().out.split("\n")[2].split() == ["duplicates", "selected", "7"]
+    assert main(["--cache", str(root), "--offline", "test-data", "list", "tiny-v1", "--json"]) == 0
     assert "duplicates" in json.loads(capsys.readouterr().out)
     out = tmp_path / "tests/data"
     assert main(["--cache", str(root), "--offline", "test-data", "export", "tiny-v1", str(out),

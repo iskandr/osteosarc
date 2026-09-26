@@ -32,7 +32,7 @@
     "catalog": "site",
     "extra": [
       {
-        "name": "MAP2-chr2-209694768:historical",
+        "name": "MAP2-chr2-209694768-historical",
         "variant_id": "MAP2-chr2-209694768",
         "label": "historical",
         "contig": "chr2",
@@ -48,7 +48,7 @@
         "reason": "The site's allele before the allele-MAP2-chr2-209694768 correction; the libraries' tests still use it."
       },
       {
-        "name": "NR2F2-chr15-96332299:GRCh37",
+        "name": "NR2F2-chr15-96332299-GRCh37",
         "variant_id": "NR2F2-chr15-96332299",
         "label": "native_grch37",
         "contig": "chr15",
@@ -63,7 +63,7 @@
         "reason": "The catalog allele at its GRCh37 position, for GRCh37 BAMs."
       },
       {
-        "name": "MT_ND5-chrM-12994:hg19",
+        "name": "MT_ND5-chrM-12994-hg19",
         "variant_id": "MT_ND5-chrM-12994",
         "label": "mitochondrial",
         "contig": "chrM",
@@ -79,7 +79,7 @@
         "reason": "The catalog allele on hg19's chrM (16571 bases), as CeGaT's BAMs use."
       },
       {
-        "name": "MT_ND5-chrM-12994:GRCh37",
+        "name": "MT_ND5-chrM-12994-GRCh37",
         "variant_id": "MT_ND5-chrM-12994",
         "label": "mitochondrial",
         "contig": "MT",
@@ -139,7 +139,7 @@
         "reason": "In the site's read-count export but not on its variants page."
       },
       {
-        "name": "NTF3-chr12-5494381:compound",
+        "name": "NTF3-chr12-5494381-compound",
         "variant_id": "NTF3-chr12-5494381",
         "label": "library_allele",
         "contig": "chr12",

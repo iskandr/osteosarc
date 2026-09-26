@@ -296,22 +296,53 @@ def structural_targets(spec):
     return targets, breakends, observed_in
 
 
-def _touches(read, window):
-    contig, start, end = window
-    return (read.reference_name == contig and read.reference_start < end
-            and (read.reference_end or read.reference_start + 1) > start)
+def _pieces(read):
+    """Reference spans of a read's alignment, split at deletions but not at introns (N)."""
+    pieces, start, position = [], None, read.reference_start
+    for op, length in read.cigartuples or ():
+        if op in (0, 3, 7, 8):  # M, N, =, X
+            start = position if start is None else start
+            position += length
+        elif op == 2:  # D
+            if start is not None:
+                pieces.append((start, position))
+            start, position = None, position + length
+    return pieces + ([(start, position)] if start is not None else [])
+
+
+def _joins(records, windows):
+    """Whether a template's alignments join every window, as a split read, a
+    discordant pair or a chimeric long read would.
+
+    Only aligned bases count as touching a window. A read that runs across the
+    breakends, even through an intron, doesn't join them (a deletion does), and
+    neither does a proper pair whose mates fall on either side.
+    """
+    reads = [r.read for r in records if not r.read.is_unmapped]
+
+    def touches(contig, start, end, window):
+        return contig == window[0] and start < window[2] and end > window[1]
+
+    def reaches(read, spans):
+        return all(any(touches(read.reference_name, s, e, w) for s, e in spans) for w in windows)
+    if not all(any(touches(r.reference_name, s, e, w) for r in reads for s, e in r.get_blocks()) for w in windows):
+        return False
+    if any(reaches(r, [piece]) for r in reads for piece in _pieces(r)):
+        return False
+    ordinary_pair = all(r.is_proper_pair and not r.is_supplementary and not r.has_tag("SA") for r in reads)
+    return not ordinary_pair or any(reaches(r, r.get_blocks()) for r in reads)
 
 
 def select_breakend_templates(templates, windows, *, cap=50):
-    """Templates with an alignment in every breakend window: {template: reason}.
+    """Templates whose alignments join every breakend window: {template: reason}.
 
-    That's a split read, a discordant pair or a chimeric long read joining the
-    breakends (or a read aligned right across them). Up to cap, in hash order.
+    That's a split read, a discordant pair or a chimeric long read. A read that
+    merely spans the breakends in one aligned block, or a proper pair whose mates
+    fall on either side, doesn't count. Up to cap, in hash order.
     """
-    joined = [t for t, records in templates.items()
-              if all(any(_touches(r.read, w) for r in records) for w in windows)]
+    joined = [t for t, records in templates.items() if _joins(records, windows)]
     chosen = sorted(joined, key=template_order)[:cap]
-    return {t: "joins the breakend windows (hash order)" for t in chosen}, len(joined)
+    return {t: "joins the breakends (hash order)" for t in chosen}, len(joined)
 
 
 def load_required(paths):
@@ -420,7 +451,8 @@ def _select_source(plan, index, windows, targets, caps, low_quality_alt, cap):
         ends = [(r.contig, r.start, r.end) for r in plan["breakend_regions"][name]]
         candidates = index.touching(*ends[0])
         for end in ends[1:]:
-            candidates = {t: rs for t, rs in candidates.items() if t in index.touching(*end)}
+            near = index.touching(*end)
+            candidates = {t: rs for t, rs in candidates.items() if t in near}
         chosen, joined = select_breakend_templates(candidates, ends, cap=cap)
         members[f"{label}.{name}"] = dict(target=name, source=label, observed=dict(joined=joined),
                                           policy=dict(exact(chosen), reason="templates joining the breakends"))
@@ -470,8 +502,12 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6):
         plan = _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, everywhere,
                             sv_everywhere, structural["window"])
         if plan is None:
+            if mine:
+                raise IntegrityError(f"Required fixtures with no aligned records to find them by: {sorted(mine)}")
             log(f"skip {url}: no targets or required records")
             continue
+        if any(plan["label"] == other["label"] for other in plans):
+            raise IntegrityError(f"Two sources share the name {plan['label']}")
         log(f"{plan['file'].key}: {len(plan['covered'])} variants, {len(plan['sv_covered'])} fusions or SVs, "
             f"{len(mine)} required fixtures, {len(plan['source']['regions'])} regions")
         plans.append(plan)
@@ -495,21 +531,33 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6):
     if problems:
         # Every source was read (and its extraction cached), so a rerun after fixing these is quick.
         raise IntegrityError(f"{len(problems)} required fixtures couldn't be matched:\n" + "\n".join(problems))
+    def add(name, member):
+        _add_member(recipe["members"], name, member)
     for label in sorted(results):  # the same recipe whatever order extractions finished in
         plan, members, fixtures = results[label]
         recipe["sources"][label] = plan["source"]
-        recipe["members"].update(members)
+        for name, member in members.items():
+            add(name, member)
         for subset_name, (required_subset, counts) in fixtures.items():
             target = "fixture:" + subset_name
             targets[target] = dict(kind="fixture", assembly=plan["source"]["assembly"],
                                    reference=dict(source="library", consumer=required_subset["consumer"]),
                                    consumer=required_subset["consumer"],
                                    description=required_subset.get("description", subset_name))
-            recipe["members"][subset_name] = dict(
+            add(subset_name, dict(
                 target=target, source=label,
                 policy=dict(version=1, kind="exact", records=dict(sorted(counts.items())),
-                            reason=f"required by {required_subset['consumer']}: {subset_name}"))
+                            reason=f"required by {required_subset['consumer']}: {subset_name}")))
     return recipe
+
+
+def _add_member(members, name, member):
+    """Add a member under a name that can be a file name, refusing to replace another."""
+    from .bundles import safe_path
+    if name in members:
+        raise IntegrityError(f"Two members share the name {name}")
+    safe_path(Path("."), name)  # export writes the member to a file named after it
+    members[name] = member
 
 
 def normalize(assembly):
@@ -572,12 +620,14 @@ def pack_release(bundle, archive):
 def fetch_bundle(name, *, cache=None):
     """Download a published bundle into the cache, verify it, and return its directory.
 
-    Later calls reuse the verified copy, offline.
+    The bundle is verified in full when it arrives, and its files are made
+    read-only; later calls reuse it offline, checking only its manifest.
     """
+    import os
     import tarfile
 
     from .bundles import _publication, safe_path, verify_bundle
-    from .cache import Cache
+    from .cache import Cache, digest
     release = published(name)
     cache = cache if isinstance(cache, Cache) else Cache(cache)
     root = cache.workspace / "bundles" / f"{name}-{release['manifest_sha256'][:16]}"
@@ -592,9 +642,14 @@ def fetch_bundle(name, *, cache=None):
                     target.parent.mkdir(parents=True, exist_ok=True)
                     with tar.extractfile(member) as source, open(target, "wb") as handle:
                         handle.write(source.read())
+                verify_bundle(work, sha256=release["manifest_sha256"])
+                for path in work.rglob("*"):
+                    if path.is_file():
+                        os.chmod(path, 0o444)
         except FileExistsError:
             pass  # another process published it first
-    verify_bundle(root, sha256=release["manifest_sha256"])
+    if digest(root / "manifest.json") != release["manifest_sha256"]:
+        raise IntegrityError(f"{root} has changed since it was downloaded; delete it to download it again")
     return root
 
 
@@ -605,7 +660,13 @@ def _local_sam(value, root=Path(".")):
         document = read_json(root / value["json"])
         for part in value["pointer"].strip("/").split("/"):
             document = document[int(part) if isinstance(document, list) else part]
-        return [document] if isinstance(document, str) else list(document)
+        if isinstance(document, dict):
+            document = list(document.values())  # e.g. {digest: SAM line}
+        lines = [document] if isinstance(document, str) else [
+            item.get("sam") if isinstance(item, dict) else item for item in document]
+        if not all(isinstance(line, str) for line in lines):
+            raise SchemaError(f"{value['json']}#{value['pointer']} holds neither SAM lines nor objects with a sam field")
+        return lines
     path = root / value
     if path.suffix == ".gz" and path.name.endswith(".sam.gz"):
         import tempfile
@@ -634,10 +695,10 @@ def check_fixtures(bundle, fixtures, *, root=Path(".")):
             continue
         member = manifest["members"][name]
         sid = member["source"]
-        if sid not in by_source:
+        expected = Counter()
+        if member["records"] and sid not in by_source:
             path = safe_path(Path(bundle), manifest["sources"][sid]["bam"])
             by_source[sid] = {record.digest: record.read.to_string() for record in read_records(path)}
-        expected = Counter()
         for key, n in member["records"].items():
             expected[by_source[sid][key]] += n
         found = Counter(_local_sam(value, Path(root)))

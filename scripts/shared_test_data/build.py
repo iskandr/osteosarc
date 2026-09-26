@@ -23,8 +23,12 @@ import json
 import sys
 from pathlib import Path
 
-from osteosarc import Dataset, generate_bundle
-from osteosarc.shared import BUNDLES, build_shared_recipe, pack_release, read_json
+# This checkout's osteosarc, whatever is installed: the spec and release record live in it.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from osteosarc import Dataset, generate_bundle  # noqa: E402
+from osteosarc.cache import stable_id  # noqa: E402
+from osteosarc.shared import BUNDLES, build_shared_recipe, pack_release, read_json  # noqa: E402
 
 REPOSITORY = "https://github.com/iskandr/osteosarc"
 
@@ -47,7 +51,8 @@ def main():
     generate_bundle(recipe, bundle, dataset=dataset, size_budget=args.size_budget)
     archive = args.output / f"{args.name}.tar.gz"
     release = pack_release(bundle, archive)
-    release = dict(url=f"{REPOSITORY}/releases/download/{args.name}/{archive.name}", **release)
+    release = dict(url=f"{REPOSITORY}/releases/download/{args.name}/{archive.name}", spec_sha256=stable_id(spec),
+                   **release)
     (BUNDLES / f"{args.name}.release.json").write_text(json.dumps(release, indent=1) + "\n")
     print(json.dumps(dict(bundle=str(bundle), archive=str(archive), **release), indent=1))
 

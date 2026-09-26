@@ -104,7 +104,9 @@ with tempfile.TemporaryDirectory() as work:
         source = rearrangements["source_receipts"][product]["url"]
         if document["fusion"]["provenance"]["source"] != source:
             raise ValueError(f"{path}: provenance source differs from the manifest")
-        for read, original in zip(document["reads"], document["original_records"], strict=True):
+        if len(document["reads"]) != len(document["original_records"]):
+            raise ValueError(f"{path}: reads and original_records differ in length")
+        for read, original in zip(document["reads"], document["original_records"]):
             sam = [original["sam"], original["partner_sam"]]
             rendered = [pysam.AlignedSegment.fromstring(line, ntf3_header).to_string() for line in sam]
             if rendered != sam:

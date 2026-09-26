@@ -70,10 +70,11 @@ def test_fusion_templates_must_reach_every_breakend_window():
     from osteosarc.shared import select_breakend_templates
     header = pysam.AlignmentHeader.from_dict(dict(SQ=[dict(SN="chr1", LN=10000), dict(SN="chr2", LN=10000)]))
 
-    def aligned(name, contig, start, flag=0):
+    def aligned(name, contig, start, flag=0, cigar="10M"):
         read = pysam.AlignedSegment(header)
         read.query_name, read.flag, read.reference_id, read.reference_start = name, flag, contig, start
-        read.cigarstring, read.query_sequence = "10M", "ACGTACGTAC"
+        read.cigarstring = cigar
+        read.query_sequence = "A" * read.infer_query_length()
         return FixtureRecord(read, f"{name}{contig}{start}")
     templates = {
         (None, "split"): [aligned("split", 0, 100), aligned("split", 1, 500, flag=2048)],
@@ -85,6 +86,22 @@ def test_fusion_templates_must_reach_every_breakend_window():
     assert joined == 2 and set(chosen) == {(None, "split"), (None, "pair")}
     capped, _ = select_breakend_templates(templates, windows, cap=1)
     assert list(capped) == sorted([(None, "split"), (None, "pair")], key=template_order)[:1]
+
+    # Breakends close together: reads that merely run across them don't join them.
+    close = [("chr1", 1000, 1200), ("chr1", 1300, 1500)]
+    ordinary = {
+        (None, "spans"): [aligned("spans", 0, 1150, cigar="200M")],
+        (None, "spliced"): [aligned("spliced", 0, 1150, cigar="5M200N5M")],
+        (None, "intron-over-both"): [aligned("intron-over-both", 0, 900, cigar="5M700N5M")],
+        (None, "proper"): [aligned("proper", 0, 1100, flag=67), aligned("proper", 0, 1400, flag=131)],
+    }
+    junctions = {
+        (None, "deletion"): [aligned("deletion", 0, 1150, cigar="5M200D5M")],
+        (None, "discordant"): [aligned("discordant", 0, 1100, flag=65), aligned("discordant", 0, 1400, flag=129)],
+        (None, "supplementary"): [aligned("supplementary", 0, 1100), aligned("supplementary", 0, 1400, flag=2048)],
+    }
+    chosen, joined = select_breakend_templates({**ordinary, **junctions}, close, cap=10)
+    assert set(chosen) == set(junctions) and joined == 3
 
 
 def test_required_reads_can_be_named_instead_of_listed():
@@ -122,12 +139,41 @@ def test_the_record_index_finds_what_a_scan_would():
 
 
 def test_every_shipped_spec_has_a_published_bundle():
+    from osteosarc.cache import stable_id
     from osteosarc.shared import BUNDLES, published, read_json
     specs = sorted(BUNDLES.glob("*.spec.json"))
     assert specs
     for path in specs:
         name = path.name.removesuffix(".spec.json")
-        assert read_json(path)["id"] == name
+        spec = read_json(path)
+        assert spec["id"] == name
         release = published(name)
+        assert release["spec_sha256"] == stable_id(spec), f"rebuild {name}: its spec changed since its release"
         assert release["url"].endswith(f"/releases/download/{name}/{name}.tar.gz")
         assert len(release["sha256"]) == len(release["manifest_sha256"]) == 64 and release["size_bytes"] > 0
+
+
+def test_member_names_must_be_file_names_and_unique():
+    from osteosarc.shared import _add_member
+    members = {}
+    _add_member(members, "T2_rna.MAP2-chr2-209694768-historical", {})
+    with pytest.raises(IntegrityError, match="share the name"):
+        _add_member(members, "T2_rna.MAP2-chr2-209694768-historical", {})
+    with pytest.raises(IntegrityError, match="Unsafe"):
+        _add_member(members, "T2_rna.MAP2-chr2-209694768:historical", {})
+
+
+def test_fixtures_kept_in_json_are_read_in_each_layout(tmp_path):
+    import json
+
+    from osteosarc import SchemaError
+    from osteosarc.shared import _local_sam
+    line = "r1\t0\tchr1\t3\t60\t4M\t*\t0\t0\tACGT\tIIII"
+    (tmp_path / "f.json").write_text(json.dumps(dict(
+        lines=[line, line], single=line, by_digest={"a" * 64: line},
+        objects=[dict(sam=line, note="x")], numbers=[1, 2])))
+    for pointer, expected in [("/lines", [line, line]), ("/single", [line]), ("/by_digest", [line]),
+                              ("/objects", [line])]:
+        assert _local_sam(dict(json="f.json", pointer=pointer), tmp_path) == expected
+    with pytest.raises(SchemaError, match="neither SAM lines"):
+        _local_sam(dict(json="f.json", pointer="/numbers"), tmp_path)

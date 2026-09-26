@@ -327,9 +327,10 @@ def export_bundle(directory, to, *, members=None, format="bam"):
     A BAM export (NAME.bam, with its index) holds exactly the member's records,
     repeats included. SAM text (NAME.sam or NAME.sam.gz) keeps every field but
     can't promise binary float and tag types. The folder may already exist: a
-    file there is kept if it's identical and is an error if it differs. Members
-    without reads (unresolved or omitted) are skipped; empty members give valid
-    empty files. Returns {member: path}.
+    file there that holds the same records is kept, and one that differs is an
+    error, in which case nothing is written. Members without reads (unresolved
+    or omitted) are skipped; empty members give valid empty files. Returns
+    {member: path}.
     """
     import pysam
     if format not in ("bam", "sam", "sam.gz"):
@@ -345,16 +346,18 @@ def export_bundle(directory, to, *, members=None, format="bam"):
         if member["status"] not in ("unresolved", "omitted"):
             by_source.setdefault(member["source"], []).append(name)
             targets[name] = safe_path(to, f"{name}.{format}")  # checks every name before writing any
-    for sid, group in sorted(by_source.items()):
-        path = safe_path(root, manifest["sources"][sid]["bam"])
-        records = list(read_records(path))
-        with pysam.AlignmentFile(str(path)) as bam:
-            header = bam.header.to_dict()
-        for name in group:
-            counts, target = manifest["members"][name]["records"], targets[name]
-            target.parent.mkdir(parents=True, exist_ok=True)
-            with tempfile.TemporaryDirectory(dir=target.parent, prefix=".export-") as work:
-                made = Path(work) / target.name
+    to.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=to, prefix=".export-") as temporary:
+        work, moves = Path(temporary), []
+        for sid, group in sorted(by_source.items()):
+            path = safe_path(root, manifest["sources"][sid]["bam"])
+            records = list(read_records(path))
+            with pysam.AlignmentFile(str(path)) as bam:
+                header = bam.header.to_dict()
+            for name in group:
+                counts, target = manifest["members"][name]["records"], targets[name]
+                made = safe_path(work, f"{name}.{format}")
+                made.parent.mkdir(parents=True, exist_ok=True)
                 if format == "bam":
                     _write_bam(made, header, records, counts)
                 else:
@@ -363,19 +366,41 @@ def export_bundle(directory, to, *, members=None, format="bam"):
                     text = str(pysam.AlignmentHeader.from_dict(header))
                     text += "".join((by_id[key].read.to_string() + "\n") * counts[key] for key in ordered)
                     made.write_bytes(gzip.compress(text.encode(), mtime=0) if format == "sam.gz" else text.encode())
-                _keep(made, target)
-                if format == "bam":
-                    _keep(Path(str(made) + ".bai"), Path(str(target) + ".bai"))
+                index = (Path(str(made) + ".bai"), Path(str(target) + ".bai"))
+                if not _same_export(made, target, format):
+                    moves += [(made, target)] + ([index] if format == "bam" else [])
+                elif format == "bam" and not index[1].exists():
+                    moves.append(index)
+        # Check every file before moving any, so a conflict leaves the folder as it was.
+        for made, target in moves:
+            if target.exists():
+                raise FileExistsError(f"{target} already exists with different contents; "
+                                      "move it, or choose another folder")
+        for made, target in moves:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(made, target)
     return targets
 
 
-def _keep(made, target):
-    """Move a new file into place, unless an identical one is already there."""
-    if target.exists():
-        if digest(target) != digest(made):
-            raise FileExistsError(f"{target} already exists with different contents; move it, or choose another folder")
-        return
-    os.replace(made, target)
+def _same_export(made, target, format):
+    """Whether target already holds made's records (compression and index bytes can differ)."""
+    import pysam
+    if not target.exists():
+        return False
+    if format == "sam":
+        return target.read_bytes() == made.read_bytes()
+    if format == "sam.gz":
+        try:
+            return gzip.decompress(target.read_bytes()) == gzip.decompress(made.read_bytes())
+        except (OSError, EOFError):
+            return False
+    try:
+        with pysam.AlignmentFile(str(target)) as old, pysam.AlignmentFile(str(made)) as new:
+            if old.header.to_dict() != new.header.to_dict():
+                return False
+        return record_multiset(target) == record_multiset(made)
+    except (OSError, ValueError):
+        return False
 
 
 def generate_bundle(recipe, destination, *, sources=None, cache=None, dataset=None, **pack_options):
