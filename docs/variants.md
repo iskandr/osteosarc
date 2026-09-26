@@ -27,7 +27,11 @@ From the command line:
 ```sh
 osteosarc variants --gene DYNC1H1 --status ready
 osteosarc variants --set vaccine --vaccine mRNA
+osteosarc variants DYNC1H1-chr14-101980529
 ```
+
+The last shows one variant with its allele, effect, vaccines, corrections and the
+site's read counts. Add `--json` for full records.
 
 ## Get an allele and its read-extraction region
 
@@ -110,7 +114,7 @@ An ELISPOT that wasn't run, or has no recorded response, isn't a negative result
 
 ```python
 data = Dataset.open(offline=False)
-calls = data.assets.select(kind="variants", format="vcf")
+calls = data.files.select(kind="variants", format="vcf")
 if calls:
     with data.open_variants(calls[0]) as vcf:
         print(vcf.header)

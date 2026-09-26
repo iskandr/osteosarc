@@ -133,7 +133,7 @@ def generate(recipe, output, dataset, *, source_ids=None):
     chosen = sorted(recipe["sources"] if source_ids is None else source_ids)
     for identity in chosen:
         source = recipe["sources"][identity]
-        asset = dataset.asset(source["asset"]["key"])
+        asset = dataset.file(source["asset"]["key"])
         if asset_identity(asset) != source["asset"]:
             raise ValueError("Snapshot asset changed: " + asset.key)
         required = required_counts(recipe, identity)

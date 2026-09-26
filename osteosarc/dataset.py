@@ -11,23 +11,30 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from functools import cached_property
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
 
-from .cache import Cache, Receipt, file_lock, stable_id, write_json
+from .cache import Cache, Receipt, file_lock, place, stable_id, write_json
 from .catalog import (
     BUCKET,
     SNAPSHOT_SOURCES,
     TABLE_SOURCES,
     TIMELINE_SOURCES,
-    build_assets,
+    build_files,
     data_page_rows,
     object_key,
     parse_data_paths,
 )
-from .curation import CORRECTIONS, Curation, normalize_tissue, unrecognized_values
+from .curation import (
+    CORRECTIONS,
+    Curation,
+    normalize_provider,
+    normalize_tissue,
+    sequencing_pairs,
+    unrecognized_values,
+)
 from .errors import CoordinateError, IntegrityError, NoSnapshotsError, OfflineError, SchemaError
-from .models import Asset, Region
+from .models import File, Region
 from .parsing import (
     PARSE_FORMATS,
     Table,
@@ -39,27 +46,41 @@ from .parsing import (
 )
 
 
-def _check_inventory_time(asset, receipt):
+def _check_inventory_time(file, receipt):
     """Refuse bytes newer (or older) than the object this snapshot's inventory listed."""
-    if not isinstance(asset.modified, (int, float)) or not receipt.last_modified:
+    if not isinstance(file.modified, (int, float)) or not receipt.last_modified:
         return
     served = parsedate_to_datetime(receipt.last_modified).timestamp()
-    if abs(served - asset.modified) > 1:
+    if abs(served - file.modified) > 1:
         raise IntegrityError(
-            f"{asset.key} was modified at {receipt.last_modified}, not at the time this snapshot's "
-            f"inventory lists ({datetime.fromtimestamp(asset.modified, timezone.utc).isoformat()}); "
+            f"{file.key} was modified at {receipt.last_modified}, not at the time this snapshot's "
+            f"inventory lists ({datetime.fromtimestamp(file.modified, timezone.utc).isoformat()}); "
             "create a new snapshot to use the current object")
 
 
-_NEXT_STEPS = """Try:
-  data.describe_samples()                     # samples and what was sequenced
-  data.assets_for_sample("T1_tumor")          # one sample's files
-  data.variants(gene="MAP2")                  # variants, with their alleles
-  data.timeline.select(since="2024-05")       # treatments, scans and lab results
-  data.explore()                              # the interactive explorer"""
+GUIDE = """What's here:
+  data.samples          tumor, organoid and blood samples; data.samples["T1_tumor"] shows one
+  data.files            every file in the bucket, and the site's tables
+  data.variants()       the variant catalogue, with alleles
+  data.vaccines         vaccine targets and ELISPOT results
+  data.timeline         treatments, procedures, scans, MRD and lab draws
+  data.corrections      known problems in the website's data, and their fixes
+
+Get data:
+  data.download(key)                       download a whole file; returns its local path
+  data.extract_reads(key, variants=...)    reads around variants, as a small local BAM
+  data.downloads()                         what's already on this computer, and where"""
 
 DATE_SELECTOR = re.compile(r"\d{4}(-\d{2}(-\d{2})?)?")
 DATED_NAME = re.compile(r"\d{4}-\d{2}-\d{2}(\.\d+)?")
+
+
+def _read_receipt(path):
+    """A receipt stored as JSON, or None if it's missing or unreadable."""
+    try:
+        return Receipt(**json.loads(Path(path).read_text()))
+    except (OSError, ValueError, TypeError):
+        return None
 
 
 def downloaded_at(manifest):
@@ -210,7 +231,7 @@ class Dataset:
         dataset = cls(cache, manifest, corrections=corrections)
         # Validate identity joins before making a snapshot discoverable.
         dataset.variants()
-        dataset.assets
+        dataset.files
         write_json(path, manifest)
         return dataset
 
@@ -308,7 +329,7 @@ class Dataset:
     @cached_property
     def timeline(self):
         """Every dated event: treatments, procedures, imaging, pathology, omics,
-        specimens, MRD, flow draws, and lab/cytometry draw dates."""
+        samples, MRD, flow draws, and lab/cytometry draw dates."""
         from .timeline import (
             Timeline,
             events_from_flow,
@@ -342,18 +363,41 @@ class Dataset:
                                 "undated": undated})
 
     @cached_property
-    def specimens(self):
-        """The sample registry: one row per biological specimen, linked to its
-        BAMs (via consolidated metadata) and FASTQ folders, with any dates or
-        sites that other sources state differently."""
+    def _sample_sources(self):
+        """Registry rows, with each sample's BAM keys, missing BAM names and FASTQ table rows."""
         self._require_timeline()
         rows, touched = self.curation.records("specimens")
+        if any(not row.get("sample_id") for row in rows):
+            raise SchemaError("Every row of the sample registry needs a sample_id")
         metadata = {r["display_name"]: r for r in self.curation.records("bam_metadata")[0]}
         fastqs, related = defaultdict(list), defaultdict(list)
         fastq_rows, fastq_touched = self.curation.records("fastqs")
         for i, row in enumerate(fastq_rows):
-            fastqs[row["sample_id"]].append(row["s3_folder"])
-            related[row["sample_id"]].extend(fastq_touched.get(i, ()))
+            if row.get("sample_id") and row.get("s3_folder"):
+                fastqs[row["sample_id"]].append(row)
+            related[row.get("sample_id")].extend(fastq_touched.get(i, ()))
+        result = []
+        for i, row in enumerate(rows):
+            names = [n.strip() for n in re.split(r"[;|]", row.get("bam_display_names", "")) if n.strip()]
+            result.append(dict(
+                row=row, corrections=(*touched.get(i, ()), *related[row["sample_id"]]),
+                bams=tuple(dict.fromkeys(self._object_key(metadata[n]["s3_path"]) for n in names
+                                         if metadata.get(n, {}).get("s3_path"))),
+                missing=tuple(n for n in names if not metadata.get(n, {}).get("s3_path")),
+                fastqs=tuple(fastqs.get(row["sample_id"], ()))))
+        return result
+
+    @cached_property
+    def samples(self):
+        """What was collected: tumor, organoid and blood samples, each with its
+        sequencing, BAMs and FASTQ folders. Index by ID: data.samples["T1_tumor"].
+
+        Sequencing and providers combine the site's sample registry with its
+        FASTQ table, which names each folder's assay even where the registry
+        doesn't. Dates or sites that other sources state differently are
+        listed in disagreements.
+        """
+        from .models import Sample, Samples
         claims, summary_corrections = defaultdict(list), defaultdict(list)
         summary_rows, summary_touched = self.curation.records("timepoint_summary")
         for i, row in enumerate(summary_rows):
@@ -362,32 +406,64 @@ class Dataset:
         for event in self.timeline.select(lane="Time points"):
             claims[event.timepoint].append(("events", event.date, None))
         result = []
-        for i, row in enumerate(rows):
-            names = [n.strip() for n in re.split(r"[;|]", row.get("bam_display_names", "")) if n.strip()]
+        for source in self._sample_sources:
+            row = source["row"]
+            tissue = normalize_tissue(row.get("tissue"))
             disagreements = []
-            if row.get("timepoint") and normalize_tissue(row.get("tissue")) == "tumor":
-                for source, day, location in claims.get(row["timepoint"], ()):
+            if row.get("timepoint") and tissue == "tumor":
+                for name, day, location in claims.get(row["timepoint"], ()):
                     if day != row["collection_date"]:
-                        disagreements.append(dict(source=source, field="date", value=day))
+                        disagreements.append(dict(source=name, field="date", value=day))
                     site = (location or "").split(" (")[0]
                     if site and site != row.get("collection_site"):
-                        disagreements.append(dict(source=source, field="site", value=location))
-            result.append(dict(
-                sample_id=row["sample_id"], timepoint=row.get("timepoint") or None,
-                date=row.get("collection_date") or None, tissue=normalize_tissue(row.get("tissue")),
-                site=row.get("collection_site") or None, specimen=row.get("tissue_source") or None,
-                vendors=tuple(v.strip() for v in row.get("vendors_involved", "").split(";") if v.strip()),
-                assays=tuple(a.strip() for a in row.get("assays_run", "").split(";") if a.strip()),
-                assets=tuple(self._object_key(metadata[n]["s3_path"]) for n in names
-                             if metadata.get(n, {}).get("s3_path")),
-                unmatched_bams=tuple(n for n in names if not metadata.get(n, {}).get("s3_path")),
-                fastq_folders=tuple(fastqs.get(row["sample_id"], ())),
-                disagreements=disagreements,
-                corrections=tuple(dict.fromkeys((*touched.get(i, ()), *related[row["sample_id"]],
-                                                 *(summary_corrections[row["timepoint"]]
-                                                   if row.get("timepoint") else ())))),
-                raw=dict(row)))
-        return Table(result, source=self.manifest["sources"]["specimens"])
+                        disagreements.append(dict(source=name, field="site", value=location))
+            labels = [a.strip() for a in row.get("assays_run", "").split(";") if a.strip()]
+            labels += [f["assay"] for f in source["fastqs"] if f.get("assay")]
+            providers = [v.strip() for v in row.get("vendors_involved", "").split(";") if v.strip()]
+            providers += [f["provider"] for f in source["fastqs"] if f.get("provider")]
+            sample = Sample(
+                id=row["sample_id"], timepoint=row.get("timepoint") or None,
+                date=row.get("collection_date") or None, tissue=tissue,
+                site=row.get("collection_site") or None, description=row.get("tissue_source") or None,
+                providers=tuple(sorted({normalize_provider(p) for p in providers})),
+                sequencing=sequencing_pairs(labels),
+                bams=source["bams"], missing_bams=source["missing"],
+                fastq_folders=tuple(dict.fromkeys(self._object_key(f["s3_folder"]).rstrip("/")
+                                                  for f in source["fastqs"])),
+                notes=row.get("notes", ""), disagreements=tuple(disagreements),
+                corrections=tuple(dict.fromkeys((*source["corrections"], *(
+                    summary_corrections[row["timepoint"]] if row.get("timepoint") else ())))),
+                details=dict(registry=dict(row), fastqs=[
+                    dict(f, folder=self._object_key(f["s3_folder"]).rstrip("/")) for f in source["fastqs"]]))
+            object.__setattr__(sample, "_dataset", self)
+            result.append(sample)
+        return Samples(result, source={"snapshot_id": self.id})
+
+    def _tag_samples(self, files):
+        """Record on each file the samples whose BAM it is or whose FASTQ folder holds it."""
+        try:
+            sources = self._sample_sources
+        except SchemaError as error:
+            # An older snapshot has no sample registry; any other problem is worth saying.
+            if set(TIMELINE_SOURCES) <= set(self.manifest["sources"]):
+                warnings.warn(f"Files aren't linked to samples: {error}", stacklevel=3)
+            return
+        owners, folders = defaultdict(list), defaultdict(list)
+        for source in sources:
+            sample = source["row"]["sample_id"]
+            for key in source["bams"]:
+                owners[key].append(sample)
+            for row in source["fastqs"]:
+                folders[self._object_key(row["s3_folder"]).rstrip("/")].append(sample)
+        tops = {folder.split("/", 1)[0] for folder in folders}
+        for file in files:
+            found = list(owners.get(file.key, ()))
+            if file.key.split("/", 1)[0] in tops:  # most of the bucket is under other folders
+                parts = file.key.split("/")
+                for depth in range(1, len(parts)):
+                    found.extend(folders.get("/".join(parts[:depth]), ()))
+            if found:
+                file.metadata["samples"] = tuple(dict.fromkeys(found))
 
     def _object_key(self, path):
         """Bucket key of a relative key or a URL under this snapshot's download base."""
@@ -395,40 +471,15 @@ class Dataset:
             return path
         return object_key(path, self._download_header.get("download_base", BUCKET))
 
-    def describe_samples(self, *, timepoint=None, tissue=None, assay=None, platform=None, width=None):
-        """Readable specimen and sequencing overview; no data acquisition.
-
-        assay and platform keep specimens whose registry lists that sequencing,
-        using the same names as asset filters (rna-seq, scrna-seq, ont, ...).
-        """
-        from .display import Text
-        from .explore import samples_view
-        return Text(samples_view(self, timepoint=timepoint, tissue=tissue, assay=assay,
-                                 platform=platform, width=width))
-
     def summary(self):
-        """What's in this snapshot, and what to try next."""
+        """Counts of everything in this snapshot, and what to try next."""
         from .display import Text
-        from .explore import summary_view
-        return Text(summary_view(self) + "\n\n" + _NEXT_STEPS)
-
-    def explore(self):
-        """Open the interactive explorer (type help for commands, quit to leave)."""
-        from .explore import Explorer
-        Explorer(self).cmdloop()
+        from .views import summary_view
+        return Text(summary_view(self) + "\n\n" + GUIDE)
 
     def __repr__(self):
-        from .explore import snapshot_line
-        return f"Osteosarc {snapshot_line(self)}. Try data.summary() or data.explore()."
-
-    def assets_for_sample(self, sample_id, **filters):
-        """Registry-linked alignments and files under the specimen's FASTQ folders."""
-        row = next((r for r in self.specimens if r["sample_id"] == sample_id), None)
-        if row is None:
-            raise KeyError(f"Unknown sample: {sample_id}")
-        keys = set(row["assets"])
-        prefixes = tuple(self._object_key(p).rstrip("/") + "/" for p in row["fastq_folders"])
-        return self.assets.where(lambda a: a.key in keys or a.key.startswith(prefixes)).select(**filters)
+        from .views import snapshot_line
+        return f"Osteosarc {snapshot_line(self)}\n\n{GUIDE}"
 
     @cached_property
     def measurements(self):
@@ -485,36 +536,37 @@ class Dataset:
                      columns=(*columns, "corrections"), source=source, diagnostics=diagnostics)
 
     @cached_property
-    def assets(self):
+    def files(self):
         """All listed files plus metadata-only catalog objects and site tables."""
         bams = self._json("bams")
-        files, bucket_touched = self.curation.records("bucket")
+        objects, bucket_touched = self.curation.records("bucket")
         listing = self._download_header
         rows, bams_touched = self.curation.records("bams")
         metadata, metadata_touched = self.curation.records("bam_metadata")
         rows = iter(rows)
         bams = dict(bams, categories=[dict(c, bams=[next(rows) for _ in c["bams"]]) for c in bams["categories"]])
-        listing = dict(listing, files=[[f["key"], f["size"], f["modified"]] for f in files])
+        listing = dict(listing, files=[[f["key"], f["size"], f["modified"]] for f in objects])
         # Site tables pinned by this snapshot keep the snapshot's URLs (e.g. a mirror).
         tables = {name: (self.manifest["sources"].get(name, {}).get("url", url), format)
                   for name, (url, format) in TABLE_SOURCES.items()}
-        assets = build_assets(listing, bams, metadata, self.vafs,
-                              parse_data_paths(read_text(self.source_path("data_page"))), tables=tables)
+        files = build_files(listing, bams, metadata, self.vafs,
+                            parse_data_paths(read_text(self.source_path("data_page"))), tables=tables)
         touched = {}
         base = listing.get("download_base", BUCKET)
         for i, ids in bucket_touched.items():
-            touched.setdefault(files[i]["key"], []).extend(ids)
+            touched.setdefault(objects[i]["key"], []).extend(ids)
         flat = [row for category in bams["categories"] for row in category["bams"]]
         for i, ids in bams_touched.items():
             touched.setdefault(object_key(flat[i]["url"], bams["baseUrl"]), []).extend(ids)
         for i, ids in metadata_touched.items():
             touched.setdefault(object_key(metadata[i]["s3_path"], base), []).extend(ids)
-        for asset in assets:
-            if asset.key in touched:
-                asset.metadata["corrections"] = tuple(dict.fromkeys(touched[asset.key]))
+        for file in files:
+            if file.key in touched:
+                file.metadata["corrections"] = tuple(dict.fromkeys(touched[file.key]))
+        self._tag_samples(files)
         # The listing is large; evaluated corrections keep their matches if it is reloaded.
         self.curation.release("bucket")
-        return assets
+        return files
 
     @cached_property
     def _download_header(self):
@@ -617,70 +669,163 @@ class Dataset:
                              for p in record.get("detection", {})}))
 
     @property
-    def samples(self):
-        """Source-attributed sample/library claims with asset IDs.
+    def claims(self):
+        """What each source says about files' samples and libraries, with the IDs
+        of the files each claim is made for.
 
-        These rows intentionally do not turn processing products or pooled
-        libraries into independent specimens. Unresolved identities stay visible.
+        These rows don't turn processing products or pooled libraries into
+        separate samples, and they keep unresolved identities visible.
         """
         groups = {}
-        for asset in self.assets:
-            for claim in asset.claims:
+        for file in self.files:
+            for claim in file.claims:
                 key = stable_id(asdict(claim))
-                groups.setdefault(key, dict(asdict(claim), id=key, asset_ids=[]))["asset_ids"].append(asset.id)
+                groups.setdefault(key, dict(asdict(claim), id=key, file_ids=[]))["file_ids"].append(file.id)
         return Table(groups.values(), source={"snapshot_id": self.id})
 
     @property
     def timepoints(self):
         """Published timepoint/date pairs; dates retain their source precision."""
-        rows = {(c.timepoint, c.date, c.source) for a in self.assets for c in a.claims
+        rows = {(c.timepoint, c.date, c.source) for a in self.files for c in a.claims
                 if c.basis == "published" and (c.timepoint or c.date)}
         return Table((dict(timepoint=t, date=d, source=s) for t, d, s in
                       sorted(rows, key=lambda r: tuple(x or "" for x in r))))
 
     @cached_property
-    def _asset_index(self):
+    def _file_index(self):
         index = defaultdict(list)
-        for asset in self.assets:
-            for name in dict.fromkeys((asset.id, asset.key, asset.url, asset.metadata.get("resource"))):
+        for file in self.files:
+            for name in dict.fromkeys((file.id, file.key, file.url, file.metadata.get("resource"))):
                 if name:
-                    index[name].append(asset)
+                    index[name].append(file)
         return index
 
-    def asset(self, key_or_id):
-        """Resolve an exact bucket key, URL, resource name, or asset ID."""
-        matches = self._asset_index.get(key_or_id, [])
+    def file(self, key_or_id):
+        """Resolve an exact bucket key, URL, resource name, or file ID."""
+        matches = self._file_index.get(key_or_id, [])
         if len(matches) != 1:
-            raise KeyError(f"Expected one asset for {key_or_id!r}, found {len(matches)}")
+            raise KeyError(f"Expected one file for {key_or_id!r}, found {len(matches)}")
         return matches[0]
 
-    def download(self, asset, *, refresh=False, verify_size=True):
-        """Fetch one full object and bind its receipt to this metadata snapshot.
+    def download(self, file, *, to=None, refresh=False, verify_size=True):
+        """Download one whole file into the cache and return its local path.
 
-        After the first acquisition, URL refreshes elsewhere cannot change this
-        snapshot's bytes. Use a new snapshot to acquire a newer object. The
-        binding is populated lazily, so metadata-only use downloads no data.
+        to names a directory to put the file in under its own name, and the
+        path returned is then that one; a BAM's or VCF's index goes there too.
+        Each is a read-only hard link to the cached copy where possible (so
+        it takes no space and can't corrupt the cache), else a copy.
+
+        The download is bound to this snapshot: after the first, changes on
+        the server can't alter this snapshot's bytes (use a new snapshot for
+        newer ones). Metadata-only use downloads nothing.
         """
-        return self._download(asset, cache=self.cache, refresh=refresh, verify_size=verify_size)
+        file = file if isinstance(file, File) else self.file(file)
+        path = self._download(file, cache=self.cache, refresh=refresh, verify_size=verify_size)
+        if to is None:
+            return path
+        directory = Path(to).expanduser()
+        if file.index_urls:
+            index = self.file(file.index_urls[0])
+            place(self._download(index, cache=self.cache), directory / PurePosixPath(index.key).name)
+        return place(path, directory / PurePosixPath(file.key).name)
 
-    def _download(self, asset, *, cache, refresh=False, verify_size=True):
-        """Acquire a snapshot-bound asset with the supplied cache's network policy."""
-        asset = asset if isinstance(asset, Asset) else self.asset(asset)
-        if asset.id != stable_id(asset.url):
-            raise ValueError("Asset ID must be the stable hash of its URL")
+    def local_path(self, file):
+        """The downloaded copy of a file, or None; never uses the network.
+
+        A copy downloaded for another snapshot counts when its size matches
+        this snapshot's listing.
+        """
+        file = file if isinstance(file, File) else self.file(file)
+        for name, receipt in self.manifest["sources"].items():
+            if receipt["url"] == file.url:
+                return self.source_path(name)
+        pointers = (self.cache.workspace / "bindings" / self.id / (file.id + ".json"),
+                    self.cache.workspace / "urls" / (stable_id(file.url) + ".json"))
+        for pointer in pointers:
+            path = self._local_copy(file, _read_receipt(pointer))
+            if path is not None:
+                return path
+        return None
+
+    def _local_copy(self, file, receipt):
+        """The cached object behind a receipt, if it's this file's bytes (same URL and size)."""
+        if receipt is None or receipt.url != file.url or (file.size is not None and receipt.size != file.size):
+            return None
+        try:
+            return self.cache.path(receipt, verify=False)
+        except (OfflineError, IntegrityError):
+            return None
+
+    def downloads(self):
+        """Files downloaded into the cache and reads extracted from BAMs, with local paths.
+
+        Rows have kind ('file' or 'reads'), key (the file's key, or its URL if
+        this snapshot doesn't list it), url, size, path and, for extracted
+        reads, regions. Only this dataset's bucket is listed (the cache is
+        shared with other tools), and not the snapshot's own metadata. A file
+        counts as downloaded exactly when local_path finds it.
+        """
+        from .views import regions_text
+        by_url = {f.url: f for f in self.files}
+        sources = {r["url"] for r in self.manifest["sources"].values()}
+        base = self._download_header.get("download_base", BUCKET)
+        receipts = {}
+        # This snapshot's own downloads first, then what the cache has for other snapshots.
+        for folder in (self.cache.workspace / "bindings" / self.id, self.cache.workspace / "urls"):
+            for pointer in sorted(folder.glob("*.json")):
+                receipt = _read_receipt(pointer)
+                if receipt is not None:
+                    receipts.setdefault(receipt.url, []).append(receipt)
+        rows = []
+        for url, candidates in sorted(receipts.items()):
+            file = by_url.get(url)
+            if url in sources or not (file or url.startswith(base)):
+                continue
+            for receipt in candidates:
+                path = self._local_copy(file or File(stable_id(url), url, url, "", ""), receipt)
+                if path is not None:
+                    rows.append(dict(kind="file", key=file.key if file else url, url=url, size=receipt.size,
+                                     path=str(path), regions="", downloaded=receipt.retrieved_at))
+                    break
+        for receipt_path in sorted((self.cache.workspace / "derived").glob("*/receipt.json")):
+            try:
+                receipt = json.loads(receipt_path.read_text())
+                source = receipt["request"]["source"]
+                regions = receipt["request"].get("regions", ())
+            except (OSError, ValueError, KeyError, TypeError):
+                continue
+            bam = receipt_path.parent / "reads.bam"
+            file = by_url.get(source)
+            if not bam.is_file() or not (file or str(source).startswith(base)):
+                continue
+            rows.append(dict(kind="reads", key=file.key if file else source, url=source, size=bam.stat().st_size,
+                             path=str(bam), regions=regions_text(regions),
+                             downloaded=datetime.fromtimestamp(bam.stat().st_mtime, timezone.utc).isoformat()))
+        return Table(rows, columns=("kind", "key", "url", "size", "path", "regions", "downloaded"))
+
+    def local_urls(self):
+        """URLs of every file with a local copy: downloads and the snapshot's own tables."""
+        return ({r["url"] for r in self.downloads() if r["kind"] == "file"}
+                | {r["url"] for r in self.manifest["sources"].values()})
+
+    def _download(self, file, *, cache, refresh=False, verify_size=True):
+        """Acquire a snapshot-bound file with the supplied cache's network policy."""
+        file = file if isinstance(file, File) else self.file(file)
+        if file.id != stable_id(file.url):
+            raise ValueError("File ID must be the stable hash of its URL")
         # Metadata tables already pinned by this snapshot never drift to latest.
         for receipt in self.manifest["sources"].values():
-            if receipt["url"] == asset.url:
+            if receipt["url"] == file.url:
                 if refresh:
                     raise ValueError("Create a new snapshot to refresh pinned metadata")
                 return cache.path(receipt)
-        binding = cache.workspace / "bindings" / self.id / (asset.id + ".json")
+        binding = cache.workspace / "bindings" / self.id / (file.id + ".json")
         with file_lock(binding.with_suffix(".lock")):
             if binding.exists():
                 if refresh:
                     raise ValueError("Create a new snapshot to refresh an acquired object")
                 receipt = Receipt(**json.loads(binding.read_text()))
-                if receipt.url != asset.url:
+                if receipt.url != file.url:
                     raise IntegrityError("Snapshot object binding has the wrong URL")
                 try:
                     return cache.path(receipt)
@@ -688,41 +833,46 @@ class Dataset:
                     if cache.offline:
                         raise
                     # A pruned object is restored only if the server still has the same bytes.
-                    return cache.path(cache.fetch(asset.url, sha256=receipt.sha256, size=receipt.size))
-            md5s = {r.get("md5sum") for r in asset.metadata.get("metadata_rows", []) if r.get("md5sum")}
+                    return cache.path(cache.fetch(file.url, sha256=receipt.sha256, size=receipt.size))
+            md5s = {r.get("md5sum") for r in file.metadata.get("metadata_rows", []) if r.get("md5sum")}
             if len(md5s) > 1:
                 raise IntegrityError("Conflicting published MD5 claims")
-            receipt = cache.fetch(asset.url, refresh=refresh,
-                                  size=asset.size if verify_size else None,
-                                  md5=next(iter(md5s), None))
-            _check_inventory_time(asset, receipt)
+            try:
+                receipt = cache.fetch(file.url, refresh=refresh,
+                                      size=file.size if verify_size else None,
+                                      md5=next(iter(md5s), None))
+            except OfflineError as error:
+                raise OfflineError(f"{error}. This snapshot was opened offline; reopen it with "
+                                   "Dataset.open(offline=False), or use osteosarc download, "
+                                   "to download it") from None
+            _check_inventory_time(file, receipt)
             write_json(binding, receipt.to_dict())
             return cache.path(receipt)
 
-    def parse(self, asset):
+    def parse(self, file):
         """Download explicitly selected data and parse it with original columns."""
-        asset = asset if isinstance(asset, Asset) else self.asset(asset)
-        if asset.url == self.manifest["sources"]["vafs"]["url"]:
+        file = file if isinstance(file, File) else self.file(file)
+        if file.url == self.manifest["sources"]["vafs"]["url"]:
             return self.vafs  # the pinned count table, with corrections when enabled
-        if asset.format not in PARSE_FORMATS:
-            raise ValueError(f"No built-in parser for {asset.format!r}; download the original asset")
-        return parse_file(self.download(asset), format=asset.format,
-                          source=dict(url=asset.url, snapshot_id=self.id))
+        if file.format not in PARSE_FORMATS:
+            raise ValueError(f"No built-in parser for {file.format!r}; download the original file")
+        return parse_file(self.download(file), format=file.format,
+                          source=dict(url=file.url, snapshot_id=self.id))
 
-    def table(self, asset):
-        """Read any CSV/TSV asset, including named site tables and RSEM output."""
-        asset = asset if isinstance(asset, Asset) else self.asset(asset)
-        if asset.format not in ("csv", "tsv"):
-            raise ValueError("table requires a CSV or TSV asset")
-        return self.parse(asset)
+    def table(self, file):
+        """Read any CSV/TSV file, including named site tables and RSEM output."""
+        file = file if isinstance(file, File) else self.file(file)
+        if file.format not in ("csv", "tsv"):
+            raise ValueError("table requires a CSV or TSV file")
+        return self.parse(file)
 
-    def inspect_alignment(self, asset, **kwargs):
+    def inspect_alignment(self, file, **kwargs):
         """Cache the alignment header to inspect assembly before choosing regions."""
         from .reads import inspect_alignment
-        asset = asset if isinstance(asset, Asset) else self.asset(asset)
-        return inspect_alignment(asset, cache=self.cache, snapshot_id=self.id, **kwargs)
+        file = file if isinstance(file, File) else self.file(file)
+        return inspect_alignment(file, cache=self.cache, snapshot_id=self.id, **kwargs)
 
-    def extract_reads(self, asset, regions=None, *, variants=None, padding=0, **kwargs):
+    def extract_reads(self, file, regions=None, *, variants=None, padding=0, **kwargs):
         """Extract an indexed region union; see osteosarc.extract_reads.
 
         Supply regions or selected osteosarc variants with optional padding.
@@ -739,23 +889,23 @@ class Dataset:
         regions = tuple(regions) if regions is not None else ()
         if not regions or not all(isinstance(r, Region) for r in regions):
             raise CoordinateError("Provide a nonempty sequence of regions or ready variants")
-        asset = asset if isinstance(asset, Asset) else self.asset(asset)
-        if kwargs.get("index") is None and asset.index_urls:
+        file = file if isinstance(file, File) else self.file(file)
+        if kwargs.get("index") is None and file.index_urls:
             # Try the pinned/local index first so cached reads work without
             # SAMtools. Check capabilities before an index needs downloading.
             offline = Cache(self.cache.root, offline=True, timeout=self.cache.timeout)
             try:
-                index_path = self._download(asset.index_urls[0], cache=offline)
+                index_path = self._download(file.index_urls[0], cache=offline)
             except OfflineError:
                 if self.cache.offline:
                     raise
                 require_samtools(fetch_pairs=kwargs.get("fetch_pairs", False), filters=kwargs.get("filters"))
-                index_path = self.download(asset.index_urls[0])
+                index_path = self.download(file.index_urls[0])
             kwargs["index"] = str(index_path)
-        return extract_reads(asset, regions, cache=self.cache, snapshot_id=self.id, **kwargs)
+        return extract_reads(file, regions, cache=self.cache, snapshot_id=self.id, **kwargs)
 
     def generate_bundle(self, recipe, destination, **kwargs):
-        """Generate a fixture bundle with this snapshot's verified source assets."""
+        """Generate a fixture bundle with this snapshot's verified source files."""
         from .bundles import generate_bundle
         return generate_bundle(recipe, destination, dataset=self, **kwargs)
 
@@ -768,7 +918,7 @@ class Dataset:
         from .fixtures import select_fixtures
         return select_fixtures(recipe, sources)
 
-    def open_variants(self, asset):
+    def open_variants(self, file):
         """Download one VCF/BCF and its listed index, returning pysam.VariantFile.
 
         Use as a context manager. Header, caller annotations, multiallelic
@@ -776,13 +926,13 @@ class Dataset:
         Indexed fetch is available when an index is published; otherwise iterate.
         """
         import pysam
-        asset = asset if isinstance(asset, Asset) else self.asset(asset)
-        if asset.format not in ("vcf", "bcf"):
+        file = file if isinstance(file, File) else self.file(file)
+        if file.format not in ("vcf", "bcf"):
             raise ValueError("open_variants requires a VCF or BCF")
-        path = self.download(asset)
+        path = self.download(file)
         index = None
-        if asset.index_urls:
-            index = self.download(asset.index_urls[0])
+        if file.index_urls:
+            index = self.download(file.index_urls[0])
         return pysam.VariantFile(str(path), index_filename=str(index) if index else None)
 
     def receipts(self):

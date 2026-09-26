@@ -1,13 +1,11 @@
-"""Timeline events, specimens, and the plain-text explorer, on public excerpts."""
+"""Timeline events, samples, and their plain-text views, on public excerpts."""
 
-import io
 import json
 
 import pytest
 
 from osteosarc import Dataset, SchemaError
 from osteosarc.cli import main
-from osteosarc.explore import Explorer, specimen_view, specimens_view
 from osteosarc.timeline import normalize_date
 
 
@@ -44,29 +42,54 @@ def test_windows_and_neighbourhoods(dataset):
     assert normalize_date("06/11/2024") == "2024-06-11" and normalize_date("20240611") == "2024-06-11"
 
 
-def test_render_draws_lanes_axis_and_legend(dataset):
+def test_the_chart_names_treatments_and_hides_frequent_records(dataset):
     chart = dataset.timeline.render(width=100)
     lines = chart.splitlines()
-    assert "2023" in lines[0] and "|" in lines[1]
+    assert "2023" in lines[0] and "J" in lines[1]  # years over month initials
     assert any(line.startswith("Time points") and "T1" in line for line in lines)
-    assert any(line.startswith("Treatments: Radiation") and "=" in line for line in lines)
-    assert any(line.startswith("MRD: ") for line in lines)
-    assert "one column =" in chart and max(len(line) for line in lines if not line.startswith("20")) <= 100
+    # Each treatment is a named row under its group, with ranges drawn as =.
+    assert "Radiation" in lines and any(line.startswith("  Proton therapy") and "=" in line for line in lines)
+    assert "MRD" in lines and any(line.startswith("  Signatera") for line in lines)
+    assert not any(c.isdigit() for line in lines[2:] for c in line.split("  ")[-1] if line.startswith("  "))
+    legend = " ".join(chart.split())  # the legend wraps to the chart's width
+    assert "Each column is a month." in legend and "Not shown:" in legend and "Lab draws" in legend
+    assert max(len(line) for line in lines) <= 100
+    everything = dataset.timeline.render(width=100, everything=True)
+    assert "Records" in everything.splitlines() and "Not shown" not in everything
+    # A short window gets several columns per month, labeled by name.
+    zoomed = dataset.timeline.render(width=100, since="2024-05", until="2024-09")
+    assert "May" in zoomed.splitlines()[1] and "Each month is" in zoomed
     assert dataset.timeline.select(lane="nothing").render() == "(no events)"
+    # Asking only for hidden lanes still charts them.
+    assert "Lab draws" in dataset.timeline.select(lane="Lab").render(width=100)
 
 
-def test_specimens_are_corrected_linked_and_compared(dataset):
-    specimens = {r["sample_id"]: r for r in dataset.specimens}
-    t2 = specimens["T2_tumor"]
-    assert (t2["date"], t2["site"], t2["corrections"]) == ("2025-01-28", "UCLA", ("specimen-T2-date-site",))
-    assert not t2["disagreements"]
-    t1 = specimens["T1_tumor"]
-    assert "rna-seq/reprocessed/BG009368/BG009368.Aligned.sortedByCoord.out.md.bam" in t1["assets"]
-    assert t1["fastq_folders"] and t1["tissue"] == "tumor"
-    assert specimens["blood_2025-06-26"]["corrections"] == ("pbmc-capture-dates",)
-    raw = {r["sample_id"]: r for r in Dataset.open("fixture", cache=dataset.cache, corrections=False).specimens}
-    assert {(d["source"], d["field"]) for d in raw["T2_tumor"]["disagreements"]} == {
+def test_samples_are_corrected_linked_and_compared(dataset):
+    samples = dataset.samples
+    t2 = samples["T2_tumor"]
+    assert (t2.date, t2.site, t2.corrections) == ("2025-01-28", "UCLA", ("specimen-T2-date-site",))
+    assert not t2.disagreements
+    t1 = samples["T1_tumor"]
+    assert "rna-seq/reprocessed/BG009368/BG009368.Aligned.sortedByCoord.out.md.bam" in t1.bams
+    assert t1.fastq_folders and t1.tissue == "tumor" and "rna-seq" in t1.assays
+    assert samples["blood_2025-06-26"].corrections == ("pbmc-capture-dates",)
+    raw = Dataset.open("fixture", cache=dataset.cache, corrections=False).samples
+    assert {(d["source"], d["field"]) for d in raw["T2_tumor"].disagreements} == {
         ("timepoint_summary", "date"), ("timepoint_summary", "site"), ("events", "date")}
+    with pytest.raises(KeyError, match="No sample 'T9_tumor'; samples: T1_tumor"):
+        samples["T9_tumor"]
+
+
+def test_sequencing_also_comes_from_the_fastq_table(dataset):
+    from osteosarc import CORRECTIONS, Change, Correction
+    # Like the site's 2026 blood draws: nothing in the registry, but FASTQ folders that say what they hold.
+    blank = Correction("blank", "simulate a registry row without assays", (
+        Change("specimens", {"sample_id": "T2_tumor"}, set={"assays_run": "", "vendors_involved": ""}),))
+    data = Dataset.open("fixture", cache=dataset.cache, corrections=[*CORRECTIONS, blank])
+    t2 = data.samples["T2_tumor"]
+    assert t2.details["registry"]["assays_run"] == ""
+    assert t2.sequencing and set(t2.assays) <= set(dataset.samples["T2_tumor"].assays)
+    assert t2.providers
 
 
 def test_measurements_keep_raw_values(dataset):
@@ -87,25 +110,21 @@ def test_timeline_corrections_flag_events(dataset):
     assert (reyagel.end, reyagel.corrections) == (None, ("reyagel-end-date",))
 
 
-def test_views_and_interactive_explorer(dataset):
-    assert "T2_tumor" in specimens_view(dataset, width=200)
-    detail = specimen_view(dataset, "T1_tumor")
-    assert "BG009368" in detail and "corrected by specimen-T1-site" in detail
-    with pytest.raises(KeyError, match="known"):
-        specimen_view(dataset, "T9_tumor")
-    output = io.StringIO()
-    script = io.StringIO("lanes\nzoom 2024-05 2024-09\nonly MRD\nevents Proton\nreset\n"
-                         "on 2024-06-11 2\nspecimen T2_tumor\nvariants SMC5\ncorrections tempus-timepoint\n"
-                         "specimen nope\nbogus\nquit\n")
-    Explorer(dataset, width=100, stdin=script, stdout=output).cmdloop()
-    text = output.getvalue()
-    assert "Time points" in text and "2024-06" in text and "MRD: " in text
-    assert "Proton therapy" in text  # events search all lanes despite 'only MRD'
-    assert "SMC5-chr9-70298024" in text and "tempus-timepoint [applied]" in text
-    assert "error: " in text and "Unknown syntax: bogus" in text
+def test_one_sample_shows_its_files_and_how_to_get_them(dataset):
+    from osteosarc.views import sample_view
+    t1 = dataset.samples["T1_tumor"]
+    shell, python = sample_view(t1, dataset), sample_view(t1, dataset, python=True)
+    assert shell.startswith("T1_tumor: ") and "Corrected by specimen-T1-site" in shell
+    assert "BAMs, aligned reads (1)" in shell and t1.bams[0] in shell
+    assert "FASTQ folders, raw reads" in shell and t1.fastq_folders[0] + "/" in shell
+    assert f"osteosarc download {t1.bams[0]} --to ." in shell and "aws s3 cp --recursive --no-sign-request" in shell
+    assert f'data.download("{t1.bams[0]}", to=".")' in python and "osteosarc download" not in python
+    assert repr(t1) == python
+    empty = dataset.samples["blood_2025-06-26"]
+    assert "BAMs: none" in sample_view(empty, dataset) and "(no files)" in sample_view(empty, dataset)
 
 
-def test_cli_timeline_specimens_and_on(dataset, capsys):
+def test_cli_timeline_samples_and_on(dataset, capsys):
     root = str(dataset.cache.root)
     assert main(["--cache", root, "timeline", "--snapshot", "fixture", "--since", "2024", "--until", "2025", "--width", "90"]) == 0
     assert "Time points" in capsys.readouterr().out
@@ -113,8 +132,12 @@ def test_cli_timeline_specimens_and_on(dataset, capsys):
     assert all(e["category"] == "MRD" for e in json.loads(capsys.readouterr().out))
     assert main(["--cache", root, "on", "--snapshot", "fixture", "2025-01-28", "--days", "0"]) == 0
     assert "T2" in capsys.readouterr().out
-    assert main(["--cache", root, "specimens", "--snapshot", "fixture", "T3_tumor"]) == 0
+    assert main(["--cache", root, "samples", "--snapshot", "fixture", "T3_tumor"]) == 0
     assert "MSKCC" in capsys.readouterr().out
+    assert main(["--cache", root, "timeline", "--snapshot", "fixture", "--list", "--contains", "Proton"]) == 0
+    assert "Proton therapy" in capsys.readouterr().out
+    assert main(["--cache", root, "timeline", "--snapshot", "fixture", "--all", "--width", "90"]) == 0
+    assert "Lab draws" in capsys.readouterr().out
 
 
 def test_snapshots_without_timeline_sources_still_open(dataset):
@@ -134,8 +157,8 @@ def test_snapshots_without_timeline_sources_still_open(dataset):
 def test_timeline_events_carry_their_corrections(dataset):
     tempus = dataset.timeline.select(contains="Tempus")
     assert all(e.corrections == ("tempus-timepoint",) for e in tempus)
-    specimen = dataset.timeline.select(lane="Specimens", contains="blood_2025-06-26")[0]
-    assert specimen.corrections == ("pbmc-capture-dates",)
+    drawn = dataset.timeline.select(lane="Samples", contains="blood_2025-06-26")[0]
+    assert drawn.corrections == ("pbmc-capture-dates",)
     assert "(corrections: tempus-timepoint)" in tempus.listing()
 
 
@@ -156,13 +179,6 @@ def test_invalid_dates_are_clear_errors_everywhere(dataset, capsys):
             dataset.timeline.around(bad)
     assert main(["--cache", str(dataset.cache.root), "timeline", "--snapshot", "fixture", "--since", "2024/06"]) == 1
     assert "Expected a date" in capsys.readouterr().err
-    output = io.StringIO()
-    session = io.StringIO("zoom 2024-05 2024-09\nzoom June\nzoom 2024-13\nevents Proton\nquit\n")
-    explorer = Explorer(dataset, width=100, stdin=session, stdout=output)
-    explorer.cmdloop()
-    text = output.getvalue()
-    assert text.count("error: ") == 2 and "Proton therapy" in text
-    assert (explorer.since, explorer.until) == ("2024-05", "2024-09")  # bad zooms left it unchanged
 
 
 def test_unreadable_source_dates_are_reported_not_fatal(dataset):
@@ -177,23 +193,11 @@ def test_unreadable_source_dates_are_reported_not_fatal(dataset):
     undated = data.timeline.source["undated"]
     assert {(u["source"], u["record"].get("draw_date") or u["record"].get("date")) for u in undated} == {
         ("flow", "soon"), ("events", "2024-02-30")}
-    assert len(data.specimens) == len(dataset.specimens)
-
-
-def test_explorer_options_convert_booleans_and_integers(dataset):
-    from osteosarc.explore import options
-    assert options(["include_conflicts=false", "limit=5", "assay=rna-seq"]) == dict(
-        include_conflicts=False, limit=5, assay="rna-seq")
-    with pytest.raises(ValueError, match="true or false"):
-        options(["include_conflicts=maybe"])
-    output = io.StringIO()
-    Explorer(dataset, width=120, stdin=io.StringIO("variants limit=1\nassets include_inferred=no kind=bam\nquit\n"),
-             stdout=output).cmdloop()
-    assert "... " in output.getvalue() and "error" not in output.getvalue()
+    assert len(data.samples) == len(dataset.samples)
 
 
 def test_table_limits_are_validated():
-    from osteosarc.explore import table
+    from osteosarc.views import table
     rows = [dict(a=str(i)) for i in range(4)]
     assert table(rows, ("a",), limit=0).endswith("... 4 more")
     assert "... 2 more" in table(rows, ("a",), limit=2)
@@ -202,46 +206,55 @@ def test_table_limits_are_validated():
 
 
 def test_sample_overview_shows_filter_names_and_filters_by_assay(dataset, capsys):
-    from osteosarc.explore import sequencing
-    assert sequencing(["PacBio", "RNA", "WES", "WGS", "scRNA", "scRNA_ONT"]) == "rna-seq; wes; wgs; scrna-seq (ont, pacbio)"
-    assert sequencing(["CITE", "New label"]) == "cite-seq; New label"
-    text = dataset.describe_samples(timepoint="T1", tissue="tumor", width=80)
+    from osteosarc.curation import sequencing_pairs
+    from osteosarc.views import sequencing_text
+    assert sequencing_text(sequencing_pairs(["PacBio", "RNA", "WES", "WGS", "scRNA", "scRNA_ONT"])) == \
+        "rna-seq, wes, wgs, scrna-seq (ont, pacbio)"
+    assert sequencing_text(sequencing_pairs(["CITE", "New label", "scRNA_TCRgd", "bulk RNA"])) == \
+        "rna-seq, scrna-seq, cite-seq, New label"
+    text = repr(dataset.samples.select(timepoint="T1", tissue="tumor"))
     assert "T1_tumor" in text and "T0_tumor" not in text and "T1_blood" not in text
-    assert "sequencing" in text and "FASTQ_folders" in text
-    specimen = next(r for r in dataset.specimens if r["sample_id"] == "T1_tumor")
-    assert sequencing(specimen["assays"]) in dataset.describe_samples(timepoint="T1", tissue="tumor", width=200)
-    assert dataset.describe_samples(timepoint="missing") == "(no matching samples)"
-    with_rna = [r["sample_id"] for r in dataset.specimens if "RNA" in r["assays"]]
-    assert with_rna and all(s in dataset.describe_samples(assay="rna-seq") for s in with_rna)
-    assert dataset.describe_samples(assay="cite-seq", platform="pacbio") == "(no matching samples)"
+    assert "sequencing" in text and "FASTQ folders" in text
+    t1 = dataset.samples["T1_tumor"]
+    assert sequencing_text(t1.sequencing) in repr(dataset.samples)
+    assert repr(dataset.samples.select(timepoint="missing")) == "(no matching samples)"
+    with_rna = [s.id for s in dataset.samples if "rna-seq" in s.assays]
+    assert with_rna and [s.id for s in dataset.samples.select(assay="rna-seq")] == with_rna
+    assert not dataset.samples.select(assay="cite-seq", platform="pacbio")
     with pytest.raises(ValueError, match="registry label"):
-        dataset.describe_samples(assay="scRNA_ONT")
-    assert main(["--cache", str(dataset.cache.root), "samples", "--snapshot", "fixture", "--timepoint", "T1", "--tissue", "tumor"]) == 0
+        dataset.samples.select(assay="scRNA_ONT")
+    root = str(dataset.cache.root)
+    assert main(["--cache", root, "samples", "--snapshot", "fixture", "--timepoint", "T1", "--tissue", "tumor"]) == 0
     assert "T1_tumor" in capsys.readouterr().out
-    assert main(["--cache", str(dataset.cache.root), "samples", "--snapshot", "fixture", "--assay", "rna-seq"]) == 0
+    assert main(["--cache", root, "samples", "--snapshot", "fixture", "--assay", "rna-seq"]) == 0
     shown = capsys.readouterr().out
-    assert all(s in shown for s in with_rna)
-    assert main(["--cache", str(dataset.cache.root), "samples", "--snapshot", "fixture", "--json"]) == 0
-    assert json.loads(capsys.readouterr().out) == list(dataset.samples)
+    assert all(s in shown for s in with_rna) and "osteosarc samples T1_tumor" in shown
+    assert main(["--cache", root, "samples", "--snapshot", "fixture", "--json"]) == 0
+    assert [r["id"] for r in json.loads(capsys.readouterr().out)] == [s.id for s in dataset.samples]
+    assert main(["--cache", root, "samples", "--snapshot", "fixture", "--files"]) == 0
+    assert "== T1_tumor: " in (shown := capsys.readouterr().out) and t1.bams[0] in shown
+    assert main(["--cache", root, "samples", "--snapshot", "fixture", "T1_tumor", "--tissue", "blood"]) == 1
+    assert "leave them out to see one" in capsys.readouterr().err
 
 
-def test_sample_asset_selection_includes_only_linked_files(dataset):
-    from osteosarc import Asset, Assets
+def test_a_samples_files_are_its_bams_and_its_fastq_folders(dataset):
+    from osteosarc import File, Files
     from osteosarc.cache import stable_id
 
-    sample = next(r for r in dataset.specimens if r["sample_id"] == "T1_tumor")
-    folder = dataset._object_key(sample["fastq_folders"][0]).rstrip("/")
+    t1 = dataset.samples["T1_tumor"]
+    folder = t1.fastq_folders[0]
     files = []
     for key in (folder + "/reads.fastq.gz", folder + "-other/reads.fastq.gz"):
         url = "https://example.test/" + key
-        files.append(Asset(stable_id(url), key, url, "reads", "fastq"))
-    dataset.assets = Assets([*dataset.assets, *files])
-    selected = dataset.assets_for_sample("T1_tumor")
+        files.append(File(stable_id(url), key, url, "reads", "fastq"))
+    dataset._tag_samples(files)
+    dataset.files = Files([*dataset.files, *files])
+    selected = t1.files
     assert files[0] in selected and files[1] not in selected
+    assert files[0].samples == ("T1_tumor",) and files[1].samples == ()
     assert selected[files[0].key] is selected[files[0].url] is selected[files[0].id]
     with pytest.raises(KeyError):
         selected[files[1].key]
-    assert any(a.key in sample["assets"] for a in selected)
-    assert all(a.kind == "alignment" for a in dataset.assets_for_sample("T1_tumor", kind="alignment"))
-    with pytest.raises(KeyError, match="Unknown sample"):
-        dataset.assets_for_sample("typo")
+    assert set(t1.bams) <= {f.key for f in selected}
+    assert all(f.kind == "alignment" for f in dataset.files.select(sample="T1_tumor", kind="alignment"))
+    assert not dataset.files.select(sample="typo")

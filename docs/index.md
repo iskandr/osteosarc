@@ -8,11 +8,12 @@ errors in it, and downloads only the reads you ask for.
 
 | You can… | Guide |
 | --- | --- |
-| Search nearly 400,000 files by sample, timepoint and assay without downloading them | [Find samples and files](explore.md) |
+| See every sample, what was sequenced, and its BAMs and FASTQs with the commands that fetch them | [Samples and files](samples.md) |
+| Search nearly 400,000 files without downloading them, and see which you have | [Samples and files](samples.md#find-any-file) |
 | Get variants, read counts, vaccine peptides and ELISPOT results | [Select variants](variants.md) |
 | Copy the reads around variants out of remote BAMs, without downloading them whole | [Extract reads](reads.md) |
-| Browse treatments, specimens, MRD and lab results on a timeline | [Browse the timeline](timeline.md) |
-| Do all of this from a terminal or an interactive explorer | [Command line](cli.md) |
+| Chart every treatment, procedure, scan and MRD result | [Browse the timeline](timeline.md) |
+| Do all of this from a terminal | [Command line](cli.md) |
 | Pass data to Varcode, Isovar, Topiary or Vaxrank | [Use other libraries](consumers.md) |
 | Build small, reproducible test BAMs | [Read fixtures](fixtures.md) |
 | Look through 637 candidate structural variants | [SV catalogue](sv-interest.md) |
@@ -28,28 +29,30 @@ errors in it, and downloads only the reads you ask for.
 New to the dataset? [Key concepts](concepts.md) explains where the data comes from,
 sample IDs, variant statuses and coordinates.
 
-## Explore the data
-
-The quickest way in is the interactive explorer:
+## Look around
 
 ```sh
 python -m pip install osteosarc
-osteosarc sync      # Once: about 57 MB of the website's metadata
-osteosarc explore
+osteosarc sync                # Once: about 57 MB of the website's metadata
+osteosarc                     # Which snapshot you're using, and every command
+osteosarc samples             # Samples and what was sequenced
+osteosarc samples T1_tumor    # One sample's files, and commands to get them
+osteosarc timeline            # Treatments, procedures, scans and MRD
 ```
 
-It opens with a summary of the data. Try `samples`, `specimen T1_tumor`,
-`assets sample=T1_tumor kind=alignment`, `variants MAP2`, `timeline 2024-05 2024-09`
-and `corrections`; `help` lists every command and `quit` leaves.
+Every command prints text for people, and `--json` for scripts; the
+[command-line guide](cli.md) lists them all. `osteosarc repl` opens Python with the
+data loaded as `data`.
 
-In Python or a notebook, `Dataset` objects, variants, files, tables and the timeline
-all show readable previews, and `data.summary()` suggests what to try next:
+In Python or a notebook, the dataset, samples, files, variants, tables and the
+timeline all show readable previews, and `data` itself lists what's there:
 
 ```python
 from osteosarc import Dataset
 
 data = Dataset.sync()
-print(data.summary())
+data
+data.samples["T1_tumor"]
 print(data.variants(gene="MAP2"))
 ```
 
@@ -79,7 +82,7 @@ reuses the snapshot.
 ### 2. Choose a sample and assay
 
 ```python
-print(data.describe_samples())
+print(data.samples)
 ```
 
 `T0_tumor` is the primary tumor, collected at timepoint **T0** (2022-12-16), and
@@ -87,17 +90,17 @@ print(data.describe_samples())
 `blood` or `organoid`), and what was sequenced is its `assay`.
 
 `T0_tumor` has **bulk RNA-seq, whole-exome (WES) and whole-genome (WGS)** data.
-Its bulk RNA alignments:
+`data.samples["T0_tumor"]` shows all of its files; its bulk RNA alignments are:
 
 ```python
-rna = data.assets_for_sample("T0_tumor", kind="alignment", assay="rna-seq")
-for asset in rna:
-    print(asset.key)
+rna = data.samples["T0_tumor"].files.select(kind="alignment", assay="rna-seq")
+for file in rna:
+    print(file.key)
 ```
 
 `rna-seq` means bulk RNA and `scrna-seq` single-cell RNA; `T1_tumor` has both.
 You can also pick by platform, such as `platform="ont"` or `platform="pacbio"`. See
-[Find samples and files](explore.md)
+[Samples and files](samples.md)
 for more filters and the full assay vocabulary.
 
 ### 3. Select variants
@@ -143,12 +146,11 @@ later day to save a new one, and `Dataset.snapshots()` to list them.
 
 ```sh
 osteosarc sync
-osteosarc samples
-osteosarc assets --sample T0_tumor --kind alignment --assay rna-seq
+osteosarc samples T0_tumor
+osteosarc files --sample T0_tumor --kind alignment --assay rna-seq
 osteosarc variants --gene SMC5
-osteosarc explore
+osteosarc downloads
 ```
 
 Every command uses your most recent snapshot; `--snapshot 2026-09` picks the newest
-from that month. In the explorer, type `help` for commands and `quit` to leave. The
-[command-line guide](cli.md) lists every command.
+from that month. The [command-line guide](cli.md) lists every command.

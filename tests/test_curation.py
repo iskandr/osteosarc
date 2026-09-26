@@ -77,7 +77,7 @@ def test_changed_or_missing_source_is_stale_and_atomic(dataset):
 def test_asset_flags_use_bucket_globs(dataset):
     flag = Correction("bam-flag", "every BAM", (Change("bucket", {"key": glob("*.bam")}),))
     data = reopen(dataset, [flag])
-    flagged = [a for a in data.assets if "bam-flag" in a.metadata.get("corrections", ())]
+    flagged = [a for a in data.files if "bam-flag" in a.metadata.get("corrections", ())]
     assert flagged and all(a.key.endswith(".bam") for a in flagged)
 
 
@@ -100,12 +100,21 @@ def test_cli_reports_and_strict_mode(dataset, capsys):
     # The fixture excerpt lacks most corrected records, so they are stale here,
     # and a drift check fails even when this run does not apply corrections.
     with pytest.warns(CurationWarning):
-        assert main(["--cache", root, "curation", "--snapshot", "fixture", "--strict"]) == 1
-    assert "stale corrections" in capsys.readouterr().err
-    assert main(["--cache", root, "--no-corrections", "curation", "--snapshot", "fixture", "--strict"]) == 1
+        assert main(["--cache", root, "corrections", "--snapshot", "fixture", "--strict"]) == 1
+    captured = capsys.readouterr()
+    assert "stale corrections" in captured.err
+    assert "tempus-grch37-counts" in captured.out and "One correction with its evidence" in captured.out
+    assert main(["--cache", root, "--no-corrections", "corrections", "--snapshot", "fixture", "--strict",
+                 "--json"]) == 1
     report = json.loads(capsys.readouterr().out)
     assert {r["status"] for r in report["corrections"]} == {"disabled"}
-    assert main(["--cache", root, "--no-corrections", "curation", "--snapshot", "fixture"]) == 0
+    assert main(["--cache", root, "--no-corrections", "corrections", "--snapshot", "fixture"]) == 0
+    capsys.readouterr()
+    assert main(["--cache", root, "corrections", "--snapshot", "fixture", "pbmc-capture-dates"]) == 0
+    detail = capsys.readouterr().out
+    assert detail.startswith("pbmc-capture-dates (") and "Evidence:\n  - https://" in detail
+    assert main(["--cache", root, "corrections", "--snapshot", "fixture", "no-such-fix"]) == 1
+    assert "No correction 'no-such-fix'" in capsys.readouterr().err
 
 
 def test_normal_and_blood_are_one_tissue():

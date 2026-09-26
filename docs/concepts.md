@@ -13,7 +13,7 @@ Everything Osteosarc reads is public:
 - **The website's source code** on GitLab
   ([slowkow/osteosarc.com](https://gitlab.com/slowkow/osteosarc.com)), for eight
   tables the site is built from but doesn't offer as downloads: the variant data
-  file, the specimen registry, sample and file metadata, the timeline sheet, the
+  file, the sample registry, sample and file metadata, the timeline sheet, the
   timepoint summary, and the imaging and pathology indexes.
 
 Beyond these, Osteosarc only uses public reference genomes and gene annotation
@@ -41,14 +41,17 @@ other command takes `--snapshot`. Every read extraction and fixture bundle recor
 ID of the snapshot it came from (`data.id`). Downloads go in a shared OpenVax cache
 that other tools can reuse. See [Snapshots and cache](design.md).
 
-## Samples, timepoints and assays
+## Samples and files
 
-Separate fields describe each sample and each file's sequencing:
+A **sample** is something collected from the patient: a tumor biopsy or resection,
+an organoid grown from one, or a blood draw. A **file** is anything in the bucket.
+Samples have files (BAMs of aligned reads and folders of FASTQ raw reads), but most
+files, such as scans, slides and analyses, belong to no sample.
 
 | Field | Example | Meaning |
 | --- | --- | --- |
-| Sample ID | `T0_tumor` | A biological specimen or fraction |
-| `timepoint` | `T0` | Collection timepoint, shared by tumor and blood specimens |
+| Sample ID | `T0_tumor` | A sample, or a fraction of one |
+| `timepoint` | `T0` | Collection time point, shared by tumor and blood from one visit |
 | `tissue` | `tumor` | Sample type: `tumor`, `blood`, or `organoid` |
 | `assay` | `rna-seq` | What was sequenced, and whether bulk or single-cell |
 | `platform` | `ont` | Sequencing technology, when the metadata states it |
@@ -56,16 +59,15 @@ Separate fields describe each sample and each file's sequencing:
 `rna-seq` means **bulk** RNA; `scrna-seq` means **single-cell** RNA. The other
 assays are `wes` (whole exome), `wgs` (whole genome) and `cite-seq`. Platforms are
 `illumina`, `ont` (Oxford Nanopore) and `pacbio`, but many files have no platform
-label. `describe_samples()` lists every sample ID. See
-[Find samples and files](explore.md).
+label.
 
-## Assets
-
-Every file in the bucket is an `Asset`, with a `key` (its path in the bucket), a
-`url`, a `kind` (`alignment`, `reads`, `variants`, `table`, `expression` and
-others), a `format`, and what the site's pages say about its sample. When the site's
-pages disagree about a file, filters skip it unless you ask for conflicting values.
-See [Check sample metadata](explore.md#check-sample-metadata).
+`data.samples` lists the samples, and `data.samples["T1_tumor"]` shows one with its
+files. `data.files` holds every file, each with a `key` (its path in the bucket), a
+`url`, a `kind` (`alignment`, `reads`, `variants`, `table`, `image` and others), a
+`format`, and what the site's pages say about its sample. When they disagree about
+a file, filters skip it unless you ask for conflicting values. The command line uses
+the same names: `osteosarc samples` and `osteosarc files`. See
+[Samples and files](samples.md).
 
 ## Variants and their status
 
@@ -92,7 +94,7 @@ so GRCh37 BAMs need GRCh37 coordinates. See [Specify coordinates](reads.md#speci
 ## Corrections
 
 Osteosarc fixes 35 known problems in the website's data by default: misplaced or
-missing alleles, mislabeled samples, wrong specimen sites and dates, read counts
+missing alleles, mislabeled samples, wrong sample sites and dates, read counts
 measured in the wrong place, and accession typos. Others are only flagged. Each fix
 is checked against the snapshot when it's opened: one the website has since fixed
 shows as `fixed_upstream`, and one whose data changed unexpectedly is skipped as

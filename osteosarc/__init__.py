@@ -1,4 +1,12 @@
-"""Reproducible access to osteosarc.com. Importing performs no network I/O."""
+"""Browse and download the public osteosarc.com dataset.
+
+    from osteosarc import Dataset
+    data = Dataset.sync()      # once: the website's metadata, about 57 MB
+    data = Dataset.open()      # later: the newest snapshot, offline
+    data                       # what's there, and how to get it
+
+Importing performs no network I/O.
+"""
 
 from .bundles import (
     compact_header,
@@ -32,7 +40,7 @@ from .fixtures import (
     select_fixtures,
     validate_recipe,
 )
-from .models import Asset, Assets, Region, SampleClaim, Variant, Variants
+from .models import File, Files, Region, Sample, SampleClaim, Samples, Variant, Variants
 from .parsing import Table, parse_file, parse_table, parse_variant_index, parse_variants
 from .reads import (
     AlignmentInfo,
@@ -50,7 +58,7 @@ from .recovery import RecoveryPolicy, recover_reads
 from .sv_interest import load_sv_interest
 from .timeline import Event, Timeline
 
-__version__ = "0.8.0"
+__version__ = "0.9.0"
 
 __all__ = [
     "load_sv_interest",
@@ -59,10 +67,10 @@ __all__ = [
     "RecoveryPolicy", "recover_reads",
     "compact_header", "export_bundle", "generate_bundle", "list_bundle", "pack_bundle",
     "safe_path", "verify_bundle", "verify_digest", "verify_gzip_digests", "verify_manifest_files",
-    "AlignmentInfo", "Asset", "Assets", "CORRECTIONS", "Cache", "Change", "CoordinateError", "Correction",
+    "AlignmentInfo", "File", "Files", "CORRECTIONS", "Cache", "Change", "CoordinateError", "Correction",
     "CurationWarning", "Dataset", "Event", "IntegrityError", "NoSnapshotsError", "TIMELINE_SOURCES", "Timeline", "glob",
     "OfflineError", "OsteosarcError", "ReadFilter", "ReadSubset", "Receipt", "Region",
-    "SNAPSHOT_SOURCES", "SampleClaim", "SchemaError", "TABLE_SOURCES", "Table", "Variant",
+    "SNAPSHOT_SOURCES", "Sample", "SampleClaim", "Samples", "SchemaError", "TABLE_SOURCES", "Table", "Variant",
     "Variants", "assembly_from_header", "digest", "extract_reads", "inspect_alignment", "list_bucket",
     "normalize_assembly", "parse_file", "parse_table", "parse_variant_index", "parse_variants",
     "resolve_regions", "subset_templates",

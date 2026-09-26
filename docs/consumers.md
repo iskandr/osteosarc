@@ -76,7 +76,7 @@ Fetch the reads and hand the BAM to Isovar:
 from isovar import ReadCollector
 from pyensembl import EnsemblRelease
 
-source = data.asset(
+source = data.file(
     "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"
 )
 one = data.variants(ids=["DYNC1H1-chr14-101980529"], status="ready")
@@ -105,7 +105,7 @@ Check the BAM's genome build, then fetch reads with their mates:
 ```python
 from osteosarc import Region
 
-source = data.asset(
+source = data.file(
     "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"
 )
 info = data.inspect_alignment(source)
@@ -135,8 +135,8 @@ Load a pVACseq report:
 ```python
 from topiary import read_pvacseq
 
-reports = data.assets.select(prefix="neoantigen_prediction/pvactools/", format="tsv")
-aggregated = reports.where(lambda a: a.key.endswith(".aggregated.tsv"))
+reports = data.files.select(prefix="neoantigen_prediction/pvactools/", format="tsv")
+aggregated = reports.where(lambda f: f.key.endswith(".aggregated.tsv"))
 if aggregated:
     predictions = read_pvacseq(data.download(aggregated[0]))
 ```
@@ -146,7 +146,7 @@ Or load RSEM expression:
 ```python
 from topiary.rna.expression_loader import load_expression
 
-rsem = data.assets.where(lambda a: a.key.endswith(".genes.results"))
+rsem = data.files.where(lambda f: f.key.endswith(".genes.results"))
 if rsem:
     expression = load_expression(data.download(rsem[0]))
 ```

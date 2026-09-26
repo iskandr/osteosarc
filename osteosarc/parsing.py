@@ -100,7 +100,7 @@ def parse_file(path, *, format=None, source=None):
     rsem = str(path).removesuffix(".gz").endswith((".genes.results", ".isoforms.results"))
     format = format or ("tsv" if rsem else suffix)
     if format not in PARSE_FORMATS:
-        raise ValueError(f"No built-in parser for {format!r}; download the original asset")
+        raise ValueError(f"No built-in parser for {format!r}; download the original file")
     text = read_text(path)
     if format == "json":
         return json.loads(text)
@@ -120,7 +120,7 @@ def parse_file(path, *, format=None, source=None):
         if name is not None:
             rows.append(dict(name=name, sequence="".join(sequence)))
         return Table(rows, columns=("name", "sequence"), source=source)
-    raise ValueError(f"No built-in parser for {format!r}; download the original asset")
+    raise ValueError(f"No built-in parser for {format!r}; download the original file")
 
 
 def parse_variant_index(html):

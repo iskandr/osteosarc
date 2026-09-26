@@ -44,7 +44,7 @@ website, then runs all the examples.
 from osteosarc import Dataset, Region
 
 data = Dataset.sync()
-source = data.asset(
+source = data.file(
     "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.bam"
 )
 regions = [Region("chr14", 101980528, 101980530, "GRCh38")]
@@ -65,7 +65,7 @@ On a snapshot downloaded 2026-09-25 (UTC):
 | Variants | 181 on the variants page: 179 ready, 1 with a placeholder allele, 1 with no allele |
 | Corrections | 35: 30 applied, 5 already fixed on the site, none stale |
 | Unknown labels | None |
-| Timeline | 788 events and 21 specimens |
+| Timeline and samples | 790 events and 21 samples |
 
 The 2026-09-18 snapshot, from before the site renamed five variants and merged two
 USH2A entries, still applies all 35 corrections to its 182 entries. Every allele

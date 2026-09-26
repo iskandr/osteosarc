@@ -50,12 +50,27 @@ ASSAYS = {"RNA": ("rna-seq", None), "WGS": ("wgs", None), "WES": ("wes", None),
           "scRNA ONT": ("scrna-seq", "ont"), "scRNA_ONT": ("scrna-seq", "ont"),
           "PacBio": ("scrna-seq", "pacbio"), "scRNA": ("scrna-seq", None),
           "Tumor scRNA": ("scrna-seq", None), "Blood scRNA": ("scrna-seq", None),
-          "CITE": ("cite-seq", None)}
+          "CITE": ("cite-seq", None),
+          # The FASTQ table's labels: 10x gene expression and immune-repertoire
+          # libraries from the same single-cell captures, and bulk RNA.
+          "scRNA_GEX": ("scrna-seq", None), "scRNA_TCR": ("scrna-seq", None),
+          "scRNA_TCRgd": ("scrna-seq", None), "scRNA_BCR": ("scrna-seq", None),
+          "bulk RNA": ("rna-seq", None)}
 
-#: Filter values for asset metadata, in display order.
+#: Filter values for file metadata, in display order.
 ASSAY_NAMES = ("rna-seq", "wes", "wgs", "scrna-seq", "cite-seq")
 PLATFORM_NAMES = ("illumina", "ont", "pacbio")
 TISSUE_NAMES = ("tumor", "blood", "organoid")
+
+def sequencing_pairs(labels):
+    """Distinct (assay, platform) pairs for source assay labels, in display order.
+
+    Labels outside the vocabulary are kept as their own assay.
+    """
+    pairs = {ASSAYS.get(label, (label, None)) for label in labels}
+    order = {name: i for i, name in enumerate(ASSAY_NAMES)}
+    return tuple(sorted(pairs, key=lambda p: (order.get(p[0], len(order)), p[0], p[1] or "")))
+
 
 #: Viewer labels that name a more specific assay than their category.
 #: CITE-seq libraries are filed under the viewer's "Blood scRNA" category.

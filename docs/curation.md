@@ -29,14 +29,18 @@ for row in data.corrections:
     print(row["id"], row["status"], row["summary"], row["evidence"])
 ```
 
+`osteosarc corrections` lists them, and `osteosarc corrections ID` shows one with
+the records it checks and its evidence.
+
 Every record a fix touches carries its ID:
 
 | Record | Where the IDs are |
 | --- | --- |
 | Variant | `variant.annotations["corrections"]` |
 | Some of a variant's count rows | `variant.annotations["count_corrections"]` |
-| File | `asset.metadata["corrections"]` |
-| Count, vaccine, annotation, measurement and specimen rows | the `corrections` field |
+| File | `file.metadata["corrections"]` |
+| Sample | `sample.corrections` |
+| Count, vaccine, annotation and measurement rows | the `corrections` field |
 | Timeline event | `event.corrections` |
 | Variant selection or Varcode metadata | `source["corrections"]` |
 
@@ -60,7 +64,7 @@ records, a fix can list each layout it has been checked against; exactly one mus
 match, or the fix is `stale`.
 
 ```sh
-osteosarc curation --strict
+osteosarc corrections --strict
 osteosarc --no-corrections variants --gene MAP2
 ```
 
@@ -152,14 +156,14 @@ from the same problem. These counts are cleared rather than read as zero.
 | `pvac-rna-fields-na` | flag | RNA depth, VAF and expression are `NA` in every pVACseq report: RNA was never given to pVACseq. |
 | `pvac-extended-run-no-class-i` | flag | The "MHCI.extended" run only has Class II reports. |
 
-### Timeline and specimens
+### Timeline and samples
 
 | ID | Does | What |
 | --- | --- | --- |
 | `specimen-T1-site` | edit | T1 was a UCLA biopsy, not a UCSF resection. It spans two UCLA biopsies, on 2024-06-06 and 2024-06-11. |
 | `specimen-T2-date-site` | edit | T2 was a UCLA biopsy on 2025-01-28, not UCSF on 2025-01-06. |
 | `specimen-T3-site` | edit | T3 was an MSKCC resection, not a UCSF biopsy. |
-| `pbmc-capture-dates` | flag | Four blood specimens are dated by when their cells were captured; the blood was drawn two to four days earlier. |
+| `pbmc-capture-dates` | flag | Four blood samples are dated by when their cells were captured; the blood was drawn two to four days earlier. |
 | `events-duplicate-rows` | flag | SQ3370 and Trabectedin each appear twice. |
 | `tempus-timepoint` | flag | The timeline dates the Tempus tests to T0 (2022), but the site labels the Tempus files T1 (2024-06). The timeline agrees with the data. |
 | `tempus-file-labels` | flag | The Tempus files are labeled T1 2024-06, but their variants match the T0 tumor: they carry all three variants seen only at T0 and none of the 35 seen only at T1. The labels are left as published. |
@@ -170,8 +174,8 @@ from the same problem. These counts are cleared rather than read as zero.
 
 - The Tempus files are labeled T1 but look like the T0 tumor (see `tempus-file-labels`).
 - Some DRAGEN BAMs, mostly blood normals and organoid runs, aren't linked to a
-  specimen; list them with `data.assets.select(prefix="kamil/basespace/results/")`.
-  The four 2026 blood specimens have no BAMs.
+  sample; list them with `data.files.select(prefix="kamil/basespace/results/")`.
+  The four 2026 blood samples have no BAMs yet, only FASTQs.
 - An ELISPOT experiment's date is the date of the earliest blood sample it used, not
   of the assay.
 - The site's older `data/treatment_timeline.json` is out of date, and isn't used.

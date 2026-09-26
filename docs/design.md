@@ -64,6 +64,24 @@ Downloads are stored by checksum, at `objects/sha256/<sha256><original suffixes>
 so other OpenVax tools can reuse them. Snapshots, receipts and extracted reads go
 under `osteosarc/`.
 
+## Find what's downloaded
+
+```python
+print(data.local_path("vafs"))  # a site table every snapshot holds
+print(data.downloads())
+```
+
+Cached files are named by checksum, so ask for them by key instead.
+`data.local_path(file)` gives a file's downloaded copy, or `None`, without using
+the network. `data.downloads()` lists every downloaded file and every read extract
+with its local path; `osteosarc downloads` prints the same, and
+`osteosarc files --downloaded` lists the downloaded files among the others.
+
+To put a file in a folder under its own name, use `data.download(file, to="data")`
+or `osteosarc download KEY --to data`. A BAM's or VCF's index comes too. Each is a
+read-only hard link to the cached copy when the folder is on the same disk, so it
+takes no more space and can't be changed by accident; otherwise it's a copy.
+
 ## Refresh metadata
 
 ```python

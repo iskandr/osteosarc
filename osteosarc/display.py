@@ -12,7 +12,7 @@ class Text(str):
 
 def preview(title, items, columns, row, *, fixed=()):
     """A title line and the first few items as table rows, noting how many more there are."""
-    from .explore import table
+    from .views import table
     if not len(items):
         return Text(f"{title}\n(none)")
     rows = [row(item) for item in items[:PREVIEW_ROWS]]

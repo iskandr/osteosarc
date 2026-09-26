@@ -23,7 +23,7 @@ from .cache import (
     write_json,
 )
 from .errors import CoordinateError, IntegrityError, OfflineError, OsteosarcError
-from .models import Asset, Region
+from .models import File, Region
 
 ASSEMBLY_LENGTHS = {
     "GRCh38": {"1": 248956422, "2": 242193529, "3": 198295559, "X": 156040895},
@@ -260,14 +260,14 @@ def _cached_subset(directory, request):
 
 
 def _alignment_source(source):
-    asset = source if isinstance(source, Asset) else None
-    location = asset.url if asset else str(Path(source).resolve()) if not urlsplit(str(source)).scheme else str(source)
+    file = source if isinstance(source, File) else None
+    location = file.url if file else str(Path(source).resolve()) if not urlsplit(str(source)).scheme else str(source)
     remote = urlsplit(location).scheme in ("https", "http")
     if urlsplit(location).scheme and not remote:
         raise ValueError("Source must be a local path or HTTP(S) URL")
-    if asset is not None and asset.format not in ("bam", "cram"):
-        raise ValueError("Alignment access requires a BAM or CRAM asset")
-    return asset, location, remote
+    if file is not None and file.format not in ("bam", "cram"):
+        raise ValueError("Alignment access requires a BAM or CRAM file")
+    return file, location, remote
 
 
 def inspect_alignment(source, *, cache=None, snapshot_id=None, timeout=600):
@@ -280,11 +280,11 @@ def inspect_alignment(source, *, cache=None, snapshot_id=None, timeout=600):
     """
     import pysam
     cache = cache if isinstance(cache, Cache) else Cache(cache)
-    asset, location, remote = _alignment_source(source)
+    file, location, remote = _alignment_source(source)
     request = dict(schema_version=1, operation="inspect_alignment", source=location,
                    source_sha256=None if remote else cache.file_digest(location),
-                   source_size=asset.size if asset else None,
-                   source_modified=asset.modified if asset else None, snapshot_id=snapshot_id)
+                   source_size=file.size if file else None,
+                   source_modified=file.modified if file else None, snapshot_id=snapshot_id)
     directory = cache.workspace / "headers" / stable_id(request)
     with file_lock(cache.workspace / "locks" / (directory.name + ".lock")):
         receipt = _verified_receipt(directory, request)
@@ -293,8 +293,8 @@ def inspect_alignment(source, *, cache=None, snapshot_id=None, timeout=600):
                 raise OfflineError("Alignment header is not cached")
             require_samtools(header_only=True)
             before = _remote_identity(location, min(timeout, 60)) if remote else None
-            if before and asset and asset.size is not None and before["content-length"] is not None:
-                if int(before["content-length"]) != asset.size:
+            if before and file and file.size is not None and before["content-length"] is not None:
+                if int(before["content-length"]) != file.size:
                     raise IntegrityError("Remote alignment size differs from the pinned inventory")
             identity = None if remote else file_identity(location)
             command = ["samtools", "view", "--no-PG", "-H", location]
@@ -322,7 +322,7 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
                   max_records=None):
     """Fetch the indexed union of regions, retaining original record multiplicity.
 
-    source can be an Asset, local BAM/CRAM, or HTTP(S) alignment URL. An index
+    source can be an File, local BAM/CRAM, or HTTP(S) alignment URL. An index
     must be listed, supplied explicitly, or exist next to a local alignment.
     Remote requests never fall back to whole-file scans. Uses samtools -M -X;
     pysam validates the resulting BAM and creates its index. CRAM requires a
@@ -350,10 +350,10 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
     regions = tuple(regions)
     if not regions or not all(isinstance(r, Region) for r in regions):
         raise CoordinateError("Provide a nonempty sequence of Region objects")
-    asset, location, remote = _alignment_source(source)
+    file, location, remote = _alignment_source(source)
     if index is None:
-        if asset and asset.index_urls:
-            index = asset.index_urls[0]
+        if file and file.index_urls:
+            index = file.index_urls[0]
         elif not remote:
             suffix = Path(location).suffix.lower()
             candidates = [location + ".bai", str(Path(location).with_suffix(".bai")), location + ".csi"] if suffix == ".bam" else [location + ".crai", str(Path(location).with_suffix(".crai"))]
@@ -364,7 +364,7 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
     remote_index = urlsplit(index).scheme in ("http", "https")
     if not remote_index:
         index = str(Path(index).resolve())
-    is_cram = (asset.format if asset else Path(urlsplit(location).path).suffix.lstrip(".")) == "cram"
+    is_cram = (file.format if file else Path(urlsplit(location).path).suffix.lstrip(".")) == "cram"
     if is_cram and reference is None:
         raise CoordinateError("CRAM extraction requires an explicit local reference FASTA")
     reference = Path(reference).resolve() if reference is not None else None
@@ -374,8 +374,8 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
                         + ([] if remote_index else [index])]
     request = dict(schema_version=1, operation="extract_reads", source=location,
                    source_sha256=None if remote else cache.file_digest(location),
-                   source_size=asset.size if asset else None,
-                   source_modified=asset.modified if asset else None,
+                   source_size=file.size if file else None,
+                   source_modified=file.modified if file else None,
                    index=index, index_sha256=None if remote_index else cache.file_digest(index),
                    snapshot_id=snapshot_id,
                    regions=sorted((asdict(r) for r in regions), key=lambda r: json.dumps(r, sort_keys=True)),
@@ -398,8 +398,8 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
         with tempfile.TemporaryDirectory(dir=directory.parent, prefix=".reads-") as temporary:
             work = Path(temporary)
             before = _remote_identity(location, min(timeout, 60)) if remote else None
-            if before and asset and asset.size is not None and before["content-length"] is not None:
-                if int(before["content-length"]) != asset.size:
+            if before and file and file.size is not None and before["content-length"] is not None:
+                if int(before["content-length"]) != file.size:
                     raise IntegrityError("Remote alignment size differs from the pinned inventory")
             info = inspect_alignment(source, cache=cache, snapshot_id=snapshot_id, timeout=timeout)
             if remote and before != info.receipt["remote_identity"]:

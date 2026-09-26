@@ -13,11 +13,25 @@ a separate step. The [library examples](consumers.md) show the calls.
 | Download website metadata and save checksums | `Dataset.sync()` |
 | Reopen pinned metadata | `Dataset.open()`, or `Dataset.open(name_or_id)` for one exact snapshot |
 | Parse the variants page and read-count table | `data.variants()` |
-| Find files by assay, timepoint, or path | `data.assets.select(...)` |
-| Download and verify a whole file | `data.download(asset)` |
-| Check a BAM's genome build | `data.inspect_alignment(asset)` |
-| Fetch reads in regions, with mates | `data.extract_reads(asset, regions, ...)` |
+| List a sample's BAMs and FASTQs | `data.samples["T1_tumor"].files` |
+| Find files by assay, timepoint, or path | `data.files.select(...)` |
+| Download and verify a whole file | `data.download(file)`, or `data.download(file, to=DIR)` for a copy under its own name |
+| Check whether a file is already downloaded | `data.local_path(file)` |
+| Check a BAM's genome build | `data.inspect_alignment(file)` |
+| Fetch reads in regions, with mates | `data.extract_reads(file, regions, ...)` |
 | Make Varcode variants | `variants.to_varcode(genome=...)` |
+
+## Names changed in 0.9
+
+| Before 0.9 | Now |
+| --- | --- |
+| `data.assets`, `data.asset(key)`, `Asset`, `Assets` | `data.files`, `data.file(key)`, `File`, `Files` |
+| `data.specimens`, `data.describe_samples()` | `data.samples` (`Sample` objects) |
+| `data.assets_for_sample("T1_tumor", ...)` | `data.samples["T1_tumor"].files.select(...)` or `data.files.select(sample="T1_tumor", ...)` |
+| `data.samples` (source claims) | `data.claims`, with `file_ids` |
+| `data.explore()`, `osteosarc explore` | `osteosarc repl` |
+| `osteosarc assets`, `specimens`, `curation` | `osteosarc files`, `samples`, `corrections` |
+| JSON output from `variants`, `vaccines`, `corrections`, `sync`, `table`, `discover` | Text; add `--json` |
 
 ## Preserve the analysis
 

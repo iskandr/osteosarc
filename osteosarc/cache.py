@@ -17,6 +17,7 @@ import hashlib
 import json
 import os
 import shutil
+import stat
 import sys
 import tempfile
 from contextlib import contextmanager
@@ -73,6 +74,32 @@ os.umask(_UMASK)
 def share(path):
     """Give files the permissions the process umask allows (mkstemp/mkdtemp default to owner-only)."""
     os.chmod(path, (0o777 if Path(path).is_dir() else 0o666) & ~_UMASK)
+
+
+def place(path, destination):
+    """Put a cached object at destination, as a read-only hard link where possible, else a copy.
+
+    A hard link is the cached object itself, so it's made read-only: editing it
+    in place would corrupt the cache. An existing destination is replaced only
+    once the new one is complete. Returns the destination path.
+    """
+    destination = Path(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists() and destination.samefile(path):
+        return destination
+    with tempfile.TemporaryDirectory(dir=destination.parent, prefix=".osteosarc-") as temporary:
+        staged = Path(temporary) / destination.name
+        try:
+            os.link(path, staged)
+        except OSError:
+            shutil.copyfile(path, staged)
+        else:
+            try:
+                os.chmod(staged, stat.S_IMODE(os.stat(staged).st_mode) & ~0o222)
+            except OSError:
+                pass  # another user's cache object, which we can't write anyway
+        os.replace(staged, destination)
+    return destination
 
 
 def default_root():

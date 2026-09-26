@@ -16,7 +16,7 @@ from urllib.parse import urlsplit
 from .cache import Cache, digest, file_lock, stable_id, write_json
 from .errors import IntegrityError, SchemaError
 from .fixtures import select_fixtures, validate_recipe
-from .models import Asset, Region
+from .models import File, Region
 from .reads import extract_reads
 from .records import RECORD_ENCODING, read_records, record_multiset
 
@@ -443,7 +443,7 @@ def generate_bundle(recipe, destination, *, sources=None, cache=None, dataset=No
                     raise SchemaError(f"Source {sid} requires identity.url without a Dataset")
                 url = identity["url"]
                 inferred_format = "cram" if Path(urlsplit(url).path).suffix.lower() == ".cram" else "bam"
-                asset = Asset(id=identity.get("id", stable_id(url)), key=identity.get("key", url), url=url,
+                asset = File(id=identity.get("id", stable_id(url)), key=identity.get("key", url), url=url,
                               kind="alignment", format=identity.get("format", inferred_format),
                               size=identity.get("size"), modified=identity.get("modified"),
                               index_urls=tuple(identity.get("index_urls", ())))
@@ -452,7 +452,7 @@ def generate_bundle(recipe, destination, *, sources=None, cache=None, dataset=No
             else:
                 identity = source["identity"]
                 lookup = identity["key"] if "key" in identity else identity.get("url", identity.get("id"))
-                asset = dataset.asset(lookup)
+                asset = dataset.file(lookup)
                 for key in ("id", "key", "url", "size", "modified"):
                     if key in source["identity"] and getattr(asset, key) != source["identity"][key]:
                         raise IntegrityError(f"Snapshot source identity changed: {sid}/{key}")

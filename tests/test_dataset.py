@@ -39,27 +39,28 @@ def test_vaccine_peptides_annotations_and_missing_states(dataset):
 
 def test_sample_conflicts_do_not_silently_become_replicates(dataset):
     raw = Dataset.open("fixture", cache=dataset.cache, corrections=False)
-    assets = raw.assets.select(kind="alignment")
-    assert len(assets) == 3
-    source = assets.select(contains="BG009368")[0]
+    bams = raw.files.select(kind="alignment")
+    assert len(bams) == 3
+    source = bams.select(contains="BG009368")[0]
     assert set(source.values("timepoint")) == {"T0", "T1"}
     assert source.resolved("timepoint") is None
-    assert not assets.select(contains="BG009368", timepoint="T0")
-    assert len(assets.select(contains="BG009368", timepoint="T1", include_conflicts=True)) == 1
+    assert not bams.select(contains="BG009368", timepoint="T0")
+    assert len(bams.select(contains="BG009368", timepoint="T1", include_conflicts=True)) == 1
     assert source.metadata["catalog_genome_assertion"] == "hg38"
     assert "assembly" not in source.metadata
-    assert len(dataset.samples) > len(assets)
+    assert len(dataset.claims) > len(bams)
+    assert all(set(c["file_ids"]) <= {f.id for f in dataset.files} for c in dataset.claims)
     # The viewer label's stale date is surfaced alongside its timepoint.
     assert source.conflicts["date"] == ("2022-12", "2024-06")
     # The central correction for that stale label resolves it, traceably.
-    corrected = dataset.asset(source.key)
+    corrected = dataset.file(source.key)
     assert corrected.resolved("timepoint") == "T1" and not corrected.conflicts
     assert corrected.metadata["corrections"] == ("viewer-label-BG009368",)
 
 
 def test_catalog_normalization_does_not_invent_conflicts():
     from osteosarc import SampleClaim
-    from osteosarc.catalog import BUCKET, build_assets
+    from osteosarc.catalog import BUCKET, build_files
     from osteosarc.parsing import Table
     cite, rna = "kamil/blood/Nov2025_CITE/possorted_genome_bam.bam", "vendor/cegat/P2/P3.bam"
     listing = dict(files=[[cite, 1, 0], [rna, 1, 0], ["vendor/cegat/P2/P2.1.fastq.gz", 1, 0]])
@@ -71,13 +72,13 @@ def test_catalog_normalization_does_not_invent_conflicts():
     # A directory row for WES FASTQs must not override the RNA BAM's own row.
     paths = (("vendor/cegat/P2", SampleClaim("data_page", "WES FASTQ", assay="wes")),
              (rna, SampleClaim("data_page", "RNA BAM", assay="rna-seq")))
-    assets = {a.key: a for a in build_assets(listing, bams, metadata, vafs, paths)}
-    assert assets[cite].values("assay") == ("cite-seq",)
-    assert assets[cite].values("provider") == ("Hudson Lab",)
-    assert assets[cite].values("date") == ("2025-11-06",)  # month precision agrees
-    assert not assets[cite].conflicts
-    assert assets[rna].values("assay") == ("rna-seq",)
-    assert assets["vendor/cegat/P2/P2.1.fastq.gz"].values("assay") == ("wes",)
+    files = {f.key: f for f in build_files(listing, bams, metadata, vafs, paths)}
+    assert files[cite].values("assay") == ("cite-seq",)
+    assert files[cite].values("provider") == ("Hudson Lab",)
+    assert files[cite].values("date") == ("2025-11-06",)  # month precision agrees
+    assert not files[cite].conflicts
+    assert files[rna].values("assay") == ("rna-seq",)
+    assert files["vendor/cegat/P2/P2.1.fastq.gz"].values("assay") == ("wes",)
 
 
 def test_reopen_is_offline_and_uses_pinned_receipts(dataset):
@@ -95,45 +96,57 @@ def test_reopen_is_offline_and_uses_pinned_receipts(dataset):
 
 
 def test_snapshot_and_cli_use_same_selection(dataset, capsys):
-    assert main(["--cache", str(dataset.cache.root), "variants", "--snapshot", "fixture", "--gene", "SMC5"]) == 0
+    root = str(dataset.cache.root)
+    assert main(["--cache", root, "variants", "--snapshot", "fixture", "--gene", "SMC5", "--json"]) == 0
     assert json.loads(capsys.readouterr().out)[0]["id"] == dataset.variants(gene="SMC5")[0].id
-    assert main(["--cache", str(dataset.cache.root), "assets", "--snapshot", "fixture", "--kind", "alignment", "--limit", "1", "--json"]) == 0
+    # Text by default: a table, and one variant in detail with its published counts.
+    assert main(["--cache", root, "variants", "--snapshot", "fixture", "--gene", "SMC5"]) == 0
+    text = capsys.readouterr().out
+    assert text.startswith("1 variant") and dataset.variants(gene="SMC5")[0].id in text
+    assert main(["--cache", root, "variants", "--snapshot", "fixture", dataset.variants(gene="SMC5")[0].id]) == 0
+    assert "Read counts published by the site" in (text := capsys.readouterr().out) and "Vaccines:" in text
+    assert main(["--cache", root, "variants", "--snapshot", "fixture", "NOPE-chr1-1"]) == 1
+    assert "No variant 'NOPE-chr1-1'" in capsys.readouterr().err
+    assert main(["--cache", root, "files", "--snapshot", "fixture", "--kind", "alignment", "--limit", "1", "--json"]) == 0
     result = json.loads(capsys.readouterr().out)
     assert result["total"] == 3
-    assert len(result["assets"]) == 1
+    assert len(result["files"]) == 1
     with pytest.raises(FileExistsError):
         Dataset.sync("fixture", cache=dataset.cache, refresh=True)
 
 
-def test_cli_version_and_sample_assets_match_the_api(dataset, capsys):
+def test_cli_version_and_sample_files_match_the_api(dataset, capsys):
     import osteosarc
     with pytest.raises(SystemExit) as exited:
         main(["--version"])
     assert exited.value.code == 0
     assert capsys.readouterr().out.strip() == f"osteosarc {osteosarc.__version__}"
     root = str(dataset.cache.root)
-    assert main(["--cache", root, "assets", "--snapshot", "fixture", "--sample", "T1_tumor", "--kind", "alignment",
+    assert main(["--cache", root, "files", "--snapshot", "fixture", "--sample", "T1_tumor", "--kind", "alignment",
                  "--json"]) == 0
     result = json.loads(capsys.readouterr().out)
-    expected = dataset.assets_for_sample("T1_tumor", kind="alignment")
+    expected = dataset.samples["T1_tumor"].files.select(kind="alignment")
     assert result["total"] == len(expected) == 1
-    assert [a["key"] for a in result["assets"]] == [a.key for a in expected]
-    assert main(["--cache", root, "assets", "--snapshot", "fixture", "--sample", "T1_tumor", "--assay", "wgs",
+    assert [f["key"] for f in result["files"]] == [f.key for f in expected]
+    assert main(["--cache", root, "files", "--snapshot", "fixture", "--sample", "T1_tumor", "--assay", "wgs",
                  "--json"]) == 0
     assert json.loads(capsys.readouterr().out)["total"] == 0
     # Without --json, a readable table with the complete key.
-    assert main(["--cache", root, "assets", "--snapshot", "fixture", "--sample", "T1_tumor", "--kind", "alignment"]) == 0
+    assert main(["--cache", root, "files", "--snapshot", "fixture", "--sample", "T1_tumor", "--kind", "alignment"]) == 0
     text = capsys.readouterr().out
-    assert text.startswith("1 files") and expected[0].key in text and "rna-seq" in text
-    assert main(["--cache", root, "assets", "--snapshot", "fixture", "--kind", "alignment", "--limit", "1"]) == 0
+    assert text.startswith("1 file (") and expected[0].key in text and "rna-seq" in text
+    assert main(["--cache", root, "files", "--snapshot", "fixture", "--kind", "alignment", "--limit", "1"]) == 0
     assert "... 2 more" in (text := capsys.readouterr().out) and "--limit N" in text
+    # With no filters, an overview by kind and folder.
+    assert main(["--cache", root, "files", "--snapshot", "fixture"]) == 0
+    assert "Largest top-level folders" in (text := capsys.readouterr().out) and "alignment" in text
     # Registry labels and unknown values are errors, not empty selections.
-    assert main(["--cache", root, "assets", "--snapshot", "fixture", "--assay", "scRNA_ONT"]) == 1
+    assert main(["--cache", root, "files", "--snapshot", "fixture", "--assay", "scRNA_ONT"]) == 1
     assert "select assay 'scrna-seq' with platform 'ont'" in capsys.readouterr().err
-    assert main(["--cache", root, "assets", "--snapshot", "fixture", "--platform", "nanopore"]) == 1
+    assert main(["--cache", root, "files", "--snapshot", "fixture", "--platform", "nanopore"]) == 1
     assert "choose from: illumina, ont, pacbio" in capsys.readouterr().err
-    assert main(["--cache", root, "assets", "--snapshot", "fixture", "--sample", "T9_tumor"]) == 1
-    assert "Unknown sample" in capsys.readouterr().err
+    assert main(["--cache", root, "files", "--snapshot", "fixture", "--sample", "T9_tumor"]) == 1
+    assert "No sample 'T9_tumor'" in capsys.readouterr().err
 
 
 def test_cli_reads_accepts_catalogue_variants(dataset, capsys, monkeypatch, tmp_path):
@@ -144,10 +157,13 @@ def test_cli_reads_accepts_catalogue_variants(dataset, capsys, monkeypatch, tmp_
         calls.append(dict(asset=asset, regions=regions, **kwargs))
         return ReadSubset(tmp_path / "reads.bam", tmp_path / "reads.bam.bai", {"records": 0})
     monkeypatch.setattr(Dataset, "extract_reads", extract_reads)
-    root, source = str(dataset.cache.root), dataset.assets.select(format="bam")[0].key
+    root, source = str(dataset.cache.root), dataset.files.select(format="bam")[0].key
     ids = ["DYNC1H1-chr14-101980529", "SMC5-chr9-70298024"]
     command = ["--cache", root, "reads", "--snapshot", "fixture", source, "--variant", ids[0], "--variant", ids[1]]
     assert main(command + ["--padding", "100"]) == 0
+    assert capsys.readouterr().out.strip() == str(tmp_path / "reads.bam")
+    calls.pop()
+    assert main(command + ["--padding", "100", "--json"]) == 0
     assert json.loads(capsys.readouterr().out)["path"] == str(tmp_path / "reads.bam")
     call = calls.pop()
     assert [v.id for v in call["variants"]] == sorted(ids)
@@ -186,15 +202,15 @@ def test_cli_reads_accepts_catalogue_variants(dataset, capsys, monkeypatch, tmp_
     with pytest.raises(SystemExit):
         main(["--cache", root, "reads", "--snapshot", "fixture", source, "--bogus"])
     with pytest.raises(SystemExit):
-        main(["--cache", root, "variants", "--snapshot", "fixture", "extra"])
+        main(["--cache", root, "samples", "--snapshot", "fixture", "T1_tumor", "extra"])
 
 
 def test_acquired_data_remains_pinned_after_url_refresh(dataset, tmp_path):
-    from osteosarc import Asset
+    from osteosarc import File
     url = "https://example.test/results.tsv"
     path = tmp_path / "results.tsv"
     path.write_text("id\tcount\na\t0\n")
-    asset = Asset(stable_id(url), "results.tsv", url, "table", "tsv")
+    asset = File(stable_id(url), "results.tsv", url, "table", "tsv")
     old = dataset.cache.import_file(path, url)
     pinned = dataset.download(asset)
     path.write_text("id\tcount\na\t9\n")
@@ -207,7 +223,7 @@ def test_acquired_data_remains_pinned_after_url_refresh(dataset, tmp_path):
 
 
 def test_unsupported_parser_refuses_before_downloading_alignment(dataset, monkeypatch):
-    asset = dataset.assets.select(format="bam")[0]
+    asset = dataset.files.select(format="bam")[0]
     monkeypatch.setattr(dataset, "download", lambda *a: pytest.fail("downloaded unsupported format"))
     with pytest.raises(ValueError, match="No built-in parser"):
         dataset.parse(asset)
@@ -216,7 +232,7 @@ def test_unsupported_parser_refuses_before_downloading_alignment(dataset, monkey
 def test_vcf_annotations_and_indexed_subsetting(dataset, tmp_path):
     import pysam
 
-    from osteosarc import Asset, Assets
+    from osteosarc import File, Files
     source = tmp_path / "calls.vcf"
     source.write_text('##fileformat=VCFv4.2\n'
                       '##contig=<ID=chr1,length=1000>\n'
@@ -230,9 +246,9 @@ def test_vcf_annotations_and_indexed_subsetting(dataset, tmp_path):
     pysam.tabix_index(str(compressed), preset="vcf")
     url = "https://example.test/calls.vcf.gz"
     index_url = url + ".tbi"
-    asset = Asset(stable_id(url), "calls.vcf.gz", url, "variants", "vcf", index_urls=(index_url,))
-    index = Asset(stable_id(index_url), "calls.vcf.gz.tbi", index_url, "index", "tbi")
-    dataset.assets = Assets([asset, index])
+    asset = File(stable_id(url), "calls.vcf.gz", url, "variants", "vcf", index_urls=(index_url,))
+    index = File(stable_id(index_url), "calls.vcf.gz.tbi", index_url, "index", "tbi")
+    dataset.files = Files([asset, index])
     dataset.cache.import_file(compressed, url)
     dataset.cache.import_file(str(compressed) + ".tbi", index_url)
     with dataset.open_variants(asset) as calls:
@@ -244,9 +260,9 @@ def test_vcf_annotations_and_indexed_subsetting(dataset, tmp_path):
 
 
 def test_first_download_must_match_the_inventory_time():
-    from osteosarc import Asset, Receipt
+    from osteosarc import File, Receipt
     from osteosarc.dataset import _check_inventory_time
-    asset = Asset("id", "a.tsv", "https://example.test/a.tsv", "table", "tsv", modified=1784586023)
+    asset = File("id", "a.tsv", "https://example.test/a.tsv", "table", "tsv", modified=1784586023)
     same = Receipt("https://example.test/a.tsv", "0" * 64, 1, "a.tsv", "now",
                    last_modified="Mon, 20 Jul 2026 22:20:23 GMT")
     _check_inventory_time(asset, same)
@@ -258,7 +274,7 @@ def test_first_download_must_match_the_inventory_time():
 def test_extraction_binds_the_listed_index_to_the_snapshot(dataset, monkeypatch):
     import osteosarc.reads
     from osteosarc import Region
-    source = dataset.asset("rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam")
+    source = dataset.file("rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam")
     assert source.index_urls
     # A source from an earlier session must also work on a freshly reopened
     # dataset, before its catalog and curation state have been populated.
@@ -281,7 +297,7 @@ def test_mirrored_site_tables_stay_pinned(tmp_path):
     for key, name in FILES.items():
         cache.import_file(DATA / name, urls[key])
     data = Dataset.sync("mirrored", cache=cache, sources={"vafs": mirror})
-    assert data.asset("vafs").url == mirror
+    assert data.file("vafs").url == mirror
     assert len(data.table("vafs")) == len(data.vafs) > 0   # offline: the pinned copy, not a download
 
 
@@ -376,12 +392,12 @@ def test_cli_uses_the_newest_snapshot_unless_one_is_chosen(source_cache, capsys,
     cli = ["--offline", "--cache", root]
     assert main([*cli, "snapshots"]) == 0
     assert "No saved snapshots" in capsys.readouterr().out
-    assert main([*cli, "sync"]) == 0
+    assert main([*cli, "sync", "--json"]) == 0
     day = json.loads(capsys.readouterr().out)["snapshot"]
     assert main([*cli, "sync", "--source-revision", "0" * 40]) == 1
     assert "Name a snapshot" in capsys.readouterr().err
     assert main([*cli, "sync", "older"]) == 0
-    capsys.readouterr()
+    assert capsys.readouterr().out.startswith("Saved snapshot older (")
     assert main([*cli, "snapshots"]) == 0
     listing = capsys.readouterr().out
     assert day in listing and "older" in listing and "Commands use older" in listing
@@ -390,17 +406,17 @@ def test_cli_uses_the_newest_snapshot_unless_one_is_chosen(source_cache, capsys,
 
     expected = [v.id for v in Dataset.open(cache=source_cache).variants(gene="SMC5")]
     for snapshot in ([], ["--snapshot", day], ["--snapshot", day[:7]], ["--snapshot", "older"]):
-        assert main([*cli, "variants", *snapshot, "--gene", "SMC5"]) == 0
+        assert main([*cli, "variants", *snapshot, "--gene", "SMC5", "--json"]) == 0
         assert [v["id"] for v in json.loads(capsys.readouterr().out)] == expected
     assert main([*cli, "variants", "--snapshot", "missing"]) == 1
     assert "No snapshot named 'missing'" in capsys.readouterr().err
     assert main([*cli, "variants", "--snapshot", "1999"]) == 1
     assert "No snapshot downloaded in 1999" in capsys.readouterr().err
     with pytest.raises(SystemExit):
-        main([*cli, "variants", "older"])  # A snapshot is chosen only with --snapshot
+        main([*cli, "snapshots", "older"])  # A snapshot is chosen only with --snapshot
     capsys.readouterr()
 
-    assert main([*cli, "specimens", "T2_tumor", "--snapshot", day]) == 0
+    assert main([*cli, "samples", "T2_tumor", "--snapshot", day]) == 0
     assert capsys.readouterr().out.startswith("T2_tumor")
     assert main([*cli, "on", "2025-01-28", "--days", "1"]) == 0
     capsys.readouterr()
@@ -412,7 +428,7 @@ def test_cli_uses_the_newest_snapshot_unless_one_is_chosen(source_cache, capsys,
         calls.append((self.name, asset))
         return ReadSubset(source_cache.root / "reads.bam", source_cache.root / "reads.bam.bai", {})
     monkeypatch.setattr(Dataset, "extract_reads", extract_reads)
-    key = Dataset.open(cache=source_cache).assets.select(format="bam")[0].key
+    key = Dataset.open(cache=source_cache).files.select(format="bam")[0].key
     for arguments, snapshot in (([key, "--variant", "SMC5-chr9-70298024"], "older"),
                                 # A date-shaped value is a download date: the newest that day.
                                 ([key, "--variant", "SMC5-chr9-70298024", "--snapshot", day], "older")):
@@ -423,72 +439,78 @@ def test_cli_uses_the_newest_snapshot_unless_one_is_chosen(source_cache, capsys,
     assert f"variants --set all --snapshot {day}" in capsys.readouterr().err
 
 
-def test_explorer_lists_a_samples_files_with_complete_keys(dataset):
-    from osteosarc.explore import assets_view
-    expected = dataset.assets_for_sample("T1_tumor", kind="alignment")
-    shown = assets_view(dataset, sample="T1_tumor", kind="alignment", width=40)
-    assert shown.startswith(f"{len(expected)} files")
+def test_file_lists_never_shorten_keys(dataset):
+    from osteosarc.views import files_view
+    expected = dataset.samples["T1_tumor"].files.select(kind="alignment")
+    shown = files_view(expected, dataset, width=40)
+    assert shown.startswith(f"{len(expected)} file")
     assert expected[0].key in shown  # Never truncated, even when narrower than the key
-    assert "limit=N" not in shown
-    assert "limit=N" in assets_view(dataset, kind="alignment", limit=1)
+    assert "--limit N" not in shown
+    assert "--limit N" in files_view(dataset.files.select(kind="alignment"), dataset, limit=1)
 
 
-def test_asset_filters_reject_labels_and_values_no_source_uses(dataset):
-    from osteosarc import Asset, Assets, SampleClaim
+def test_file_filters_reject_labels_and_values_no_source_uses(dataset):
+    from osteosarc import File, Files, SampleClaim
     with pytest.raises(ValueError, match="registry label; select assay 'rna-seq'"):
-        dataset.assets.select(assay="RNA")
+        dataset.files.select(assay="RNA")
     with pytest.raises(ValueError, match="Unknown tissue 'normal'"):
-        dataset.assets.select(tissue="normal")
-    assert len(dataset.assets.select(assay="cite-seq")) == 0  # Known but absent: simply empty
+        dataset.files.select(tissue="normal")
+    assert len(dataset.files.select(assay="cite-seq")) == 0  # Known but absent: simply empty
     # A value outside the vocabulary that the data does use still selects it.
-    marrow = Assets([Asset("x", "x.bam", "https://example.test/x.bam", "alignment", "bam",
+    marrow = Files([File("x", "x.bam", "https://example.test/x.bam", "alignment", "bam",
                            claims=(SampleClaim("bams", tissue="marrow"),))])
     assert len(marrow.select(tissue="marrow")) == 1
 
 
-def test_a_first_look_is_readable_in_python(dataset, monkeypatch):
+def test_a_first_look_is_readable_in_python(dataset):
     from osteosarc.display import Text
-    assert repr(dataset).startswith("Osteosarc snapshot fixture (") and "data.summary()" in repr(dataset)
+    shown = repr(dataset)
+    assert shown.startswith("Osteosarc snapshot fixture (")
+    for name in ("data.samples", "data.files", "data.variants()", "data.timeline", "data.download(key)",
+                 "data.downloads()"):
+        assert name in shown
     summary = dataset.summary()
     assert isinstance(summary, Text) and repr(summary) == str(summary)  # Shown without quotes
-    assert "variants:" in summary and "data.explore()" in summary
-    assert repr(dataset.describe_samples()) == str(dataset.describe_samples())
+    assert "variants:" in summary and "samples:" in summary and "data.samples" in summary
 
     variants = repr(dataset.variants())
-    assert variants.startswith("5 variants, 5 ready") and "chr14:101980529 G>A" in variants
-    assets = repr(dataset.assets)
-    assert assets.startswith(f"{len(dataset.assets):,} files") and dataset.assets[0].key in assets
-    table = repr(dataset.specimens)
-    assert table.startswith(f"Table: {len(dataset.specimens)} rows") and "sample_id" in table
+    assert variants.startswith("5 variants, 5 with a ready allele") and "chr14:101980529 G>A" in variants
+    files = repr(dataset.files)
+    assert files.startswith(f"{len(dataset.files):,} files") and dataset.files[0].key in files
+    samples = repr(dataset.samples)
+    assert samples.startswith(f"{len(dataset.samples)} samples") and "T1_tumor" in samples
+    assert 'data.samples["T1_tumor"]' in samples
+    one = repr(dataset.samples["T1_tumor"])
+    assert one.startswith("T1_tumor: ") and "BAMs, aligned reads" in one and "data.download(" in one
     timeline = repr(dataset.timeline)
     assert timeline.startswith(f"Timeline: {len(dataset.timeline)} events") and ".render()" in timeline
     assert repr(dataset.timeline.render()) == str(dataset.timeline.render())
     assert repr(dataset.timeline.select(lane="no such lane")) == "Timeline: no events"
     # Single records stay short: the long source records aren't printed.
     assert "annotations=" not in repr(dataset.variants()[0])
-    assert "details=" not in repr(dataset.timeline[0]) and "metadata=" not in repr(dataset.assets[0])
-
-    import osteosarc.explore as explore
-    opened = []
-    monkeypatch.setattr(explore.Explorer, "cmdloop", lambda self: opened.append(self.data))
-    dataset.explore()
-    assert opened == [dataset]
+    assert "details=" not in repr(dataset.timeline[0]) and "metadata=" not in repr(dataset.files[0])
 
     # Headers survive a snapshot without a download time; alleles show whenever there's one.
     from types import SimpleNamespace
 
     from osteosarc import Variant, Variants
+    from osteosarc.views import snapshot_line
     stub = SimpleNamespace(name="old", id="a" * 64, downloaded=None)
-    assert explore.snapshot_line(stub) == "snapshot old (aaaaaaaaaaaa), download time unknown"
+    assert snapshot_line(stub) == "snapshot old (aaaaaaaaaaaa), download time unknown"
     odd = Variants([Variant("x", "G", "GRCh38", (("chr1", 5, "A" * 20, "dup"),), "non_literal_allele")])
-    assert "chr1:5 AAAAAAAAAAAA>dup" in repr(odd) and "0 ready" in repr(odd)
+    assert "chr1:5 AAAAAAAAAA..>dup" in repr(odd) and "0 with a ready allele" in repr(odd)
 
 
 def test_a_first_look_is_guided_on_the_command_line(source_cache, capsys, monkeypatch):
     from osteosarc import Cache
-    assert main([]) == 0
-    assert "osteosarc sync" in capsys.readouterr().out
     root = str(source_cache.root)
+    monkeypatch.setenv("OSTEOSARC_CACHE", root)
+    assert main([]) == 0
+    out = capsys.readouterr().out
+    assert "No data yet: start with `osteosarc sync`" in out and "Browse:" in out and "samples [SAMPLE]" in out
+    with pytest.raises(SystemExit):
+        main(["--help"])
+    assert "Get data:" in capsys.readouterr().out
     import re
 
     from osteosarc import NoSnapshotsError
@@ -499,20 +521,150 @@ def test_a_first_look_is_guided_on_the_command_line(source_cache, capsys, monkey
     assert main(["--offline", "--cache", root, "samples"]) == 1
     err = capsys.readouterr().err
     assert f"No snapshot yet in {root}" in err and "osteosarc sync" in err
-    # In a terminal, the explorer offers to download one first (served here from the test files).
-    import osteosarc.explore as explore
+    # In a terminal, the REPL offers to download one first (served here from the test files).
+    import osteosarc.cli as cli
     fetch = Cache.fetch
     monkeypatch.setattr(Cache, "fetch", lambda self, url, refresh=False, **kw: fetch(self, url, **kw))
     monkeypatch.setattr("sys.stdin.isatty", lambda: True)
     opened = []
-    monkeypatch.setattr(explore.Explorer, "cmdloop", lambda self: opened.append(self.data))
+    monkeypatch.setattr(cli, "repl", opened.append)
 
     def closed(prompt):  # Ctrl-D at the prompt means no, without a traceback
         raise EOFError
     monkeypatch.setattr("builtins.input", closed)
-    assert main(["--cache", root, "explore"]) == 1
+    assert main(["--cache", root, "repl"]) == 1
     assert "osteosarc sync" in capsys.readouterr().err and not opened
     monkeypatch.setattr("builtins.input", lambda prompt: "")
-    assert main(["--cache", root, "explore"]) == 0
+    assert main(["--cache", root, "repl"]) == 0
     assert "Saved snapshot" in capsys.readouterr().out
     assert len(Dataset.snapshots(cache=source_cache)) == 1 and opened[0].name == Dataset.open(cache=source_cache).name
+    assert main([]) == 0 and f"Using snapshot {opened[0].name}" in capsys.readouterr().out
+
+
+def test_the_repl_starts_python_with_the_data_loaded(dataset, monkeypatch, capsys):
+    import builtins
+    import code
+
+    import osteosarc.cli as cli
+    real_import, seen = builtins.__import__, {}
+
+    def without_ipython(name, *args, **kwargs):
+        if name == "IPython":
+            raise ImportError(name)
+        return real_import(name, *args, **kwargs)
+    monkeypatch.setattr(builtins, "__import__", without_ipython)
+    monkeypatch.setattr(code, "interact", lambda banner, local, exitmsg: seen.update(banner=banner, local=local))
+    cli.repl(dataset)
+    assert seen["local"]["data"] is dataset and "data.samples" in seen["banner"]
+    assert "help(data)" in seen["banner"]
+
+
+def test_downloads_are_listed_found_and_placed_under_their_own_names(dataset, tmp_path, capsys):
+    from osteosarc import File, Files
+    base = "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/"
+    key = "calls/tumor.vcf.gz"
+    source = tmp_path / "tumor.vcf.gz"
+    source.write_bytes(b"not really a vcf")
+    (tmp_path / "tumor.vcf.gz.tbi").write_bytes(b"index")
+    vcf = File(stable_id(base + key), key, base + key, "variants", "vcf", size=16,
+               index_urls=(base + key + ".tbi",))
+    index = File(stable_id(base + key + ".tbi"), key + ".tbi", base + key + ".tbi", "index", "tbi", size=5)
+    dataset.files = Files([*dataset.files, vcf, index])
+    assert dataset.local_path(vcf) is None and not dataset.downloads()
+    dataset.cache.import_file(source, vcf.url)
+    dataset.cache.import_file(tmp_path / "tumor.vcf.gz.tbi", index.url)
+    cached = dataset.download(key)
+    assert dataset.local_path(vcf) == cached and dataset.local_path(index) is not None
+    # A local copy whose size doesn't match this snapshot's listing isn't this file.
+    assert dataset.local_path(File(vcf.id, key, vcf.url, "variants", "vcf", size=99)) is None
+    # to= puts the file and its index in a folder under their own names, without a second copy.
+    placed = dataset.download(key, to=tmp_path / "out")
+    assert placed == tmp_path / "out" / "tumor.vcf.gz" and placed.read_bytes() == source.read_bytes()
+    assert (tmp_path / "out" / "tumor.vcf.gz.tbi").read_bytes() == b"index"
+    assert dataset.download(key, to=tmp_path / "out") == placed  # again: nothing changes
+    rows = {r["key"]: r for r in dataset.downloads()}
+    assert rows[key]["kind"] == "file" and rows[key]["path"] == str(cached)
+    assert "vafs" not in rows and not any(k.startswith("https://osteosarc.com") for k in rows)
+    # Extracted reads are listed with their source file and regions.
+    derived = dataset.cache.workspace / "derived" / "example"
+    derived.mkdir(parents=True)
+    (derived / "reads.bam").write_bytes(b"bam")
+    (derived / "receipt.json").write_text(json.dumps(dict(request=dict(source=vcf.url, regions=[
+        dict(contig="chr1", start=9, end=20), dict(contig="chr2", start=0, end=5)]))))
+    reads = next(r for r in dataset.downloads() if r["kind"] == "reads")
+    assert (reads["key"], reads["regions"]) == (key, "2 regions from chr1:10-20")
+    from osteosarc.views import downloads_view, files_view
+    shown = downloads_view(list(dataset.downloads()), dataset.cache.root)
+    assert "Downloaded files (2," in shown and "Extracted reads (1)" in shown and str(cached) in shown
+    assert "yes" in files_view(Files([vcf]), dataset)
+    # A fresh open doesn't list these files, but still shows the bucket's downloads, by URL.
+    assert main(["--cache", str(dataset.cache.root), "downloads", "--snapshot", "fixture", "--json"]) == 0
+    assert {r["key"] for r in json.loads(capsys.readouterr().out)} == {vcf.url, index.url}
+
+
+def test_text_commands_for_vaccines_tables_and_sync(dataset, capsys):
+    root = str(dataset.cache.root)
+    assert main(["--cache", root, "vaccines", "--snapshot", "fixture"]) == 0
+    text = capsys.readouterr().out
+    assert "vaccine targets across" in text and "ELISPOT" in text and "SMC5" in text
+    assert main(["--cache", root, "vaccines", "--snapshot", "fixture", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)[0]["gene"]
+    assert main(["--cache", root, "table", "--snapshot", "fixture", "vafs"]) == 0
+    lines = capsys.readouterr().out.splitlines()
+    assert lines[0].split("\t") == list(dataset.vafs.columns) and len(lines) == len(dataset.vafs) + 1
+    assert main(["--cache", root, "files", "--snapshot", "fixture", "--downloaded", "--prefix", "site/"]) == 0
+    assert "site/vafs" in capsys.readouterr().out  # the snapshot's own tables are on this computer
+    assert main(["--cache", root, "--offline", "sync", "fixture"]) == 0
+    assert capsys.readouterr().out.startswith("Saved snapshot fixture (")
+
+
+def test_review_fixes_for_samples_links_and_offline_downloads(dataset, tmp_path, monkeypatch, capsys):
+    import os
+    import stat
+
+    from osteosarc import CORRECTIONS, Change, Correction, OfflineError
+    from osteosarc.cache import place
+    # Samples with disagreements are hashable, and providers are named one way.
+    raw = Dataset.open("fixture", cache=dataset.cache, corrections=False)
+    assert raw.samples["T2_tumor"].disagreements and len(set(raw.samples)) == len(raw.samples)
+    boston = Correction("spelling", "simulate the registry's spelling", (
+        Change("specimens", {"sample_id": "T1_tumor"}, set={"vendors_involved": "Boston Gene"}),))
+    spelled = Dataset.open("fixture", cache=dataset.cache, corrections=[*CORRECTIONS, boston])
+    assert "Boston Gene" not in spelled.samples["T1_tumor"].providers
+    # A registry problem leaves files unlinked, with a warning, instead of breaking every file operation.
+    broken = Correction("broken", "simulate a registry row without an ID", (
+        Change("specimens", {"sample_id": "T3_tumor"}, set={"sample_id": ""}),))
+    unlinked = Dataset.open("fixture", cache=dataset.cache, corrections=[*CORRECTIONS, broken])
+    with pytest.warns(UserWarning, match="aren't linked to samples"):
+        assert len(unlinked.files) == len(dataset.files)
+    # A hard-linked copy is read-only, so editing it can't corrupt the cache.
+    cached = tmp_path / "object.bam"
+    cached.write_bytes(b"bytes")
+    placed = place(cached, tmp_path / "out" / "copy.bam")
+    assert placed.samefile(cached) and not os.stat(cached).st_mode & (stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH)
+    assert place(cached, placed) == placed
+    # Offline, a download that needs the network says how to allow it.
+    key = dataset.files.select(format="bam")[0].key
+    with pytest.raises(OfflineError, match="opened offline; reopen it with Dataset.open"):
+        dataset.download(key)
+    # The REPL opens its snapshot able to download; --offline keeps it offline.
+    import osteosarc.cli as cli
+    opened = []
+    monkeypatch.setattr(cli, "repl", opened.append)
+    root = str(dataset.cache.root)
+    assert main(["--cache", root, "repl", "--snapshot", "fixture"]) == 0
+    assert main(["--cache", root, "--offline", "repl", "--snapshot", "fixture"]) == 0
+    assert [d.cache.offline for d in opened] == [False, True]
+    assert main(["--cache", root, "--offline", "download", "--snapshot", "fixture", key, "--refresh"]) == 1
+    assert "Cannot refresh in offline mode" in capsys.readouterr().err
+
+
+def test_sample_hints_promise_only_what_download_does(dataset):
+    from osteosarc.views import get_data_hints
+    rows = [dict(key="a.bam", size="1 GB", indexed=False, local="")]
+    text = get_data_hints(dataset, rows, [])
+    assert "osteosarc download a.bam --to ." in text and "its index" not in text
+    assert "osteosarc reads" not in text  # an unindexed BAM can't be read by region
+    folders = [dict(folder="x/y/")]
+    assert "aws s3 cp --recursive --no-sign-request s3://sid-sijbrandij-osteosarc-dataset/x/y/ y/" in \
+        get_data_hints(dataset, [], folders)

@@ -31,7 +31,7 @@ for the evidence.
 ## Fetch the surrounding reads
 
 ```python
-source = data.asset(
+source = data.file(
     "kamil/oncoanalyser/IPISRC044_T1_ucla/alignments/dna/IPISRC044_tumor_T1_ucla.redux.bam"
 )
 print(data.inspect_alignment(source).assembly)
