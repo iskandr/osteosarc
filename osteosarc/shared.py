@@ -1,0 +1,722 @@
+"""Test data shared by several libraries: one bundle, selected once from a spec.
+
+A spec names the targets (every catalog variant of one snapshot, plus
+extra alleles libraries test), sources that should cover every target, and
+selection caps. Each library also supplies the records its current fixtures
+hold (required records). build_shared_recipe() then writes a frozen fixture
+recipe in which every member lists its exact records (bam-record-v1) and why
+each was kept. generate_bundle() on that recipe rebuilds the same records from
+the public BAMs, and fails if any of them changed upstream.
+
+At each small-variant target, in each source that covers it:
+
+1. Take the reads overlapping the target's allele window (osteosarc.alleles),
+   with their mates.
+2. Classify each template as alt, ref, other or uncallable.
+3. Keep up to caps[class] templates of each class, in order of SHA-256 of the
+   read group and read name, then the lowest-quality alt templates not
+   already kept. A kept template keeps every record the extraction holds.
+
+A source covers a target when the spec lists the source for every target, or
+when a library's required records from that source overlap the target.
+
+For a fusion or SV, a source keeps up to a cap of templates, in hash order,
+that have an alignment within a window of every breakend: split reads,
+discordant pairs and chimeric long reads. A source covers it when the spec
+lists the source for structural targets, when a library's required records
+lie within the window, or when osteosarc's SV catalogue saw the junction there.
+Required records are matched by SAM text and kept exactly, as they are.
+"""
+
+from __future__ import annotations
+
+import gzip
+import hashlib
+import json
+from collections import Counter, defaultdict
+from pathlib import Path
+
+from .alleles import CLASSES, allele_window, read_allele, template_allele
+from .errors import CoordinateError, IntegrityError, SchemaError
+from .models import Region
+from .reads import resolve_regions
+from .records import read_records
+from .reference import reference_sequence
+
+DEFAULT_CAPS = {"alt": 20, "ref": 10, "other": 5, "uncallable": 2}
+#: Seconds one source's extraction may take; hundreds of regions with mates take minutes.
+EXTRACTION_TIMEOUT = 3600
+CONTEXT_FLANKS = (80, 600, 5000)
+
+
+def read_json(path):
+    path = Path(path)
+    opener = gzip.open if path.suffix == ".gz" else open
+    with opener(path, "rt") as handle:
+        return json.load(handle)
+
+
+def template_order(template):
+    """The hash order of a template: SHA-256 of its read group and read name."""
+    rg, qname = template
+    return hashlib.sha256(f"{rg or ''}\t{qname}".encode()).hexdigest()
+
+
+def _window_quality(read, window):
+    """The lowest base quality the read has across the window and its anchors."""
+    qualities = read.query_qualities
+    if qualities is None:
+        return 255
+    values = [qualities[q] for q, r in read.get_aligned_pairs(matches_only=True)
+              if window.start - 1 <= r <= window.end]
+    return min(values, default=255)
+
+
+def _overlaps(read, window):
+    end = read.reference_end or read.reference_start + 1
+    return read.reference_name == window.contig and read.reference_start <= window.end and end >= window.start
+
+
+class RecordIndex:
+    """A source's records by position, so a window finds its records without a scan."""
+
+    BIN = 10_000
+
+    def __init__(self, records):
+        self.records = list(records)
+        self.templates = defaultdict(list)
+        self.bins = defaultdict(list)
+        for record in self.records:
+            self.templates[record.template].append(record)
+            read = record.read
+            if read.reference_name is None or read.reference_start < 0:
+                continue
+            end = read.reference_end or read.reference_start + 1
+            for b in range(read.reference_start // self.BIN, (end - 1) // self.BIN + 1):
+                self.bins[(read.reference_name, b)].append(record)
+
+    def overlapping(self, contig, start, end):
+        """Records aligned within [start, end), each once."""
+        seen, found = set(), []
+        for b in range(start // self.BIN, max(start, end - 1) // self.BIN + 1):
+            for record in self.bins.get((contig, b), ()):
+                read = record.read
+                if (id(record) not in seen and read.reference_start < end
+                        and (read.reference_end or read.reference_start + 1) > start):
+                    seen.add(id(record))
+                    found.append(record)
+        return found
+
+    def touching(self, contig, start, end):
+        """{template: all of its records} for templates with a record within [start, end)."""
+        return {r.template: self.templates[r.template] for r in self.overlapping(contig, start, end)}
+
+
+def select_allele_balanced(templates, window, *, caps=None, low_quality_alt=2):
+    """Pick templates at one target: {template: (class, reason)}.
+
+    templates maps (read group, read name) to that template's FixtureRecords.
+    Only records overlapping the window are classified; a template that has
+    none isn't considered.
+    """
+    caps = dict(DEFAULT_CAPS, **(caps or {}))
+    by_class, quality = defaultdict(list), {}
+    for template, records in templates.items():
+        overlapping = [r for r in records if _overlaps(r.read, window)]
+        if not overlapping:
+            continue
+        shown = template_allele([read_allele(r.read, window) for r in overlapping])
+        by_class[shown].append(template)
+        if shown == "alt":
+            quality[template] = min(_window_quality(r.read, window) for r in overlapping)
+    chosen = {}
+    for name in CLASSES:
+        for template in sorted(by_class[name], key=template_order)[:caps[name]]:
+            chosen[template] = (name, f"{name} template (hash order)")
+    rest = sorted((t for t in by_class["alt"] if t not in chosen), key=lambda t: (quality[t], template_order(t)))
+    for template in rest[:low_quality_alt]:
+        chosen[template] = ("alt", "alt template (lowest base quality)")
+    return chosen, {name: len(by_class[name]) for name in CLASSES}
+
+
+def match_required(records, lines):
+    """Exact record counts for SAM lines, matched against a source's records by SAM text.
+
+    records is a list, or a RecordIndex (then only records near the lines are
+    rendered as text). lines may repeat, as duplicate records do. Raises
+    IntegrityError when a line isn't there, appears fewer times than required,
+    or matches records that differ in binary form.
+    """
+    if isinstance(records, RecordIndex):
+        spans = {span for span in map(sam_span, lines) if span}
+        near = {id(r): r for span in spans for r in records.overlapping(*span)}
+        names = {line.split("\t", 1)[0] for line in lines if not sam_span(line)}
+        near.update((id(r), r) for r in records.records if names and r.read.query_name in names)
+        records = list(near.values())
+    by_text = defaultdict(Counter)
+    for record in records:
+        by_text[record.read.to_string()][record.digest] += 1
+    counts, missing = Counter(), []
+    for line, n in Counter(lines).items():
+        found = by_text.get(line)
+        if not found or sum(found.values()) < n:
+            missing.append(line.split("\t", 1)[0])
+            continue
+        if len(found) != 1:
+            raise IntegrityError(f"SAM text of {line.split(chr(9), 1)[0]} matches records that differ in binary form")
+        counts[next(iter(found))] += n
+    if missing:
+        raise IntegrityError(f"{len(missing)} required records aren't in the source, e.g. {missing[:3]}")
+    return counts
+
+
+def match_named(records, names):
+    """Every record of the named reads (read names, any read group), with its multiplicity."""
+    counts, found = Counter(), set()
+    for record in (records.records if isinstance(records, RecordIndex) else records):
+        if record.read.query_name in names:
+            counts[record.digest] += 1
+            found.add(record.read.query_name)
+    if missing := sorted(set(names) - found):
+        raise IntegrityError(f"{len(missing)} required reads aren't in the source, e.g. {missing[:3]}")
+    return counts
+
+
+def required_spans(subset):
+    """Where a required subset's records lie: its SAM lines' spans, or the regions it names."""
+    if "sam" in subset:
+        return [span for span in map(sam_span, subset["sam"]) if span]
+    return [tuple(region) for region in subset.get("regions", ())]
+
+
+def sam_span(line):
+    """The zero-based reference span (contig, start, end) of a SAM line, or None if unplaced."""
+    fields = line.split("\t")
+    contig, position, cigar = fields[2], int(fields[3]), fields[5]
+    if contig == "*" or position == 0:
+        return None
+    length, number = 0, ""
+    for char in cigar:
+        if char.isdigit():
+            number += char
+            continue
+        if char in "MDN=X":
+            length += int(number)
+        number = ""
+    return contig, position - 1, position - 1 + max(1, length)
+
+
+def _context_window(contig, position, ref, alt, assembly, *, cache, reference_length=None):
+    """The allele window, with the reference context it was found in."""
+    for flank in CONTEXT_FLANKS:
+        start = max(0, position - 1 - flank)
+        end = position - 1 + len(ref) + flank
+        sequence = reference_sequence(contig, start, end, assembly, cache=cache, reference_length=reference_length)
+        try:
+            window = allele_window(contig, position, ref, alt, sequence, start)
+        except CoordinateError as error:
+            if "too short" in str(error) or "doesn't cover" in str(error):
+                continue
+            raise
+        context = dict(start=start, end=end, sha256=hashlib.sha256(sequence.encode()).hexdigest())
+        return window, context
+    raise CoordinateError(f"{contig}:{position}: a repeat runs past {CONTEXT_FLANKS[-1]} reference bases")
+
+
+def spec_targets(spec, dataset, *, cache=None):
+    """The spec's small-variant targets as recipe targets, and their allele windows."""
+    cache = cache or dataset.cache
+    targets, windows = {}, {}
+
+    def small(name, contig, position, ref, alt, assembly, reference, label, reference_length=None):
+        target = dict(kind="small_variant", assembly=assembly, coordinates="one-based", contig=contig,
+                      position=position, ref=ref, alt=alt, reference=reference, label=label)
+        if reference_length:
+            target["reference_length"] = reference_length
+        try:
+            window, context = _context_window(contig, position, ref, alt, assembly, cache=cache,
+                                              reference_length=reference_length)
+        except CoordinateError as error:
+            target["window"] = dict(unavailable=str(error))
+        else:
+            windows[name] = window
+            target["window"] = dict(start=window.start, end=window.end, ref=window.ref, alt=window.alt,
+                                    context=context)
+        targets[name] = target
+
+    for variant in dataset.variants(spec["targets"].get("catalog", "site")):
+        if variant.status != "ready":
+            targets[variant.id] = dict(kind="unresolved", label="current",
+                                       reason=f"{variant.status} in snapshot {dataset.name}")
+            continue
+        chrom, position, ref, alt = variant.allele
+        small(variant.id, chrom, position, ref, alt, variant.assembly,
+              dict(source="osteosarc", snapshot_id=dataset.id, variant_id=variant.id), "current")
+    for extra in spec["targets"].get("extra", []):
+        if extra["name"] in targets:
+            raise SchemaError(f"Extra target {extra['name']!r} repeats a catalog ID; give it its own name")
+        small(extra["name"], extra["contig"], extra["position"], extra["ref"], extra["alt"], extra["assembly"],
+              dict(source="library", variant_id=extra.get("variant_id"), used_by=extra.get("used_by", []),
+                   note=extra.get("reason", "")),
+              extra["label"], extra.get("reference_length"))
+    return targets, windows
+
+
+def structural_targets(spec):
+    """The spec's fusions and SVs as recipe targets, their breakends, and the
+    RNA sources osteosarc's SV catalogue saw each one's junction in."""
+    from .fixtures import load_panel
+    from .sv_candidates import load_sv_candidates
+    targets, breakends, observed_in = {}, {}, defaultdict(set)
+    candidates = None
+    for entry in spec["targets"].get("structural", []):
+        name, origin = entry["name"], entry.get("from", {})
+        if "panel" in origin:
+            base = load_panel(origin["panel"])[origin["id"]]
+            reference = dict(source="osteosarc", panel=origin["panel"], id=origin["id"])
+        elif "sv_candidates" in origin:
+            candidates = candidates or load_sv_candidates()["targets"]
+            base = candidates[origin["sv_candidates"]]
+            reference = dict(source="osteosarc", panel="sv-candidates-v1", id=origin["sv_candidates"])
+            observed_in[name].update(e["source_url"] for e in base.get("rna_evidence", ())
+                                     if e.get("status") == "adjacency_geometry_observed")
+        else:
+            base, reference = entry, dict(source="library", note=entry.get("reason", ""))
+        reference["used_by"] = entry.get("used_by", [])
+        ends = [dict(contig=e["contig"], position=e["position"], orientation=e.get("orientation"))
+                for e in base.get("breakends", ())]
+        if base.get("kind") == "unresolved" or len(ends) < 2:
+            targets[name] = dict(kind="unresolved", label=entry["label"], reference=reference,
+                                 reason=base.get("reason") or "Fewer than two breakends: no partner window to "
+                                                               "select reads by")
+            continue
+        targets[name] = dict(kind="sv", assembly=base.get("assembly", "GRCh38"), coordinates="zero-based-interbase",
+                             breakends=ends, reference=reference, label=entry["label"])
+        breakends[name] = ends
+    return targets, breakends, observed_in
+
+
+#: How far a gap's ends may sit from the breakends it joins (alignments of a junction wobble).
+JUNCTION_SLACK = 10
+
+
+def _joins(records, breakends, pad):
+    """Whether a template's alignments join every breakend, as a split read, a
+    discordant pair or a chimeric long read would.
+
+    Every breakend's window (pad bases either side) must hold aligned bases of
+    the template, but no single aligned block may run across all of them. The
+    template must then be split (a supplementary alignment or an SA tag), a pair
+    the aligner didn't call proper, or a read whose intron or deletion runs from
+    one breakend to another. So a proper pair on either side of the breakends, or
+    a read spliced from an exon near one to an exon near another, doesn't count.
+    """
+    reads = [r.read for r in records if not r.read.is_unmapped]
+    windows = [(contig, max(0, position - pad), position + pad) for contig, position in breakends]
+    blocks = [(r.reference_name, start, end) for r in reads for start, end in r.get_blocks()]
+
+    def touches(block, window):
+        return block[0] == window[0] and block[1] < window[2] and block[2] > window[1]
+    if not all(any(touches(b, w) for b in blocks) for w in windows):
+        return False
+    if any(all(touches(b, w) for w in windows) for b in blocks):
+        return False
+    split = any(r.is_supplementary or r.has_tag("SA") for r in reads)
+    discordant = any(r.is_paired and not r.is_proper_pair and not r.mate_is_unmapped for r in reads)
+    return split or discordant or any(_junction(r, breakends) for r in reads)
+
+
+def _junction(read, breakends):
+    """Whether one of the read's introns or deletions runs from one breakend to another."""
+    here = [p for c, p in breakends if c == read.reference_name]
+    position = read.reference_start
+    for op, length in read.cigartuples or ():
+        if op in (2, 3):  # D, N
+            left, right = position, position + length
+            if any(i != j and abs(left - a) <= JUNCTION_SLACK and abs(right - b) <= JUNCTION_SLACK
+                   for i, a in enumerate(here) for j, b in enumerate(here)):
+                return True
+        if op in (0, 2, 3, 7, 8):  # M, D, N, =, X consume the reference
+            position += length
+    return False
+
+
+def select_breakend_templates(templates, breakends, *, pad=1000, cap=50):
+    """Templates whose alignments join every breakend (see _joins): {template: reason}.
+
+    breakends are (contig, position) pairs. Up to cap, in hash order.
+    """
+    joined = [t for t, records in templates.items() if _joins(records, breakends, pad)]
+    chosen = sorted(joined, key=template_order)[:cap]
+    return {t: "joins the breakends (hash order)" for t in chosen}, len(joined)
+
+
+def load_required(paths):
+    """Each library's required records, as {subset name: dict(consumer, source, sam or names)}.
+
+    A subset lists its records' SAM lines ("sam"), or names whole reads
+    ("names") together with the regions they lie in ("regions": [contig,
+    start, end], zero-based).
+    """
+    subsets = {}
+    for path in paths:
+        document = read_json(path)
+        for name, subset in document["subsets"].items():
+            if name in subsets:
+                raise SchemaError(f"Required subset {name!r} is named twice")
+            if ("sam" in subset) == ("names" in subset) or ("names" in subset and not subset.get("regions")):
+                raise SchemaError(f"Required subset {name!r} needs either sam, or names with regions")
+            subsets[name] = dict(subset, consumer=document["consumer"])
+    return subsets
+
+
+def _source_entry(dataset, file, header, regions, label):
+    from .reads import assembly_from_header
+    assembly = assembly_from_header(header)
+    if assembly is None:
+        raise IntegrityError(f"Can't tell the assembly of {file.key} from its header")
+    samples = file.samples
+    return dict(identity=dict(id=file.id, key=file.key, url=file.url, size=file.size, modified=file.modified),
+                assembly=assembly, sample=samples[0] if len(samples) == 1 else None,
+                library=file.resolved("library"), product=file.key, label=label,
+                acquisition=dict(fetch_pairs=True, timeout=EXTRACTION_TIMEOUT), snapshot_id=dataset.id,
+                regions=[dict(contig=r.contig, start=r.start, end=r.end, assembly=r.assembly,
+                              **({"reference_length": r.reference_length} if r.reference_length else {}))
+                         for r in regions])
+
+
+def _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, everywhere, sv_everywhere, pad):
+    """What one source covers, and the regions to extract for it; None if nothing."""
+    from .reads import assembly_from_header
+    file = dataset.file(url)
+    header = dataset.inspect_alignment(file).header
+    assembly = assembly_from_header(header)
+    lengths = {row["SN"]: row["LN"] for row in header.get("SQ", [])}
+    mito = {lengths[c] for c in ("chrM", "MT", "M", "chrMT") if c in lengths}
+
+    def region(contig, start, end, reference_length=None):
+        # GRCh37 mitochondria come in two lengths; say which this source has.
+        if contig in ("chrM", "MT", "M", "chrMT") and reference_length is None:
+            reference_length = next(iter(mito), None)
+        return Region(contig, start, end, assembly, reference_length)
+    spans = [span for s in mine.values() for span in required_spans(s)]
+    covered = []
+    for name, window in windows.items():
+        if normalize(targets[name]["assembly"]) != assembly:
+            continue
+        if targets[name].get("reference_length") and targets[name]["reference_length"] not in mito:
+            continue  # the other mitochondrial sequence
+        if url in everywhere or any(_near(span, window) for span in spans):
+            covered.append(name)
+    sv_covered = [name for name, ends in breakends.items()
+                  if normalize(targets[name]["assembly"]) == assembly
+                  and (url in sv_everywhere or url in observed_in.get(name, ())
+                       or any(_near(span, _BreakendWindow(e, pad)) for span in spans for e in ends))]
+    # A variant's window with the aligned base on each side (an insertion's window can be empty).
+    variant_regions = {n: region(windows[n].contig, max(0, windows[n].start - 1), windows[n].end + 1,
+                                 targets[n].get("reference_length")) for n in covered}
+    breakend_regions = {n: [region(e["contig"], max(0, e["position"] - pad), e["position"] + pad)
+                            for e in breakends[n]] for n in sv_covered}
+    wanted = list(variant_regions.values())
+    wanted += [r for rs in breakend_regions.values() for r in rs]
+    wanted += [region(contig, start, end) for contig, start, end in spans]
+    if not wanted:
+        return None
+    label = dataset.short_name(file)  # names members as osteosarc reads --to names files
+    return dict(file=file, label=label, mine=mine, covered=covered, sv_covered=sv_covered, pad=pad,
+                source=_source_entry(dataset, file, header, resolve_regions(wanted, header), label),
+                # Each target's window and breakends, in this source's contig names.
+                variant_regions={n: resolve_regions([r], header)[0] for n, r in variant_regions.items()},
+                breakend_regions={n: [resolve_regions([r], header)[0] for r in rs]
+                                  for n, rs in breakend_regions.items()})
+
+
+def _select_source(plan, index, windows, targets, caps, low_quality_alt, cap):
+    """The members one source contributes, and any required fixtures it lacks."""
+    members, fixtures, problems = {}, {}, []
+    available = Counter(r.digest for r in index.records)
+
+    def exact(chosen):
+        kept, reasons = Counter(), {}
+        for template, reason in chosen.items():
+            for record in index.templates[template]:
+                kept[record.digest] = available[record.digest]
+                reasons.setdefault(record.digest, set()).add(reason)
+        return dict(version=1, kind="exact", records=dict(sorted(kept.items())),
+                    reasons={k: sorted(v) for k, v in sorted(reasons.items())})
+    label = plan["label"]
+    for name in plan["covered"]:
+        where = plan["variant_regions"][name]
+        window = windows[name]
+        window = type(window)(where.contig, window.start, window.end, window.ref, window.alt)
+        candidates = index.touching(where.contig, window.start - 1, window.end + 1)
+        chosen, seen = select_allele_balanced(candidates, window, caps=caps, low_quality_alt=low_quality_alt)
+        members[f"{label}.{name}"] = dict(target=name, source=label, observed=seen, policy=dict(
+            exact({t: why for t, (_, why) in chosen.items()}), reason="allele-balanced selection"))
+    for name in plan["sv_covered"]:
+        ends = [(r.contig, r.start, r.end) for r in plan["breakend_regions"][name]]
+        candidates = index.touching(*ends[0])
+        for end in ends[1:]:
+            near = index.touching(*end)
+            candidates = {t: rs for t, rs in candidates.items() if t in near}
+        breakends = [(r.contig, r.end - plan["pad"]) for r in plan["breakend_regions"][name]]
+        chosen, joined = select_breakend_templates(candidates, breakends, pad=plan["pad"], cap=cap)
+        members[f"{label}.{name}"] = dict(target=name, source=label, observed=dict(joined=joined),
+                                          policy=dict(exact(chosen), reason="templates joining the breakends"))
+    for subset_name, required_subset in sorted(plan["mine"].items()):
+        try:
+            counts = (match_required(index, required_subset["sam"]) if "sam" in required_subset
+                      else match_named(index, set(required_subset["names"])))
+        except IntegrityError as error:
+            problems.append(f"{subset_name}: {error}")
+            continue
+        fixtures[subset_name] = (required_subset, counts)
+    return members, fixtures, problems
+
+
+def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6):
+    """Select the spec's records and return its frozen recipe (see the module docs).
+
+    Sources are extracted in parallel (workers at a time). dataset must be
+    opened with offline=False the first time, to stream reads; extractions
+    are cached, so rebuilding is quick and offline.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    spec = read_json(spec) if isinstance(spec, (str, Path)) else spec
+    if spec.get("snapshot", {}).get("id") not in (None, dataset.id):
+        raise IntegrityError(f"The spec pins snapshot {spec['snapshot']['id'][:12]}, not {dataset.id[:12]}")
+    selection = spec.get("selection", {})
+    caps = dict(DEFAULT_CAPS, **selection.get("caps", {}))
+    low_quality_alt = selection.get("low_quality_alt", 2)
+    targets, windows = spec_targets(spec, dataset)
+    sv_targets, breakends, observed_in = structural_targets(spec)
+    targets.update(sv_targets)
+    structural = dict(dict(window=1000, cap=50), **selection.get("structural", {}))
+    subsets = load_required(required) if not isinstance(required, dict) else required
+    everywhere = set(spec.get("sources", {}).get("all_targets", []))
+    sv_everywhere = set(spec.get("sources", {}).get("structural", []))
+    urls = sorted(everywhere | sv_everywhere | {s["source"] for s in subsets.values()}
+                  | {url for found in observed_in.values() for url in found})
+    recipe = dict(schema_version=1, id=spec["id"], kind="shared",
+                  snapshot=dict(name=dataset.name, id=dataset.id),
+                  selection=dict(classifier="osteosarc.alleles v1", caps=caps, low_quality_alt=low_quality_alt,
+                                 structural=structural, order="SHA-256 of read group, tab, read name"),
+                  aliases=spec["targets"].get("renamed", {}), targets=targets, sources={}, members={},
+                  redistribution=spec.get("redistribution", {"license": "unresolved"}))
+    plans = []
+    for url in urls:
+        mine = {n: s for n, s in subsets.items() if s["source"] == url}
+        plan = _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, everywhere,
+                            sv_everywhere, structural["window"])
+        if plan is None:
+            if mine:
+                raise IntegrityError(f"Required fixtures with no aligned records to find them by: {sorted(mine)}")
+            log(f"skip {url}: no targets or required records")
+            continue
+        if any(plan["label"] == other["label"] for other in plans):
+            raise IntegrityError(f"Two sources share the name {plan['label']}")
+        log(f"{plan['file'].key}: {len(plan['covered'])} variants, {len(plan['sv_covered'])} fusions or SVs, "
+            f"{len(mine)} required fixtures, {len(plan['source']['regions'])} regions")
+        plans.append(plan)
+
+    # Every member's name, checked before any reads are fetched.
+    names = {}
+    for plan in plans:
+        for name in plan["covered"] + plan["sv_covered"]:
+            _add_member(names, f"{plan['label']}.{name}", None)
+    for name in subsets:
+        _add_member(names, name, None)
+
+    def extract(plan):
+        subset = dataset.extract_reads(plan["file"], [Region(**r) for r in plan["source"]["regions"]],
+                                       **plan["source"]["acquisition"])
+        return plan, subset
+
+    problems, results = [], {}
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for future in as_completed([pool.submit(extract, plan) for plan in plans]):
+            plan, subset = future.result()
+            index = RecordIndex(read_records(subset.path))
+            members, fixtures, missing = _select_source(plan, index, windows, targets, caps, low_quality_alt,
+                                                        structural["cap"])
+            results[plan["label"]] = (plan, members, fixtures)
+            problems += missing
+            log(f"selected from {plan['file'].key}: {len(index.records)} records, {len(members)} members, "
+                f"{len(fixtures)} required fixtures")
+    if problems:
+        # Every source was read (and its extraction cached), so a rerun after fixing these is quick.
+        raise IntegrityError(f"{len(problems)} required fixtures couldn't be matched:\n" + "\n".join(problems))
+    def add(name, member):
+        _add_member(recipe["members"], name, member)
+    for label in sorted(results):  # the same recipe whatever order extractions finished in
+        plan, members, fixtures = results[label]
+        recipe["sources"][label] = plan["source"]
+        for name, member in members.items():
+            add(name, member)
+        for subset_name, (required_subset, counts) in fixtures.items():
+            target = "fixture:" + subset_name
+            targets[target] = dict(kind="fixture", assembly=plan["source"]["assembly"],
+                                   reference=dict(source="library", consumer=required_subset["consumer"]),
+                                   consumer=required_subset["consumer"],
+                                   description=required_subset.get("description", subset_name))
+            add(subset_name, dict(
+                target=target, source=label,
+                policy=dict(version=1, kind="exact", records=dict(sorted(counts.items())),
+                            reason=f"required by {required_subset['consumer']}: {subset_name}")))
+    return recipe
+
+
+def _add_member(members, name, member):
+    """Add a member under a name that can be a file name, refusing to replace another."""
+    from .bundles import safe_path
+    if name in members:
+        raise IntegrityError(f"Two members share the name {name}")
+    safe_path(Path("."), name)  # export writes the member to a file named after it
+    members[name] = member
+
+
+def normalize(assembly):
+    from .reads import normalize_assembly
+    return normalize_assembly(assembly)
+
+
+class _BreakendWindow:
+    """A breakend's window, shaped like an AlleleWindow for _near."""
+
+    def __init__(self, breakend, pad):
+        self.contig, self.start, self.end = breakend["contig"], breakend["position"] - pad, breakend["position"] + pad
+
+
+def _near(span, window, slack=1):
+    contig, start, end = span
+    bare = contig.removeprefix("chr")
+    return (bare == window.contig.removeprefix("chr") or {bare, window.contig.removeprefix("chr")} <= {"M", "MT"}) \
+        and start <= window.end + slack and end >= window.start - slack
+
+
+# ---------------------------------------------------------------------------
+# Published bundles: fetch and check
+# ---------------------------------------------------------------------------
+
+BUNDLES = Path(__file__).with_name("data") / "bundles"
+
+
+def published(name):
+    """Where a published bundle (such as openvax-v1) is, and its checksums."""
+    path = BUNDLES / f"{name}.release.json"
+    if not path.is_file():
+        known = sorted(p.name.removesuffix(".release.json") for p in BUNDLES.glob("*.release.json"))
+        raise KeyError(f"No published bundle {name!r}; published: {', '.join(known) or 'none'}")
+    return json.loads(path.read_text())
+
+
+def pack_release(bundle, archive):
+    """Write a bundle as a reproducible .tar.gz and return its release record."""
+    import tarfile
+
+    from .bundles import verify_bundle
+    from .cache import digest
+    bundle, archive = Path(bundle), Path(archive)
+    verify_bundle(bundle)
+    with open(archive, "wb") as raw, gzip.GzipFile(filename="", fileobj=raw, mode="wb", mtime=0) as compressed, \
+            tarfile.open(fileobj=compressed, mode="w", format=tarfile.PAX_FORMAT) as tar:
+        for path in sorted(p for p in bundle.rglob("*") if p.is_file()):
+            info = tar.gettarinfo(str(path), arcname=path.relative_to(bundle).as_posix())
+            info.uid = info.gid = 0
+            info.uname = info.gname = ""
+            info.mtime = 0
+            info.mode = 0o644
+            with open(path, "rb") as handle:
+                tar.addfile(info, handle)
+    return dict(sha256=digest(archive), size_bytes=archive.stat().st_size,
+                manifest_sha256=digest(bundle / "manifest.json"))
+
+
+def fetch_bundle(name, *, cache=None):
+    """Download a published bundle into the cache, verify it, and return its directory.
+
+    The bundle is verified in full when it arrives, and its files are made
+    read-only; later calls reuse it offline, checking only its manifest.
+    """
+    import os
+    import tarfile
+
+    from .bundles import _publication, safe_path, verify_bundle
+    from .cache import Cache, digest
+    release = published(name)
+    cache = cache if isinstance(cache, Cache) else Cache(cache)
+    root = cache.workspace / "bundles" / f"{name}-{release['manifest_sha256'][:16]}"
+    if not root.exists():
+        receipt = cache.fetch(release["url"], sha256=release["sha256"], size=release["size_bytes"])
+        try:
+            with _publication(root) as work, tarfile.open(cache.path(receipt), "r:gz") as tar:
+                for member in tar.getmembers():
+                    if not member.isfile():
+                        raise IntegrityError(f"Unexpected archive entry {member.name!r}")
+                    target = safe_path(work, member.name)
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    with tar.extractfile(member) as source, open(target, "wb") as handle:
+                        handle.write(source.read())
+                verify_bundle(work, sha256=release["manifest_sha256"])
+                for path in work.rglob("*"):
+                    if path.is_file():
+                        os.chmod(path, 0o444)
+        except FileExistsError:
+            pass  # another process published it first
+    if digest(root / "manifest.json") != release["manifest_sha256"]:
+        raise IntegrityError(f"{root} has changed since it was downloaded; delete it to download it again")
+    return root
+
+
+def _local_sam(value, root=Path(".")):
+    """SAM text lines from a local fixture: a BAM/SAM/SAM.gz path, or {"json": path, "pointer": "/a/b"}."""
+    import pysam
+    if isinstance(value, dict):
+        document = read_json(root / value["json"])
+        for part in value["pointer"].strip("/").split("/"):
+            document = document[int(part) if isinstance(document, list) else part]
+        if isinstance(document, dict):
+            document = list(document.values())  # e.g. {digest: SAM line}
+        lines = [document] if isinstance(document, str) else [
+            item.get("sam") if isinstance(item, dict) else item for item in document]
+        if not all(isinstance(line, str) for line in lines):
+            raise SchemaError(f"{value['json']}#{value['pointer']} holds neither SAM lines nor objects with a sam field")
+        return lines
+    path = root / value
+    if path.suffix == ".gz" and path.name.endswith(".sam.gz"):
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix=".sam") as plain:
+            plain.write(gzip.decompress(path.read_bytes()))
+            plain.flush()
+            with pysam.AlignmentFile(plain.name, "r", check_sq=False) as handle:
+                return [read.to_string() for read in handle]
+    with pysam.AlignmentFile(str(path), check_sq=False) as handle:
+        return [read.to_string() for read in handle.fetch(until_eof=True)]
+
+
+def check_fixtures(bundle, fixtures, *, root=Path(".")):
+    """Compare a library's local fixtures with a bundle's members, as multisets of SAM text.
+
+    fixtures maps member names to local files (see _local_sam). Returns
+    {member: dict(missing=n, extra=n)} for every member that differs.
+    """
+    from .bundles import safe_path, verify_bundle
+    manifest = verify_bundle(bundle)
+    by_source = {}
+    problems = {}
+    for name, value in sorted(fixtures.items()):
+        if name not in manifest["members"]:
+            problems[name] = dict(error="not a member of this bundle")
+            continue
+        member = manifest["members"][name]
+        sid = member["source"]
+        expected = Counter()
+        if member["records"] and sid not in by_source:
+            path = safe_path(Path(bundle), manifest["sources"][sid]["bam"])
+            by_source[sid] = {record.digest: record.read.to_string() for record in read_records(path)}
+        for key, n in member["records"].items():
+            expected[by_source[sid][key]] += n
+        found = Counter(_local_sam(value, Path(root)))
+        if found != expected:
+            problems[name] = dict(missing=sum((expected - found).values()), extra=sum((found - expected).values()))
+    return problems

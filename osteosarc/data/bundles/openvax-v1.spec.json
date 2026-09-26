@@ -1,0 +1,435 @@
+{
+  "id": "openvax-v1",
+  "description": "Sid reads for the OpenVax libraries' tests (Isovar, Topiary, Varcode, Vaxrank): every site variant of one snapshot plus the extra alleles the libraries test, and every record their current fixtures hold. See iskandr/osteosarc#56.",
+  "snapshot": {
+    "name": "2026-09-25",
+    "id": "dea7dd2456595efde40aa073162de5bd422c49fca93b04c28eb4c1d1f4f24c48"
+  },
+  "selection": {
+    "caps": {
+      "alt": 20,
+      "ref": 10,
+      "other": 5,
+      "uncallable": 2
+    },
+    "low_quality_alt": 2,
+    "structural": {
+      "window": 1000,
+      "cap": 50
+    }
+  },
+  "sources": {
+    "all_targets": [
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2025.01.06/RNA/2025.01.06.rna.ucla-core/processed/STAR/25.03.23.rna.ucla.2025.01.resection.tcga.d32.protocolAligned.sorted.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T2_ucla/alignments/dna/IPISRC044_tumor_T2_ucla.redux.bam"
+    ],
+    "structural": [
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2025.01.06/RNA/2025.01.06.rna.ucla-core/processed/STAR/25.03.23.rna.ucla.2025.01.resection.tcga.d32.protocolAligned.sorted.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T2_ucla/alignments/dna/IPISRC044_tumor_T2_ucla.redux.bam"
+    ]
+  },
+  "targets": {
+    "catalog": "site",
+    "extra": [
+      {
+        "name": "MAP2-chr2-209694768-historical",
+        "variant_id": "MAP2-chr2-209694768",
+        "label": "historical",
+        "contig": "chr2",
+        "position": 209694768,
+        "ref": "CCTGGGCTACTGTGTGTTCAATA",
+        "alt": "C",
+        "assembly": "GRCh38",
+        "used_by": [
+          "isovar",
+          "topiary",
+          "vaxrank"
+        ],
+        "reason": "The site's allele before the allele-MAP2-chr2-209694768 correction; the libraries' tests still use it."
+      },
+      {
+        "name": "NR2F2-chr15-96332299-GRCh37",
+        "variant_id": "NR2F2-chr15-96332299",
+        "label": "native_grch37",
+        "contig": "chr15",
+        "position": 96875528,
+        "ref": "G",
+        "alt": "T",
+        "assembly": "GRCh37",
+        "used_by": [
+          "isovar",
+          "vaxrank"
+        ],
+        "reason": "The catalog allele at its GRCh37 position, for GRCh37 BAMs."
+      },
+      {
+        "name": "MT_ND5-chrM-12994-hg19",
+        "variant_id": "MT_ND5-chrM-12994",
+        "label": "mitochondrial",
+        "contig": "chrM",
+        "position": 12995,
+        "ref": "G",
+        "alt": "A",
+        "assembly": "GRCh37",
+        "reference_length": 16571,
+        "used_by": [
+          "isovar",
+          "vaxrank"
+        ],
+        "reason": "The catalog allele on hg19's chrM (16571 bases), as CeGaT's BAMs use."
+      },
+      {
+        "name": "MT_ND5-chrM-12994-GRCh37",
+        "variant_id": "MT_ND5-chrM-12994",
+        "label": "mitochondrial",
+        "contig": "MT",
+        "position": 12994,
+        "ref": "G",
+        "alt": "A",
+        "assembly": "GRCh37",
+        "reference_length": 16569,
+        "used_by": [
+          "isovar",
+          "vaxrank"
+        ],
+        "reason": "The catalog allele on GRCh37's MT (the revised Cambridge sequence), as Tempus's BAMs use."
+      },
+      {
+        "name": "ACSL6-chr5-131988563",
+        "variant_id": "ACSL6-chr5-131988563",
+        "label": "count_export",
+        "contig": "chr5",
+        "position": 131988563,
+        "ref": "G",
+        "alt": "GTA",
+        "assembly": "GRCh38",
+        "used_by": [
+          "isovar",
+          "topiary"
+        ],
+        "reason": "In the site's read-count export but not on its variants page."
+      },
+      {
+        "name": "KTN1-chr14-55627965",
+        "variant_id": "KTN1-chr14-55627965",
+        "label": "count_export",
+        "contig": "chr14",
+        "position": 55627965,
+        "ref": "G",
+        "alt": "GTT",
+        "assembly": "GRCh38",
+        "used_by": [
+          "isovar",
+          "topiary"
+        ],
+        "reason": "In the site's read-count export but not on its variants page."
+      },
+      {
+        "name": "EPPK1-chr8-143870409",
+        "variant_id": "EPPK1-chr8-143870409",
+        "label": "count_export",
+        "contig": "chr8",
+        "position": 143870409,
+        "ref": "CC",
+        "alt": "AA",
+        "assembly": "GRCh38",
+        "used_by": [
+          "isovar"
+        ],
+        "reason": "In the site's read-count export but not on its variants page."
+      },
+      {
+        "name": "NTF3-chr12-5494381-compound",
+        "variant_id": "NTF3-chr12-5494381",
+        "label": "library_allele",
+        "contig": "chr12",
+        "position": 5494381,
+        "ref": "AG",
+        "alt": "GT",
+        "assembly": "GRCh38",
+        "used_by": [
+          "isovar",
+          "vaxrank"
+        ],
+        "reason": "The catalog's A>G together with the next base's G>T, as one compound allele."
+      }
+    ],
+    "renamed": {
+      "CABLES1-chr18-23135500": "CABLES1-chr18-23135764",
+      "CCDC40-chr17-80058951": "CCDC40-chr17-80090148",
+      "DCHS2-chr4-154322488": "DCHS2-chr4-154323273",
+      "GAPVD1-chr9-125299105": "GAPVD1-chr9-125301980",
+      "GOLGA6L2-chr15-23441121": "GOLGA6L2-chr15-23440197",
+      "USH2A-chr1-215560752": "USH2A-chr1-215650752"
+    },
+    "structural": [
+      {
+        "name": "GABBR1--SLC29A1",
+        "label": "fusion",
+        "from": {
+          "panel": "sv-regressions-v1",
+          "id": "GABBR1-SLC29A1"
+        },
+        "used_by": [
+          "isovar",
+          "topiary",
+          "varcode"
+        ]
+      },
+      {
+        "name": "OTUD7A--FMN1",
+        "label": "fusion",
+        "from": {
+          "panel": "sv-regressions-v1",
+          "id": "OTUD7A-FMN1"
+        },
+        "used_by": [
+          "isovar",
+          "topiary",
+          "varcode"
+        ]
+      },
+      {
+        "name": "PARD3B--CDKN2B-AS1-CDKN2B",
+        "label": "fusion",
+        "from": {
+          "panel": "sv-regressions-v1",
+          "id": "PARD3B-CDKN2B"
+        },
+        "used_by": [
+          "isovar"
+        ]
+      },
+      {
+        "name": "ATP5MG--KMT2A",
+        "label": "fusion",
+        "assembly": "GRCh38",
+        "used_by": [
+          "isovar",
+          "vaxrank"
+        ],
+        "breakends": [
+          {
+            "contig": "chr11",
+            "position": 118401717,
+            "orientation": null
+          },
+          {
+            "contig": "chr11",
+            "position": 118468774,
+            "orientation": null
+          }
+        ],
+        "reason": "Isovar's fusion junction boundaries (zero-based)."
+      },
+      {
+        "name": "FOXO3--STRADA-CCDC47",
+        "label": "fusion",
+        "assembly": "GRCh38",
+        "used_by": [
+          "isovar"
+        ],
+        "breakends": [
+          {
+            "contig": "chr6",
+            "position": 108611245,
+            "orientation": null
+          },
+          {
+            "contig": "chr17",
+            "position": 63745979,
+            "orientation": null
+          }
+        ],
+        "reason": "Isovar's fusion junction boundaries (zero-based)."
+      },
+      {
+        "name": "TPST1--CRCP",
+        "label": "fusion",
+        "assembly": "GRCh38",
+        "used_by": [
+          "isovar",
+          "vaxrank"
+        ],
+        "breakends": [
+          {
+            "contig": "chr7",
+            "position": 66205522,
+            "orientation": null
+          },
+          {
+            "contig": "chr7",
+            "position": 66127703,
+            "orientation": null
+          }
+        ],
+        "reason": "Isovar's fusion junction boundaries (zero-based)."
+      },
+      {
+        "name": "KLF15--PPIAP72",
+        "label": "fusion",
+        "from": {
+          "sv_candidates": "SV0172"
+        },
+        "used_by": [
+          "varcode"
+        ]
+      },
+      {
+        "name": "SV0055",
+        "label": "sv",
+        "from": {
+          "panel": "sv-regressions-v1",
+          "id": "SV0055"
+        },
+        "used_by": [],
+        "reason": "osteosarc's sv-regressions-v1 panel."
+      },
+      {
+        "name": "SV0175",
+        "label": "sv",
+        "from": {
+          "panel": "sv-regressions-v1",
+          "id": "SV0175"
+        },
+        "used_by": [],
+        "reason": "osteosarc's sv-regressions-v1 panel."
+      },
+      {
+        "name": "SV0402",
+        "label": "sv",
+        "from": {
+          "panel": "sv-regressions-v1",
+          "id": "SV0402"
+        },
+        "used_by": [],
+        "reason": "osteosarc's sv-regressions-v1 panel."
+      },
+      {
+        "name": "SV0461",
+        "label": "sv",
+        "from": {
+          "panel": "sv-regressions-v1",
+          "id": "SV0461"
+        },
+        "used_by": [],
+        "reason": "osteosarc's sv-regressions-v1 panel."
+      },
+      {
+        "name": "SV0499",
+        "label": "sv",
+        "from": {
+          "panel": "sv-regressions-v1",
+          "id": "SV0499"
+        },
+        "used_by": [],
+        "reason": "osteosarc's sv-regressions-v1 panel."
+      },
+      {
+        "name": "DLG5-deletion",
+        "label": "sv",
+        "assembly": "GRCh38",
+        "used_by": [
+          "isovar"
+        ],
+        "breakends": [
+          {
+            "contig": "chr10",
+            "position": 77850921,
+            "orientation": null
+          },
+          {
+            "contig": "chr10",
+            "position": 77930452,
+            "orientation": null
+          }
+        ],
+        "reason": "Isovar's DLG5 deletion (DRAGEN and PURPLE calls)."
+      },
+      {
+        "name": "SV0384",
+        "label": "sv",
+        "from": {
+          "sv_candidates": "SV0384"
+        },
+        "used_by": [
+          "varcode"
+        ]
+      },
+      {
+        "name": "SV0324",
+        "label": "sv",
+        "from": {
+          "sv_candidates": "SV0324"
+        },
+        "used_by": [
+          "varcode"
+        ]
+      },
+      {
+        "name": "SV0009",
+        "label": "sv",
+        "from": {
+          "sv_candidates": "SV0009"
+        },
+        "used_by": [
+          "varcode"
+        ]
+      },
+      {
+        "name": "SV0030",
+        "label": "sv",
+        "from": {
+          "sv_candidates": "SV0030"
+        },
+        "used_by": [
+          "varcode"
+        ]
+      },
+      {
+        "name": "SV0178",
+        "label": "sv",
+        "from": {
+          "sv_candidates": "SV0178"
+        },
+        "used_by": [
+          "varcode"
+        ]
+      },
+      {
+        "name": "SV0186",
+        "label": "sv",
+        "from": {
+          "sv_candidates": "SV0186"
+        },
+        "used_by": [
+          "varcode"
+        ]
+      },
+      {
+        "name": "SV0521",
+        "label": "sv",
+        "from": {
+          "sv_candidates": "SV0521"
+        },
+        "used_by": [
+          "varcode"
+        ]
+      },
+      {
+        "name": "SV0522",
+        "label": "sv",
+        "from": {
+          "sv_candidates": "SV0522"
+        },
+        "used_by": [
+          "varcode"
+        ]
+      }
+    ]
+  },
+  "redistribution": {
+    "license": "CC0-1.0",
+    "source": "https://registry.opendata.aws/sid-osteosarc/"
+  }
+}

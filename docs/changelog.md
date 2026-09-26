@@ -5,7 +5,31 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
-## 0.10.0 (unreleased)
+## 0.11.0 (2026-09-26)
+
+The OpenVax libraries can take their test reads from one place: **openvax-v1**, chosen
+once here ([#56](https://github.com/iskandr/osteosarc/issues/56)). See
+[shared test data](test-data.md#shared-test-data-openvax-v1).
+
+- **What it holds:** reads at every variant on the site plus other alleles the
+  libraries test, reads joining the breakends of 7 RNA fusions and 8 DNA SVs, and
+  every record in Isovar's, Topiary's, Vaxrank's and Varcode's current test files,
+  exactly as they are.
+- **Using it:** `osteosarc test-data list openvax-v1` downloads it the first time, and
+  export and verify take its name too; check compares a library's own copies with
+  it. In Python, `fetch_bundle("openvax-v1")` returns its folder.
+- **How reads are chosen:** a new allele classifier sorts each read at a variant into
+  alt, ref, other or uncallable, even for indels in repeats, and openvax-v1 keeps up
+  to 20 alt, 10 ref, 5 other and 2 uncallable templates per variant and BAM, whole.
+- **Export writes just the members.** `osteosarc test-data export BUNDLE DIR --member
+  NAME` writes NAME.bam, with its index, into DIR, which may already exist; it no
+  longer copies the whole bundle, and never replaces a different file. Manifests no
+  longer record exports.
+- **Recipes:** an exact member can give each record its own reason, and a target can
+  be one of a library's test files.
+- **Docs:** the example file names for reads saved with --to now match what it writes.
+
+## 0.10.0 (2026-09-26)
 
 A smaller, more consistent osteosarc, centered on exploring the data and making
 test data ([#58](https://github.com/iskandr/osteosarc/issues/58)).
@@ -200,7 +224,7 @@ review:
 ## 0.2.3 (2026-09-23)
 
 - Shared historical fixture adapters for Isovar, Topiary and Vaxrank, and the
-  additional SV research panel. See [OpenVax fixture adoption](test-data.md#how-the-libraries-build-their-test-data)
+  additional SV research panel. See [OpenVax fixture adoption](test-data.md#each-librarys-own-test-data)
   ([#15](https://github.com/iskandr/osteosarc/issues/15)).
 - Python 3.9 support.
 

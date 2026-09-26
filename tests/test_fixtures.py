@@ -28,7 +28,7 @@ def test_api_dataset_cli_and_input_order_agree(bam, dataset, tmp_path, capsys):
     path = tmp_path / "recipe.json"
     path.write_text(json.dumps(recipe))
     assert main(["--cache", str(tmp_path / "cache"), "--offline", "test-data", "generate", str(path),
-                 str(tmp_path / "bundle"), "--source", f"rna={bam}"]) == 0
+                 str(tmp_path / "bundle"), "--source", f"rna={bam}", "--json"]) == 0
     assert json.loads(capsys.readouterr().out)["members"] == selected.manifest["members"]
     assert selected.members["alt"]["records"] == record_multiset(bam)
     records = list(read_records(bam))
@@ -156,3 +156,28 @@ def test_equivalent_acquired_archive_and_direct_input_agree(bam, tmp_path):
     subset.receipt["request"]["source"] = "https://example.test/different-source.bam"
     with pytest.raises(IntegrityError, match="source identity"):
         select_fixtures(recipe, {"rna": subset})
+
+
+def test_exact_members_can_give_each_record_its_own_reason():
+    import pytest
+
+    from osteosarc import validate_recipe
+    from osteosarc.errors import SchemaError
+    from osteosarc.fixtures import select_fixture_records
+
+    class Record:
+        def __init__(self, digest):
+            self.digest, self.template, self.segment, self.read = digest, (None, digest), 0, None
+    a, b = "a" * 64, "b" * 64
+    policy = dict(kind="exact", version=1, records={a: 1, b: 2}, reasons={a: ["alt template (hash order)"]},
+                  reason="required by Isovar")
+    counts, reasons, status = select_fixture_records([Record(a), Record(b), Record(b)], policy)
+    assert counts == {a: 1, b: 2} and status == "selected"
+    assert reasons == {a: ["alt template (hash order)"], b: ["required by Isovar"]}
+    recipe = dict(schema_version=1, id="x", targets={}, sources={}, members={})
+    recipe["targets"]["t"] = dict(kind="small_variant", assembly="GRCh38", reference={"id": "x"},
+                                  coordinates="one-based", contig="chr1", position=1, ref="A", alt="C")
+    recipe["sources"]["s"] = dict(identity={"id": "s"}, assembly="GRCh38", sample=None, library=None, product=None)
+    recipe["members"]["m"] = dict(target="t", source="s", policy=dict(policy, reasons={"c" * 64: ["stray"]}))
+    with pytest.raises(SchemaError, match="Exact reasons"):
+        validate_recipe(recipe)

@@ -28,7 +28,7 @@ COMMANDS = (
         ("download FILE", "A whole file (--to DIR puts it, and its index, in DIR)"),
         ("downloads", "What's already on this computer, and where"))),
     ("Test data for libraries", (
-        ("test-data ...", "Build, check and export bundles of test reads from a recipe"),)),
+        ("test-data ...", "Shared test reads (openvax-v1): list, export, and check your copies"),)),
     ("Snapshots of the website's metadata", (
         ("sync", "Download the current metadata (about 57 MB); commands use the newest"),
         ("snapshots", "Saved snapshots, by download date"),
@@ -186,9 +186,10 @@ def parser():
     snapshots.add_argument("--json", action="store_true")
     command("repl")
     test_data = command("test-data", data=False, epilog="examples:\n"
-                        "  osteosarc test-data generate recipe.json bundle\n"
-                        "  osteosarc test-data list bundle\n"
-                        "  osteosarc test-data export bundle exported --member DYNC1H1-rna")
+                        "  osteosarc test-data list openvax-v1\n"
+                        "  osteosarc test-data export openvax-v1 tests/data --member IPISRC044_tumor_T2_ucla.redux.DYNC1H1-chr14-101980529\n"
+                        "  osteosarc test-data check openvax-v1 fixtures.json\n"
+                        "  osteosarc test-data generate recipe.json bundle")
     actions = test_data.add_subparsers(dest="test_data_command", required=True, metavar="ACTION")
     generate = actions.add_parser("generate", help="Fetch a recipe's reads and write a bundle")
     generate.add_argument("recipe")
@@ -198,17 +199,26 @@ def parser():
     generate.add_argument("--size-budget", type=int, default=64 * 1024 * 1024)
     generate.add_argument("--header-policy", choices=("full", "compact"), default="full",
                           help="compact keeps only the header lines the records need")
+    generate.add_argument("--json", action="store_true", help="The bundle's manifest as JSON")
     for name, what in (("list", "Each member of a bundle, with its records and why"),
                        ("verify", "Check a bundle's files, records and indexes"),
-                       ("export", "Write a bundle's members as indexed BAMs (or SAM)")):
+                       ("export", "Write members into a folder as indexed BAMs (or SAM), named after them")):
         action = actions.add_parser(name, help=what)
-        action.add_argument("bundle")
+        action.add_argument("bundle", help="A bundle directory, or a published bundle such as openvax-v1")
         if name == "export":
-            action.add_argument("output", help="A new directory")
+            action.add_argument("output", help="Folder to write the members into; it may already exist")
             action.add_argument("--member", action="append", help="Only these members; repeat for several")
             action.add_argument("--format", choices=("bam", "sam", "sam.gz"), default="bam")
         if name == "verify":
             action.add_argument("--sha256", help="The manifest checksum you expect")
+        if name in ("list", "verify"):
+            action.add_argument("--json", action="store_true",
+                                help="Every member's records and reasons as JSON" if name == "list"
+                                else "The bundle's manifest as JSON")
+    check = actions.add_parser("check", help="Compare your library's test files with a bundle's members")
+    check.add_argument("bundle", help="A bundle directory, or a published bundle such as openvax-v1")
+    check.add_argument("fixtures", help='JSON mapping member names to your files: a BAM, SAM or SAM.gz path, '
+                                        'or {"json": path, "pointer": "/path/to/lines"}')
     return root
 
 
@@ -535,21 +545,58 @@ def main(argv=None):
 
 
 def test_data(args, cache):
-    """test-data generate, list, verify and export."""
+    """test-data generate, list, verify, export and check."""
     from pathlib import Path
 
     from .bundles import export_bundle, generate_bundle, list_bundle, verify_bundle
+    from .shared import check_fixtures, fetch_bundle, read_json
     action = args.test_data_command
     if action == "generate":
-        recipe = json.loads(Path(args.recipe).read_text())
+        recipe = read_json(args.recipe)
         sources = dict(item.split("=", 1) for item in args.source)
-        value = generate_bundle(recipe, args.output, sources=sources, cache=cache, size_budget=args.size_budget,
-                                header_policy=args.header_policy)
-    elif action == "verify":
-        value = verify_bundle(args.bundle, sha256=args.sha256)
+        manifest = generate_bundle(recipe, args.output, sources=sources, cache=cache,
+                                   size_budget=args.size_budget, header_policy=args.header_policy)
+        if args.json:
+            print_json(manifest)
+        else:
+            print(bundle_summary(args.output, manifest))
+        return 0
+    if not Path(args.bundle).exists():
+        args.bundle = fetch_bundle(args.bundle, cache=cache)
+    if action == "check":
+        manifest = Path(args.fixtures)
+        problems = check_fixtures(args.bundle, read_json(manifest), root=manifest.parent)
+        if problems:
+            print_json(problems)
+            print(f"osteosarc: {len(problems)} of your files differ from the bundle", file=sys.stderr)
+            return 1
+        print(f"Every file in {manifest} matches the bundle.")
+        return 0
+    if action == "verify":
+        manifest = verify_bundle(args.bundle, sha256=args.sha256)
+        if args.json:
+            print_json(manifest)
+        else:
+            print(bundle_summary(args.bundle, manifest) + "\nEvery file, record and index checks out.")
     elif action == "list":
-        value = list_bundle(args.bundle)
+        members = list_bundle(args.bundle)
+        if args.json:
+            print_json(members)
+        else:
+            from .views import table
+            rows = [dict(member=name, status=m["status"], records=m["record_count"]) for name, m in members.items()]
+            print(table(rows, ["status", "records", "member"], fixed=("member",)))
     else:
-        value = export_bundle(args.bundle, args.output, members=args.member, format=args.format)
-    print_json(value)
+        for path in export_bundle(args.bundle, args.output, members=args.member, format=args.format).values():
+            print(path)
     return 0
+
+
+def bundle_summary(where, manifest):
+    from .views import plural, size_text
+    members = manifest["members"].values()
+    with_reads = sum(1 for m in members if m["record_count"])
+    records = sum(s["record_count"] for s in manifest["sources"].values())
+    return (f"{where}: {plural(len(members), 'member')} ({with_reads} with reads), "
+            f"{plural(records, 'record')} from {plural(len(manifest['sources']), 'BAM')}, "
+            f"{size_text(manifest['total_size_bytes'])}")

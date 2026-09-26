@@ -18,7 +18,7 @@ Get data:
   downloads          What's already on this computer, and where
 
 Test data for libraries:
-  test-data ...      Build, check and export bundles of test reads from a recipe
+  test-data ...      Shared test reads (openvax-v1): list, export, and check your copies
 
 Snapshots of the website's metadata:
   sync               Download the current metadata (about 57 MB); commands use the newest
@@ -111,16 +111,17 @@ local paths. BAMs are large, so for tests read a region instead.
 
 ## Test data for libraries
 
-<!-- docs-check: skip (needs your own recipe) -->
+<!-- docs-check: skip (downloads openvax-v1) -->
 ```sh
-osteosarc test-data generate recipe.json bundle
-osteosarc test-data list bundle
-osteosarc test-data verify bundle
-osteosarc test-data export bundle exported --member DYNC1H1-rna
+osteosarc test-data list openvax-v1
+osteosarc test-data export openvax-v1 tests/data --member MEMBER
+osteosarc test-data check openvax-v1 fixtures.json
 ```
 
-A recipe names the reads a library's tests need; generate fetches them into a
-bundle that anyone can check and export offline. See [Test data](test-data.md).
+openvax-v1 is the bundle of reads the OpenVax libraries share; list downloads it the
+first time, export writes members as indexed BAMs, and check compares your own copies
+with it. The same commands take a bundle folder, and generate builds one from your
+own recipe. See [Test data](test-data.md).
 
 ## Snapshots
 
@@ -146,4 +147,5 @@ These go before the command, as in `osteosarc --offline variants`.
 | `--no-corrections` | Show the website's values unchanged |
 | `--version` | Print the installed version |
 
-Only sync, download, reads, test-data generate and repl use the network.
+Only sync, download, reads, repl, test-data generate, and the first use of openvax-v1
+use the network.
