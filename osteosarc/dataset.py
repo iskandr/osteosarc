@@ -14,7 +14,7 @@ from functools import cached_property
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
 
-from .cache import Cache, Receipt, file_lock, is_sha256, place, stable_id, write_json
+from .cache import Cache, Receipt, file_lock, place, stable_id, write_json
 from .catalog import (
     BUCKET,
     SNAPSHOT_SOURCES,
@@ -143,45 +143,6 @@ def _canonical(value):
     if value is None or isinstance(value, (bool, int, float, str)):
         return [type(value).__name__, value]
     raise TypeError(f"{type(value).__name__} can't be written down exactly")
-
-
-class _FileIndex:
-    """Files by ID, key, URL or resource name. Each kind of name gets its own
-    dictionary when first looked up: building one from the files takes about a
-    tenth of a second, less than loading a saved one."""
-
-    def __init__(self, files):
-        self._files, self._by = files, {}
-
-    def _names(self, kind):
-        """{name: file}, with a list for a name several files share."""
-        if kind not in self._by:
-            files = list(self._files)
-            names = [f.metadata.get("resource") if kind == "resource" else getattr(f, kind) for f in files]
-            by = dict(zip(names, files))  # built in C: a tenth of the time of a loop
-            by.pop(None, None), by.pop("", None)
-            if len(by) < sum(1 for name in names if name):
-                for name, count in Counter(name for name in names if name).items():
-                    if count > 1:
-                        by[name] = [f for n, f in zip(names, files) if n == name]
-            self._by[kind] = by
-        return self._by[kind]
-
-    def _lookup(self, kind, name):
-        found = self._names(kind).get(name)
-        return [] if found is None else found if isinstance(found, list) else [found]
-
-    def get(self, name, default=()):
-        """Every file with this ID, key, URL or resource name."""
-        if not isinstance(name, str):
-            return list(default)
-        kinds = ["key", "resource"]
-        if "://" in name:
-            kinds.append("url")
-        if is_sha256(name):
-            kinds.append("id")
-        found = {id(file): file for kind in kinds for file in self._lookup(kind, name)}
-        return list(found.values()) or list(default)
 
 
 class Dataset:
@@ -582,7 +543,8 @@ class Dataset:
     def corrections(self):
         """Every correction's status (applied, fixed_upstream, stale, disabled) and evidence."""
         report = Table(self.curation.report())
-        self.curation.release("bucket")  # the large listing; the evaluations are kept
+        if "files" in self.__dict__:  # the listing isn't needed again: let it go
+            self.curation.release("bucket")
         return report
 
     @property
@@ -770,13 +732,9 @@ class Dataset:
                     rows.append(dict(copy.deepcopy(peptide), variant_id=record["id"], gene=record["gene"]))
         return Table(rows, source=self.manifest["sources"]["source_variants"])
 
-    @cached_property
-    def _file_index(self):
-        return _FileIndex(self.files)
-
     def file(self, key_or_id):
         """Resolve an exact bucket key, URL, resource name, or file ID."""
-        matches = self._file_index.get(key_or_id, [])
+        matches = self.files._names.get(key_or_id)
         if len(matches) != 1:
             raise KeyError(f"Expected one file for {key_or_id!r}, found {len(matches)}")
         return matches[0]
@@ -800,8 +758,8 @@ class Dataset:
         directory = Path(to).expanduser()
         if file.index_urls:
             index = self.file(file.index_urls[0])
-            self.cache.place(self._download(index, cache=self.cache), directory / PurePosixPath(index.key).name)
-        return self.cache.place(path, directory / PurePosixPath(file.key).name)
+            place(self._download(index, cache=self.cache), directory / PurePosixPath(index.key).name)
+        return place(path, directory / PurePosixPath(file.key).name)
 
     def short_name(self, file):
         """A file's name without its extension, led by the nearest folder that
@@ -871,9 +829,9 @@ class Dataset:
             try:
                 receipt = json.loads(receipt_path.read_text())
                 source = receipt["request"]["source"]
-                regions = receipt["request"].get("regions", ())
-            except (OSError, ValueError, KeyError, TypeError):
-                continue
+                regions = regions_text(receipt["request"].get("regions", ()))
+            except (OSError, ValueError, KeyError, TypeError, AttributeError):
+                continue  # not a receipt osteosarc wrote
             bam = receipt_path.parent / "reads.bam"
             if not isinstance(source, str) or not bam.is_file():
                 continue
@@ -881,13 +839,13 @@ class Dataset:
             if not (file or source.startswith(base)):
                 continue
             rows.append(dict(kind="reads", key=file.key if file else source, url=source, size=bam.stat().st_size,
-                             path=str(bam), regions=regions_text(regions),
+                             path=str(bam), regions=regions,
                              downloaded=datetime.fromtimestamp(bam.stat().st_mtime, timezone.utc).isoformat()))
         return Table(rows, columns=("kind", "key", "url", "size", "path", "regions", "downloaded"))
 
     def _url_file(self, url):
         """The file at this URL, or None."""
-        return next((f for f in self._file_index.get(url, ()) if f.url == url), None)
+        return next((f for f in self.files._names.get(url) if f.url == url), None)
 
     def _downloaded_files(self):
         """downloads()' rows for whole files."""

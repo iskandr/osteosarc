@@ -16,15 +16,15 @@ in 0.2 s.
   objects), its header and the variant catalogue are saved in the cache the first
   time, for that snapshot, osteosarc version and set of corrections. Loading one warns
   of the stale corrections to its sources, as building it does. Each user keeps their
-  own copies in a folder only they can write in, and loads only files they own that
-  no one else can write; each kind keeps its three most recently used copies, and
-  copies unused for 30 days are removed.
+  own copies, in a folder only they can write in, and a copy can hold only
+  osteosarc's catalogue classes; each kind keeps its three most recently used copies,
+  and copies unused for 30 days are removed.
 - Looking files up by key, URL or sample, and looping over any collection, no longer
   goes through every file in Python.
 - Corrections find their records through an index instead of scanning every record,
   and variants and the timeline list exactly the corrections that touched them.
-- A cached file's checksum is remembered on disk by its size, times and inode, in
-  records each user keeps for themselves, so opening a snapshot doesn't
+- A cached file's checksum is remembered on disk by its size, modification time and
+  inode, in records each user keeps for themselves, so opening a snapshot doesn't
   re-hash its 57 MB of sources, and osteosarc imports pandas only to download a file:
   `osteosarc --version` takes 0.15 s, not 0.9 s. A read-only cache still works.
 

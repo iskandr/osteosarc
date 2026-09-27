@@ -705,7 +705,6 @@ def test_a_name_two_files_have_as_different_kinds_of_name_is_ambiguous(dataset):
     from osteosarc import File, Files
     named = File("b", "other.tsv", "https://example.test/other.tsv", "table", "tsv", metadata={"resource": "solo.bam"})
     dataset.files = Files([File("a", "solo.bam", "https://example.test/solo.bam", "alignment", "bam"), named])
-    dataset.__dict__.pop("_file_index", None)
     with pytest.raises(KeyError, match="found 2"):
         dataset.file("solo.bam")
     for name in (None, Path("solo.bam")):
@@ -716,7 +715,6 @@ def test_a_name_two_files_have_as_different_kinds_of_name_is_ambiguous(dataset):
     same_url = File("d", "d.tsv", "https://example.test/c", "table", "tsv")
     twice = File("e", "e.bam", "https://example.test/e.bam", "alignment", "bam")
     dataset.files = Files([odd, same_url, twice, File(**{f: getattr(twice, f) for f in ("id", "key", "url", "kind", "format")})])
-    dataset.__dict__.pop("_file_index", None)
     assert dataset.file("mirrors/https://example.org/a.bam") is odd
     for ambiguous in ("https://example.test/c", "e.bam"):
         with pytest.raises(KeyError, match="found 2"):

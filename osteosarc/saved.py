@@ -7,11 +7,9 @@ corrections.
 
 Copies are pickles, loaded so that they can hold only osteosarc's catalogue classes
 and plain values: a pickle could otherwise run code. Each user keeps their own, in a
-folder only they can write in, and loads only files they own that no one else can
-write, each checked to be the catalogue it's named as. Where no folder can be
-private (a drive without Unix permissions), nothing is saved. Each kind of catalogue
-keeps its three most recently used copies (for other snapshots or versions of
-osteosarc), and copies unused for 30 days are removed.
+folder only they can write in, each checked to be the catalogue it's named as. Each
+kind of catalogue keeps its three most recently used copies (for other snapshots or
+versions of osteosarc), and copies unused for 30 days are removed.
 """
 
 import functools
@@ -21,6 +19,7 @@ import io
 import os
 import pickle
 import sys
+import warnings
 from pathlib import Path
 
 from .cache import private_folder, prune_own, read_own, write_own
@@ -47,11 +46,10 @@ def load_or_build(folder, name, key, build):
         saved = read_own(private, filename)
         if saved is not None:
             try:
-                # Decompressed whole, not streamed: 40% faster, for a brief ~150 MB of bytes.
-                saved_stem, value = _Unpickler(io.BytesIO(gzip.decompress(saved))).load()
-            except Exception:  # damaged: build it again
-                saved_stem = None
-            if saved_stem == stem:  # not another catalogue under this one's name
+                value = _load(saved, stem)
+            except Exception:  # damaged, or not this catalogue: build it again
+                pass
+            else:
                 try:
                     os.utime(filename, dir_fd=private)  # recently used
                 except OSError:
@@ -60,10 +58,23 @@ def load_or_build(folder, name, key, build):
         value = build()
         try:
             write_own(private, filename, lambda handle: _dump(handle, (stem, value)))
+            _load(read_own(private, filename), stem)  # a copy that can't be loaded is no use
             _prune(private, name, filename)
+        except pickle.UnpicklingError as error:
+            os.unlink(filename, dir_fd=private)
+            warnings.warn(f"osteosarc can't keep its {name} catalogue ({error}), so builds it each time",
+                          RuntimeWarning, stacklevel=3)
         except Exception:
             pass  # a read-only or full cache still works; the catalogue is built each time
         return value
+
+
+def _load(saved, stem):
+    # Decompressed whole, not streamed: 40% faster, for a brief ~150 MB of bytes.
+    saved_stem, value = _Unpickler(io.BytesIO(gzip.decompress(saved))).load()
+    if saved_stem != stem:
+        raise ValueError("another catalogue under this one's name")
+    return value
 
 
 class _Unpickler(pickle.Unpickler):

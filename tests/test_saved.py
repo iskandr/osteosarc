@@ -29,16 +29,13 @@ def test_a_catalogue_is_built_once(tmp_path, monkeypatch):
     assert not list(path.parent.glob("variants-*"))
 
 
-def test_damaged_foreign_or_misnamed_copies_are_built_again(tmp_path):
+def test_damaged_linked_or_misnamed_copies_are_built_again(tmp_path):
     saved.load_or_build(tmp_path, "files", "a", lambda: 1)
     (path,) = (tmp_path / f"u{os.getuid()}").glob("*.pickle.gz")
     good = path.read_bytes()
     path.write_bytes(b"not a pickle")
     assert saved.load_or_build(tmp_path, "files", "a", lambda: 2) == 2
-    # A copy others can write could have been replaced: it's never loaded.
-    path.chmod(0o666)
-    assert saved.load_or_build(tmp_path, "files", "a", lambda: 3) == 3
-    # Nor is a link, even to a good copy, nor another catalogue under this one's name.
+    # A link isn't loaded, even to a good copy, nor is another catalogue under this one's name.
     elsewhere = tmp_path / "elsewhere"
     elsewhere.write_bytes(good)
     path.unlink()
@@ -47,12 +44,10 @@ def test_damaged_foreign_or_misnamed_copies_are_built_again(tmp_path):
     other = path.with_name(path.name.replace("files-a-", "files-b-"))
     path.rename(other)
     assert saved.load_or_build(tmp_path, "files", "b", lambda: 5) == 5
-    # A private folder that isn't: nothing is loaded from it or saved in it.
+    # A private folder made too open is made private again, and still used.
     path.parent.chmod(0o777)
-    try:
-        assert saved.load_or_build(tmp_path, "files", "b", lambda: 6) == 6
-    finally:
-        path.parent.chmod(0o700)
+    assert saved.load_or_build(tmp_path, "files", "b", lambda: 6) == 5
+    assert stat.S_IMODE(path.parent.stat().st_mode) == 0o700
 
 
 def test_a_read_only_cache_still_works(tmp_path, monkeypatch):
@@ -111,6 +106,13 @@ def test_a_copy_naming_any_other_class_is_never_loaded(tmp_path):
     stem = path.name[:-len(".pickle.gz")]
     path.write_bytes(gzip.compress(pickle.dumps((stem, fractions.Fraction(1, 2)))))
     assert saved.load_or_build(tmp_path, "files", "a", lambda: 2) == 2
+
+
+def test_a_catalogue_that_could_not_be_loaded_is_not_kept(tmp_path):
+    import fractions
+    with pytest.warns(RuntimeWarning, match="can't keep its files catalogue"):
+        assert saved.load_or_build(tmp_path, "files", "a", lambda: fractions.Fraction(1, 2)) == 0.5
+    assert not list((tmp_path / f"u{os.getuid()}").iterdir())
 
 
 def test_the_code_fingerprint_passes_over_editors_files(tmp_path, monkeypatch):
