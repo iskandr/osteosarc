@@ -42,7 +42,7 @@ from .alleles import CLASSES, allele_window, read_allele, template_allele
 from .errors import CoordinateError, IntegrityError, OfflineError, OsteosarcError, SchemaError
 from .models import Region
 from .reads import merge_spans, resolve_regions
-from .records import read_records
+from .records import read_records, read_template
 from .reference import reference_sequence
 from .views import plural
 
@@ -142,6 +142,18 @@ def select_allele_balanced(templates, window, *, caps=None, low_quality_alt=2):
     return chosen, {name: len(by_class[name]) for name in CLASSES}
 
 
+def sam_lookup(lines):
+    """Where SAM lines' records are: their spans, and the names of those with none."""
+    spans, names = set(), set()
+    for line in lines:
+        span = sam_span(line)
+        if span:
+            spans.add(span)
+        else:
+            names.add(line.split("\t", 1)[0])
+    return spans, names
+
+
 def match_required(records, lines):
     """Exact record counts for SAM lines, matched against a source's records by SAM text.
 
@@ -151,9 +163,8 @@ def match_required(records, lines):
     or matches records that differ in binary form.
     """
     if isinstance(records, RecordIndex):
-        spans = {span for span in map(sam_span, lines) if span}
+        spans, names = sam_lookup(lines)
         near = {id(r): r for span in spans for r in records.overlapping(*span)}
-        names = {line.split("\t", 1)[0] for line in lines if not sam_span(line)}
         near.update((id(r), r) for r in records.records if names and r.read.query_name in names)
         records = list(near.values())
     by_text = defaultdict(Counter)
@@ -509,6 +520,46 @@ def _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, e
                                   for n, rs in breakend_regions.items()})
 
 
+def _variant_span(plan, windows, name):
+    """Where selection looks for a variant's templates: its window, with the base on each side."""
+    return plan["variant_regions"][name].contig, windows[name].start - 1, windows[name].end + 1
+
+
+def _breakend_spans(plan, name):
+    """Where selection looks for an SV's templates: within pad bases of each breakend."""
+    return [(r.contig, r.start, r.end) for r in plan["breakend_regions"][name]]
+
+
+def _source_index(path, plan, windows):
+    """A RecordIndex of the records selection can look at in a source's extract.
+
+    Every template with a record where selection looks (_variant_span,
+    _breakend_spans, required SAM lines' spans) is kept whole, as are named reads
+    and pinned records (found by checksum, which hashes every read). The index
+    then answers every question selection asks exactly as one of the whole extract
+    would, without its millions of other records.
+    """
+    import pysam
+    spans = [_variant_span(plan, windows, name) for name in plan["covered"]]
+    spans += [span for name in plan["sv_covered"] for span in _breakend_spans(plan, name)]
+    names, digests = set(), set()
+    for subset in plan["mine"].values():
+        sam_spans, sam_names = sam_lookup(subset.get("sam", ()))
+        spans += sam_spans
+        names |= sam_names | set(subset.get("names", ()))
+        digests.update(subset.get("records", ()))
+    templates = set()
+    with pysam.AlignmentFile(str(path)) as bam:
+        for contig, start, end in merge_spans(span for span in spans if span[0] in bam.references):
+            # A little wider than asked: the index checks exactly.
+            templates.update(map(read_template, bam.fetch(contig, max(0, start - 1), end + 1)))
+    either = names | {name for _, name in templates}
+
+    def keep(read):  # the name first: most reads aren't wanted, and it's quicker to get than RG
+        return read.query_name in either and (read.query_name in names or read_template(read) in templates)
+    return RecordIndex(read_records(path, keep=keep, digests=digests or None))
+
+
 def _select_source(plan, index, windows, targets, caps, low_quality_alt, cap):
     """The members one source contributes, and any required fixtures it lacks."""
     members, fixtures, problems = {}, {}, []
@@ -527,12 +578,12 @@ def _select_source(plan, index, windows, targets, caps, low_quality_alt, cap):
         where = plan["variant_regions"][name]
         window = windows[name]
         window = type(window)(where.contig, window.start, window.end, window.ref, window.alt)
-        candidates = index.touching(where.contig, window.start - 1, window.end + 1)
+        candidates = index.touching(*_variant_span(plan, windows, name))
         chosen, seen = select_allele_balanced(candidates, window, caps=caps, low_quality_alt=low_quality_alt)
         members[f"{label}.{name}"] = dict(target=name, source=label, observed=seen, policy=dict(
             exact({t: why for t, (_, why) in chosen.items()}), reason="allele-balanced selection"))
     for name in plan["sv_covered"]:
-        ends = [(r.contig, r.start, r.end) for r in plan["breakend_regions"][name]]
+        ends = _breakend_spans(plan, name)
         candidates = index.touching(*ends[0])
         for end in ends[1:]:
             near = index.touching(*end)
@@ -637,12 +688,12 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, req
     with ThreadPoolExecutor(max_workers=workers) as pool:
         for future in as_completed([pool.submit(extract, plan) for plan in plans]):
             plan, subset = future.result()
-            index = RecordIndex(read_records(subset.path))
+            index = _source_index(subset.path, plan, windows)
             members, fixtures, missing = _select_source(plan, index, windows, targets, caps, low_quality_alt,
                                                         structural["cap"])
             results[plan["label"]] = (plan, members, fixtures)
             problems += missing
-            log(f"{plan['file'].key}: read {plural(len(index.records), 'record')}, "
+            log(f"{plan['file'].key}: read {plural(subset.receipt['records'], 'record')}, "
                 f"kept {plural(len(members) + len(fixtures), 'member')}")
     if problems:
         # Every source was read (and its extraction cached), so a rerun after fixing these is quick.
