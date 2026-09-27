@@ -5,9 +5,10 @@ objects) takes seconds, so each catalogue is saved the first time and loaded aft
 A saved copy serves one snapshot, one version of osteosarc's code and one set of
 corrections.
 
-Copies are pickles, which can run code when loaded, so each user keeps their own,
-in a folder only they can write in, and loads only files they own that no one else
-can write, each checked to be the catalogue it's named as. Where no folder can be
+Copies are pickles, loaded so that they can hold only osteosarc's catalogue classes
+and plain values: a pickle could otherwise run code. Each user keeps their own, in a
+folder only they can write in, and loads only files they own that no one else can
+write, each checked to be the catalogue it's named as. Where no folder can be
 private (a drive without Unix permissions), nothing is saved. Each kind of catalogue
 keeps its three most recently used copies (for other snapshots or versions of
 osteosarc), and copies unused for 30 days are removed.
@@ -16,6 +17,7 @@ osteosarc), and copies unused for 30 days are removed.
 import functools
 import gzip
 import hashlib
+import io
 import os
 import pickle
 import sys
@@ -23,6 +25,8 @@ from pathlib import Path
 
 from .cache import private_folder, prune_own, read_own, write_own
 
+#: The classes a saved catalogue may hold; a copy naming any other fails to load.
+CLASSES = {("osteosarc.models", name) for name in ("File", "Files", "SampleClaim", "Variant", "Variants")}
 #: Copies of each kind of catalogue kept.
 KEEP = 3
 #: Copies unused for this long are removed.
@@ -44,7 +48,7 @@ def load_or_build(folder, name, key, build):
         if saved is not None:
             try:
                 # Decompressed whole, not streamed: 40% faster, for a brief ~150 MB of bytes.
-                saved_stem, value = pickle.loads(gzip.decompress(saved))
+                saved_stem, value = _Unpickler(io.BytesIO(gzip.decompress(saved))).load()
             except Exception:  # damaged: build it again
                 saved_stem = None
             if saved_stem == stem:  # not another catalogue under this one's name
@@ -62,6 +66,13 @@ def load_or_build(folder, name, key, build):
         return value
 
 
+class _Unpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        if (module, name) not in CLASSES:
+            raise pickle.UnpicklingError(f"{module}.{name} isn't a catalogue class")
+        return super().find_class(module, name)
+
+
 def _dump(handle, value):
     with gzip.GzipFile(fileobj=handle, mode="wb", compresslevel=1, mtime=0) as compressed:
         pickle.dump(value, compressed, protocol=pickle.HIGHEST_PROTOCOL)
@@ -74,20 +85,24 @@ def _prune(folder, name, current):
     same_kind = sorted(((mtime, n) for n, mtime in kept.items() if n.startswith(name + "-")), reverse=True)
     for _, old in same_kind[KEEP:]:
         if old != current:
-            os.unlink(old, dir_fd=folder)
+            try:
+                os.unlink(old, dir_fd=folder)
+            except OSError:
+                pass  # already gone (another process pruning), or not a file
 
 
 def _fingerprint():
     """What builds the catalogues: osteosarc's code, and Python. (The only data they
     use is the corrections', which are in each catalogue's name.) None when the
     code can't be read (a zipped or compiled-only install)."""
-    sources = sorted(Path(__file__).parent.glob("*.py"))
-    if not sources:
-        return None
+    sources = sorted(p for p in Path(__file__).parent.glob("*.py") if not p.name.startswith("."))
     digest = hashlib.sha256(sys.version.encode())
-    for path in sources:
-        digest.update(path.name.encode() + b"\0" + path.read_bytes())
-    return digest.hexdigest()
+    try:
+        for path in sources:
+            digest.update(path.name.encode() + b"\0" + path.read_bytes())
+    except OSError:  # e.g. an editor's lock file, or a file being replaced
+        return None
+    return digest.hexdigest() if sources else None
 
 
 # Taken when osteosarc is imported (dataset imports this module), so it's the code

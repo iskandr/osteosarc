@@ -167,12 +167,15 @@ def test_files_are_shareable_and_local_digests_are_remembered(tmp_path, download
         damage()
         assert cache.file_digest(local) == second
     assert len(calls) == 7
-    # A download isn't hashed again when it's first used.
+    # A download isn't hashed again when it's first used, nor after it's placed in a folder.
     fresh = Cache(tmp_path / "fresh")
     receipt = fresh.fetch("https://example.test/shared.tsv")
     with monkeypatch.context() as patched:
         patched.setattr(Cache, "_remembered_digest", lambda *a: pytest.fail("hashed a verified download again"))
+        fresh.place(fresh.path(receipt), tmp_path / "placed" / "shared.tsv")
         fresh.path(receipt)
+    legacy = cache.workspace / "digests" / "legacy.json"  # from before 0.13.1
+    legacy.write_text("{}")
     # Records unused for 30 days, and leftovers of interrupted writes, are removed.
     stale, leftover = folder / ("0" * 64 + ".json"), folder / ".own-x"
     for path in (stale, leftover):
@@ -180,7 +183,11 @@ def test_files_are_shareable_and_local_digests_are_remembered(tmp_path, download
         os.utime(path, (1_000_000_000, 1_000_000_000))
     local.write_bytes(b"once more")
     cache.file_digest(local)
-    assert not stale.exists() and not leftover.exists()
+    assert not stale.exists() and not leftover.exists() and not legacy.exists()
+    used = folder / f"{stable_id(file_identity(local, changed=True))}.json"  # just written
+    os.utime(used, (1_000_000_000, 1_000_000_000))
+    cache.file_digest(local)
+    assert used.stat().st_mtime > 1_000_000_000  # used, so kept
     # A cached object edited in place, with its modification time set back, is caught.
     receipt = cache.fetch("https://example.test/shared.tsv")
     path = cache.path(receipt)

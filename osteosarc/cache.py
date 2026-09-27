@@ -96,9 +96,10 @@ def private_folder(folder):
         descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
         status = os.fstat(descriptor)
         if status.st_uid != os.getuid() or status.st_mode & 0o022:
-            os.close(descriptor)
-            descriptor = None
+            raise PermissionError(f"{path} isn't private")
     except OSError:
+        if descriptor is not None:
+            os.close(descriptor)
         descriptor = None
     try:
         yield descriptor
@@ -315,6 +316,24 @@ class Cache:
         """
         return self._remembered_digest(path, file_identity(path, changed=True))
 
+    def place(self, path, destination):
+        """place() an object path() verified. Linking or chmod-ing it changes only its
+        change time, so it stays verified, and isn't hashed again when next used."""
+        before = file_identity(path, changed=True)
+        placed = place(path, destination)
+        after = file_identity(path, changed=True)
+        sha256 = self._verified.get(json.dumps(before))
+        if sha256 is not None and after != before and after[:-1] == before[:-1]:
+            self._verified[json.dumps(after)] = sha256
+            with private_folder(self.workspace / "digests") as folder:
+                if folder is not None:
+                    record = json.dumps(dict(identity=after, sha256=sha256)).encode()
+                    try:
+                        write_own(folder, f"{stable_id(after)}.json", lambda handle: handle.write(record))
+                    except OSError:
+                        pass
+        return placed
+
     def _remembered_digest(self, path, identity):
         """Each user keeps their own records, in a private folder; a damaged one is
         hashed again, and none are kept where no folder can be private."""
@@ -324,6 +343,10 @@ class Cache:
                 try:
                     record = json.loads(read_own(folder, name) or "{}")
                     if record.get("identity") == identity and is_sha256(record.get("sha256")):
+                        try:
+                            os.utime(name, dir_fd=folder)  # used: kept by prune_own
+                        except OSError:
+                            pass
                         return record["sha256"]
                 except (ValueError, AttributeError):
                     pass
@@ -333,6 +356,9 @@ class Cache:
                     record = json.dumps(dict(identity=identity, sha256=value)).encode()
                     write_own(folder, name, lambda handle: handle.write(record))
                     prune_own(folder, ".json", 30)
+                    for old in (self.workspace / "digests").glob("*.json"):  # from before 0.13.1
+                        if old.stat().st_uid == os.getuid():
+                            old.unlink()
                 except OSError:
                     pass  # a read-only cache: hashed again next time
             return value

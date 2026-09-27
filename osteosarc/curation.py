@@ -351,7 +351,8 @@ class Curation:
         return status, details
 
     def stale(self, corrections):
-        """{ID: warning} for those of these corrections that are stale."""
+        """{ID: warning} for those of these corrections that are stale, evaluating
+        them if need be (which warns of them, as evaluating always does)."""
         found = {}
         for correction in corrections:
             status, details = self.evaluate(correction) if self.enabled else ("disabled", ())

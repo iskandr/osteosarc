@@ -129,15 +129,15 @@ def choose_snapshot(rows, name=None, *, date=None, root=None):
 
 
 def _canonical(value):
-    """value as JSON that tells types apart: a tuple from a list, 1 from "1", a
-    Glob from a dict. Raises TypeError for anything else."""
+    """value as JSON that tells types apart (a tuple from a list, 1 from "1", a
+    Glob from a dict) and keeps dicts' order. Raises TypeError for anything else."""
     if dataclasses.is_dataclass(value) and not isinstance(value, type):
         return [type(value).__qualname__, [[f.name, _canonical(getattr(value, f.name))]
                                            for f in dataclasses.fields(value)]]
     if isinstance(value, (list, tuple)):
         return [type(value).__name__, [_canonical(v) for v in value]]
-    if isinstance(value, dict):
-        return ["dict", sorted(([_canonical(k), _canonical(v)] for k, v in value.items()), key=json.dumps)]
+    if isinstance(value, dict):  # in order: a correction's changes are made in order
+        return ["dict", [[_canonical(k), _canonical(v)] for k, v in value.items()]]
     if isinstance(value, (set, frozenset)):
         return [type(value).__name__, sorted((_canonical(v) for v in value), key=json.dumps)]
     if value is None or isinstance(value, (bool, int, float, str)):
@@ -150,8 +150,8 @@ class _FileIndex:
     dictionary when first looked up: building one from the files takes about a
     tenth of a second, less than loading a saved one."""
 
-    def __init__(self, files, base=BUCKET):
-        self._files, self._by, self._base = files, {}, base
+    def __init__(self, files):
+        self._files, self._by = files, {}
 
     def _names(self, kind):
         """{name: file}, with a list for a name several files share."""
@@ -581,7 +581,9 @@ class Dataset:
     @property
     def corrections(self):
         """Every correction's status (applied, fixed_upstream, stale, disabled) and evidence."""
-        return Table(self.curation.report())
+        report = Table(self.curation.report())
+        self.curation.release("bucket")  # the large listing; the evaluations are kept
+        return report
 
     @property
     def unrecognized(self):
@@ -625,12 +627,12 @@ class Dataset:
         def build_noting_problems():
             value, problems = build()
             return value, problems, self.curation.stale(self.curation.of_sources(*sources))
-        corrections = self._corrections_key
-        value, problems, stale = load_or_build(self.cache.workspace / "catalogs", name,
-                                               corrections and f"{self.id}-{corrections}", build_noting_problems)
+        # A catalogue built from no corrected source (the bucket header) serves any corrections.
+        key = self.id if not sources else self._corrections_key and f"{self.id}-{self._corrections_key}"
+        value, problems, stale = load_or_build(self.cache.workspace / "catalogs", name, key, build_noting_problems)
         self.curation.warn(stale, stacklevel=2)  # from here, as when it's built
         for problem in problems:
-            warnings.warn(problem, stacklevel=1)
+            warnings.warn(problem, stacklevel=3)
         return value
 
     @cached_property
@@ -770,7 +772,7 @@ class Dataset:
 
     @cached_property
     def _file_index(self):
-        return _FileIndex(self.files, self._download_header.get("download_base", BUCKET))
+        return _FileIndex(self.files)
 
     def file(self, key_or_id):
         """Resolve an exact bucket key, URL, resource name, or file ID."""
@@ -798,8 +800,8 @@ class Dataset:
         directory = Path(to).expanduser()
         if file.index_urls:
             index = self.file(file.index_urls[0])
-            place(self._download(index, cache=self.cache), directory / PurePosixPath(index.key).name)
-        return place(path, directory / PurePosixPath(file.key).name)
+            self.cache.place(self._download(index, cache=self.cache), directory / PurePosixPath(index.key).name)
+        return self.cache.place(path, directory / PurePosixPath(file.key).name)
 
     def short_name(self, file):
         """A file's name without its extension, led by the nearest folder that
@@ -863,8 +865,8 @@ class Dataset:
         counts as downloaded exactly when local_path finds it.
         """
         from .views import regions_text
-        base = self._download_header.get("download_base", BUCKET)
         rows = self._downloaded_files()
+        base = self._download_header.get("download_base", BUCKET)
         for receipt_path in sorted((self.cache.workspace / "derived").glob("*/receipt.json")):
             try:
                 receipt = json.loads(receipt_path.read_text())
@@ -890,6 +892,7 @@ class Dataset:
     def _downloaded_files(self):
         """downloads()' rows for whole files."""
         sources = {r["url"] for r in self.manifest["sources"].values()}
+        self.files  # first: building it reads the bucket header too, so that's read once
         base = self._download_header.get("download_base", BUCKET)
         receipts = {}
         # This snapshot's own downloads first, then what the cache has for other snapshots.

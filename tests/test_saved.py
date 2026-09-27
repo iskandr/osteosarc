@@ -92,6 +92,34 @@ def test_opening_a_snapshot_twice_reuses_its_catalogues(dataset, monkeypatch):
     assert list(reopened.files) == list(dataset.files)
     sample = next(s for s in dataset.samples if s.files)
     assert list(reopened.samples[sample.id].files) == list(dataset.files.select(sample=sample.id))
+    # Every kind loads with only the catalogue classes, and the header, built from no
+    # corrected source, serves any corrections.
+    header, variants = dataset._download_header, list(dataset.variants("all"))
+    monkeypatch.setattr(ds, "parse_variants", lambda *a, **k: pytest.fail("rebuilt the variant catalogue"))
+    monkeypatch.setattr(ds.Dataset, "_raw_download_header", lambda self: pytest.fail("rebuilt the header"))
+    assert list(reopened.variants("all")) == variants
+    assert Dataset.open(dataset.name, cache=dataset.cache, corrections=False)._download_header == header
+
+
+def test_a_copy_naming_any_other_class_is_never_loaded(tmp_path):
+    import fractions
+    import gzip
+    import pickle
+    folder = tmp_path / f"u{os.getuid()}"
+    saved.load_or_build(tmp_path, "files", "a", lambda: 1)
+    (path,) = folder.glob("files-a-*")
+    stem = path.name[:-len(".pickle.gz")]
+    path.write_bytes(gzip.compress(pickle.dumps((stem, fractions.Fraction(1, 2)))))
+    assert saved.load_or_build(tmp_path, "files", "a", lambda: 2) == 2
+
+
+def test_the_code_fingerprint_passes_over_editors_files(tmp_path, monkeypatch):
+    (tmp_path / "a.py").write_text("x = 1")
+    (tmp_path / ".#a.py").symlink_to(tmp_path / "gone")  # an editor's lock
+    monkeypatch.setattr(saved, "__file__", str(tmp_path / "saved.py"))
+    assert saved._fingerprint() is not None
+    (tmp_path / "b.py").symlink_to(tmp_path / "gone")
+    assert saved._fingerprint() is None  # unreadable: nothing is saved
 
 
 def test_indexed_correction_matching_agrees_with_a_full_scan(dataset, monkeypatch):
@@ -214,5 +242,16 @@ def test_corrections_differing_only_in_type_have_different_keys(dataset):
     def key(value, match="x*"):
         custom = Correction("custom", "x", (Change("bams", {"a": match}, set={"tags": value}),))
         return Dataset.open(dataset.name, cache=dataset.cache, corrections=[*CORRECTIONS, custom])._corrections_key
-    assert len({key(("a",)), key(["a"]), key({1: "a"}), key({"1": "a"}), key(1), key("1")}) == 6
+    assert len({key(("a",)), key(["a"]), key({1: "a"}), key({"1": "a"}), key(1), key("1"),
+                key({"a": 1, "b": 2}), key({"b": 2, "a": 1})}) == 8  # changes are made in order
     assert key(1, glob("x*")) != key(1, {"pattern": "x*"})
+
+
+def test_reporting_corrections_does_not_keep_the_bucket_listing(dataset):
+    from osteosarc import Dataset
+    data = Dataset.open(dataset.name, cache=dataset.cache)
+    data.files  # loaded, so the bucket's corrections weren't evaluated
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        assert len(data.corrections)
+    assert "bucket" not in data.curation._raw
