@@ -224,8 +224,8 @@ def parser():
                       help="With --recipe: use a BAM you already have for one of its sources")
     make.add_argument("--header-policy", choices=("full", "compact"), default="full",
                       help="compact keeps only the header lines the records need")
-    make.add_argument("--placed-mates", action="store_true",
-                      help="Leave out mates with no position (quicker for RNA-seq)")
+    make.add_argument("--unplaced-mates", action="store_true",
+                      help="Also keep mates with no position (slower: reads each BAM's unplaced reads)")
     make.add_argument("--size-budget", type=int, default=64 * 1024 * 1024, help="Largest bundle, in bytes")
     make.add_argument("--json", action="store_true", help="The bundle's manifest as JSON")
     for name, what in (("list", "Each member of a bundle, with its records and why"),
@@ -632,7 +632,7 @@ def test_data(args, cache):
                   "from each.", file=sys.stderr)
             from .shared import make_bundle
             manifest = make_bundle(dataset, args.output, variants=args.variant, svs=args.sv, files=files,
-                                   unplaced_mates=not args.placed_mates,
+                                   unplaced_mates=args.unplaced_mates,
                                    size_budget=args.size_budget, header_policy=args.header_policy,
                                    log=lambda text: print(text, file=sys.stderr))
         if args.json:

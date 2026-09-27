@@ -79,7 +79,8 @@ BAM. Add `unplaced_mates=False` (or use `--placed-mates`) to leave those mates o
 as they have a sequence but no alignment. That's quicker whenever the regions hold
 reads whose mates have no position, as RNA-seq regions of any size usually do: six
 regions of one RNA-seq BAM took 40 s instead of 68 s. Otherwise it reads the BAM a
-second time for the mates, which takes about a second longer.
+second time for the mates, which takes about a second longer. Bundles you make leave
+these mates out by default ([test data](test-data.md#how-reads-are-chosen)).
 
 To follow split reads as well, pass a recovery policy (or `--recover-linked`):
 
