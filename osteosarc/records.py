@@ -94,13 +94,12 @@ class FixtureRecord:
         return self.read.flag & 0xc0
 
 
-def read_records(path, *, keep=None, digests=None, among=None):
+def read_records(path, *, keep=None, digests=None):
     """Read local BAM records with identities computed from their stored bytes.
 
-    keep (a test of a pysam read) and digests (a set of identities, looked for
-    among the reads among tests true for, or all) choose which to read: those
-    either chooses, or all if neither is given. Only reads kept, or looked at for
-    digests, are hashed.
+    keep (a test of a pysam read) and digests (a set of identities) choose which
+    to read: those either chooses, or all if neither is given. Others aren't
+    kept, and are hashed only to look for digests.
     """
     import pysam
     stored = _stored_records(path)
@@ -113,7 +112,7 @@ def read_records(path, *, keep=None, digests=None, among=None):
                 yield FixtureRecord(read, identity(block))
             elif keep is not None and keep(read):
                 yield FixtureRecord(read, identity(block))
-            elif digests is not None and (among is None or among(read)) and (digest := identity(block)) in digests:
+            elif digests is not None and (digest := identity(block)) in digests:
                 yield FixtureRecord(read, digest)
         if next(stored, None) is not None:
             raise IntegrityError("BAM readers disagree on record count")

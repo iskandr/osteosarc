@@ -41,7 +41,7 @@ from pathlib import Path
 from .alleles import CLASSES, allele_window, read_allele, template_allele
 from .errors import CoordinateError, IntegrityError, OfflineError, OsteosarcError, SchemaError
 from .models import Region
-from .reads import merge_spans, overlap_test, resolve_regions
+from .reads import merge_spans, resolve_regions
 from .records import read_records, read_template
 from .reference import reference_sequence
 from .views import plural
@@ -142,6 +142,12 @@ def select_allele_balanced(templates, window, *, caps=None, low_quality_alt=2):
     return chosen, {name: len(by_class[name]) for name in CLASSES}
 
 
+def sam_lookup(lines):
+    """Where SAM lines' records are: their spans, and the names of those with none."""
+    return ({span for span in map(sam_span, lines) if span},
+            {line.split("\t", 1)[0] for line in lines if not sam_span(line)})
+
+
 def match_required(records, lines):
     """Exact record counts for SAM lines, matched against a source's records by SAM text.
 
@@ -151,9 +157,8 @@ def match_required(records, lines):
     or matches records that differ in binary form.
     """
     if isinstance(records, RecordIndex):
-        spans = {span for span in map(sam_span, lines) if span}
+        spans, names = sam_lookup(lines)
         near = {id(r): r for span in spans for r in records.overlapping(*span)}
-        names = {line.split("\t", 1)[0] for line in lines if not sam_span(line)}
         near.update((id(r), r) for r in records.records if names and r.read.query_name in names)
         records = list(near.values())
     by_text = defaultdict(Counter)
@@ -524,27 +529,19 @@ def _source_index(path, plan, windows):
 
     Every template with a record where selection looks (_variant_span,
     _breakend_spans, required SAM lines' spans) is kept whole, as are named reads
-    and pinned records, looked for in their subset's regions and among unplaced
-    reads (only those are hashed). The index then answers every question
-    selection asks exactly as one of the whole extract would, without its
-    millions of other records.
+    and pinned records (found by checksum, which hashes every read). The index
+    then answers every question selection asks exactly as one of the whole extract
+    would, without its millions of other records.
     """
     import pysam
     spans = [_variant_span(plan, windows, name) for name in plan["covered"]]
     spans += [span for name in plan["sv_covered"] for span in _breakend_spans(plan, name)]
-    names, digests, pinned_regions = set(), set(), []
+    names, digests = set(), set()
     for subset in plan["mine"].values():
-        spans += [span for span in map(sam_span, subset.get("sam", ())) if span]
-        names.update(line.split("\t", 1)[0] for line in subset.get("sam", ()) if not sam_span(line))
-        names.update(subset.get("names", ()))
-        if "records" in subset:
-            digests.update(subset["records"])
-            pinned_regions += map(tuple, subset.get("regions", ()))
-    in_pinned_regions = overlap_test(pinned_regions)
-
-    def among(read):
-        return read.reference_id < 0 or in_pinned_regions(read.reference_name, read.reference_start,
-                                                           read.reference_end or read.reference_start + 1)
+        sam_spans, sam_names = sam_lookup(subset.get("sam", ()))
+        spans += sam_spans
+        names |= sam_names | set(subset.get("names", ()))
+        digests.update(subset.get("records", ()))
     templates = set()
     with pysam.AlignmentFile(str(path)) as bam:
         for contig, start, end in merge_spans(span for span in spans if span[0] in bam.references):
@@ -554,7 +551,7 @@ def _source_index(path, plan, windows):
 
     def keep(read):  # the name first: most reads aren't wanted, and it's quicker to get than RG
         return read.query_name in either and (read.query_name in names or read_template(read) in templates)
-    return RecordIndex(read_records(path, keep=keep, digests=digests or None, among=among))
+    return RecordIndex(read_records(path, keep=keep, digests=digests or None))
 
 
 def _select_source(plan, index, windows, targets, caps, low_quality_alt, cap):

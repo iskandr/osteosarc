@@ -394,13 +394,15 @@ def test_selecting_from_windows_matches_selecting_from_every_record(tmp_path):
     everything = RecordIndex(read_records(path))
     near = [r for r in everything.records if r.read.query_name.startswith("b") and r.read.reference_name == "chr1"
             and r.read.reference_start < 3000][:6]
+    far = next(r for r in everything.records if r.read.reference_name == "chr2" and r.read.reference_start == 3000)
     plan = dict(label="source", covered=["v"], sv_covered=["sv"], pad=1000,
                 variant_regions={"v": Region("chr1", variant - 1, variant + 2, "GRCh38")},
                 breakend_regions={"sv": [Region("chr1", 11000, 13000, "GRCh38"), Region("chr2", 7000, 9000, "GRCh38")]},
                 mine={"lines": dict(sam=[r.read.to_string() for r in near[:3]] + [next(
                           r.read.to_string() for r in everything.records if r.read.query_name == "orphan")]),
                       "named": dict(names=[near[3].read.query_name], regions=[["chr1", 0, 3000]]),
-                      "pinned": dict(records={r.digest: 1 for r in near[4:]}, regions=[["chr1", 0, 3000]])})
+                      # Pinned records needn't lie in their regions, spelled as they may be.
+                      "pinned": dict(records={r.digest: 1 for r in near[4:] + [far]}, regions=[["1", 0, 3000]])})
     windows = {"v": AlleleWindow("chr1", variant, variant + 1, reference["chr1"][variant], alt)}
 
     def select(index):

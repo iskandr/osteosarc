@@ -8,7 +8,7 @@ snapshot (by name or download date) for reproducible analyses. Full release note
 ## 0.13.3 (unreleased)
 
 Faster bundle builds ([#82](https://github.com/iskandr/osteosarc/issues/82)). Rebuilding
-openvax-v1 from cached reads takes 2.7 minutes and 1.6 GB instead of 31 minutes and
+openvax-v1 from cached reads takes 2.7 minutes and 1.4 GB instead of 31 minutes and
 21 GB, and gives the same bundle, byte for byte.
 
 - **Selection reads only what it can choose from.** For each BAM, osteosarc first reads
