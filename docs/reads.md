@@ -13,8 +13,8 @@ From a terminal, name a sample and a variant:
 osteosarc reads T0_tumor --assay rna-seq --variant DYNC1H1-chr14-101980529 --padding 100 --to tests/data
 ```
 
-A sample stands for each of its indexed BAMs, here its bulk RNA-seq ones.
-Osteosarc streams only the reads within 100 bases of the variant, saves each result
+A sample stands for each of its indexed BAMs, here its bulk RNA-seq ones, read
+four at a time. Osteosarc streams only the reads within 100 bases of the variant, saves each result
 in tests/data as a small indexed BAM named for its source and the variant, and
 prints the paths. It skips a BAM whose genome build doesn't match the variant's,
 saying so. Give a file's key instead of a sample to read one BAM, and repeat
@@ -73,8 +73,15 @@ names. On the command line, use `--min-mapq` and `--exclude-flags`.
 ## Mates and split reads
 
 `fetch_pairs=True` (or `--fetch-pairs`) also fetches each read's mate, even
-outside your regions. To follow split reads as well, pass a recovery policy
-(or `--recover-linked`):
+outside your regions. A mate that didn't align and has no position of its own, as
+STAR stores them, can only be found by reading every such read at the end of the
+BAM. Add `unplaced_mates=False` (or use `--placed-mates`) to leave those mates out,
+as they have a sequence but no alignment. That's quicker whenever the regions hold
+reads whose mates have no position, as RNA-seq regions of any size usually do: six
+regions of one RNA-seq BAM took 40 s instead of 68 s. Otherwise it reads the BAM a
+second time for the mates, which takes about a second longer.
+
+To follow split reads as well, pass a recovery policy (or `--recover-linked`):
 
 ```python
 from osteosarc import RecoveryPolicy

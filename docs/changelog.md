@@ -5,6 +5,23 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.13.2 (2026-09-26)
+
+Faster read extraction ([#80](https://github.com/iskandr/osteosarc/issues/80)).
+
+- **Leave out mates with no position.** `extract_reads(..., fetch_pairs=True,
+  unplaced_mates=False)`, or `osteosarc reads --placed-mates`, gives what
+  `fetch_pairs=True` does less the mates that didn't align and have no position of
+  their own, as STAR stores them: finding those means reading every such read in the
+  BAM. Six extractions from BG003082's RNA-seq BAM took 40 s instead of 68 s, the same
+  reads less 28 unplaced mates. Where no read has such a mate it's a second or two
+  slower. Bundles can leave them out too: `make_bundle(..., unplaced_mates=False)` or
+  `osteosarc test-data make --placed-mates`. By default bundles keep every mate, as
+  before, and openvax-v1 rebuilds the same.
+- `osteosarc reads SAMPLE` reads a sample's BAMs four at a time, and the first error
+  stops those not yet begun.
+- An extraction's time limit covers all its samtools runs, however many.
+
 ## 0.13.1 (2026-09-26)
 
 Faster commands ([#78](https://github.com/iskandr/osteosarc/issues/78)): three to eight

@@ -7,6 +7,8 @@ import os
 import re
 import subprocess
 import tempfile
+import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from threading import Event, Timer
@@ -179,6 +181,55 @@ def _recorded_command(command, work, cache):
     return [record(arg) for arg in command]
 
 
+def merge_spans(spans):
+    """Overlapping or touching (contig, start, end) spans merged, sorted: the same bases, fewer spans."""
+    merged = []
+    for contig, start, end in sorted(spans):
+        if merged and merged[-1][0] == contig and start <= merged[-1][2]:
+            merged[-1][2] = max(merged[-1][2], end)
+        else:
+            merged.append([contig, start, end])
+    return merged
+
+
+def overlap_test(spans):
+    """A test of whether contig, start, end overlaps any of these (contig, start, end) spans."""
+    from bisect import bisect_left
+    by_contig = {}
+    for contig, start, end in merge_spans(spans):
+        starts, ends = by_contig.setdefault(contig, ([], []))
+        starts.append(start)
+        ends.append(end)
+
+    def overlaps(contig, start, end):
+        starts, ends = by_contig.get(contig, ((), ()))
+        last = bisect_left(starts, end) - 1  # the last span starting before end
+        return last >= 0 and ends[last] > start
+    return overlaps
+
+
+def _add_mates(regional, mates, inside, output):
+    """Write the regional records and, in coordinate order among them, the mates'
+    records that don't overlap the regions inside tests for (the others are regional
+    already); returns how many of those. Records are copied byte for byte (samtools
+    merge would move their RG tags); records starting at one position may come in
+    another order than the source's. With none to add, regional is output as it is."""
+    import heapq
+
+    import pysam
+    with pysam.AlignmentFile(str(mates)) as second:  # where samtools takes a record to end: bam_endpos
+        outside = [r for r in second
+                   if not inside(r.reference_name, r.reference_start, r.reference_end or r.reference_start + 1)]
+    if not outside:
+        os.replace(regional, output)
+        return 0
+    with pysam.AlignmentFile(str(regional)) as first, pysam.AlignmentFile(str(output), "wb", template=first) as out:
+        for read in heapq.merge(first, outside, key=lambda r: (r.reference_id, r.reference_start)):
+            out.write(read)
+    regional.unlink()
+    return len(outside)
+
+
 def _run_bounded(command, output, max_records, timeout):
     """Stop indexed acquisition on overflow; never publish a partial BAM."""
     import pysam
@@ -237,7 +288,7 @@ def _remote_identity(url, timeout):
     return http_identity(url, timeout)
 
 
-def require_samtools(*, header_only=False, fetch_pairs=False, filters=None):
+def require_samtools(*, header_only=False, fetch_pairs=False, unplaced_mates=True, filters=None):
     """Fail before acquisition when the installed binary lacks required options."""
     try:
         result = _run(["samtools", "view", "--help"], 30)
@@ -250,11 +301,11 @@ def require_samtools(*, header_only=False, fetch_pairs=False, filters=None):
     needed = ["--no-PG"]
     if not header_only:
         needed += ["-M", "-X"]
-        if fetch_pairs:
+        if fetch_pairs and unplaced_mates:
             needed.append("--fetch-pairs")
         if filters is not None and filters.barcodes:
             needed.append("-D")
-        if filters is not None and filters.query_names:
+        if (fetch_pairs and not unplaced_mates) or (filters is not None and filters.query_names):
             needed.append("-N")
     missing = [flag for flag in needed if not re.search(r"(?<![\w-])" + re.escape(flag) + r"(?![\w-])", help_text)]
     if missing:
@@ -343,7 +394,7 @@ def inspect_alignment(source, *, cache=None, snapshot_id=None, timeout=600):
 
 
 def extract_reads(source, regions, *, cache=None, index=None, filters=None, reference=None,
-                  fetch_pairs=False, snapshot_id=None, timeout=600, recovery=None,
+                  fetch_pairs=False, unplaced_mates=True, snapshot_id=None, timeout=600, recovery=None,
                   max_records=None):
     """Fetch the indexed union of regions, retaining original record multiplicity.
 
@@ -355,6 +406,11 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
 
     The default retains only overlapping records. fetch_pairs=True additionally
     retrieves paired mates, not every supplementary alignment of each template.
+    With unplaced_mates=False it leaves out mates that are unmapped and have no
+    position of their own (as STAR writes them). They carry no alignment, and
+    finding them means reading every unplaced read in the BAM, so leaving them out
+    is quicker when the regions hold reads whose mates have none, as RNA-seq
+    regions usually do; otherwise it's about a second slower, for a second read.
     Cached results are immutable snapshot derivatives; they are verified offline
     without rechecking the remote object. New requests check remote identity
     before and after extraction and retain that identity in their receipt.
@@ -365,6 +421,8 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
     if recovery is not None:
         if max_records is not None:
             raise ValueError("Use RecoveryPolicy.max_records with recovery")
+        if not unplaced_mates:
+            raise ValueError("Recovery follows mates itself; unplaced_mates=False applies only to fetch_pairs")
         from .recovery import recover_reads
         return recover_reads(source, regions, policy=recovery, cache=cache, index=index,
                              filters=filters, reference=reference, fetch_pairs=fetch_pairs,
@@ -407,6 +465,8 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
                    snapshot_id=snapshot_id,
                    regions=sorted((asdict(r) for r in regions), key=lambda r: json.dumps(r, sort_keys=True)),
                    filters=asdict(filters), fetch_pairs=fetch_pairs,
+                   # Only when set: requests for every mate keep the key they always had.
+                   **({"unplaced_mates": False} if fetch_pairs and not unplaced_mates else {}),
                    reference_sha256=cache.file_digest(reference) if reference else None,
                    reference_index_sha256=cache.file_digest(str(reference) + ".fai") if reference else None)
     # JSON normalization makes tuples and serialized lists compare identically.
@@ -420,51 +480,115 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
             return cached
         if remote and cache.offline:
             raise OfflineError("Regional reads are not cached")
-        require_samtools(fetch_pairs=fetch_pairs, filters=filters)
+        require_samtools(fetch_pairs=fetch_pairs, unplaced_mates=unplaced_mates, filters=filters)
         directory.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.TemporaryDirectory(dir=directory.parent, prefix=".reads-") as temporary:
+        with tempfile.TemporaryDirectory(dir=directory.parent, prefix=".reads-") as temporary, \
+                ThreadPoolExecutor(max_workers=1) as background:
             work = Path(temporary)
-            before = _remote_identity(location, min(timeout, 60)) if remote else None
+            # The remote object is checked before reading it (the request runs while the
+            # header is found) and after.
+            checking = background.submit(_remote_identity, location, min(timeout, 60)) if remote else None
+            info = inspect_alignment(source, cache=cache, snapshot_id=snapshot_id, timeout=timeout)
+            header_text = info.path.read_text()
+            resolved = resolve_regions(regions, info.header)
+            before = checking.result() if remote else None
             if before and file and file.size is not None and before["content-length"] is not None:
                 if int(before["content-length"]) != file.size:
                     raise IntegrityError("Remote alignment size differs from the pinned inventory")
-            info = inspect_alignment(source, cache=cache, snapshot_id=snapshot_id, timeout=timeout)
             if remote and before != info.receipt["remote_identity"]:
                 raise IntegrityError("Remote alignment changed since header inspection; use a new snapshot")
-            header_text = info.path.read_text()
-            resolved = resolve_regions(regions, info.header)
             index_receipt = None
             if remote_index:
                 index_receipt = cache.fetch(index, refresh=not cache.offline)
                 local_index = cache.path(index_receipt)
             else:
                 local_index = Path(index)
+            deadline = time.monotonic() + timeout  # for every samtools run, however many
             bed = work / "regions.bed"
             bed.write_text("".join(f"{r.contig}\t{r.start}\t{r.end}\n" for r in resolved))
             output = work / "reads.bam"
-            command = ["samtools", "view", "--no-PG", "-b", "-M", "-X", "-L", str(bed),
-                       "-q", str(filters.min_mapq), "-F", str(filters.exclude_flags),
-                       "-f", str(filters.require_flags), "-o", str(output)]
-            if reference:
-                command += ["-T", str(reference)]
-            if fetch_pairs:
-                command += ["--fetch-pairs"]
+            barcodes = names = None
             if filters.barcodes:
                 barcodes = work / "barcodes.txt"
                 barcodes.write_text("\n".join(sorted(set(filters.barcodes))) + "\n")
-                command += ["-D", filters.barcode_tag + ":" + str(barcodes)]
             if filters.query_names:
                 names = work / "query-names.txt"
                 names.write_text("\n".join(filters.query_names) + "\n")
-                command += ["-N", str(names)]
-            command += [location, str(local_index)]
-            if max_records is None:
-                _run(command, timeout)
-            else:
-                command = _run_bounded(command, output, max_records, timeout)
-            _run(["samtools", "quickcheck", "-v", str(output)], min(timeout, 60))
-            with pysam.AlignmentFile(output) as bam:
-                count = sum(1 for _ in bam)
+
+            def left():
+                return max(1, deadline - time.monotonic())
+
+            def view(regions_bed, destination, *, name_list=None, pairs=False):
+                """samtools view over these regions, with every filter; checks its output."""
+                command = ["samtools", "view", "--no-PG", "-b", "-M", "-X", "-L", str(regions_bed),
+                           "-q", str(filters.min_mapq), "-F", str(filters.exclude_flags),
+                           "-f", str(filters.require_flags), "-o", str(destination)]
+                if reference:
+                    command += ["-T", str(reference)]
+                if pairs:
+                    command += ["--fetch-pairs"]
+                if barcodes:
+                    command += ["-D", filters.barcode_tag + ":" + str(barcodes)]
+                if name_list:
+                    command += ["-N", str(name_list)]
+                command += [location, str(local_index)]
+                if max_records is None:
+                    _run(command, left())
+                else:
+                    command = _run_bounded(command, destination, max_records, left())
+                _run(["samtools", "quickcheck", "-v", str(destination)], min(left(), 60))
+                return command
+
+            def acquire():
+                """Read the records. Returns the receipt's commands, and the number of
+                records if it's known."""
+                if not fetch_pairs or unplaced_mates:
+                    return dict(command=view(bed, output, name_list=names, pairs=fetch_pairs)), None
+                # samtools --fetch-pairs reads the regions a second time, with the positions of
+                # the mates it takes to lie outside them and all unplaced reads, keeping the
+                # records of those mates' reads' names. This reads just the placed positions.
+                command = view(bed, output, name_list=names)
+                inside = overlap_test((r.contig, r.start, r.end) for r in resolved)
+                templates, mates, count = set(), set(), 0
+                with pysam.AlignmentFile(str(output)) as bam:
+                    for count, read in enumerate(bam, 1):
+                        if not read.is_paired:
+                            continue
+                        contig, position = read.next_reference_name, read.next_reference_start
+                        if read.next_reference_id < 0 or position < 0:
+                            templates.add(read.query_name)  # its mate, if any, has no position
+                        elif not inside(contig, position, position):  # samtools: a mate starting
+                            templates.add(read.query_name)  # at a region's start is outside it
+                            mates.add((contig, position, position + 1))
+                if not mates:  # nothing to read elsewhere
+                    return dict(command=command), count
+                regional = work / "regions.bam"
+                os.replace(output, regional)
+                (work / "templates.txt").write_text("\n".join(sorted(templates)) + "\n")
+                (work / "mates.bed").write_text("".join(f"{c}\t{start}\t{end}\n" for c, start, end in merge_spans(mates)))
+                mates_command = view(work / "mates.bed", work / "mates.bam", name_list=work / "templates.txt")
+                count += _add_mates(regional, work / "mates.bam", inside, output)
+                if max_records is not None and count > max_records:
+                    raise IntegrityError("Acquisition exceeds record limit")
+                _run(["samtools", "quickcheck", "-v", str(output)], min(left(), 60))
+                (work / "mates.bam").unlink()  # made again by mates_command
+                return dict(command=[str(regional) if c == str(output) else c for c in command],
+                            mates_command=mates_command), count
+
+            try:
+                commands, count = acquire()
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+                if remote:  # samtools may have failed because the object changed: say so if it did
+                    try:
+                        changed = _remote_identity(location, min(timeout, 60)) != before
+                    except OsteosarcError:
+                        changed = False
+                    if changed:
+                        raise IntegrityError("Remote alignment changed during extraction") from error
+                raise
+            if count is None:
+                with pysam.AlignmentFile(output) as bam:
+                    count = sum(1 for _ in bam)
             pysam.index(str(output))
             after = _remote_identity(location, min(timeout, 60)) if remote else None
             if before != after:
@@ -473,15 +597,26 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
                     + ([] if remote_index else [index])] != local_identities:
                 raise IntegrityError("Local alignment or index changed during extraction")
             (work / "header.sam").write_text(header_text)
-            files = {name: digest(work / name) for name in ("reads.bam", "reads.bam.bai", "header.sam", "regions.bed")}
+            if not fetch_pairs:
+                scope = "regional_records"
+            elif unplaced_mates:
+                scope = "regional_records_and_paired_mates"
+            else:
+                scope = "regional_records_and_placed_mates"
+            files = {name: digest(work / name) for name in ("reads.bam", "reads.bam.bai", "header.sam", "regions.bed",
+                                                            "mates.bed", "templates.txt") if (work / name).exists()}
             receipt = dict(request=request, files=files, records=count,
                            resolved_regions=[asdict(r) for r in resolved],
                            remote_identity=before,
                            header_receipt=info.receipt,
                            index_receipt=index_receipt.to_dict() if index_receipt else None,
                            samtools_version=_samtools_version(),
-                           pysam_version=pysam.__version__, command=_recorded_command(command, work, cache),
-                           scope="regional_records_and_paired_mates" if fetch_pairs else "regional_records")
+                           pysam_version=pysam.__version__,
+                           # With placed mates only: the regions' records, and the mates'
+                           # records outside the regions (by read name), in coordinate order.
+                           # This follows samtools 1.21's --fetch-pairs (samtools_version).
+                           **{name: _recorded_command(c, work, cache) for name, c in commands.items()},
+                           scope=scope)
             write_json(work / "receipt.json", receipt)
             # Only a complete directory becomes visible. No receipt means no cache hit.
             share(work)

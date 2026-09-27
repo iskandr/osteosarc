@@ -172,8 +172,11 @@ def parser():
     reads.add_argument("--reference-length", type=int, help="Expected contig length (mitochondrial queries)")
     reads.add_argument("--min-mapq", type=int, default=0)
     reads.add_argument("--exclude-flags", type=lambda s: int(s, 0), default=0)
-    reads.add_argument("--fetch-pairs", action="store_true", help="Also retrieve paired mates outside the regions")
-    reads.add_argument("--recover-linked", action="store_true", help="Bounded mate and SA-linked recovery")
+    mates = reads.add_mutually_exclusive_group()
+    mates.add_argument("--fetch-pairs", action="store_true", help="Also retrieve paired mates outside the regions")
+    mates.add_argument("--placed-mates", action="store_true",
+                       help="Also retrieve mates outside the regions, except those with no position (quicker)")
+    mates.add_argument("--recover-linked", action="store_true", help="Bounded mate and SA-linked recovery")
     reads.add_argument("--json", action="store_true", help="The extract's paths and receipt as JSON")
     downloads = command("downloads")
     downloads.add_argument("--json", action="store_true")
@@ -221,6 +224,8 @@ def parser():
                       help="With --recipe: use a BAM you already have for one of its sources")
     make.add_argument("--header-policy", choices=("full", "compact"), default="full",
                       help="compact keeps only the header lines the records need")
+    make.add_argument("--placed-mates", action="store_true",
+                      help="Leave out mates with no position (quicker for RNA-seq)")
     make.add_argument("--size-budget", type=int, default=64 * 1024 * 1024, help="Largest bundle, in bytes")
     make.add_argument("--json", action="store_true", help="The bundle's manifest as JSON")
     for name, what in (("list", "Each member of a bundle, with its records and why"),
@@ -487,23 +492,47 @@ def get_data(args, dataset):
         if args.to and file.index_urls:
             print(dataset.download(file.index_urls[0], to=args.to))  # already placed; this names it
     elif args.command == "reads":
+        from concurrent.futures import ThreadPoolExecutor, as_completed
         targets, sources = read_targets(dataset, args), read_sources(dataset, args)
-        results = []
-        for file in sources:
-            try:
-                subset = dataset.extract_reads(file, **targets, reference=args.reference, index=args.index,
-                                               filters=ReadFilter(args.min_mapq, args.exclude_flags),
-                                               fetch_pairs=args.fetch_pairs,
-                                               recovery={} if args.recover_linked else None, to=args.to)
-            except CoordinateError as error:
-                if len(sources) == 1:
-                    raise
-                print(f"skipping {file.key}: {error}", file=sys.stderr)  # e.g. a GRCh37 BAM
-                continue
-            results.append(dict(file=file.key, path=str(subset.path), index=str(subset.index_path),
-                                receipt=subset.receipt))
-            if not args.json:
-                print(subset.path)
+
+        def extract(file):
+            return dataset.extract_reads(file, **targets, reference=args.reference, index=args.index,
+                                         filters=ReadFilter(args.min_mapq, args.exclude_flags),
+                                         fetch_pairs=args.fetch_pairs or args.placed_mates,
+                                         unplaced_mates=not args.placed_mates,
+                                         recovery={} if args.recover_linked else None, to=args.to)
+        results, finished, shown = [], {}, 0
+        # A sample's BAMs are read four at a time and reported in order; the first error
+        # stops those not yet begun.
+        pool = ThreadPoolExecutor(max_workers=max(1, min(4, len(sources))))
+        try:
+            order = {pool.submit(extract, file): i for i, file in enumerate(sources)}
+            for extracted in as_completed(order):
+                try:
+                    finished[order[extracted]] = extracted.result()
+                except CoordinateError as error:
+                    if len(sources) == 1:
+                        raise
+                    finished[order[extracted]] = error
+                while shown in finished:
+                    file, subset = sources[shown], finished.pop(shown)
+                    shown += 1
+                    if isinstance(subset, CoordinateError):
+                        print(f"skipping {file.key}: {subset}", file=sys.stderr)  # e.g. a GRCh37 BAM
+                        continue
+                    results.append(dict(file=file.key, path=str(subset.path), index=str(subset.index_path),
+                                        receipt=subset.receipt))
+                    if not args.json:
+                        print(subset.path, flush=True)
+        except BaseException:
+            for i in sorted(finished):  # finished after one that failed: still say where they are
+                if not isinstance(finished[i], CoordinateError) and not args.json:
+                    print(finished[i].path, flush=True)
+            raise
+        finally:
+            # BAMs not yet begun are cancelled; any being read finish (and are cached)
+            # before the process exits.
+            pool.shutdown(wait=False, cancel_futures=True)
         if not results:
             raise ValueError(f"No reads extracted: every BAM of {args.file} was skipped")
         if args.json:
@@ -603,6 +632,7 @@ def test_data(args, cache):
                   "from each.", file=sys.stderr)
             from .shared import make_bundle
             manifest = make_bundle(dataset, args.output, variants=args.variant, svs=args.sv, files=files,
+                                   unplaced_mates=not args.placed_mates,
                                    size_budget=args.size_budget, header_policy=args.header_policy,
                                    log=lambda text: print(text, file=sys.stderr))
         if args.json:

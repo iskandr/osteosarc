@@ -41,7 +41,7 @@ from pathlib import Path
 from .alleles import CLASSES, allele_window, read_allele, template_allele
 from .errors import CoordinateError, IntegrityError, OfflineError, OsteosarcError, SchemaError
 from .models import Region
-from .reads import resolve_regions
+from .reads import merge_spans, resolve_regions
 from .records import read_records
 from .reference import reference_sequence
 from .views import plural
@@ -198,17 +198,6 @@ def required_spans(subset):
     if "sam" in subset:
         return [span for span in map(sam_span, subset["sam"]) if span]
     return [tuple(region) for region in subset.get("regions", ())]
-
-
-def merge_spans(spans):
-    """Overlapping or touching (contig, start, end) spans merged, sorted: the same bases, fewer spans."""
-    merged = []
-    for contig, start, end in sorted(spans):
-        if merged and merged[-1][0] == contig and start <= merged[-1][2]:
-            merged[-1][2] = max(merged[-1][2], end)
-        else:
-            merged.append([contig, start, end])
-    return merged
 
 
 def sam_span(line):
@@ -452,7 +441,7 @@ def load_required(paths):
     return subsets
 
 
-def _source_entry(dataset, file, header, regions, label):
+def _source_entry(dataset, file, header, regions, label, unplaced_mates=True):
     from .reads import assembly_from_header
     assembly = assembly_from_header(header)
     if assembly is None:
@@ -461,13 +450,15 @@ def _source_entry(dataset, file, header, regions, label):
     return dict(identity=dict(id=file.id, key=file.key, url=file.url, size=file.size, modified=file.modified),
                 assembly=assembly, sample=samples[0] if len(samples) == 1 else None,
                 library=file.resolved("library"), product=file.key, label=label,
-                acquisition=dict(fetch_pairs=True, timeout=EXTRACTION_TIMEOUT), snapshot_id=dataset.id,
+                acquisition=dict(fetch_pairs=True, timeout=EXTRACTION_TIMEOUT,
+                                 **({} if unplaced_mates else {"unplaced_mates": False})), snapshot_id=dataset.id,
                 regions=[dict(contig=r.contig, start=r.start, end=r.end, assembly=r.assembly,
                               **({"reference_length": r.reference_length} if r.reference_length else {}))
                          for r in regions])
 
 
-def _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, everywhere, sv_everywhere, pad):
+def _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, everywhere, sv_everywhere, pad,
+                 unplaced_mates=True):
     """What one source covers, and the regions to extract for it; if nothing, why not."""
     from .reads import assembly_from_header
     file = dataset.file(url)
@@ -509,7 +500,9 @@ def _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, e
         return "none of the targets applies to it"
     label = dataset.short_name(file)  # names members as osteosarc reads --to names files
     return dict(file=file, label=label, mine=mine, covered=covered, sv_covered=sv_covered, pad=pad,
-                source=_source_entry(dataset, file, header, resolve_regions(wanted, header), label),
+                # A library's pinned records can include mates with no position: those sources keep them.
+                source=_source_entry(dataset, file, header, resolve_regions(wanted, header), label,
+                                     unplaced_mates=unplaced_mates or bool(mine)),
                 # Each target's window and breakends, in this source's contig names.
                 variant_regions={n: resolve_regions([r], header)[0] for n, r in variant_regions.items()},
                 breakend_regions={n: [resolve_regions([r], header)[0] for r in rs]
@@ -587,6 +580,7 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, req
     selection = spec.get("selection", {})
     caps = dict(DEFAULT_CAPS, **selection.get("caps", {}))
     low_quality_alt = selection.get("low_quality_alt", 2)
+    unplaced_mates = selection.get("unplaced_mates", True)
     targets, windows = spec_targets(spec, dataset)
     sv_targets, breakends, observed_in = structural_targets(spec)
     targets.update(sv_targets)
@@ -609,7 +603,7 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, req
     for url in urls:
         mine = {n: s for n, s in subsets.items() if s["source"] == url}
         plan = _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, everywhere,
-                            sv_everywhere, structural["window"])
+                            sv_everywhere, structural["window"], unplaced_mates)
         if isinstance(plan, str):
             if mine:
                 raise IntegrityError(f"Required fixtures with no aligned records to find them by: {sorted(mine)}")
@@ -723,8 +717,8 @@ def published(name):
 REDISTRIBUTION = {"license": "CC0-1.0", "source": "https://registry.opendata.aws/sid-osteosarc/"}
 
 
-def make_bundle(dataset, to, *, variants=(), svs=(), files=(), caps=None, size_budget=64 * 1024 * 1024,
-                header_policy="full", log=None):
+def make_bundle(dataset, to, *, variants=(), svs=(), files=(), caps=None, unplaced_mates=True,
+                size_budget=64 * 1024 * 1024, header_policy="full", log=None):
     """Make a bundle of test reads with openvax-v1's selection; return its manifest.
 
     See Dataset.make_bundle. log, if given, gets a line of progress for each BAM
@@ -741,13 +735,14 @@ def make_bundle(dataset, to, *, variants=(), svs=(), files=(), caps=None, size_b
             log(text)
         elif text.startswith(("skip ", "skipping ")):
             warnings.warn(text, stacklevel=2)
-    spec = bundle_spec(dataset, to.name, variants=variants, svs=svs, files=files, caps=caps, warn=progress)
+    spec = bundle_spec(dataset, to.name, variants=variants, svs=svs, files=files, caps=caps,
+                       unplaced_mates=unplaced_mates, warn=progress)
     asked = spec["targets"]["ids"] + [entry["name"] for entry in spec["targets"]["structural"]]
     recipe = build_shared_recipe(spec, dataset, required={}, required_targets=asked, log=progress)
     return generate_bundle(recipe, to, dataset=dataset, size_budget=size_budget, header_policy=header_policy)
 
 
-def bundle_spec(dataset, name, *, variants=(), svs=(), files=(), caps=None, warn=None):
+def bundle_spec(dataset, name, *, variants=(), svs=(), files=(), caps=None, unplaced_mates=True, warn=None):
     """The spec make_bundle builds from: these variants and SVs, read from these files only."""
     import difflib
     ids = [variant if isinstance(variant, str) else variant.id for variant in _items(variants)]
@@ -775,7 +770,9 @@ def bundle_spec(dataset, name, *, variants=(), svs=(), files=(), caps=None, warn
     from .sv_candidates import load_sv_candidates
     candidates = load_sv_candidates()["targets"] if svs else {}
     return dict(id=name, snapshot=dict(name=dataset.name, id=dataset.id),
-                selection=dict(caps=dict(DEFAULT_CAPS, **caps)),
+                # Leaving out mates with no position of their own is quicker: finding them
+                # means reading every unplaced read of a BAM.
+                selection=dict(caps=dict(DEFAULT_CAPS, **caps), **({} if unplaced_mates else {"unplaced_mates": False})),
                 sources=dict(all_targets=urls, structural=urls if svs else [], observed=False),
                 targets=dict(ids=ids, structural=[_sv_entry(sv, candidates) for sv in svs]),
                 redistribution=REDISTRIBUTION)
