@@ -41,8 +41,8 @@ from pathlib import Path
 from .alleles import CLASSES, allele_window, read_allele, template_allele
 from .errors import CoordinateError, IntegrityError, OfflineError, OsteosarcError, SchemaError
 from .models import Region
-from .reads import merge_spans, resolve_regions
-from .records import read_records
+from .reads import merge_spans, overlap_test, resolve_regions
+from .records import read_records, read_template
 from .reference import reference_sequence
 from .views import plural
 
@@ -509,36 +509,52 @@ def _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, e
                                   for n, rs in breakend_regions.items()})
 
 
+def _variant_span(plan, windows, name):
+    """Where selection looks for a variant's templates: its window, with the base on each side."""
+    return plan["variant_regions"][name].contig, windows[name].start - 1, windows[name].end + 1
+
+
+def _breakend_spans(plan, name):
+    """Where selection looks for an SV's templates: within pad bases of each breakend."""
+    return [(r.contig, r.start, r.end) for r in plan["breakend_regions"][name]]
+
+
 def _source_index(path, plan, windows):
     """A RecordIndex of the records selection can look at in a source's extract.
 
-    Every template with a record in a target's window or breakend window, or near
-    a required record, is kept whole, as are named reads and pinned records; the
-    index then answers every question selection asks exactly as one of the whole
-    extract would, without holding its millions of other records.
+    Every template with a record where selection looks (_variant_span,
+    _breakend_spans, required SAM lines' spans) is kept whole, as are named reads
+    and pinned records, looked for in their subset's regions and among unplaced
+    reads (only those are hashed). The index then answers every question
+    selection asks exactly as one of the whole extract would, without its
+    millions of other records.
     """
     import pysam
-    spans = [(plan["variant_regions"][name].contig, windows[name].start - 1, windows[name].end + 1)
-             for name in plan["covered"]]
-    spans += [(r.contig, r.start, r.end) for name in plan["sv_covered"] for r in plan["breakend_regions"][name]]
-    names, digests = set(), set()
+    spans = [_variant_span(plan, windows, name) for name in plan["covered"]]
+    spans += [span for name in plan["sv_covered"] for span in _breakend_spans(plan, name)]
+    names, digests, pinned_regions = set(), set(), []
     for subset in plan["mine"].values():
         spans += [span for span in map(sam_span, subset.get("sam", ())) if span]
         names.update(line.split("\t", 1)[0] for line in subset.get("sam", ()) if not sam_span(line))
         names.update(subset.get("names", ()))
-        digests.update(subset.get("records", ()))
-    def template(read):
-        return read.get_tag("RG") if read.has_tag("RG") else None, read.query_name
+        if "records" in subset:
+            digests.update(subset["records"])
+            pinned_regions += map(tuple, subset.get("regions", ()))
+    in_pinned_regions = overlap_test(pinned_regions)
+
+    def among(read):
+        return read.reference_id < 0 or in_pinned_regions(read.reference_name, read.reference_start,
+                                                           read.reference_end or read.reference_start + 1)
     templates = set()
     with pysam.AlignmentFile(str(path)) as bam:
-        for contig, start, end in spans:
-            if contig in bam.references:  # a little wider than asked: the index checks exactly
-                templates.update(map(template, bam.fetch(contig, max(0, start - 1), end + 1)))
+        for contig, start, end in merge_spans(span for span in spans if span[0] in bam.references):
+            # A little wider than asked: the index checks exactly.
+            templates.update(map(read_template, bam.fetch(contig, max(0, start - 1), end + 1)))
     either = names | {name for _, name in templates}
 
     def keep(read):  # the name first: most reads aren't wanted, and it's quicker to get than RG
-        return read.query_name in either and (read.query_name in names or template(read) in templates)
-    return RecordIndex(read_records(path, keep=keep, digests=digests or None))
+        return read.query_name in either and (read.query_name in names or read_template(read) in templates)
+    return RecordIndex(read_records(path, keep=keep, digests=digests or None, among=among))
 
 
 def _select_source(plan, index, windows, targets, caps, low_quality_alt, cap):
@@ -559,12 +575,12 @@ def _select_source(plan, index, windows, targets, caps, low_quality_alt, cap):
         where = plan["variant_regions"][name]
         window = windows[name]
         window = type(window)(where.contig, window.start, window.end, window.ref, window.alt)
-        candidates = index.touching(where.contig, window.start - 1, window.end + 1)
+        candidates = index.touching(*_variant_span(plan, windows, name))
         chosen, seen = select_allele_balanced(candidates, window, caps=caps, low_quality_alt=low_quality_alt)
         members[f"{label}.{name}"] = dict(target=name, source=label, observed=seen, policy=dict(
             exact({t: why for t, (_, why) in chosen.items()}), reason="allele-balanced selection"))
     for name in plan["sv_covered"]:
-        ends = [(r.contig, r.start, r.end) for r in plan["breakend_regions"][name]]
+        ends = _breakend_spans(plan, name)
         candidates = index.touching(*ends[0])
         for end in ends[1:]:
             near = index.touching(*end)

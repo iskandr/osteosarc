@@ -186,8 +186,6 @@ def select_fixture_records(records, policy, *, regions=(), context_regions=()):
     refer to the same source records. Required witnesses bypass sampling caps.
     A cap limits optional templates, never records belonging to a kept template.
     """
-    if policy.get("encoding", RECORD_ENCODING) != RECORD_ENCODING:
-        raise SchemaError(f"Unsupported record identity encoding: {policy['encoding']}")
     # Public callers may pass read_records() directly. Selection revisits the
     # input for witnesses, strata and context, so consume an iterator only once.
     records = tuple(records)
@@ -196,6 +194,8 @@ def select_fixture_records(records, policy, *, regions=(), context_regions=()):
 
 def _select(records, available, policy, regions, context_regions):
     """select_fixture_records, with the records' identities already counted."""
+    if policy.get("encoding", RECORD_ENCODING) != RECORD_ENCODING:
+        raise SchemaError(f"Unsupported record identity encoding: {policy['encoding']}")
     regions, context_regions = tuple(regions), tuple(context_regions)
     reasons = defaultdict(set)
     kind = policy["kind"]
@@ -257,6 +257,8 @@ def select_fixtures(recipe, sources):
     ``sources`` maps recipe source IDs to paths or verified ReadSubsets. Remote
     inputs must first be acquired through indexed extraction. Local archives may
     pin a SHA256; source metadata and producer assignments enter the recipe hash.
+    The selection's records hold, for each source, the records selecting from it
+    needed: only the pinned ones when all its members pin exact records.
     """
     import pysam
     recipe = validate_recipe(recipe)
@@ -266,9 +268,11 @@ def select_fixtures(recipe, sources):
     pinned, whole = defaultdict(set), set()
     for member in recipe["members"].values():
         policy = member["policy"]
+        if policy["kind"] in ("omitted", "empty") or recipe["targets"][member["target"]]["kind"] == "unresolved":
+            continue  # looks at no records
         if policy["kind"] == "exact" and not member.get("context_regions") and not member.get("retain_partners"):
             pinned[member["source"]].update(policy.get("records", {}))
-        elif policy["kind"] != "omitted":
+        else:
             whole.add(member["source"])
     for name, member in sorted(recipe["members"].items()):
         sid = member["source"]
@@ -304,7 +308,8 @@ def select_fixtures(recipe, sources):
             if assembly != normalize_assembly(recipe["sources"][sid]["assembly"]):
                 raise IntegrityError(f"Source assembly cannot be established or differs: {sid}")
             headers[sid] = header
-            records[sid] = list(read_records(path) if sid in whole else read_records(path, digests=pinned[sid]))
+            records[sid] = (list(read_records(path)) if sid in whole else
+                            list(read_records(path, digests=pinned[sid])) if pinned[sid] else [])
             available[sid] = Counter(r.digest for r in records[sid])
             if digest(path) != before:
                 raise IntegrityError(f"Source changed during selection: {sid}")

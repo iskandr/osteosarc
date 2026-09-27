@@ -352,7 +352,7 @@ def test_selecting_from_windows_matches_selecting_from_every_record(tmp_path):
     alt = next(b for b in "ACGT" if b != reference["chr1"][variant])
     header = dict(HD={"VN": "1.6", "SO": "unsorted"}, RG=[dict(ID="a"), dict(ID="b")],
                   SQ=[dict(SN="chr1", LN=20000), dict(SN="chr2", LN=20000)])
-    unsorted, reads = tmp_path / "unsorted.bam", []
+    unsorted = tmp_path / "unsorted.bam"
     with pysam.AlignmentFile(str(unsorted), "wb", header=header) as out:
         def add(name, flag, contig, start, mate=None, rg="a", copies=1, tags=()):
             read = pysam.AlignedSegment(out.header)
@@ -372,7 +372,6 @@ def test_selecting_from_windows_matches_selecting_from_every_record(tmp_path):
                 read.set_tag(tag, value)
             for _ in range(copies):
                 out.write(read)
-                reads.append(read.to_string())
         for i in range(300):  # pairs over the variant, some with mates far away or duplicated
             start = rng.randrange(4700, 5200)
             mate = rng.choice([("chr1", start + rng.randrange(100, 400)), ("chr1", 15000), ("chr2", 3000)])

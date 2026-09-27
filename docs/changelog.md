@@ -15,9 +15,9 @@ openvax-v1 from cached reads takes 2.7 minutes and 1.6 GB instead of 31 minutes 
   every target's window from the extract's index, then keeps the templates found
   there, whole, and any a library names or pins. Before, it held all of the T2
   tumor RNA-seq extract's 13.5 million records.
-- **Each source is counted once.** Making a bundle read and counted every record of a
-  source once for each of its members; it now does so once, and reads only the
-  records the members pin.
+- **Each source is counted once.** Making a bundle copied and counted every record of a
+  source once for each of its members; it now counts them once, and keeps only the
+  records the members pin (it still reads the whole extract to find them).
 - Record checksums are about twice as fast.
 
 ## 0.13.2 (2026-09-26)

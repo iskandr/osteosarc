@@ -181,3 +181,13 @@ def test_exact_members_can_give_each_record_its_own_reason():
     recipe["members"]["m"] = dict(target="t", source="s", policy=dict(policy, reasons={"c" * 64: ["stray"]}))
     with pytest.raises(SchemaError, match="Exact reasons"):
         validate_recipe(recipe)
+
+
+def test_every_policy_is_checked_for_its_record_encoding(bam):
+    from osteosarc import SchemaError
+    recipe = recipe_for(bam)
+    recipe["members"]["background"] = dict(source="rna", target="snv", regions=[dict(
+        contig="chr1", start=90, end=160, assembly="GRCh38")], policy=dict(kind="regional", version=1,
+                                                                            encoding="bam-record-v2"))
+    with pytest.raises(SchemaError, match="encoding"):
+        select_fixtures(recipe, {"rna": bam})

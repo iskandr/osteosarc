@@ -74,6 +74,11 @@ def record_multiset(path):
     return Counter(bam_record_digests(path))
 
 
+def read_template(read):
+    """A pysam read's template: its read group (or None) and name."""
+    return read.get_tag("RG") if read.has_tag("RG") else None, read.query_name
+
+
 @dataclass(frozen=True)
 class FixtureRecord:
     read: object
@@ -81,7 +86,7 @@ class FixtureRecord:
 
     @property
     def template(self):
-        return (self.read.get_tag("RG") if self.read.has_tag("RG") else None, self.read.query_name)
+        return read_template(self.read)
 
     @property
     def segment(self):
@@ -89,12 +94,13 @@ class FixtureRecord:
         return self.read.flag & 0xc0
 
 
-def read_records(path, *, keep=None, digests=None):
+def read_records(path, *, keep=None, digests=None, among=None):
     """Read local BAM records with identities computed from their stored bytes.
 
-    keep (a test of a pysam read) and digests (a set of identities) choose which
-    to read: those either chooses, or all if neither is given. The others are
-    passed over without being kept, or hashed unless digests is given.
+    keep (a test of a pysam read) and digests (a set of identities, looked for
+    among the reads among tests true for, or all) choose which to read: those
+    either chooses, or all if neither is given. Only reads kept, or looked at for
+    digests, are hashed.
     """
     import pysam
     stored = _stored_records(path)
@@ -107,7 +113,7 @@ def read_records(path, *, keep=None, digests=None):
                 yield FixtureRecord(read, identity(block))
             elif keep is not None and keep(read):
                 yield FixtureRecord(read, identity(block))
-            elif digests is not None and (digest := identity(block)) in digests:
+            elif digests is not None and (among is None or among(read)) and (digest := identity(block)) in digests:
                 yield FixtureRecord(read, digest)
         if next(stored, None) is not None:
             raise IntegrityError("BAM readers disagree on record count")
