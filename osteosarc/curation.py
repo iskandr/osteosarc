@@ -29,6 +29,7 @@ A correction applies atomically: if any of its changes is stale, none is made.
 
 from __future__ import annotations
 
+import bisect
 import copy
 import fnmatch
 import functools
@@ -317,6 +318,8 @@ class Curation:
         self._matched = {}
         self._selected = {}
         self._records = {}
+        self._indexes = {}
+        self._warned = set()
 
     def raw(self, source):
         if source not in self._raw:
@@ -342,14 +345,33 @@ class Curation:
         for n, indices in enumerate(matched):
             self._matched[correction.id, n] = indices
         if status == "stale" and self.enabled:
-            problems = "; ".join(f"{d['source']} {d['match']}: {d['state']}"
-                                 + (f" ({', '.join(d['differing'])})" if d["differing"] else "")
-                                 for d in details if d["state"] in
-                                 ("missing", "changed", "unexpected", "ambiguous_versions"))
-            warnings.warn(f"Correction {correction.id!r} was not applied because its source changed: "
-                          f"{problems}. Review data.corrections.", CurationWarning, stacklevel=3)
+            # Before it's remembered: warnings made errors are raised on every try.
+            self.warn({correction.id: _stale_warning(correction, details)})
         self._evaluated[correction.id] = status, details
         return status, details
+
+    def stale(self, corrections):
+        """{ID: warning} for those of these corrections that are stale, evaluating
+        them if need be (which warns of them, as evaluating always does)."""
+        found = {}
+        for correction in corrections:
+            status, details = self.evaluate(correction) if self.enabled else ("disabled", ())
+            if status == "stale":
+                found[correction.id] = _stale_warning(correction, details)
+        return found
+
+    def of_sources(self, *sources):
+        """The corrections that change any of these sources."""
+        return [c for c in self.corrections
+                if any(change.source in sources for group in c.versions for change in group)]
+
+    def warn(self, stale, stacklevel=4):
+        """Warn once of each stale correction in {ID: warning}; by default, as from
+        the code that asked for records."""
+        for correction_id, text in stale.items():
+            if correction_id not in self._warned:
+                warnings.warn(text, CurationWarning, stacklevel=stacklevel)
+                self._warned.add(correction_id)
 
     def _evaluate_changes(self, changes):
         details, matches = [], []
@@ -360,7 +382,8 @@ class Curation:
                                     state="unavailable", records=0, differing=[]))
                 matches.append([])
                 continue
-            matched = [i for i, record in enumerate(records) if _matches(record, change.match)]
+            matched = sorted(i for i in self._candidates(change.source, change.match)
+                             if _matches(records[i], change.match))
             matches.append(matched)
             differing = sorted({name for i in matched for name, value in change.expect.items()
                                 if not _same(_get(records[i], name), value)})
@@ -391,15 +414,58 @@ class Curation:
             status = "applied"
         return status, details, matches
 
+    def _candidates(self, source, match):
+        """Indices of the records that could match: by one exact field through an index of
+        that field's values, or by a wildcard's literal prefix through a sorted index,
+        so a correction doesn't scan every record of a large source."""
+        records = self.raw(source)
+        exact = [(name, wanted) for name, wanted in match.items() if not isinstance(wanted, Glob)]
+        if exact:
+            name, wanted = exact[0]
+            index = self._index(source, name)
+            try:
+                return index.get(wanted, ())
+            except TypeError:  # an unhashable value to match: look at every record
+                return range(len(records))
+        if not match:
+            return range(len(records))
+        name, pattern = next(iter(match.items()))
+        prefix = _literal_prefix(pattern.pattern)
+        values = self._index(source, name, ordered=True)
+        start = bisect.bisect_left(values, (prefix,))
+        found = []
+        for j in range(start, len(values)):  # without copying the rest of the index
+            value, i = values[j]
+            if not value.startswith(prefix):
+                break
+            found.append(i)
+        return found
+
+    def _index(self, source, name, ordered=False):
+        key = source, name, ordered
+        if key not in self._indexes:
+            records = self.raw(source)
+            if ordered:  # (value, index) for string values, sorted
+                self._indexes[key] = sorted((v, i) for i, r in enumerate(records)
+                                            if isinstance(v := _get(r, name), str))
+            else:
+                index = defaultdict(list)
+                for i, record in enumerate(records):
+                    value = _get(record, name)
+                    try:
+                        index[value].append(i)
+                    except TypeError:  # unhashable values never equal a hashable match
+                        continue
+                self._indexes[key] = index
+        return self._indexes[key]
+
     def records(self, source):
         """Corrected records plus, per record index, the IDs of corrections touching it."""
         if source in self._records:
             return self._records[source]
         records, touched = list(self.raw(source) or ()), defaultdict(list)
         if self.enabled:
-            for correction in self.corrections:
-                if not any(c.source == source for group in correction.versions for c in group):
-                    continue
+            for correction in self.of_sources(source):
                 if self.evaluate(correction)[0] != "applied":
                     continue
                 for n, change in enumerate(self._selected[correction.id]):
@@ -421,9 +487,14 @@ class Curation:
         """Drop cached records of a large source; they are reloaded if needed again."""
         self._raw.pop(source, None)
         self._records.pop(source, None)
+        for key in [k for k in self._indexes if k[0] == source]:
+            del self._indexes[key]
 
-    def applied(self):
-        return tuple(c.id for c in self.corrections if self.enabled and self.evaluate(c)[0] == "applied")
+    def ids_in(self, *marks):
+        """IDs of the corrections in these marks ({record index: correction IDs}, as
+        records() gives them), in the corrections' order: those a result depends on."""
+        found = {i for mark in marks for ids in mark.values() for i in ids}
+        return tuple(c.id for c in self.corrections if c.id in found)
 
     def report(self):
         rows = []
@@ -435,6 +506,13 @@ class Curation:
                              changes=details, evidence=list(correction.evidence),
                              verified=correction.verified))
         return rows
+
+
+def _stale_warning(correction, details):
+    problems = "; ".join(f"{d['source']} {d['match']}: {d['state']}"
+                         + (f" ({', '.join(d['differing'])})" if d["differing"] else "")
+                         for d in details if d["state"] in ("missing", "changed", "unexpected", "ambiguous_versions"))
+    return f"Correction {correction.id!r} was not applied because its source changed: {problems}. Review data.corrections."
 
 
 def _describe(match):

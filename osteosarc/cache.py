@@ -16,17 +16,18 @@ import fcntl
 import hashlib
 import json
 import os
+import secrets
 import shutil
 import stat
 import sys
 import tempfile
+import time
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-import datacache
 import requests
 
 from .errors import IntegrityError, OfflineError, OsteosarcError
@@ -62,9 +63,107 @@ def digests(path, algorithms=("sha256",)):
 
 
 def file_identity(path):
-    """Size, modification time and inode: changes whenever a file is rewritten."""
+    """Size, modification time and inode: changes whenever a file is rewritten.
+
+    (Not when it's rewritten in place keeping its size and modification time, as
+    make and rsync also assume. Its change time would say so, but that also changes
+    when it's linked or chmod-ed, as downloads placed in a folder are.)
+    """
     status = Path(path).stat()
     return [str(Path(path).resolve()), status.st_size, status.st_mtime_ns, status.st_ino, status.st_dev]
+
+
+def is_sha256(value):
+    """Whether value is a SHA256 digest in lowercase hexadecimal."""
+    return isinstance(value, str) and len(value) == 64 and not value.strip("0123456789abcdef")
+
+
+@contextmanager
+def private_folder(folder):
+    """An open descriptor of folder/u<uid>, a folder only this user can write in,
+    made if need be, or None if it's someone else's or can't be made (in a cache
+    other users share, folder must let them write, as a umask of 002 makes it).
+    Its files are reached through the descriptor, so the folder can't be swapped
+    for another once it's checked. (On a drive that ignores permissions, such as
+    exFAT, it's as private as it can be.)
+    """
+    path = Path(folder) / f"u{os.getuid()}"
+    descriptor = None
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            os.mkdir(path, 0o700)
+        except FileExistsError:
+            pass
+        descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        if os.fstat(descriptor).st_uid != os.getuid():
+            raise PermissionError(f"{path} isn't this user's")
+        if os.fstat(descriptor).st_mode & 0o077:
+            try:
+                os.fchmod(descriptor, 0o700)
+            except OSError:
+                pass  # a drive that ignores permissions: as private as it gets
+    except OSError:
+        if descriptor is not None:
+            os.close(descriptor)
+        descriptor = None
+    try:
+        yield descriptor
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
+def read_own(folder, name):
+    """The bytes of a file in a private folder (a descriptor), else None: never a
+    link, pipe or folder, and only this user's."""
+    try:
+        descriptor = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=folder)
+    except OSError:
+        return None
+    try:
+        status = os.fstat(descriptor)
+        if not stat.S_ISREG(status.st_mode) or status.st_uid != os.getuid():
+            return None
+        with os.fdopen(descriptor, "rb", closefd=False) as handle:
+            return handle.read()
+    except OSError:
+        return None
+    finally:
+        os.close(descriptor)
+
+
+def write_own(folder, name, write):
+    """Atomically write a file in a private folder that only this user can read or
+    write; write(handle) writes its contents."""
+    temporary = f".own-{secrets.token_hex(8)}"
+    descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=folder)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            write(handle)
+        os.replace(temporary, name, src_dir_fd=folder, dst_dir_fd=folder)
+    except BaseException:
+        try:
+            os.unlink(temporary, dir_fd=folder)
+        except OSError:
+            pass
+        raise
+
+
+def prune_own(folder, suffix, days):
+    """In a private folder, remove the files ending in suffix unused for days, and
+    leftovers of interrupted writes; returns {name: mtime} of those kept."""
+    now, kept = time.time(), {}
+    for name in os.listdir(folder):
+        try:
+            mtime = os.stat(name, dir_fd=folder, follow_symlinks=False).st_mtime
+            if (name.startswith(".own-") and mtime < now - 86400) or (name.endswith(suffix) and mtime < now - days * 86400):
+                os.unlink(name, dir_fd=folder)
+            elif name.endswith(suffix):
+                kept[name] = mtime
+        except OSError:
+            pass
+    return kept
 
 
 _UMASK = os.umask(0)
@@ -185,33 +284,31 @@ class Cache:
         self.workspace = self.root / "osteosarc"
         self.offline = offline
         self.timeout = timeout
-        self._verified = {}
+        self._verified, self._pruned = {}, False
 
     def path(self, receipt, *, verify=True):
         """Resolve a receipt, detecting missing or modified bytes.
 
-        Each object is hashed once per Cache instance; a rewritten file (new
-        size, mtime or inode) is hashed again.
+        Each object is hashed once per Cache (the snapshot's sources take a few
+        hundredths of a second); a rewritten file is hashed again.
         """
         if not isinstance(receipt, Receipt):
             receipt = Receipt(**receipt)
-        if (len(receipt.sha256) != 64 or any(c not in "0123456789abcdef" for c in receipt.sha256)
+        if (not is_sha256(receipt.sha256)
                 or Path(receipt.filename).name != receipt.filename or receipt.filename in ("", ".", "..")):
             raise IntegrityError("Invalid cache receipt path")
         path = self.objects / object_name(receipt.sha256, receipt.filename)
         if not path.is_file():
             raise OfflineError(f"Cached object is missing: {receipt.url}")
         if verify:
-            current = file_identity(path)
-            if current[1] != receipt.size:
+            identity = file_identity(path)
+            if identity[1] != receipt.size:
                 raise IntegrityError(f"Cached object size differs from receipt: {path}")
-            identity = json.dumps(current)
-            if self._verified.get(identity) != receipt.sha256:
-                try:
-                    datacache.validate_file(path, expected_sha256=receipt.sha256, expected_size=receipt.size)
-                except datacache.FileValidationError as error:
-                    raise IntegrityError(f"Cached object was modified: {path}") from error
-                self._verified[identity] = receipt.sha256
+            key = json.dumps(identity)
+            if self._verified.get(key) != receipt.sha256:
+                if digest(path) != receipt.sha256:
+                    raise IntegrityError(f"Cached object was modified: {path}")
+                self._verified[key] = receipt.sha256
         return path
 
     def file_digest(self, path):
@@ -220,16 +317,35 @@ class Cache:
         Local BAMs are large; an unchanged file (same size, mtime and inode) is
         not re-read. Any rewrite changes its identity and forces a new hash.
         """
-        identity = file_identity(path)
-        memo = self.workspace / "digests" / (stable_id(identity) + ".json")
-        if memo.is_file():
-            record = json.loads(memo.read_text())
-            if record.get("identity") == identity:
-                return record["sha256"]
-        value = digest(path)
-        if file_identity(path) == identity:
-            write_json(memo, dict(identity=identity, sha256=value))
-        return value
+        return self._remembered_digest(path, file_identity(path))
+
+    def _remembered_digest(self, path, identity):
+        """Each user keeps their own records, in a private folder; a damaged one is
+        hashed again."""
+        name = f"{stable_id(identity)}.json"
+        with private_folder(self.workspace / "digests") as folder:
+            if folder is not None:
+                try:
+                    record = json.loads(read_own(folder, name) or "{}")
+                    if record.get("identity") == identity and is_sha256(record.get("sha256")):
+                        try:
+                            os.utime(name, dir_fd=folder)  # used: kept by prune_own
+                        except OSError:
+                            pass
+                        return record["sha256"]
+                except (ValueError, AttributeError):
+                    pass
+            value = digest(path)
+            if folder is not None and file_identity(path) == identity:
+                record = json.dumps(dict(identity=identity, sha256=value)).encode()
+                try:
+                    write_own(folder, name, lambda handle: handle.write(record))
+                    if not self._pruned:  # once a process is enough
+                        self._pruned = True
+                        prune_own(folder, ".json", 30)
+                except OSError:
+                    pass  # a read-only cache: hashed again next time
+            return value
 
     def fetch(self, url, *, refresh=False, sha256=None, md5=None, size=None, max_bytes=None):
         """Download or verify cached bytes, returning their immutable receipt.
@@ -240,8 +356,7 @@ class Cache:
         """
         if urlsplit(url).scheme not in ("https", "http"):
             raise ValueError("Downloads require an HTTP(S) URL; use Cache.import_file for local data")
-        if sha256 is not None and (not isinstance(sha256, str) or len(sha256) != 64
-                                   or any(c not in "0123456789abcdef" for c in sha256.lower())):
+        if sha256 is not None and not (isinstance(sha256, str) and is_sha256(sha256.lower())):
             raise ValueError("sha256 must be a 64-character hexadecimal digest")
         if refresh and self.offline:
             raise OfflineError("Cannot refresh in offline mode")
@@ -290,6 +405,7 @@ class Cache:
                                                  (total is not None and total > max_bytes)):
                         raise IntegrityError(f"Download exceeds {max_bytes} bytes: {url}")
 
+                import datacache  # it imports pandas: only when a file is fetched
                 try:
                     datacache.fetch_file(url, destination=path, decompress=False,
                                          expected_sha256=sha256, expected_size=size,
@@ -361,6 +477,7 @@ class Cache:
             self._validate(Path(temporary), sha256=checksum, size=receipt.size)
             share(temporary)
             os.replace(temporary, output)
+            self._verified[json.dumps(file_identity(output))] = checksum
         finally:
             Path(temporary).unlink(missing_ok=True)
         return receipt

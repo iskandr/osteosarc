@@ -564,7 +564,11 @@ def test_downloads_are_listed_found_and_placed_under_their_own_names(dataset, tm
     (derived / "reads.bam").write_bytes(b"bam")
     (derived / "receipt.json").write_text(json.dumps(dict(request=dict(source=vcf.url, regions=[
         dict(contig="chr1", start=9, end=20), dict(contig="chr2", start=0, end=5)]))))
-    reads = next(r for r in dataset.downloads() if r["kind"] == "reads")
+    malformed = dataset.cache.workspace / "derived" / "malformed"  # skipped, as unreadable ones are
+    malformed.mkdir()
+    (malformed / "reads.bam").write_bytes(b"bam")
+    (malformed / "receipt.json").write_text(json.dumps(dict(request=dict(source=None))))
+    (reads,) = (r for r in dataset.downloads() if r["kind"] == "reads")
     assert (reads["key"], reads["regions"]) == (key, "2 regions from chr1:10-20")
     from osteosarc.views import downloads_view, files_view
     shown = downloads_view(list(dataset.downloads()), dataset.cache.root)
@@ -695,6 +699,37 @@ def test_short_names_tell_same_named_files_apart(dataset):
     dataset.files = Files([File(k, k, "https://example.test/" + k, "alignment", "bam") for k in keys])
     assert [dataset.short_name(k) for k in keys] == [
         "Pool_1.possorted_genome_bam", "Pool_2.possorted_genome_bam", "rna-seq.x_sorted", "vendor.x_sorted", "unique"]
+
+
+def test_a_name_two_files_have_as_different_kinds_of_name_is_ambiguous(dataset):
+    from osteosarc import File, Files
+    named = File("b", "other.tsv", "https://example.test/other.tsv", "table", "tsv", metadata={"resource": "solo.bam"})
+    dataset.files = Files([File("a", "solo.bam", "https://example.test/solo.bam", "alignment", "bam"), named])
+    with pytest.raises(KeyError, match="found 2"):
+        dataset.file("solo.bam")
+    for name in (None, Path("solo.bam")):
+        with pytest.raises(KeyError, match="found 0"):
+            dataset.file(name)
+    # Any kind of name, even a key that looks like a URL; equal entries are still two files.
+    odd = File("c", "mirrors/https://example.org/a.bam", "https://example.test/c", "alignment", "bam")
+    same_url = File("d", "d.tsv", "https://example.test/c", "table", "tsv")
+    twice = File("e", "e.bam", "https://example.test/e.bam", "alignment", "bam")
+    dataset.files = Files([odd, same_url, twice, File(**{f: getattr(twice, f) for f in ("id", "key", "url", "kind", "format")})])
+    assert dataset.file("mirrors/https://example.org/a.bam") is odd
+    for ambiguous in ("https://example.test/c", "e.bam"):
+        with pytest.raises(KeyError, match="found 2"):
+            dataset.file(ambiguous)
+    # One file's key that's another's ID is ambiguous too, however the ID looks.
+    dataset.files = Files([File("b", "k1", "https://example.test/b", "table", "tsv"),
+                           File("k1", "k2", "https://example.test/k", "table", "tsv")])
+    with pytest.raises(KeyError, match="found 2"):
+        dataset.file("k1")
+    with pytest.raises(KeyError):
+        dataset.files["k1"]
+    # A sample named twice on a file lists it once; a sample that isn't a name finds nothing.
+    tagged = File("f", "f.bam", "https://example.test/f.bam", "alignment", "bam", metadata={"samples": ("S", "S")})
+    assert list(Files([tagged]).select(sample="S")) == [tagged]
+    assert not Files([tagged]).select(sample=["S"])
 
 
 def test_a_sample_whose_bams_are_all_skipped_is_an_error(dataset, monkeypatch, capsys):

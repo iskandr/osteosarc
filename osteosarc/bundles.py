@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from .cache import Cache, digest, file_lock, stable_id, write_json
+from .cache import Cache, digest, file_lock, is_sha256, stable_id, write_json
 from .errors import IntegrityError, SchemaError
 from .fixtures import select_fixtures, validate_recipe
 from .models import File, Region
@@ -212,7 +212,7 @@ def _verify_index(path, index):
 
 def _verified_counts(value, label):
     if not isinstance(value, dict) or any(
-            not isinstance(key, str) or len(key) != 64 or any(c not in "0123456789abcdef" for c in key)
+            not is_sha256(key)
             or type(count) is not int or count < 1 for key, count in value.items()):
         raise IntegrityError(f"Invalid record multiset: {label}")
     return Counter(value)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import dataclasses
 import json
 import re
 import warnings
@@ -43,6 +44,7 @@ from .parsing import (
     parse_variants,
     read_text,
 )
+from .saved import forget, load_or_build
 
 
 def _check_inventory_time(file, receipt):
@@ -123,6 +125,24 @@ def choose_snapshot(rows, name=None, *, date=None, root=None):
     if not matches:
         raise FileNotFoundError(f"No snapshot {wanted}; saved: " + ", ".join(r["name"] for r in rows))
     return matches[0]["name"]
+
+
+
+def _canonical(value):
+    """value as JSON that tells types apart (a tuple from a list, 1 from "1", a
+    Glob from a dict) and keeps dicts' order. Raises TypeError for anything else."""
+    if dataclasses.is_dataclass(value) and not isinstance(value, type):
+        return [type(value).__qualname__, [[f.name, _canonical(getattr(value, f.name))]
+                                           for f in dataclasses.fields(value)]]
+    if isinstance(value, (list, tuple)):
+        return [type(value).__name__, [_canonical(v) for v in value]]
+    if isinstance(value, dict):  # in order: a correction's changes are made in order
+        return ["dict", [[_canonical(k), _canonical(v)] for k, v in value.items()]]
+    if isinstance(value, (set, frozenset)):
+        return [type(value).__name__, sorted((_canonical(v) for v in value), key=json.dumps)]
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return [type(value).__name__, value]
+    raise TypeError(f"{type(value).__name__} can't be written down exactly")
 
 
 class Dataset:
@@ -237,8 +257,12 @@ class Dataset:
                         created_at=datetime.now(timezone.utc).isoformat())
         dataset = cls(cache, manifest, corrections=corrections)
         # Validate identity joins before making a snapshot discoverable.
-        dataset.variants()
-        dataset.files
+        try:
+            dataset.variants()
+            dataset.files
+        except BaseException:
+            forget(cache.workspace / "catalogs", manifest["id"])  # nothing kept for a snapshot that isn't
+            raise
         write_json(path, manifest)
         return dataset
 
@@ -348,7 +372,12 @@ class Dataset:
             events_from_specimens,
         )
         self._require_timeline()
-        records, undated = self.curation.records, []
+        undated, used = [], []
+
+        def records(source):
+            found = self.curation.records(source)
+            used.append(found[1])  # the corrections this timeline depends on
+            return found
         events, event_marks = records("events")
         mrd, mrd_marks = records("mrd")
         sheet, sheet_marks = records("events_sheet")
@@ -366,7 +395,7 @@ class Dataset:
                                            undated=undated)]
         # Rows whose dates cannot be read are kept out of the chart but reported here.
         return Timeline(sorted(items, key=lambda e: (e.first_day, e.lane, e.label, e.id)),
-                        source={"snapshot_id": self.id, "corrections": self.curation.applied(),
+                        source={"snapshot_id": self.id, "corrections": self.curation.ids_in(*used),
                                 "undated": undated})
 
     @cached_property
@@ -447,14 +476,16 @@ class Dataset:
         return Samples(result, source={"snapshot_id": self.id})
 
     def _tag_samples(self, files):
-        """Record on each file the samples whose BAM it is or whose FASTQ folder holds it."""
+        """Record on each file the samples whose BAM it is or whose FASTQ folder holds it.
+
+        Returns a problem that left them unlinked, if any."""
         try:
             sources = self._sample_sources
         except SchemaError as error:
             # An older snapshot has no sample registry; any other problem is worth saying.
             if set(TIMELINE_SOURCES) <= set(self.manifest["sources"]):
-                warnings.warn(f"Files aren't linked to samples: {error}", stacklevel=3)
-            return
+                return f"Files aren't linked to samples: {error}"
+            return None
         owners, folders = defaultdict(list), defaultdict(list)
         for source in sources:
             sample = source["row"]["sample_id"]
@@ -515,7 +546,10 @@ class Dataset:
     @property
     def corrections(self):
         """Every correction's status (applied, fixed_upstream, stale, disabled) and evidence."""
-        return Table(self.curation.report())
+        report = Table(self.curation.report())
+        if "files" in self.__dict__:  # the listing isn't needed again: let it go (else files does)
+            self.curation.release("bucket")
+        return report
 
     @property
     def unrecognized(self):
@@ -545,9 +579,44 @@ class Dataset:
     @cached_property
     def files(self):
         """All listed files plus metadata-only catalog objects and site tables."""
+        files = self._saved("files", self._build_files,
+                            ("bucket", "bams", "bam_metadata", "vafs", "specimens", "fastqs"))
+        self.curation.release("bucket")  # the large listing, if data.corrections read it
+        return files
+
+    def _saved(self, name, build, sources):
+        """A catalogue built once for this snapshot and set of corrections, and kept
+        in the cache (see osteosarc.saved).
+
+        build returns the catalogue and any problems to warn of. They're kept with
+        it, with the stale corrections to the sources it's built from, and warned
+        of whether it's built or loaded.
+        """
+        def build_noting_problems():
+            value, problems = build()
+            return value, problems, self.curation.stale(self.curation.of_sources(*sources))
+        # A catalogue built from no corrected source (the bucket header) serves any corrections.
+        key = self.id if not sources else self._corrections_key and f"{self.id}-{self._corrections_key}"
+        value, problems, stale = load_or_build(self.cache.workspace / "catalogs", name, key, build_noting_problems)
+        self.curation.warn(stale, stacklevel=2)  # from here, as when it's built
+        for problem in problems:
+            warnings.warn(problem, stacklevel=3)
+        return value
+
+    @cached_property
+    def _corrections_key(self):
+        """The corrections in use, as a key that's the same in every process; None
+        (nothing saved) if they hold values that can't be written down exactly."""
+        chosen = self.curation.corrections if self.curation.enabled else ()
+        try:
+            return stable_id(_canonical(chosen))[:12]
+        except TypeError:
+            return None
+
+    def _build_files(self):
         bams = self._json("bams")
         objects, bucket_touched = self.curation.records("bucket")
-        listing = self._download_header
+        listing = self._raw_download_header()
         rows, bams_touched = self.curation.records("bams")
         metadata, metadata_touched = self.curation.records("bam_metadata")
         rows = iter(rows)
@@ -570,14 +639,17 @@ class Dataset:
         for file in files:
             if file.key in touched:
                 file.metadata["corrections"] = tuple(dict.fromkeys(touched[file.key]))
-        self._tag_samples(files)
+        problem = self._tag_samples(files)
         # The listing is large; evaluated corrections keep their matches if it is reloaded.
         self.curation.release("bucket")
-        return files
+        return files, [problem] if problem else []
 
     @cached_property
     def _download_header(self):
         """The bucket listing's fields other than its file rows (download_base, dates)."""
+        return self._saved("header", lambda: (self._raw_download_header(), []), ())
+
+    def _raw_download_header(self):
         if self._bucket_header is None:
             self.curation.raw("bucket")
             self.curation.release("bucket")
@@ -585,6 +657,10 @@ class Dataset:
 
     @cached_property
     def _variants(self):
+        return self._saved("variants", self._build_variants,
+                           ("variant_index", "source_variants", "vaccine_overlap", "vafs"))
+
+    def _build_variants(self):
         index, index_touched = self.curation.records("variant_index")
         records, record_touched = self.curation.records("source_variants")
         mutations, overlap_touched = self.curation.records("vaccine_overlap")
@@ -596,7 +672,8 @@ class Dataset:
                                   source_variants=records,
                                   vaccine_overlap=dict(self._json("vaccine_overlap"), mutations=mutations),
                                   source={"snapshot_id": self.id, "receipts": self.manifest["sources"],
-                                          "corrections": self.curation.applied()})
+                                          "corrections": self.curation.ids_in(
+                                              index_touched, record_touched, overlap_touched, count_touched)})
         # A correction belongs to a variant when it touches the variant's own records
         # or all of its count rows. One that touches only some count rows (e.g. one
         # BAM's counts) is listed separately as a count correction.
@@ -618,7 +695,7 @@ class Dataset:
                 (ids if n == rows_per_variant[variant.id] else partial[variant.id]).append(correction)
             variant.annotations["corrections"] = tuple(dict.fromkeys(ids))
             variant.annotations["count_corrections"] = tuple(dict.fromkeys(partial[variant.id]))
-        return variants
+        return variants, []
 
     def variants(self, set="site", **filters):
         """Select 'site', 'all' (includes count-export entries), or 'vaccine'.
@@ -661,18 +738,9 @@ class Dataset:
                     rows.append(dict(copy.deepcopy(peptide), variant_id=record["id"], gene=record["gene"]))
         return Table(rows, source=self.manifest["sources"]["source_variants"])
 
-    @cached_property
-    def _file_index(self):
-        index = defaultdict(list)
-        for file in self.files:
-            for name in dict.fromkeys((file.id, file.key, file.url, file.metadata.get("resource"))):
-                if name:
-                    index[name].append(file)
-        return index
-
     def file(self, key_or_id):
         """Resolve an exact bucket key, URL, resource name, or file ID."""
-        matches = self._file_index.get(key_or_id, [])
+        matches = self.files._names.get(key_or_id)
         if len(matches) != 1:
             raise KeyError(f"Expected one file for {key_or_id!r}, found {len(matches)}")
         return matches[0]
@@ -761,8 +829,34 @@ class Dataset:
         counts as downloaded exactly when local_path finds it.
         """
         from .views import regions_text
-        by_url = {f.url: f for f in self.files}
+        rows = self._downloaded_files()
+        base = self._download_header.get("download_base", BUCKET)
+        for receipt_path in sorted((self.cache.workspace / "derived").glob("*/receipt.json")):
+            try:
+                receipt = json.loads(receipt_path.read_text())
+                source = receipt["request"]["source"]
+                regions = regions_text(receipt["request"].get("regions", ()))
+            except (OSError, ValueError, KeyError, TypeError, AttributeError):
+                continue  # not a receipt osteosarc wrote
+            bam = receipt_path.parent / "reads.bam"
+            if not isinstance(source, str) or not bam.is_file():
+                continue
+            file = self._url_file(source)
+            if not (file or source.startswith(base)):
+                continue
+            rows.append(dict(kind="reads", key=file.key if file else source, url=source, size=bam.stat().st_size,
+                             path=str(bam), regions=regions,
+                             downloaded=datetime.fromtimestamp(bam.stat().st_mtime, timezone.utc).isoformat()))
+        return Table(rows, columns=("kind", "key", "url", "size", "path", "regions", "downloaded"))
+
+    def _url_file(self, url):
+        """The file at this URL, or None."""
+        return next(iter(self.files._names.find("url", url)), None)
+
+    def _downloaded_files(self):
+        """downloads()' rows for whole files."""
         sources = {r["url"] for r in self.manifest["sources"].values()}
+        self.files  # first: building it reads the bucket header too, so that's read once
         base = self._download_header.get("download_base", BUCKET)
         receipts = {}
         # This snapshot's own downloads first, then what the cache has for other snapshots.
@@ -773,8 +867,10 @@ class Dataset:
                     receipts.setdefault(receipt.url, []).append(receipt)
         rows = []
         for url, candidates in sorted(receipts.items()):
-            file = by_url.get(url)
-            if url in sources or not (file or url.startswith(base)):
+            if url in sources:
+                continue
+            file = self._url_file(url)
+            if not (file or url.startswith(base)):
                 continue
             for receipt in candidates:
                 path = self._local_copy(file or File(stable_id(url), url, url, "", ""), receipt)
@@ -782,25 +878,11 @@ class Dataset:
                     rows.append(dict(kind="file", key=file.key if file else url, url=url, size=receipt.size,
                                      path=str(path), regions="", downloaded=receipt.retrieved_at))
                     break
-        for receipt_path in sorted((self.cache.workspace / "derived").glob("*/receipt.json")):
-            try:
-                receipt = json.loads(receipt_path.read_text())
-                source = receipt["request"]["source"]
-                regions = receipt["request"].get("regions", ())
-            except (OSError, ValueError, KeyError, TypeError):
-                continue
-            bam = receipt_path.parent / "reads.bam"
-            file = by_url.get(source)
-            if not bam.is_file() or not (file or str(source).startswith(base)):
-                continue
-            rows.append(dict(kind="reads", key=file.key if file else source, url=source, size=bam.stat().st_size,
-                             path=str(bam), regions=regions_text(regions),
-                             downloaded=datetime.fromtimestamp(bam.stat().st_mtime, timezone.utc).isoformat()))
-        return Table(rows, columns=("kind", "key", "url", "size", "path", "regions", "downloaded"))
+        return rows
 
     def local_urls(self):
         """URLs of every file with a local copy: downloads and the snapshot's own tables."""
-        return ({r["url"] for r in self.downloads() if r["kind"] == "file"}
+        return ({r["url"] for r in self._downloaded_files()}
                 | {r["url"] for r in self.manifest["sources"].values()})
 
     def _download(self, file, *, cache, refresh=False, verify_size=True):

@@ -50,7 +50,10 @@ Osteosarc shares a cache with the other OpenVax tools, in the first of these:
 
 `Cache("some/folder")`, passed as cache= to sync and open, or `--cache` on the
 command line, uses another folder. Downloads are stored by checksum, so a file
-downloaded once is never stored twice, even by another tool.
+downloaded once is never stored twice, even by another tool. The first command on a
+snapshot also saves its file and variant catalogues there (about 30 MB, keeping the
+three most recently used copies of each), so later commands start in a second or two;
+they're rebuilt when osteosarc changes. Each user keeps their own.
 
 ## Find what's downloaded
 

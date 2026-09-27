@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import re
+from collections import Counter, defaultdict
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
+from functools import cached_property
 
 from .curation import check_filter
 from .errors import CoordinateError
@@ -144,6 +146,10 @@ class Collection(Sequence):
     def __len__(self):
         return len(self._items)
 
+    def __iter__(self):
+        # Sequence's own __iter__ calls __getitem__ once per item, in Python.
+        return iter(self._items)
+
     def __getitem__(self, key):
         if isinstance(key, slice):
             return type(self)(self._items[key], source=self.source)
@@ -159,6 +165,9 @@ class Collection(Sequence):
 
     def to_records(self):
         return [asdict(item) for item in self]
+
+    def __getstate__(self):  # indexes are built again, never saved
+        return {"_items": self._items, "source": self.source}
 
     def __repr__(self):
         return f"<{type(self).__name__}: {len(self)} items>"
@@ -176,11 +185,15 @@ class Files(Collection):
 
     def __getitem__(self, key):
         if isinstance(key, str):
-            matches = [f for f in self if key in (f.id, f.key, f.url)]
+            matches = self._names.get(key, resource=False)
             if len(matches) != 1:
                 raise KeyError(key)
             return matches[0]
         return super().__getitem__(key)
+
+    @cached_property
+    def _names(self):
+        return _NameIndex(self)
 
     def select(self, *, kind=None, format=None, prefix=None, contains=None, sample=None, timepoint=None,
                assay=None, platform=None, tissue=None, provider=None, library=None,
@@ -207,8 +220,6 @@ class Files(Collection):
                 return False
             if contains is not None and contains not in file.key:
                 return False
-            if sample is not None and sample not in file.samples:
-                return False
             for name, value in filters.items():
                 if value is None:
                     continue
@@ -216,7 +227,51 @@ class Files(Collection):
                 if value not in values or (len(values) > 1 and not include_conflicts):
                     return False
             return True
-        return self.where(match)
+        pool = self if sample is None else self._by_sample.get(sample, ()) if isinstance(sample, str) else ()
+        return type(self)((file for file in pool if match(file)), source=self.source)
+
+    @cached_property
+    def _by_sample(self):
+        by_sample = defaultdict(list)
+        for file in self:
+            for sample in dict.fromkeys(file.samples):
+                by_sample[sample].append(file)
+        return by_sample
+
+
+class _NameIndex:
+    """Files by ID, key, URL or resource name. Each kind of name gets its own
+    dictionary when first looked up: building one from the files takes about a
+    tenth of a second, less than loading a saved one."""
+
+    def __init__(self, files):
+        self._files, self._by = files, {}
+
+    def _names(self, kind):
+        """{name: file}, with a list for a name several files share."""
+        if kind not in self._by:
+            files = list(self._files)
+            names = [f.metadata.get("resource") if kind == "resource" else getattr(f, kind) for f in files]
+            by = dict(zip(names, files))  # built in C: a tenth of the time of a loop
+            by.pop(None, None), by.pop("", None)
+            if len(by) < sum(1 for name in names if name):
+                for name, count in Counter(name for name in names if name).items():
+                    if count > 1:
+                        by[name] = [f for n, f in zip(names, files) if n == name]
+            self._by[kind] = by
+        return self._by[kind]
+
+    def find(self, kind, name):
+        """The files with this name of this kind (id, key, url or resource)."""
+        found = self._names(kind).get(name)
+        return [] if found is None else found if isinstance(found, list) else [found]
+
+    def get(self, name, *, resource=True):
+        """Every file with this ID, key, URL or (with resource) resource name."""
+        if not isinstance(name, str):
+            return []
+        kinds = ["id", "key", *(["resource"] if resource else []), *(["url"] if "://" in name else [])]
+        return list({id(file): file for kind in kinds for file in self.find(kind, name)}.values())
 
 
 @dataclass(frozen=True)
