@@ -32,19 +32,36 @@ import requests
 
 from .errors import IntegrityError, OfflineError, OsteosarcError
 
+#: Tries at an HTTP request that fails transiently (see _transient), a second, then
+#: 2, 4 and 8 seconds apart, before it's an error.
+ATTEMPTS = 5
+
+
+def _transient(error):
+    """Whether a request may succeed if tried again: a server error or too many
+    requests (500, 502, 503, 504, 429), a dropped connection or a timeout. Not a
+    refusal (other 4xx), nor anything to do with the bytes themselves."""
+    if isinstance(error, requests.HTTPError):
+        return error.response is not None and error.response.status_code in (429, 500, 502, 503, 504)
+    return isinstance(error, (requests.ConnectionError, requests.Timeout))
+
 
 def http_identity(url, timeout, *, optional=False):
     """HTTP evidence for a remote object; datacache returns file paths only."""
-    try:
-        with requests.head(url, allow_redirects=True, timeout=timeout,
-                           headers={"Accept-Encoding": "identity"}) as response:
-            response.raise_for_status()
-            return {key: response.headers.get(key)
-                    for key in ("etag", "last-modified", "content-length")}
-    except requests.RequestException as error:
-        if optional and error.response is not None and error.response.status_code in (405, 501):
-            return dict.fromkeys(("etag", "last-modified", "content-length"))
-        raise OsteosarcError(f"Cannot inspect {url}: {error}") from error
+    for attempt in range(ATTEMPTS):
+        try:
+            with requests.head(url, allow_redirects=True, timeout=timeout,
+                               headers={"Accept-Encoding": "identity"}) as response:
+                response.raise_for_status()
+                return {key: response.headers.get(key)
+                        for key in ("etag", "last-modified", "content-length")}
+        except requests.RequestException as error:
+            if optional and error.response is not None and error.response.status_code in (405, 501):
+                return dict.fromkeys(("etag", "last-modified", "content-length"))
+            if attempt + 1 < ATTEMPTS and _transient(error):
+                time.sleep(2 ** attempt)
+                continue
+            raise OsteosarcError(f"Cannot inspect {url}: {error}") from error
 
 
 def digest(path, algorithm="sha256"):
@@ -407,9 +424,11 @@ class Cache:
 
                 import datacache  # it imports pandas: only when a file is fetched
                 try:
+                    # datacache retries the same transient failures, with backoff.
                     datacache.fetch_file(url, destination=path, decompress=False,
                                          expected_sha256=sha256, expected_size=size,
-                                         timeout=self.timeout, progress_callback=check_size)
+                                         timeout=self.timeout, progress_callback=check_size,
+                                         max_retries=ATTEMPTS - 1)
                 except datacache.FileValidationError as error:
                     raise IntegrityError(str(error)) from error
                 except requests.RequestException as error:

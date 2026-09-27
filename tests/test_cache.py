@@ -14,20 +14,23 @@ from osteosarc.cache import stable_id
 @pytest.fixture
 def download_transport(monkeypatch):
     """Run the real datacache downloader over an in-memory HTTP response."""
-    state = dict(body=b"original bytes", calls=0, fail=False, etag='"opaque-multipart-2"')
+    # transient: statuses (or exceptions) the next requests, HEAD or GET, meet first.
+    state = dict(body=b"original bytes", calls=0, fail=False, etag='"opaque-multipart-2"', transient=[])
 
     class Response:
         def __init__(self, body=b"", fail=False):
-            self.body, self.fail = body, fail
+            self.body, self.status = body, 404 if fail else state["transient"].pop(0) if state["transient"] else 200
+            if isinstance(self.status, Exception):
+                raise self.status
             self.headers = requests.structures.CaseInsensitiveDict({
                 "ETag": state["etag"], "Last-Modified": "yesterday",
                 "Content-Length": str(len(state["body"]))})
 
         def raise_for_status(self):
-            if self.fail:
+            if self.status != 200:
                 response = requests.Response()
-                response.status_code = 404
-                raise requests.HTTPError("failed", response=response)
+                response.status_code = self.status
+                raise requests.HTTPError(f"{self.status} error", response=response)
 
         def iter_content(self, chunk_size):
             for i in range(0, len(self.body), chunk_size):
@@ -320,3 +323,24 @@ def test_transient_failure_is_retried_by_datacache(tmp_path, download_transport,
     receipt = cache.fetch("https://example.test/retried.tsv")
     assert len(attempts) == 2
     assert cache.path(receipt).read_bytes() == download_transport["body"]
+
+
+def test_transient_http_failures_are_tried_again(tmp_path, download_transport, monkeypatch):
+    import osteosarc.cache as module
+    slept = []
+    monkeypatch.setattr(module.time, "sleep", slept.append)
+    monkeypatch.setattr("datacache.retries.time.sleep", slept.append, raising=False)
+    monkeypatch.setattr("datacache.download.time.sleep", slept.append, raising=False)
+    # A server error at the first identity check, a dropped connection and a 503
+    # while downloading, and a 429 at the last check: all tried again.
+    download_transport["transient"] = [500, requests.ConnectionError("reset"), 503, 429]
+    receipt = Cache(tmp_path / "cache").fetch("https://example.test/bundle.tar.gz")
+    assert Cache(tmp_path / "cache").path(receipt).read_bytes() == b"original bytes"
+    assert len(slept) == 4
+    # A refusal isn't, and neither are persistent server errors past the last try.
+    download_transport["transient"] = [403]
+    with pytest.raises(OsteosarcError, match="403"):
+        Cache(tmp_path / "other").fetch("https://example.test/private.tar.gz")
+    download_transport["transient"] = [500] * module.ATTEMPTS
+    with pytest.raises(OsteosarcError, match="500"):
+        Cache(tmp_path / "another").fetch("https://example.test/down.tar.gz")

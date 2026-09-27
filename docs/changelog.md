@@ -5,6 +5,15 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.14.1 (unreleased)
+
+- **Downloads survive a passing server error.** A download, including a published
+  bundle such as openvax-v1, and the checks before and after it are tried again after
+  a server error, too many requests, a dropped connection or a timeout: up to five
+  times, 1, 2, 4 and 8 seconds apart
+  ([#86](https://github.com/iskandr/osteosarc/issues/86)). A refusal, such as a 403 or
+  404, or a wrong checksum still fails at once.
+
 ## 0.14.0 (2026-09-27)
 
 Fast test data with no options ([#84](https://github.com/iskandr/osteosarc/issues/84)).
