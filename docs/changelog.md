@@ -5,6 +5,21 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.13.3 (unreleased)
+
+Faster bundle builds ([#82](https://github.com/iskandr/osteosarc/issues/82)). Rebuilding
+openvax-v1 from cached reads takes 2.7 minutes and 1.6 GB instead of 31 minutes and
+21 GB, and gives the same bundle, byte for byte.
+
+- **Selection reads only what it can choose from.** For each BAM, osteosarc first reads
+  every target's window from the extract's index, then keeps the templates found
+  there, whole, and any a library names or pins. Before, it held all of the T2
+  tumor RNA-seq extract's 13.5 million records.
+- **Each source is counted once.** Making a bundle read and counted every record of a
+  source once for each of its members; it now does so once, and reads only the
+  records the members pin.
+- Record checksums are about twice as fast.
+
 ## 0.13.2 (2026-09-26)
 
 Faster read extraction ([#80](https://github.com/iskandr/osteosarc/issues/80)).

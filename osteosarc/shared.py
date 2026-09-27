@@ -509,6 +509,38 @@ def _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, e
                                   for n, rs in breakend_regions.items()})
 
 
+def _source_index(path, plan, windows):
+    """A RecordIndex of the records selection can look at in a source's extract.
+
+    Every template with a record in a target's window or breakend window, or near
+    a required record, is kept whole, as are named reads and pinned records; the
+    index then answers every question selection asks exactly as one of the whole
+    extract would, without holding its millions of other records.
+    """
+    import pysam
+    spans = [(plan["variant_regions"][name].contig, windows[name].start - 1, windows[name].end + 1)
+             for name in plan["covered"]]
+    spans += [(r.contig, r.start, r.end) for name in plan["sv_covered"] for r in plan["breakend_regions"][name]]
+    names, digests = set(), set()
+    for subset in plan["mine"].values():
+        spans += [span for span in map(sam_span, subset.get("sam", ())) if span]
+        names.update(line.split("\t", 1)[0] for line in subset.get("sam", ()) if not sam_span(line))
+        names.update(subset.get("names", ()))
+        digests.update(subset.get("records", ()))
+    def template(read):
+        return read.get_tag("RG") if read.has_tag("RG") else None, read.query_name
+    templates = set()
+    with pysam.AlignmentFile(str(path)) as bam:
+        for contig, start, end in spans:
+            if contig in bam.references:  # a little wider than asked: the index checks exactly
+                templates.update(map(template, bam.fetch(contig, max(0, start - 1), end + 1)))
+    either = names | {name for _, name in templates}
+
+    def keep(read):  # the name first: most reads aren't wanted, and it's quicker to get than RG
+        return read.query_name in either and (read.query_name in names or template(read) in templates)
+    return RecordIndex(read_records(path, keep=keep, digests=digests or None))
+
+
 def _select_source(plan, index, windows, targets, caps, low_quality_alt, cap):
     """The members one source contributes, and any required fixtures it lacks."""
     members, fixtures, problems = {}, {}, []
@@ -637,12 +669,12 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, req
     with ThreadPoolExecutor(max_workers=workers) as pool:
         for future in as_completed([pool.submit(extract, plan) for plan in plans]):
             plan, subset = future.result()
-            index = RecordIndex(read_records(subset.path))
+            index = _source_index(subset.path, plan, windows)
             members, fixtures, missing = _select_source(plan, index, windows, targets, caps, low_quality_alt,
                                                         structural["cap"])
             results[plan["label"]] = (plan, members, fixtures)
             problems += missing
-            log(f"{plan['file'].key}: read {plural(len(index.records), 'record')}, "
+            log(f"{plan['file'].key}: read {plural(subset.receipt['records'], 'record')}, "
                 f"kept {plural(len(members) + len(fixtures), 'member')}")
     if problems:
         # Every source was read (and its extraction cached), so a rerun after fixing these is quick.

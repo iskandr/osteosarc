@@ -8,7 +8,7 @@ python scripts/shared_test_data/build.py openvax-v2 OUT_DIR --carry openvax-v1 [
    given with --carry, pinned by checksum, except for a library a --required
    file (made by a required_*.py script here) lists afresh. The first run
    streams reads from the public BAMs, which takes about an hour for openvax-v1;
-   reruns reuse the cache.
+   reruns reuse the cache and take about three minutes.
 2. Builds the bundle, with that frozen recipe in it, into OUT_DIR/NAME. The
    bundle takes the same records from the public BAMs, or fails if any changed
    upstream.

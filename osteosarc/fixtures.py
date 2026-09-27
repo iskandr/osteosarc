@@ -191,8 +191,12 @@ def select_fixture_records(records, policy, *, regions=(), context_regions=()):
     # Public callers may pass read_records() directly. Selection revisits the
     # input for witnesses, strata and context, so consume an iterator only once.
     records = tuple(records)
+    return _select(records, Counter(r.digest for r in records), policy, regions, context_regions)
+
+
+def _select(records, available, policy, regions, context_regions):
+    """select_fixture_records, with the records' identities already counted."""
     regions, context_regions = tuple(regions), tuple(context_regions)
-    available = Counter(r.digest for r in records)
     reasons = defaultdict(set)
     kind = policy["kind"]
     counts = Counter()
@@ -236,7 +240,7 @@ def select_fixture_records(records, policy, *, regions=(), context_regions=()):
         for key, why in selected.items():
             counts[key] = available[key]
             reasons[key].update(why)
-    for r in records:
+    for r in records if context_regions else ():
         if _overlaps(r, context_regions):
             counts[r.digest] = available[r.digest]
             reasons[r.digest].add("assembly context")
@@ -256,8 +260,16 @@ def select_fixtures(recipe, sources):
     """
     import pysam
     recipe = validate_recipe(recipe)
-    records, headers, receipts = {}, {}, {}
+    records, available, headers, receipts = {}, {}, {}, {}
     members = {}
+    # A source whose members all pin exact records needs only those records read.
+    pinned, whole = defaultdict(set), set()
+    for member in recipe["members"].values():
+        policy = member["policy"]
+        if policy["kind"] == "exact" and not member.get("context_regions") and not member.get("retain_partners"):
+            pinned[member["source"]].update(policy.get("records", {}))
+        elif policy["kind"] != "omitted":
+            whole.add(member["source"])
     for name, member in sorted(recipe["members"].items()):
         sid = member["source"]
         policy = member["policy"]
@@ -292,7 +304,8 @@ def select_fixtures(recipe, sources):
             if assembly != normalize_assembly(recipe["sources"][sid]["assembly"]):
                 raise IntegrityError(f"Source assembly cannot be established or differs: {sid}")
             headers[sid] = header
-            records[sid] = list(read_records(path))
+            records[sid] = list(read_records(path) if sid in whole else read_records(path, digests=pinned[sid]))
+            available[sid] = Counter(r.digest for r in records[sid])
             if digest(path) != before:
                 raise IntegrityError(f"Source changed during selection: {sid}")
             receipts[sid] = value.receipt if isinstance(value, ReadSubset) else dict(archive_sha256=before)
@@ -300,15 +313,14 @@ def select_fixtures(recipe, sources):
             raise IntegrityError(f"Target/source assembly mismatch for {name}")
         regions = resolve_regions([Region(**r) for r in member["regions"]], headers[sid]) if member.get("regions") else ()
         context = resolve_regions([Region(**r) for r in member["context_regions"]], headers[sid]) if member.get("context_regions") else ()
-        counts, reasons, status = select_fixture_records(records[sid], policy, regions=regions, context_regions=context)
+        counts, reasons, status = _select(records[sid], available[sid], policy, regions, context)
         acquisition = receipts[sid]
         if member.get("retain_partners") and acquisition.get("scope") == "bounded_mate_SA_context":
             templates = {r.template for r in records[sid] if r.digest in counts}
-            available = Counter(r.digest for r in records[sid])
             for r in records[sid]:
                 why = set(acquisition["reasons"].get(r.digest, [])) & {"paired mate", "SA-linked partner"}
                 if r.template in templates and why:
-                    counts[r.digest] = available[r.digest]
+                    counts[r.digest] = available[sid][r.digest]
                     reasons[r.digest] = sorted(set(reasons.get(r.digest, [])) | why)
         members[name] = dict(source=sid, target=member["target"], records=dict(sorted(counts.items())),
                              acquisition_status=acquisition.get("status", "available-input"),
