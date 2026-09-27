@@ -127,7 +127,8 @@ alt templates. At a fusion or SV it keeps up to 50 templates with aligned bases 
 didn't call proper, and reads spliced or deleted exactly from one breakend to another.
 A read that simply runs across the breakends, a proper pair on either side, or a read
 spliced between exons that merely lie near them doesn't count. A kept template keeps
-all its records. Each record is pinned by checksum, so rebuilding gives the same
+all its records that were read (in a bundle you make, not a mate with no position,
+unless you ask). Each record is pinned by checksum, so rebuilding gives the same
 bytes, and any change upstream fails loudly. openvax-v1's reads come from the T2 tumor
 RNA-seq and WGS BAMs for every target, from any BAM a library already uses there, and
 from each RNA BAM the [SV candidates](sv-candidates.md) saw a junction in; a bundle you

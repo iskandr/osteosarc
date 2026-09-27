@@ -173,9 +173,10 @@ def parser():
     reads.add_argument("--min-mapq", type=int, default=0)
     reads.add_argument("--exclude-flags", type=lambda s: int(s, 0), default=0)
     mates = reads.add_mutually_exclusive_group()
-    mates.add_argument("--fetch-pairs", action="store_true", help="Also retrieve paired mates outside the regions")
-    mates.add_argument("--placed-mates", action="store_true",
-                       help="Also retrieve mates outside the regions, except those with no position (quicker)")
+    mates.add_argument("--fetch-pairs", action="store_true",
+                       help="Also retrieve mates outside the regions, except those with no position")
+    mates.add_argument("--unplaced-mates", action="store_true",
+                       help="Also retrieve mates outside the regions, even those with no position (slower)")
     mates.add_argument("--recover-linked", action="store_true", help="Bounded mate and SA-linked recovery")
     reads.add_argument("--json", action="store_true", help="The extract's paths and receipt as JSON")
     downloads = command("downloads")
@@ -498,8 +499,8 @@ def get_data(args, dataset):
         def extract(file):
             return dataset.extract_reads(file, **targets, reference=args.reference, index=args.index,
                                          filters=ReadFilter(args.min_mapq, args.exclude_flags),
-                                         fetch_pairs=args.fetch_pairs or args.placed_mates,
-                                         unplaced_mates=not args.placed_mates,
+                                         fetch_pairs=args.fetch_pairs or args.unplaced_mates,
+                                         unplaced_mates=args.unplaced_mates,
                                          recovery={} if args.recover_linked else None, to=args.to)
         results, finished, shown = [], {}, 0
         # A sample's BAMs are read four at a time and reported in order; the first error
@@ -610,8 +611,9 @@ def test_data(args, cache):
     action = args.test_data_command
     if action == "make":
         if args.recipe:
-            if args.sources or args.variant or args.sv or args.assay or args.platform:
-                raise ValueError("--recipe makes the bundle from the recipe alone; drop the BAMs, --variant and --sv")
+            if args.sources or args.variant or args.sv or args.assay or args.platform or args.unplaced_mates:
+                raise ValueError("--recipe makes the bundle from the recipe alone, which says how each BAM is read; "
+                                 "drop the BAMs, --variant, --sv and --unplaced-mates")
             recipe = read_json(args.recipe)
             given = dict(item.split("=", 1) for item in args.source)
             dataset = None

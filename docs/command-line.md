@@ -54,8 +54,8 @@ osteosarc reads rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.
 | `--assay`, `--platform` | With a sample, only its BAMs of that assay or platform |
 | `--to DIR` | Also save each BAM and its index in DIR |
 | `--min-mapq N`, `--exclude-flags 0x500` | Leave out low-quality or flagged reads |
-| `--fetch-pairs` | Also fetch mates that fall outside the regions |
-| `--placed-mates` | The same, except mates with no position, which is quicker |
+| `--fetch-pairs` | Also fetch mates that fall outside the regions, except those with no position |
+| `--unplaced-mates` | The same, with mates that have no position too, which is slower |
 | `--recover-linked` | Follow mates and split reads, within limits |
 | `--reference FASTA` | A local indexed reference, needed for CRAM |
 

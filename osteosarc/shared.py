@@ -11,7 +11,8 @@ the public BAMs, and fails if any of them changed upstream.
 At each small-variant target, in each source that covers it:
 
 1. Take the reads overlapping the target's allele window (osteosarc.alleles),
-   with their mates.
+   with their mates (unless the spec's selection says unplaced_mates: false,
+   those with no position too).
 2. Classify each template as alt, ref, other or uncallable.
 3. Keep up to caps[class] templates of each class, in order of SHA-256 of the
    read group and read name, then the lowest-quality alt templates not
@@ -452,7 +453,7 @@ def load_required(paths):
     return subsets
 
 
-def _source_entry(dataset, file, header, regions, label, unplaced_mates=True):
+def _source_entry(dataset, file, header, regions, label, unplaced_mates):
     from .reads import assembly_from_header
     assembly = assembly_from_header(header)
     if assembly is None:
@@ -469,7 +470,7 @@ def _source_entry(dataset, file, header, regions, label, unplaced_mates=True):
 
 
 def _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, everywhere, sv_everywhere, pad,
-                 unplaced_mates=True):
+                 unplaced_mates):
     """What one source covers, and the regions to extract for it; if nothing, why not."""
     from .reads import assembly_from_header
     file = dataset.file(url)
@@ -823,7 +824,8 @@ def bundle_spec(dataset, name, *, variants=(), svs=(), files=(), caps=None, unpl
     return dict(id=name, snapshot=dict(name=dataset.name, id=dataset.id),
                 # Mates with no position of their own are left out unless asked for: finding
                 # them means reading every unplaced read of a BAM, most of an RNA-seq extraction.
-                selection=dict(caps=dict(DEFAULT_CAPS, **caps), **({} if unplaced_mates else {"unplaced_mates": False})),
+                # A spec without this keeps them (as openvax-v1's does).
+                selection=dict(caps=dict(DEFAULT_CAPS, **caps), unplaced_mates=unplaced_mates),
                 sources=dict(all_targets=urls, structural=urls if svs else [], observed=False),
                 targets=dict(ids=ids, structural=[_sv_entry(sv, candidates) for sv in svs]),
                 redistribution=REDISTRIBUTION)

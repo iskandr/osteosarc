@@ -213,7 +213,13 @@ def _dync1h1_bam(path):
             read.cigarstring, read.query_sequence = "40M", sequence
             read.query_qualities = pysam.qualitystring_to_array("I" * 40)
             read.mapping_quality = 60
+            if name == "alt3":  # its mate didn't align and has no position, as STAR writes it
+                read.flag, read.next_reference_id, read.next_reference_start = 1 | 8 | 64, -1, -1
             out.write(read)
+        mate = pysam.AlignedSegment(out.header)
+        mate.query_name, mate.flag, mate.reference_id, mate.reference_start = "alt3", 1 | 4 | 128, -1, -1
+        mate.query_sequence, mate.query_qualities = "ACGT" * 10, pysam.qualitystring_to_array("I" * 40)
+        out.write(mate)
     pysam.index(str(path))
     return lambda contig, lo, hi, assembly, **kwargs: "".join(reference.get(i, "N") for i in range(lo, hi))
 
@@ -243,7 +249,10 @@ def test_a_bundle_is_made_from_variants_and_files_and_read_back(dataset, tmp_pat
     assert list(list_bundle(folder)) == [member]
     # A test reads the member as a local, read-only BAM, exported once and then reused offline.
     bam = bundle_file(folder, member, cache=tmp_path / "cache")
-    assert sum(record_multiset(bam).values()) == 5 and not bam.stat().st_mode & 0o222
+    assert sum(record_multiset(bam).values()) == 5 and not bam.stat().st_mode & 0o222  # not alt3's mate
+    every = dataset.make_bundle(tmp_path / "every", variants=["DYNC1H1-chr14-101980529"], files=[key],
+                                unplaced_mates=True)
+    assert sum(record_multiset(bundle_file(every, member, cache=tmp_path / "cache")).values()) == 6
     assert bundle_file(folder, member, cache=tmp_path / "cache", offline=True) == bam
     with pytest.raises(KeyError, match="did you mean"):
         bundle_file(folder, member[:-1], cache=tmp_path / "cache")
@@ -262,8 +271,8 @@ def test_a_bundle_spec_says_what_it_needs(dataset):
                                    observed=False)
     assert spec["selection"]["caps"]["alt"] == 3 and spec["selection"]["caps"]["ref"] == 10
     assert spec["selection"]["unplaced_mates"] is False
-    assert "unplaced_mates" not in bundle_spec(dataset, "x", variants=["DYNC1H1-chr14-101980529"], files=[key],
-                                               unplaced_mates=True)["selection"]
+    assert bundle_spec(dataset, "x", variants=["DYNC1H1-chr14-101980529"], files=[key],
+                       unplaced_mates=True)["selection"]["unplaced_mates"] is True
     assert bundle_spec(dataset, "x", svs=["GABBR1-SLC29A1"], files=[key])["targets"]["structural"][0]["from"] == {
         "panel": "sv-regressions-v1", "id": "GABBR1-SLC29A1"}
     with pytest.raises(ValueError, match="did you mean DYNC1H1-chr14-101980529"):

@@ -770,7 +770,7 @@ def test_a_samples_bams_are_read_together_and_reported_in_order(dataset, bam, mo
     assert capsys.readouterr().out.split() == [f"{file.id}.bam" for file in bams]
 
 
-def test_a_failed_bam_stops_a_samples_others_and_placed_mates_skip_unplaced_ones(dataset, monkeypatch, capsys):
+def test_a_failed_bam_stops_a_samples_others_and_fetched_pairs_skip_unplaced_mates(dataset, monkeypatch, capsys):
     import threading
     import time
 
@@ -791,11 +791,11 @@ def test_a_failed_bam_stops_a_samples_others_and_placed_mates_skip_unplaced_ones
     variant = dataset.variants(status="ready")[0].id
     began = time.monotonic()
     assert main(["--cache", str(dataset.cache.root), "reads", "--snapshot", "fixture", "T1_tumor",
-                 "--variant", variant, "--placed-mates"]) == 1
+                 "--variant", variant, "--fetch-pairs"]) == 1
     assert time.monotonic() - began < 1  # without waiting for the first
     assert "the BAM changed" in capsys.readouterr().err
     assert len(started) < len(files)  # those not yet begun never are
     assert all(k["fetch_pairs"] and k["unplaced_mates"] is False for k in started)
     with pytest.raises(SystemExit):  # one way to fetch mates at a time
         main(["--cache", str(dataset.cache.root), "reads", "--snapshot", "fixture", "T1_tumor",
-              "--variant", variant, "--placed-mates", "--recover-linked"])
+              "--variant", variant, "--unplaced-mates", "--recover-linked"])
