@@ -354,7 +354,7 @@ def test_selecting_from_windows_matches_selecting_from_every_record(tmp_path):
                   SQ=[dict(SN="chr1", LN=20000), dict(SN="chr2", LN=20000)])
     unsorted = tmp_path / "unsorted.bam"
     with pysam.AlignmentFile(str(unsorted), "wb", header=header) as out:
-        def add(name, flag, contig, start, mate=None, rg="a", copies=1, tags=()):
+        def add(name, flag, contig, start, mate=None, rg="a", copies=1, tags=(), cigar="50M"):
             read = pysam.AlignedSegment(out.header)
             read.query_name, read.flag = name, flag
             sequence = reference[contig][start:start + 50] if contig else "ACGT" * 12 + "AC"
@@ -364,7 +364,7 @@ def test_selecting_from_windows_matches_selecting_from_every_record(tmp_path):
             read.query_qualities = pysam.qualitystring_to_array("".join(rng.choice("#5?I") for _ in range(50)))
             if contig:
                 read.reference_id, read.reference_start = ("chr1", "chr2").index(contig), start
-                read.cigarstring, read.mapping_quality = ("50M", 60) if not flag & 4 else (None, 0)
+                read.cigarstring, read.mapping_quality = (cigar, 60) if not flag & 4 else (None, 0)
             if mate:
                 read.next_reference_id, read.next_reference_start = ("chr1", "chr2").index(mate[0]), mate[1]
             read.set_tag("RG", rg)
@@ -379,6 +379,14 @@ def test_selecting_from_windows_matches_selecting_from_every_record(tmp_path):
             add(f"v{i}", 1 | 64 | (2 if proper else 0), "chr1", start, mate, copies=1 + (i % 50 == 0))
             add(f"v{i}", 1 | 128 | (2 if proper else 0), *mate, mate=("chr1", start))
         add("v1", 0, "chr1", 5000, rg="b")  # the same name in another read group
+        # Where the index and a fetch could disagree: at the window's edges, an unmapped
+        # mate placed beside its read, soft clips alone, and a splice across the window.
+        add("edge-before", 0, "chr1", variant - 51)
+        add("edge-after", 0, "chr1", variant + 2)
+        add("placed", 1 | 64 | 8, "chr1", variant - 10, ("chr1", variant - 10))
+        add("placed", 1 | 128 | 4, "chr1", variant - 10, ("chr1", variant - 10))
+        add("clipped", 0, "chr1", variant, cigar="50S")
+        add("spliced", 0, "chr1", variant - 100, cigar="20M300N30M")
         for i in range(40):  # split and discordant reads joining chr1:12000 and chr2:8000
             start = rng.randrange(11600, 12300)
             add(f"s{i}", 1 | 64, "chr1", start, ("chr2", 8000 + i), tags=[("SA", "chr2,8001,+,50M,60,0;")] * (i % 2))

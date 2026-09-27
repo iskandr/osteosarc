@@ -235,7 +235,8 @@ def _select(records, available, policy, regions, context_regions, groups=None):
         selected = defaultdict(set)
         strata = defaultdict(set)
         for a in policy.get("assignments", []):
-            matches = [r for r in records if _matches(r, a["selector"])]
+            matches = [r for r in groups.get((a["selector"]["rg"], a["selector"]["qname"]), ())
+                       if _matches(r, a["selector"])]
             if a.get("required", True) and not matches:
                 raise IntegrityError(f"Missing pinned witness: {a['selector']}")
             for r in matches:
@@ -282,8 +283,9 @@ def select_fixtures(recipe, sources):
     records, available, headers, receipts = {}, {}, {}, {}
     members = {}
     # A source whose members all pin exact records needs only those records read.
-    pinned, whole, grouped = defaultdict(set), set(), {}
+    pinned, whole, grouped, left = defaultdict(set), set(), {}, Counter()
     for member in recipe["members"].values():
+        left[member["source"]] += 1
         needs = _looks_at(member, recipe["targets"][member["target"]])
         if needs == "all":
             whole.add(member["source"])
@@ -335,17 +337,20 @@ def select_fixtures(recipe, sources):
             raise IntegrityError(f"Target/source assembly mismatch for {name}")
         regions = resolve_regions([Region(**r) for r in member["regions"]], headers[sid]) if member.get("regions") else ()
         context = resolve_regions([Region(**r) for r in member["context_regions"]], headers[sid]) if member.get("context_regions") else ()
-        if policy["kind"] not in ("exact", "omitted", "empty") and sid not in grouped:
+        if _looks_at(member, target) == "all" and sid not in grouped:
             grouped[sid] = _templates(records[sid])  # once a source, not once a member
         counts, reasons, status = _select(records[sid], available[sid], policy, regions, context, grouped.get(sid))
         acquisition = receipts[sid]
         if member.get("retain_partners") and acquisition.get("scope") == "bounded_mate_SA_context":
             templates = {r.template for r in records[sid] if r.digest in counts}
-            for r in records[sid]:
+            for r in (r for template in templates for r in grouped[sid][template]):
                 why = set(acquisition["reasons"].get(r.digest, [])) & {"paired mate", "SA-linked partner"}
                 if r.template in templates and why:
                     counts[r.digest] = available[sid][r.digest]
                     reasons[r.digest] = sorted(set(reasons.get(r.digest, [])) | why)
+        left[sid] -= 1
+        if not left[sid]:
+            grouped.pop(sid, None)  # its last member: let the grouping go
         members[name] = dict(source=sid, target=member["target"], records=dict(sorted(counts.items())),
                              acquisition_status=acquisition.get("status", "available-input"),
                              reasons=reasons, status=status, record_count=sum(counts.values()))

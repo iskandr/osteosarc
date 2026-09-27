@@ -144,8 +144,14 @@ def select_allele_balanced(templates, window, *, caps=None, low_quality_alt=2):
 
 def sam_lookup(lines):
     """Where SAM lines' records are: their spans, and the names of those with none."""
-    return ({span for span in map(sam_span, lines) if span},
-            {line.split("\t", 1)[0] for line in lines if not sam_span(line)})
+    spans, names = set(), set()
+    for line in lines:
+        span = sam_span(line)
+        if span:
+            spans.add(span)
+        else:
+            names.add(line.split("\t", 1)[0])
+    return spans, names
 
 
 def match_required(records, lines):

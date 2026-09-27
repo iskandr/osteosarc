@@ -5,7 +5,7 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
-## 0.13.3 (unreleased)
+## 0.13.3 (2026-09-26)
 
 Faster bundle builds ([#82](https://github.com/iskandr/osteosarc/issues/82)). Rebuilding
 openvax-v1 from cached reads takes 2.7 minutes and 1.4 GB instead of 31 minutes and
@@ -19,6 +19,8 @@ openvax-v1 from cached reads takes 2.7 minutes and 1.4 GB instead of 31 minutes 
   source once for each of its members; it now counts them once, and keeps only the
   records the members pin (it still reads the whole extract to find them).
 - Record checksums are about twice as fast.
+- `select_fixtures(...).records` holds, for a source whose members all pin exact
+  records, only those records.
 
 ## 0.13.2 (2026-09-26)
 

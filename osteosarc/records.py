@@ -52,8 +52,10 @@ def _stored_records(path):
                     raise IntegrityError("Invalid BAM reference ID")
                 names = [references[t] if t >= 0 else None for t in (tid, mate_tid)]
                 prefix = prefixes[tid, mate_tid] = bytes.fromhex(stable_id([RECORD_ENCODING, names]))
-            core = struct.pack("<iIIiii", pos, bin_mq_nl & 0xffff, flag_nc, length, mate_pos, tlen)
-            return hashlib.sha256(prefix + core + block[32:]).hexdigest()
+            result = hashlib.sha256(prefix)
+            result.update(struct.pack("<iIIiii", pos, bin_mq_nl & 0xffff, flag_nc, length, mate_pos, tlen))
+            result.update(memoryview(block)[32:])  # no copies
+            return result.hexdigest()
         while size := handle.read(4):
             if len(size) != 4:
                 raise IntegrityError("Truncated BAM block size")
