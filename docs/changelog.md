@@ -5,7 +5,7 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
-## 0.14.0 (unreleased)
+## 0.14.0 (2026-09-27)
 
 Fast test data with no options ([#84](https://github.com/iskandr/osteosarc/issues/84)).
 
