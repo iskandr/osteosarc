@@ -236,9 +236,9 @@ def test_a_bundle_is_made_from_variants_and_files_and_read_back(dataset, tmp_pat
         unplaced_mates=kw.get("unplaced_mates", True)))
     key = "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"
     folder = dataset.make_bundle(tmp_path / "dync1h1", variants=["DYNC1H1-chr14-101980529"], files=[key])
-    # Mates with no position are left out, the slow part of reading a remote BAM.
+    # Every mate is kept unless asked otherwise, as before, so earlier extractions are reused.
     (source,) = json.loads((folder / "recipe.json").read_text())["sources"].values()
-    assert source["acquisition"]["unplaced_mates"] is False
+    assert "unplaced_mates" not in source["acquisition"]
     member = "BG003082.Aligned.sortedByCoord.out.md.DYNC1H1-chr14-101980529"
     assert list(list_bundle(folder)) == [member]
     # A test reads the member as a local, read-only BAM, exported once and then reused offline.
@@ -261,9 +261,9 @@ def test_a_bundle_spec_says_what_it_needs(dataset):
     assert spec["sources"] == dict(all_targets=[dataset.file(key).url], structural=[dataset.file(key).url],
                                    observed=False)
     assert spec["selection"]["caps"]["alt"] == 3 and spec["selection"]["caps"]["ref"] == 10
-    assert spec["selection"]["unplaced_mates"] is False
+    assert "unplaced_mates" not in spec["selection"]
     assert bundle_spec(dataset, "x", variants=["DYNC1H1-chr14-101980529"], files=[key],
-                       unplaced_mates=True)["selection"]["unplaced_mates"] is True
+                       unplaced_mates=False)["selection"]["unplaced_mates"] is False
     assert bundle_spec(dataset, "x", svs=["GABBR1-SLC29A1"], files=[key])["targets"]["structural"][0]["from"] == {
         "panel": "sv-regressions-v1", "id": "GABBR1-SLC29A1"}
     with pytest.raises(ValueError, match="did you mean DYNC1H1-chr14-101980529"):

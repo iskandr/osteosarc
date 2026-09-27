@@ -15,11 +15,12 @@ Faster read extraction ([#80](https://github.com/iskandr/osteosarc/issues/80)).
   their own, as STAR stores them: finding those means reading every such read in the
   BAM. Six extractions from BG003082's RNA-seq BAM took 40 s instead of 68 s, the same
   reads less 28 unplaced mates. Where no read has such a mate it's a second or two
-  slower. Bundles you make leave them out too, unless `make_bundle(...,
-  unplaced_mates=True)`; openvax-v1 keeps every mate, so it rebuilds the same.
+  slower. Bundles can leave them out too: `make_bundle(..., unplaced_mates=False)` or
+  `osteosarc test-data make --placed-mates`. By default bundles keep every mate, as
+  before, and openvax-v1 rebuilds the same.
 - `osteosarc reads SAMPLE` reads a sample's BAMs four at a time, and the first error
   stops those not yet begun.
-- An extraction's time limit covers all of it, however many times it reads the BAM.
+- An extraction's time limit covers all its samtools runs, however many.
 
 ## 0.13.1 (2026-09-26)
 

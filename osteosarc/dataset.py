@@ -942,7 +942,7 @@ class Dataset:
         file = file if isinstance(file, File) else self.file(file)
         return inspect_alignment(file, cache=self.cache, snapshot_id=self.id, **kwargs)
 
-    def make_bundle(self, to, *, variants=(), svs=(), files=(), caps=None, unplaced_mates=False,
+    def make_bundle(self, to, *, variants=(), svs=(), files=(), caps=None, unplaced_mates=True,
                     size_budget=64 * 1024 * 1024, header_policy="full", log=None):
         """Make a bundle of test reads in a new folder, and return the folder.
 
@@ -956,13 +956,12 @@ class Dataset:
         Members are named FILE.TARGET, like the files extract_reads(to=...) writes;
         read one in a test with osteosarc.bundle_file(folder, member). caps change
         how many templates of each kind are kept (alt, ref, other, uncallable).
-        A template's mate that didn't align and has no position (as STAR stores
-        them) is left out, which makes reading an RNA-seq BAM quicker, unless
-        unplaced_mates=True. log, such as print, gets a line of progress for each
-        BAM. A BAM that can't
-        be used is skipped with a warning, and every variant and SV must be
-        readable from some BAM given, which is checked before any reads are
-        streamed.
+        unplaced_mates=False leaves out mates that didn't align and have no
+        position (as STAR stores them), which makes reading an RNA-seq BAM
+        quicker. log, such as print, gets a line of progress for each BAM. A BAM
+        that can't be used is skipped with a warning, and every variant and SV
+        must be readable from some BAM given, which is checked before any reads
+        are streamed.
 
             data = Dataset.open(offline=False)
             bundle = data.make_bundle("tests/data/dync1h1", variants=["DYNC1H1-chr14-101980529"],

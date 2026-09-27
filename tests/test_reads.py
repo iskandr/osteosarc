@@ -96,13 +96,16 @@ def test_remote_extraction_refuses_changed_header_source(bam, tmp_path, monkeypa
                       index=str(bam) + ".bai", snapshot_id="snapshot")
     assert not list((cache.workspace / "derived").glob("*/receipt.json"))  # nothing kept
 
-    # A changed object is what's reported, even when reading it fails.
-    def unreadable(command, timeout):
+    # An object replaced while samtools reads it is what's reported when the read fails.
+    identity["etag"] = '"original"'
+
+    def replaced_while_read(command, timeout):
         if command[:4] == ["samtools", "view", "--no-PG", "-b"]:
+            identity["etag"] = '"replacement"'
             raise subprocess.CalledProcessError(1, command, stderr=b"[E::bgzf_read] Read block operation failed")
         return remote(command, timeout)
-    monkeypatch.setattr(reads, "_run", unreadable)
-    with pytest.raises(IntegrityError, match="since header inspection"):
+    monkeypatch.setattr(reads, "_run", replaced_while_read)
+    with pytest.raises(IntegrityError, match="changed during extraction"):
         extract_reads(url, [Region("chr1", 100, 170, "GRCh38")], cache=cache,
                       index=str(bam) + ".bai", snapshot_id="snapshot")
 
