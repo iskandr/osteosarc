@@ -262,6 +262,8 @@ def test_a_bundle_spec_says_what_it_needs(dataset):
                                    observed=False)
     assert spec["selection"]["caps"]["alt"] == 3 and spec["selection"]["caps"]["ref"] == 10
     assert spec["selection"]["unplaced_mates"] is False
+    assert bundle_spec(dataset, "x", variants=["DYNC1H1-chr14-101980529"], files=[key],
+                       unplaced_mates=True)["selection"]["unplaced_mates"] is True
     assert bundle_spec(dataset, "x", svs=["GABBR1-SLC29A1"], files=[key])["targets"]["structural"][0]["from"] == {
         "panel": "sv-regressions-v1", "id": "GABBR1-SLC29A1"}
     with pytest.raises(ValueError, match="did you mean DYNC1H1-chr14-101980529"):

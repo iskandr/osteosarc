@@ -776,21 +776,26 @@ def test_a_failed_bam_stops_a_samples_others_and_placed_mates_skip_unplaced_ones
 
     import osteosarc.cli as cli
     from osteosarc import IntegrityError, ReadSubset
-    files = list(dataset.files)[:6]
+    files = list(dataset.files)[:8]
     monkeypatch.setattr(cli, "read_sources", lambda data, args: files)
     started, lock = [], threading.Lock()
 
     def extract(self, file, **kwargs):
         with lock:
             started.append(kwargs)
-        if file == files[0]:
+        if file == files[1]:
             raise IntegrityError("the BAM changed")
-        time.sleep(0.2)
+        time.sleep(1 if file == files[0] else 0.2)  # the first is slow
         return ReadSubset(Path(f"{file.id}.bam"), Path(f"{file.id}.bam.bai"), {"records": 1})
     monkeypatch.setattr(Dataset, "extract_reads", extract)
     variant = dataset.variants(status="ready")[0].id
+    began = time.monotonic()
     assert main(["--cache", str(dataset.cache.root), "reads", "--snapshot", "fixture", "T1_tumor",
                  "--variant", variant, "--placed-mates"]) == 1
+    assert time.monotonic() - began < 1  # without waiting for the first
     assert "the BAM changed" in capsys.readouterr().err
     assert len(started) < len(files)  # those not yet begun never are
     assert all(k["fetch_pairs"] and k["unplaced_mates"] is False for k in started)
+    with pytest.raises(SystemExit):  # one way to fetch mates at a time
+        main(["--cache", str(dataset.cache.root), "reads", "--snapshot", "fixture", "T1_tumor",
+              "--variant", variant, "--placed-mates", "--recover-linked"])

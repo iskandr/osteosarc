@@ -172,10 +172,11 @@ def parser():
     reads.add_argument("--reference-length", type=int, help="Expected contig length (mitochondrial queries)")
     reads.add_argument("--min-mapq", type=int, default=0)
     reads.add_argument("--exclude-flags", type=lambda s: int(s, 0), default=0)
-    reads.add_argument("--fetch-pairs", action="store_true", help="Also retrieve paired mates outside the regions")
-    reads.add_argument("--placed-mates", action="store_true",
+    mates = reads.add_mutually_exclusive_group()
+    mates.add_argument("--fetch-pairs", action="store_true", help="Also retrieve paired mates outside the regions")
+    mates.add_argument("--placed-mates", action="store_true",
                        help="Also retrieve mates outside the regions, except those with no position (quicker)")
-    reads.add_argument("--recover-linked", action="store_true", help="Bounded mate and SA-linked recovery")
+    mates.add_argument("--recover-linked", action="store_true", help="Bounded mate and SA-linked recovery")
     reads.add_argument("--json", action="store_true", help="The extract's paths and receipt as JSON")
     downloads = command("downloads")
     downloads.add_argument("--json", action="store_true")
@@ -489,35 +490,40 @@ def get_data(args, dataset):
         if args.to and file.index_urls:
             print(dataset.download(file.index_urls[0], to=args.to))  # already placed; this names it
     elif args.command == "reads":
-        from concurrent.futures import ThreadPoolExecutor
+        from concurrent.futures import ThreadPoolExecutor, as_completed
         targets, sources = read_targets(dataset, args), read_sources(dataset, args)
 
         def extract(file):
             return dataset.extract_reads(file, **targets, reference=args.reference, index=args.index,
                                          filters=ReadFilter(args.min_mapq, args.exclude_flags),
                                          fetch_pairs=args.fetch_pairs or args.placed_mates,
-                                         **({"unplaced_mates": False} if args.placed_mates else {}),
+                                         unplaced_mates=not args.placed_mates,
                                          recovery={} if args.recover_linked else None, to=args.to)
-        results = []
-        # A sample's BAMs are read at the same time, and reported in order.
+        results, finished, shown = [], {}, 0
+        # A sample's BAMs are read four at a time and reported in order; the first error
+        # stops those not yet begun.
         pool = ThreadPoolExecutor(max_workers=max(1, min(4, len(sources))))
         try:
-            for file, extracted in [(file, pool.submit(extract, file)) for file in sources]:
+            order = {pool.submit(extract, file): i for i, file in enumerate(sources)}
+            for extracted in as_completed(order):
                 try:
-                    subset = extracted.result()
+                    finished[order[extracted]] = extracted.result()
                 except CoordinateError as error:
                     if len(sources) == 1:
                         raise
-                    print(f"skipping {file.key}: {error}", file=sys.stderr)  # e.g. a GRCh37 BAM
-                    continue
-                results.append(dict(file=file.key, path=str(subset.path), index=str(subset.index_path),
-                                    receipt=subset.receipt))
-                if not args.json:
-                    print(subset.path, flush=True)
-        except BaseException:
-            pool.shutdown(cancel_futures=True)  # an error, or Ctrl-C, stops the BAMs not yet begun
-            raise
-        pool.shutdown()
+                    finished[order[extracted]] = error
+                while shown in finished:
+                    file, subset = sources[shown], finished.pop(shown)
+                    shown += 1
+                    if isinstance(subset, CoordinateError):
+                        print(f"skipping {file.key}: {subset}", file=sys.stderr)  # e.g. a GRCh37 BAM
+                        continue
+                    results.append(dict(file=file.key, path=str(subset.path), index=str(subset.index_path),
+                                        receipt=subset.receipt))
+                    if not args.json:
+                        print(subset.path, flush=True)
+        finally:
+            pool.shutdown(wait=False, cancel_futures=True)
         if not results:
             raise ValueError(f"No reads extracted: every BAM of {args.file} was skipped")
         if args.json:

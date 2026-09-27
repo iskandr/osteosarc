@@ -254,6 +254,10 @@ def test_mates_with_no_position_can_be_left_out(bam, tmp_path):
             ("inside", 99, 0, 105, 0, 125), ("inside", 147, 0, 125, 0, 105), ("inside", 2145, 0, 1000, 0, 105),
             ("single", 0, 0, 150, -1, -1), ("single", 2048, 0, 1000, -1, -1),
             ("unknown", 65, 0, 155, 1, -1),  # its mate's contig, but no position
+            # samtools asks for these names too (its mate has no position, or starts at a
+            # region's start), so their records at another read's mate position come along.
+            ("nowhere", 2121, 0, 1000, -1, -1), ("unknown", 2113, 0, 1000, 1, -1),
+            ("at-start", 97, 0, 105, 0, 100), ("at-start", 145, 0, 100, 0, 105), ("at-start", 2145, 0, 1000, 0, 105),
             ("nowhere", 73, 0, 110, -1, -1), ("nowhere", 133, -1, -1, -1, -1),  # unmapped, no position
             ("bystander", 0, 0, 1000, -1, -1),  # at a mate's position, but not asked for
         ]:
@@ -265,6 +269,8 @@ def test_mates_with_no_position_can_be_left_out(bam, tmp_path):
             read.next_reference_id, read.next_reference_start = mate_contig, mate_start
             if not flag & 4:
                 read.mapping_quality, read.cigarstring = 60, "40M"
+            read.set_tag("RG", "rg1")  # records are kept byte for byte: tags stay in order
+            read.set_tag("NH", 1)
             output.write(read)
     pysam.sort("-o", str(tmp_path / "sorted.bam"), str(paired))
     paired = tmp_path / "sorted.bam"
@@ -277,8 +283,10 @@ def test_mates_with_no_position_can_be_left_out(bam, tmp_path):
     assert len(unplaced) == 1 and unplaced[0].startswith("nowhere\t")
     assert Counter(records(placed.path)) == Counter(r for r in records(every.path) if r not in unplaced)
     assert {r.split("\t")[0] for r in records(placed.path)} == {"placed", "other-contig", "beside", "nowhere",
-                                                                "straddling", "inside", "single", "unknown"}
+                                                                "straddling", "inside", "single", "unknown", "at-start"}
     assert not any(r.startswith(("inside\t2145", "single\t2048")) for r in records(placed.path))
+    assert all(any(r.startswith(f"{name}\t{flag}\t") for r in records(placed.path))
+               for name, flag in [("nowhere", 2121), ("unknown", 2113), ("at-start", 2145)])
     assert placed.receipt["scope"] == "regional_records_and_placed_mates"
     assert "mates.bed" in placed.receipt["files"]
     # Asking for every mate is the request it always was; leaving some out is another.
@@ -286,7 +294,7 @@ def test_mates_with_no_position_can_be_left_out(bam, tmp_path):
     assert placed.receipt["request"]["unplaced_mates"] is False and placed.path != every.path
     assert "--fetch-pairs" not in placed.receipt["command"] and placed.receipt["mates_command"]
     # With every mate already in the regions (or no reads), one read of the BAM does.
-    around_every_mate = [Region("chr1", 60, 1100, "GRCh38"), Region("chr2", 500, 540, "GRCh38")]
-    for regions, count in [(around_every_mate, 16), ([Region("chr2", 10, 20, "GRCh38")], 0)]:
+    around_every_mate = [Region("chr1", 60, 1100, "GRCh38"), Region("chr2", 490, 540, "GRCh38")]
+    for regions, count in [(around_every_mate, 21), ([Region("chr2", 10, 20, "GRCh38")], 0)]:
         subset = extract_reads(paired, regions, cache=cache, fetch_pairs=True, unplaced_mates=False)
         assert subset.receipt["records"] == count and "mates_command" not in subset.receipt

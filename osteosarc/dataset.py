@@ -942,8 +942,8 @@ class Dataset:
         file = file if isinstance(file, File) else self.file(file)
         return inspect_alignment(file, cache=self.cache, snapshot_id=self.id, **kwargs)
 
-    def make_bundle(self, to, *, variants=(), svs=(), files=(), caps=None, size_budget=64 * 1024 * 1024,
-                    header_policy="full", log=None):
+    def make_bundle(self, to, *, variants=(), svs=(), files=(), caps=None, unplaced_mates=False,
+                    size_budget=64 * 1024 * 1024, header_policy="full", log=None):
         """Make a bundle of test reads in a new folder, and return the folder.
 
         variants are catalogue IDs or data.variants(...); svs are SV candidate or
@@ -955,8 +955,11 @@ class Dataset:
         pinned by checksum, so anyone can rebuild the bundle and check it offline.
         Members are named FILE.TARGET, like the files extract_reads(to=...) writes;
         read one in a test with osteosarc.bundle_file(folder, member). caps change
-        how many templates of each kind are kept (alt, ref, other, uncallable);
-        log, such as print, gets a line of progress for each BAM. A BAM that can't
+        how many templates of each kind are kept (alt, ref, other, uncallable).
+        A template's mate that didn't align and has no position (as STAR stores
+        them) is left out, which makes reading an RNA-seq BAM quicker, unless
+        unplaced_mates=True. log, such as print, gets a line of progress for each
+        BAM. A BAM that can't
         be used is skipped with a warning, and every variant and SV must be
         readable from some BAM given, which is checked before any reads are
         streamed.
@@ -966,8 +969,8 @@ class Dataset:
                                       files=["rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"])
         """
         from .shared import make_bundle
-        make_bundle(self, to, variants=variants, svs=svs, files=files, caps=caps, size_budget=size_budget,
-                    header_policy=header_policy, log=log)
+        make_bundle(self, to, variants=variants, svs=svs, files=files, caps=caps, unplaced_mates=unplaced_mates,
+                    size_budget=size_budget, header_policy=header_policy, log=log)
         return Path(to)
 
     def extract_reads(self, file, regions=None, *, variants=None, padding=0, to=None, name=None, **kwargs):
@@ -1001,9 +1004,8 @@ class Dataset:
             except OfflineError:
                 if self.cache.offline:
                     raise
-                pairs, every_mate = kwargs.get("fetch_pairs", False), kwargs.get("unplaced_mates", True)
-                require_samtools(fetch_pairs=pairs and every_mate, names=pairs and not every_mate,
-                                 filters=kwargs.get("filters"))
+                require_samtools(fetch_pairs=kwargs.get("fetch_pairs", False),
+                                 unplaced_mates=kwargs.get("unplaced_mates", True), filters=kwargs.get("filters"))
                 index_path = self.download(file.index_urls[0])
             kwargs["index"] = str(index_path)
         subset = extract_reads(file, regions, cache=self.cache, snapshot_id=self.id, **kwargs)

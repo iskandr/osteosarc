@@ -717,8 +717,8 @@ def published(name):
 REDISTRIBUTION = {"license": "CC0-1.0", "source": "https://registry.opendata.aws/sid-osteosarc/"}
 
 
-def make_bundle(dataset, to, *, variants=(), svs=(), files=(), caps=None, size_budget=64 * 1024 * 1024,
-                header_policy="full", log=None):
+def make_bundle(dataset, to, *, variants=(), svs=(), files=(), caps=None, unplaced_mates=False,
+                size_budget=64 * 1024 * 1024, header_policy="full", log=None):
     """Make a bundle of test reads with openvax-v1's selection; return its manifest.
 
     See Dataset.make_bundle. log, if given, gets a line of progress for each BAM
@@ -735,13 +735,14 @@ def make_bundle(dataset, to, *, variants=(), svs=(), files=(), caps=None, size_b
             log(text)
         elif text.startswith(("skip ", "skipping ")):
             warnings.warn(text, stacklevel=2)
-    spec = bundle_spec(dataset, to.name, variants=variants, svs=svs, files=files, caps=caps, warn=progress)
+    spec = bundle_spec(dataset, to.name, variants=variants, svs=svs, files=files, caps=caps,
+                       unplaced_mates=unplaced_mates, warn=progress)
     asked = spec["targets"]["ids"] + [entry["name"] for entry in spec["targets"]["structural"]]
     recipe = build_shared_recipe(spec, dataset, required={}, required_targets=asked, log=progress)
     return generate_bundle(recipe, to, dataset=dataset, size_budget=size_budget, header_policy=header_policy)
 
 
-def bundle_spec(dataset, name, *, variants=(), svs=(), files=(), caps=None, warn=None):
+def bundle_spec(dataset, name, *, variants=(), svs=(), files=(), caps=None, unplaced_mates=False, warn=None):
     """The spec make_bundle builds from: these variants and SVs, read from these files only."""
     import difflib
     ids = [variant if isinstance(variant, str) else variant.id for variant in _items(variants)]
@@ -769,9 +770,9 @@ def bundle_spec(dataset, name, *, variants=(), svs=(), files=(), caps=None, warn
     from .sv_candidates import load_sv_candidates
     candidates = load_sv_candidates()["targets"] if svs else {}
     return dict(id=name, snapshot=dict(name=dataset.name, id=dataset.id),
-                # Mates with no position of their own are left out: finding them means
-                # reading every unplaced read of a BAM, most of an extraction's time.
-                selection=dict(caps=dict(DEFAULT_CAPS, **caps), unplaced_mates=False),
+                # Mates with no position of their own are left out unless asked for: finding
+                # them means reading every unplaced read of a BAM.
+                selection=dict(caps=dict(DEFAULT_CAPS, **caps), unplaced_mates=unplaced_mates),
                 sources=dict(all_targets=urls, structural=urls if svs else [], observed=False),
                 targets=dict(ids=ids, structural=[_sv_entry(sv, candidates) for sv in svs]),
                 redistribution=REDISTRIBUTION)

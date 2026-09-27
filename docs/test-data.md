@@ -132,7 +132,8 @@ bytes, and any change upstream fails loudly. openvax-v1's reads come from the T2
 RNA-seq and WGS BAMs for every target, from any BAM a library already uses there, and
 from each RNA BAM the [SV candidates](sv-candidates.md) saw a junction in; a bundle you
 make reads only the BAMs you name, and leaves out mates with no position of their own
-([reads](reads.md#mates-and-split-reads)), which is quicker for RNA-seq.
+([reads](reads.md#mates-and-split-reads)), which is quicker for RNA-seq; pass
+unplaced_mates=True to make_bundle to keep them.
 
 **Rebuilding openvax-v1.** As the libraries move their test reads here and delete their own
 copies, each new version carries their members forward from the one before, pinned by

@@ -10,15 +10,16 @@ snapshot (by name or download date) for reproducible analyses. Full release note
 Faster read extraction ([#80](https://github.com/iskandr/osteosarc/issues/80)).
 
 - **Leave out mates with no position.** `extract_reads(..., fetch_pairs=True,
-  unplaced_mates=False)`, or `osteosarc reads --placed-mates`, leaves out mates that
-  didn't align and have no position of their own, as STAR stores them. Finding them
-  means reading every such read in the BAM. Six extractions from BG003082's RNA-seq
-  BAM took 36 s instead of 53 s, the same reads less 28 unplaced mates. Where no read
-  has such a mate it's about a second slower. Bundles you make use it; openvax-v1
-  keeps every mate, so it rebuilds the same.
-- `osteosarc reads SAMPLE` reads a sample's BAMs four at a time, and an error stops
-  those not yet begun.
-- Checking that a remote BAM hasn't changed overlaps with reading it.
+  unplaced_mates=False)`, or `osteosarc reads --placed-mates`, gives what
+  `fetch_pairs=True` does less the mates that didn't align and have no position of
+  their own, as STAR stores them: finding those means reading every such read in the
+  BAM. Six extractions from BG003082's RNA-seq BAM took 40 s instead of 68 s, the same
+  reads less 28 unplaced mates. Where no read has such a mate it's a second or two
+  slower. Bundles you make leave them out too, unless `make_bundle(...,
+  unplaced_mates=True)`; openvax-v1 keeps every mate, so it rebuilds the same.
+- `osteosarc reads SAMPLE` reads a sample's BAMs four at a time, and the first error
+  stops those not yet begun.
+- An extraction's time limit covers all of it, however many times it reads the BAM.
 
 ## 0.13.1 (2026-09-26)
 

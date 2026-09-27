@@ -78,7 +78,7 @@ STAR stores them, can only be found by reading every such read at the end of the
 BAM. Add `unplaced_mates=False` (or use `--placed-mates`) to leave those mates out,
 as they have a sequence but no alignment. That's quicker whenever the regions hold
 reads whose mates have no position, as RNA-seq regions of any size usually do: six
-regions of one RNA-seq BAM took 36 s instead of 53 s. Otherwise it reads the BAM a
+regions of one RNA-seq BAM took 40 s instead of 68 s. Otherwise it reads the BAM a
 second time for the mates, which takes about a second longer.
 
 To follow split reads as well, pass a recovery policy (or `--recover-linked`):
