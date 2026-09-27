@@ -5,6 +5,19 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.14.1 (2026-09-27)
+
+Downloads survive a passing server error ([#86](https://github.com/iskandr/osteosarc/issues/86)).
+
+- The checks of a remote object's identity, made before and after a download and when
+  reading reads from a remote BAM, are tried again after a server error (500, 502,
+  503, 504), too many requests (429) or a dropped connection: up to five tries, about
+  1, 2, 4 and 8 seconds apart, or as long as the server asks, up to 30 s. A timeout,
+  a TLS error or a refusal (other 4xx) still fails at once. The download itself was
+  already tried again by datacache.
+- A download pinned by checksum, such as a published bundle, no longer fails when
+  those checks do: the checksum vouches for the bytes.
+
 ## 0.14.0 (2026-09-27)
 
 Fast test data with no options ([#84](https://github.com/iskandr/osteosarc/issues/84)).

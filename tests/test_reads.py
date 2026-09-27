@@ -79,7 +79,7 @@ def test_remote_extraction_refuses_changed_header_source(bam, tmp_path, monkeypa
     real_run = reads._run
     url = "https://example.test/alignment.bam"
     identity = {"etag": '"original"', "content-length": str(bam.stat().st_size), "last-modified": None}
-    monkeypatch.setattr(reads, "_remote_identity", lambda *a: dict(identity))
+    monkeypatch.setattr(reads, "_remote_identity", lambda *a, **k: dict(identity))
 
     def remote(command, timeout):  # the local BAM stands in for the remote one
         return real_run([str(bam) if c == url else c for c in command], timeout)

@@ -15,6 +15,7 @@ from threading import Event, Timer
 from urllib.parse import urlsplit
 
 from .cache import (
+    ATTEMPTS,
     Cache,
     digest,
     file_identity,
@@ -284,8 +285,8 @@ def _samtools_version():
     return _run(["samtools", "--version"], 30).stdout.splitlines()[0].decode("utf-8", errors="replace")
 
 
-def _remote_identity(url, timeout):
-    return http_identity(url, timeout)
+def _remote_identity(url, timeout, attempts=ATTEMPTS):
+    return http_identity(url, timeout, attempts=attempts)
 
 
 def require_samtools(*, header_only=False, fetch_pairs=False, unplaced_mates=True, filters=None):
@@ -579,8 +580,8 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
                 commands, count = acquire()
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
                 if remote:  # samtools may have failed because the object changed: say so if it did
-                    try:
-                        changed = _remote_identity(location, min(timeout, 60)) != before
+                    try:  # once: this only says why the read failed
+                        changed = _remote_identity(location, min(timeout, 60), attempts=1) != before
                     except OsteosarcError:
                         changed = False
                     if changed:
