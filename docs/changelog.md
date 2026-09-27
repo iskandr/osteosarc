@@ -5,6 +5,25 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.14.0 (2026-09-27)
+
+Fast test data with no options ([#84](https://github.com/iskandr/osteosarc/issues/84)).
+
+- **Mates with no position are left out by default.** `make_bundle`, `osteosarc
+  test-data make` and `osteosarc reads --fetch-pairs` leave out mates that didn't
+  align and have no position of their own, as STAR stores them. Finding those means
+  reading every unplaced read of each BAM, most of the time an RNA-seq BAM takes:
+  `test-data make` for one variant from T2_tumor's three RNA-seq BAMs took 15 s
+  instead of 91 s, and for another 12 s instead of 19 minutes.
+  `make_bundle(..., unplaced_mates=True)`, or `--unplaced-mates` on either command,
+  keeps them (it replaces 0.13.2's `--placed-mates`). In Python,
+  `extract_reads(fetch_pairs=True)` still fetches every mate, so existing recipes,
+  such as openvax-v1's, rebuild the same. Bundles made with 0.13 read their BAMs
+  again the first time they're made with 0.14 (their extractions are cached under
+  the old setting), unless given `--unplaced-mates`.
+- **Removed osteosarc.legacy_fixtures** ([#72](https://github.com/iskandr/osteosarc/issues/72)),
+  which no OpenVax library imports any more. osteosarc.cohort_bundle stays.
+
 ## 0.13.3 (2026-09-26)
 
 Faster bundle builds ([#82](https://github.com/iskandr/osteosarc/issues/82)). Rebuilding

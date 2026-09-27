@@ -72,14 +72,16 @@ names. On the command line, use `--min-mapq` and `--exclude-flags`.
 
 ## Mates and split reads
 
-`fetch_pairs=True` (or `--fetch-pairs`) also fetches each read's mate, even
-outside your regions. A mate that didn't align and has no position of its own, as
-STAR stores them, can only be found by reading every such read at the end of the
-BAM. Add `unplaced_mates=False` (or use `--placed-mates`) to leave those mates out,
-as they have a sequence but no alignment. That's quicker whenever the regions hold
-reads whose mates have no position, as RNA-seq regions of any size usually do: six
-regions of one RNA-seq BAM took 40 s instead of 68 s. Otherwise it reads the BAM a
-second time for the mates, which takes about a second longer.
+`--fetch-pairs` also fetches each read's mate, even outside your regions, except a
+mate that didn't align and has no position of its own, as STAR stores them: finding
+those means reading every such read at the end of the BAM, and they have a sequence
+but no alignment. That's much quicker whenever the regions hold reads whose mates
+have no position, as RNA-seq regions of any size usually do: six regions of one
+RNA-seq BAM took 40 s instead of 68 s. Otherwise it reads the BAM a second time for
+the mates, which takes about a second longer. `--unplaced-mates` fetches those mates
+too. In Python, `fetch_pairs=True` fetches every mate, as `samtools view
+--fetch-pairs` does, and adding `unplaced_mates=False` leaves those out. Bundles you
+make leave them out ([test data](test-data.md#how-reads-are-chosen)).
 
 To follow split reads as well, pass a recovery policy (or `--recover-linked`):
 

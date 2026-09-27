@@ -173,9 +173,10 @@ def parser():
     reads.add_argument("--min-mapq", type=int, default=0)
     reads.add_argument("--exclude-flags", type=lambda s: int(s, 0), default=0)
     mates = reads.add_mutually_exclusive_group()
-    mates.add_argument("--fetch-pairs", action="store_true", help="Also retrieve paired mates outside the regions")
-    mates.add_argument("--placed-mates", action="store_true",
-                       help="Also retrieve mates outside the regions, except those with no position (quicker)")
+    mates.add_argument("--fetch-pairs", action="store_true",
+                       help="Also retrieve mates outside the regions, except those with no position")
+    mates.add_argument("--unplaced-mates", action="store_true",
+                       help="Also retrieve mates outside the regions, even those with no position (slower)")
     mates.add_argument("--recover-linked", action="store_true", help="Bounded mate and SA-linked recovery")
     reads.add_argument("--json", action="store_true", help="The extract's paths and receipt as JSON")
     downloads = command("downloads")
@@ -224,8 +225,8 @@ def parser():
                       help="With --recipe: use a BAM you already have for one of its sources")
     make.add_argument("--header-policy", choices=("full", "compact"), default="full",
                       help="compact keeps only the header lines the records need")
-    make.add_argument("--placed-mates", action="store_true",
-                      help="Leave out mates with no position (quicker for RNA-seq)")
+    make.add_argument("--unplaced-mates", action="store_true",
+                      help="Also keep mates with no position (slower: reads each BAM's unplaced reads)")
     make.add_argument("--size-budget", type=int, default=64 * 1024 * 1024, help="Largest bundle, in bytes")
     make.add_argument("--json", action="store_true", help="The bundle's manifest as JSON")
     for name, what in (("list", "Each member of a bundle, with its records and why"),
@@ -498,8 +499,8 @@ def get_data(args, dataset):
         def extract(file):
             return dataset.extract_reads(file, **targets, reference=args.reference, index=args.index,
                                          filters=ReadFilter(args.min_mapq, args.exclude_flags),
-                                         fetch_pairs=args.fetch_pairs or args.placed_mates,
-                                         unplaced_mates=not args.placed_mates,
+                                         fetch_pairs=args.fetch_pairs or args.unplaced_mates,
+                                         unplaced_mates=args.unplaced_mates,
                                          recovery={} if args.recover_linked else None, to=args.to)
         results, finished, shown = [], {}, 0
         # A sample's BAMs are read four at a time and reported in order; the first error
@@ -610,8 +611,9 @@ def test_data(args, cache):
     action = args.test_data_command
     if action == "make":
         if args.recipe:
-            if args.sources or args.variant or args.sv or args.assay or args.platform:
-                raise ValueError("--recipe makes the bundle from the recipe alone; drop the BAMs, --variant and --sv")
+            if args.sources or args.variant or args.sv or args.assay or args.platform or args.unplaced_mates:
+                raise ValueError("--recipe makes the bundle from the recipe alone, which says how each BAM is read; "
+                                 "drop the BAMs, --variant, --sv and --unplaced-mates")
             recipe = read_json(args.recipe)
             given = dict(item.split("=", 1) for item in args.source)
             dataset = None
@@ -632,7 +634,7 @@ def test_data(args, cache):
                   "from each.", file=sys.stderr)
             from .shared import make_bundle
             manifest = make_bundle(dataset, args.output, variants=args.variant, svs=args.sv, files=files,
-                                   unplaced_mates=not args.placed_mates,
+                                   unplaced_mates=args.unplaced_mates,
                                    size_budget=args.size_budget, header_policy=args.header_policy,
                                    log=lambda text: print(text, file=sys.stderr))
         if args.json:
