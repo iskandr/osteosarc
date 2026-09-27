@@ -73,6 +73,8 @@ def test_cached_header_reuse_and_corruption(bam, tmp_path, monkeypatch):
 
 
 def test_remote_extraction_refuses_changed_header_source(bam, tmp_path, monkeypatch):
+    import subprocess
+
     import osteosarc.reads as reads
     real_run = reads._run
     url = "https://example.test/alignment.bam"
@@ -93,6 +95,16 @@ def test_remote_extraction_refuses_changed_header_source(bam, tmp_path, monkeypa
         extract_reads(url, [Region("chr1", 100, 160, "GRCh38")], cache=cache,
                       index=str(bam) + ".bai", snapshot_id="snapshot")
     assert not list((cache.workspace / "derived").glob("*/receipt.json"))  # nothing kept
+
+    # A changed object is what's reported, even when reading it fails.
+    def unreadable(command, timeout):
+        if command[:4] == ["samtools", "view", "--no-PG", "-b"]:
+            raise subprocess.CalledProcessError(1, command, stderr=b"[E::bgzf_read] Read block operation failed")
+        return remote(command, timeout)
+    monkeypatch.setattr(reads, "_run", unreadable)
+    with pytest.raises(IntegrityError, match="since header inspection"):
+        extract_reads(url, [Region("chr1", 100, 170, "GRCh38")], cache=cache,
+                      index=str(bam) + ".bai", snapshot_id="snapshot")
 
 
 def test_samtools_version_ignores_non_utf8_distribution_build_flags(monkeypatch):
@@ -238,6 +250,10 @@ def test_mates_with_no_position_can_be_left_out(bam, tmp_path):
             ("other-contig", 65, 0, 130, 1, 500), ("other-contig", 129, 1, 500, 0, 130),
             ("beside", 73, 0, 120, 0, 120), ("beside", 133, 0, 120, 0, 120),  # unmapped, at its mate's place
             ("straddling", 97, 0, 140, 0, 70), ("straddling", 145, 0, 70, 0, 140),  # starts before, runs in
+            # Both mates here, and a supplementary where another read's mate is: not a mate.
+            ("inside", 99, 0, 105, 0, 125), ("inside", 147, 0, 125, 0, 105), ("inside", 2145, 0, 1000, 0, 105),
+            ("single", 0, 0, 150, -1, -1), ("single", 2048, 0, 1000, -1, -1),
+            ("unknown", 65, 0, 155, 1, -1),  # its mate's contig, but no position
             ("nowhere", 73, 0, 110, -1, -1), ("nowhere", 133, -1, -1, -1, -1),  # unmapped, no position
             ("bystander", 0, 0, 1000, -1, -1),  # at a mate's position, but not asked for
         ]:
@@ -261,13 +277,16 @@ def test_mates_with_no_position_can_be_left_out(bam, tmp_path):
     assert len(unplaced) == 1 and unplaced[0].startswith("nowhere\t")
     assert Counter(records(placed.path)) == Counter(r for r in records(every.path) if r not in unplaced)
     assert {r.split("\t")[0] for r in records(placed.path)} == {"placed", "other-contig", "beside", "nowhere",
-                                                                "straddling"}
+                                                                "straddling", "inside", "single", "unknown"}
+    assert not any(r.startswith(("inside\t2145", "single\t2048")) for r in records(placed.path))
+    assert placed.receipt["scope"] == "regional_records_and_placed_mates"
+    assert "mates.bed" in placed.receipt["files"]
     # Asking for every mate is the request it always was; leaving some out is another.
     assert "unplaced_mates" not in every.receipt["request"]
     assert placed.receipt["request"]["unplaced_mates"] is False and placed.path != every.path
     assert "--fetch-pairs" not in placed.receipt["command"] and placed.receipt["mates_command"]
     # With every mate already in the regions (or no reads), one read of the BAM does.
     around_every_mate = [Region("chr1", 60, 1100, "GRCh38"), Region("chr2", 500, 540, "GRCh38")]
-    for regions, count in [(around_every_mate, 10), ([Region("chr2", 10, 20, "GRCh38")], 0)]:
+    for regions, count in [(around_every_mate, 16), ([Region("chr2", 10, 20, "GRCh38")], 0)]:
         subset = extract_reads(paired, regions, cache=cache, fetch_pairs=True, unplaced_mates=False)
         assert subset.receipt["records"] == count and "mates_command" not in subset.receipt

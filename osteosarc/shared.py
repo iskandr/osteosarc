@@ -41,7 +41,7 @@ from pathlib import Path
 from .alleles import CLASSES, allele_window, read_allele, template_allele
 from .errors import CoordinateError, IntegrityError, OfflineError, OsteosarcError, SchemaError
 from .models import Region
-from .reads import resolve_regions
+from .reads import merge_spans, resolve_regions
 from .records import read_records
 from .reference import reference_sequence
 from .views import plural
@@ -198,17 +198,6 @@ def required_spans(subset):
     if "sam" in subset:
         return [span for span in map(sam_span, subset["sam"]) if span]
     return [tuple(region) for region in subset.get("regions", ())]
-
-
-def merge_spans(spans):
-    """Overlapping or touching (contig, start, end) spans merged, sorted: the same bases, fewer spans."""
-    merged = []
-    for contig, start, end in sorted(spans):
-        if merged and merged[-1][0] == contig and start <= merged[-1][2]:
-            merged[-1][2] = max(merged[-1][2], end)
-        else:
-            merged.append([contig, start, end])
-    return merged
 
 
 def sam_span(line):

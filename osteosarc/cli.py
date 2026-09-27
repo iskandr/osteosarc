@@ -173,6 +173,8 @@ def parser():
     reads.add_argument("--min-mapq", type=int, default=0)
     reads.add_argument("--exclude-flags", type=lambda s: int(s, 0), default=0)
     reads.add_argument("--fetch-pairs", action="store_true", help="Also retrieve paired mates outside the regions")
+    reads.add_argument("--placed-mates", action="store_true",
+                       help="Also retrieve mates outside the regions, except those with no position (quicker)")
     reads.add_argument("--recover-linked", action="store_true", help="Bounded mate and SA-linked recovery")
     reads.add_argument("--json", action="store_true", help="The extract's paths and receipt as JSON")
     downloads = command("downloads")
@@ -493,11 +495,13 @@ def get_data(args, dataset):
         def extract(file):
             return dataset.extract_reads(file, **targets, reference=args.reference, index=args.index,
                                          filters=ReadFilter(args.min_mapq, args.exclude_flags),
-                                         fetch_pairs=args.fetch_pairs,
+                                         fetch_pairs=args.fetch_pairs or args.placed_mates,
+                                         **({"unplaced_mates": False} if args.placed_mates else {}),
                                          recovery={} if args.recover_linked else None, to=args.to)
         results = []
         # A sample's BAMs are read at the same time, and reported in order.
-        with ThreadPoolExecutor(max_workers=max(1, min(4, len(sources)))) as pool:
+        pool = ThreadPoolExecutor(max_workers=max(1, min(4, len(sources))))
+        try:
             for file, extracted in [(file, pool.submit(extract, file)) for file in sources]:
                 try:
                     subset = extracted.result()
@@ -510,6 +514,10 @@ def get_data(args, dataset):
                                     receipt=subset.receipt))
                 if not args.json:
                     print(subset.path, flush=True)
+        except BaseException:
+            pool.shutdown(cancel_futures=True)  # an error, or Ctrl-C, stops the BAMs not yet begun
+            raise
+        pool.shutdown()
         if not results:
             raise ValueError(f"No reads extracted: every BAM of {args.file} was skipped")
         if args.json:
