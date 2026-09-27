@@ -251,9 +251,21 @@ def test_corrections_differing_only_in_type_have_different_keys(dataset):
 
 def test_reporting_corrections_does_not_keep_the_bucket_listing(dataset):
     from osteosarc import Dataset
-    data = Dataset.open(dataset.name, cache=dataset.cache)
-    data.files  # loaded, so the bucket's corrections weren't evaluated
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        assert len(data.corrections)
-    assert "bucket" not in data.curation._raw
+        for first, second in (("files", "corrections"), ("corrections", "files")):
+            data = Dataset.open(dataset.name, cache=dataset.cache)
+            getattr(data, first), getattr(data, second)
+            assert "bucket" not in data.curation._raw
+    # Finding a download's file needs only the index of URLs.
+    data = Dataset.open(dataset.name, cache=dataset.cache)
+    data.local_urls()
+    assert set(data.files._names._by) <= {"url"}
+
+
+def test_a_snapshot_that_fails_to_sync_leaves_no_catalogues(tmp_path):
+    folder = tmp_path / f"u{os.getuid()}"
+    for key in ("snapA-corr", "snapA", "snapB"):
+        saved.load_or_build(tmp_path, "variants", key, lambda: 1)
+    saved.forget(tmp_path, "snapA")
+    assert [p.name.split("-")[1] for p in folder.iterdir()] == ["snapB"]

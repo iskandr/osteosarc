@@ -719,6 +719,13 @@ def test_a_name_two_files_have_as_different_kinds_of_name_is_ambiguous(dataset):
     for ambiguous in ("https://example.test/c", "e.bam"):
         with pytest.raises(KeyError, match="found 2"):
             dataset.file(ambiguous)
+    # One file's key that's another's ID is ambiguous too, however the ID looks.
+    dataset.files = Files([File("b", "k1", "https://example.test/b", "table", "tsv"),
+                           File("k1", "k2", "https://example.test/k", "table", "tsv")])
+    with pytest.raises(KeyError, match="found 2"):
+        dataset.file("k1")
+    with pytest.raises(KeyError):
+        dataset.files["k1"]
     # A sample named twice on a file lists it once; a sample that isn't a name finds nothing.
     tagged = File("f", "f.bam", "https://example.test/f.bam", "alignment", "bam", metadata={"samples": ("S", "S")})
     assert list(Files([tagged]).select(sample="S")) == [tagged]

@@ -81,9 +81,11 @@ def is_sha256(value):
 @contextmanager
 def private_folder(folder):
     """An open descriptor of folder/u<uid>, a folder only this user can write in,
-    made if need be, or None if it's someone else's. Its files are reached through
-    the descriptor, so the folder can't be swapped for another once it's checked.
-    (On a drive that ignores permissions, such as exFAT, it's as private as it can be.)
+    made if need be, or None if it's someone else's or can't be made (in a cache
+    other users share, folder must let them write, as a umask of 002 makes it).
+    Its files are reached through the descriptor, so the folder can't be swapped
+    for another once it's checked. (On a drive that ignores permissions, such as
+    exFAT, it's as private as it can be.)
     """
     path = Path(folder) / f"u{os.getuid()}"
     descriptor = None
@@ -97,7 +99,10 @@ def private_folder(folder):
         if os.fstat(descriptor).st_uid != os.getuid():
             raise PermissionError(f"{path} isn't this user's")
         if os.fstat(descriptor).st_mode & 0o077:
-            os.fchmod(descriptor, 0o700)
+            try:
+                os.fchmod(descriptor, 0o700)
+            except OSError:
+                pass  # a drive that ignores permissions: as private as it gets
     except OSError:
         if descriptor is not None:
             os.close(descriptor)
@@ -279,13 +284,13 @@ class Cache:
         self.workspace = self.root / "osteosarc"
         self.offline = offline
         self.timeout = timeout
-        self._verified = {}
+        self._verified, self._pruned = {}, False
 
     def path(self, receipt, *, verify=True):
         """Resolve a receipt, detecting missing or modified bytes.
 
-        An object is hashed once, and its checksum remembered on disk by its
-        size, mtime and inode; a rewritten file is hashed again.
+        Each object is hashed once per Cache (the snapshot's sources take a few
+        hundredths of a second); a rewritten file is hashed again.
         """
         if not isinstance(receipt, Receipt):
             receipt = Receipt(**receipt)
@@ -301,7 +306,7 @@ class Cache:
                 raise IntegrityError(f"Cached object size differs from receipt: {path}")
             key = json.dumps(identity)
             if self._verified.get(key) != receipt.sha256:
-                if self._remembered_digest(path, identity) != receipt.sha256:
+                if digest(path) != receipt.sha256:
                     raise IntegrityError(f"Cached object was modified: {path}")
                 self._verified[key] = receipt.sha256
         return path
@@ -330,21 +335,17 @@ class Cache:
                         return record["sha256"]
                 except (ValueError, AttributeError):
                     pass
-        value = digest(path)
-        if file_identity(path) == identity:
-            self._remember(identity, value)
-        return value
-
-    def _remember(self, identity, sha256):
-        """Remember a file's checksum on disk, where later processes find it."""
-        with private_folder(self.workspace / "digests") as folder:
-            if folder is not None:
-                record = json.dumps(dict(identity=identity, sha256=sha256)).encode()
+            value = digest(path)
+            if folder is not None and file_identity(path) == identity:
+                record = json.dumps(dict(identity=identity, sha256=value)).encode()
                 try:
-                    write_own(folder, f"{stable_id(identity)}.json", lambda handle: handle.write(record))
-                    prune_own(folder, ".json", 30)
+                    write_own(folder, name, lambda handle: handle.write(record))
+                    if not self._pruned:  # once a process is enough
+                        self._pruned = True
+                        prune_own(folder, ".json", 30)
                 except OSError:
                     pass  # a read-only cache: hashed again next time
+            return value
 
     def fetch(self, url, *, refresh=False, sha256=None, md5=None, size=None, max_bytes=None):
         """Download or verify cached bytes, returning their immutable receipt.
@@ -462,12 +463,12 @@ class Cache:
         output.parent.mkdir(parents=True, exist_ok=True)
         # The object may already be shared by another OpenVax tool; never rewrite valid bytes.
         if output.is_file() and output.stat().st_size == receipt.size and digest(output) == checksum:
-            self._verified_now(output, checksum)
+            self._verified[json.dumps(file_identity(output))] = checksum
             return receipt
         if move:
             share(path)
             os.replace(path, output)
-            self._verified_now(output, checksum)
+            self._verified[json.dumps(file_identity(output))] = checksum
             return receipt
         fd, temporary = tempfile.mkstemp(dir=output.parent, prefix=".object-")
         try:
@@ -476,13 +477,7 @@ class Cache:
             self._validate(Path(temporary), sha256=checksum, size=receipt.size)
             share(temporary)
             os.replace(temporary, output)
+            self._verified[json.dumps(file_identity(output))] = checksum
         finally:
             Path(temporary).unlink(missing_ok=True)
         return receipt
-
-    def _verified_now(self, path, sha256):
-        """An object just checked to have these bytes: path() needn't hash it again,
-        in this process or later ones."""
-        identity = file_identity(path)
-        self._verified[json.dumps(identity)] = sha256
-        self._remember(identity, sha256)

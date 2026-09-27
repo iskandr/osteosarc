@@ -58,15 +58,24 @@ def load_or_build(folder, name, key, build):
         value = build()
         try:
             write_own(private, filename, lambda handle: _dump(handle, (stem, value)))
-            _load(read_own(private, filename), stem)  # a copy that can't be loaded is no use
             _prune(private, name, filename)
-        except pickle.UnpicklingError as error:
-            os.unlink(filename, dir_fd=private)
+        except pickle.PicklingError as error:  # it would never load
             warnings.warn(f"osteosarc can't keep its {name} catalogue ({error}), so builds it each time",
                           RuntimeWarning, stacklevel=3)
         except Exception:
             pass  # a read-only or full cache still works; the catalogue is built each time
         return value
+
+
+def forget(folder, key):
+    """Remove this user's saved catalogues for key, such as a snapshot that failed to sync."""
+    with private_folder(folder) as private:
+        for name in os.listdir(private) if private is not None else ():
+            if f"-{key}-" in name and name.endswith(".pickle.gz"):
+                try:
+                    os.unlink(name, dir_fd=private)
+                except OSError:
+                    pass
 
 
 def _load(saved, stem):
@@ -84,9 +93,19 @@ class _Unpickler(pickle.Unpickler):
         return super().find_class(module, name)
 
 
+class _Pickler(pickle.Pickler):
+    """Refuses what _Unpickler would: a copy is saved only if it can be loaded."""
+
+    def reducer_override(self, value):
+        what = value if isinstance(value, type) else type(value)
+        if (what.__module__, what.__qualname__) not in CLASSES:
+            raise pickle.PicklingError(f"it holds a {what.__module__}.{what.__qualname__}")
+        return NotImplemented
+
+
 def _dump(handle, value):
     with gzip.GzipFile(fileobj=handle, mode="wb", compresslevel=1, mtime=0) as compressed:
-        pickle.dump(value, compressed, protocol=pickle.HIGHEST_PROTOCOL)
+        _Pickler(compressed, protocol=pickle.HIGHEST_PROTOCOL).dump(value)
 
 
 def _prune(folder, name, current):
@@ -123,12 +142,9 @@ _CODE = _fingerprint()
 
 @functools.lru_cache(maxsize=1)
 def code_key():
-    """_CODE, and the version of the HTML parser the file catalogue uses."""
-    from importlib.metadata import PackageNotFoundError, version
+    """_CODE, and the versions of the HTML parser and its CSS selectors."""
+    import bs4
+    import soupsieve
     if _CODE is None:
         return None
-    try:
-        parser = version("beautifulsoup4")
-    except PackageNotFoundError:
-        parser = ""
-    return hashlib.sha256(f"{_CODE} {parser}".encode()).hexdigest()[:12]
+    return hashlib.sha256(f"{_CODE} {bs4.__version__} {soupsieve.__version__}".encode()).hexdigest()[:12]

@@ -44,7 +44,7 @@ from .parsing import (
     parse_variants,
     read_text,
 )
-from .saved import load_or_build
+from .saved import forget, load_or_build
 
 
 def _check_inventory_time(file, receipt):
@@ -257,8 +257,12 @@ class Dataset:
                         created_at=datetime.now(timezone.utc).isoformat())
         dataset = cls(cache, manifest, corrections=corrections)
         # Validate identity joins before making a snapshot discoverable.
-        dataset.variants()
-        dataset.files
+        try:
+            dataset.variants()
+            dataset.files
+        except BaseException:
+            forget(cache.workspace / "catalogs", manifest["id"])  # nothing kept for a snapshot that isn't
+            raise
         write_json(path, manifest)
         return dataset
 
@@ -543,7 +547,7 @@ class Dataset:
     def corrections(self):
         """Every correction's status (applied, fixed_upstream, stale, disabled) and evidence."""
         report = Table(self.curation.report())
-        if "files" in self.__dict__:  # the listing isn't needed again: let it go
+        if "files" in self.__dict__:  # the listing isn't needed again: let it go (else files does)
             self.curation.release("bucket")
         return report
 
@@ -575,8 +579,10 @@ class Dataset:
     @cached_property
     def files(self):
         """All listed files plus metadata-only catalog objects and site tables."""
-        return self._saved("files", self._build_files,
-                           ("bucket", "bams", "bam_metadata", "vafs", "specimens", "fastqs"))
+        files = self._saved("files", self._build_files,
+                            ("bucket", "bams", "bam_metadata", "vafs", "specimens", "fastqs"))
+        self.curation.release("bucket")  # the large listing, if data.corrections read it
+        return files
 
     def _saved(self, name, build, sources):
         """A catalogue built once for this snapshot and set of corrections, and kept
@@ -845,7 +851,7 @@ class Dataset:
 
     def _url_file(self, url):
         """The file at this URL, or None."""
-        return next((f for f in self.files._names.get(url) if f.url == url), None)
+        return next(iter(self.files._names.find("url", url)), None)
 
     def _downloaded_files(self):
         """downloads()' rows for whole files."""

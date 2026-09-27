@@ -167,26 +167,34 @@ def test_files_are_shareable_and_local_digests_are_remembered(tmp_path, download
         damage()
         assert cache.file_digest(local) == second
     assert len(calls) == 6
-    # A download isn't hashed again, in this process or the next, even once placed in a folder.
+    # A download isn't hashed again when it's used, even once placed in a folder.
     fresh = Cache(tmp_path / "fresh")
     receipt = fresh.fetch("https://example.test/shared.tsv")
     with monkeypatch.context() as patched:
         patched.setattr(module, "digest", lambda *a: pytest.fail("hashed a verified download again"))
         place(fresh.path(receipt), tmp_path / "placed" / "shared.tsv")
         fresh.path(receipt)
-        Cache(tmp_path / "fresh").path(receipt)
     # Records unused for 30 days, and leftovers of interrupted writes, are removed.
     stale, leftover = folder / ("0" * 64 + ".json"), folder / ".own-x"
     for path in (stale, leftover):
         path.write_text("{}")
         os.utime(path, (1_000_000_000, 1_000_000_000))
     local.write_bytes(b"once more")
+    cache = Cache(tmp_path / "cache")  # pruned once a process
     cache.file_digest(local)
     assert not stale.exists() and not leftover.exists()
     used = folder / f"{stable_id(file_identity(local))}.json"  # just written
     os.utime(used, (1_000_000_000, 1_000_000_000))
     cache.file_digest(local)
     assert used.stat().st_mtime > 1_000_000_000  # used, so kept
+    # Each process checks a cached object's bytes once.
+    path = Cache(tmp_path / "cache").path(receipt := cache.fetch("https://example.test/shared.tsv"))
+    path.chmod(0o644)
+    before = path.stat()
+    path.write_bytes(bytes(reversed(path.read_bytes())))
+    os.utime(path, ns=(before.st_atime_ns, before.st_mtime_ns))
+    with pytest.raises(IntegrityError, match="modified"):
+        Cache(tmp_path / "cache").path(receipt)
 
 
 def test_objects_use_the_shared_openvax_layout(tmp_path, download_transport, monkeypatch):

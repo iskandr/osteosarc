@@ -8,7 +8,6 @@ from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
 from functools import cached_property
 
-from .cache import is_sha256
 from .curation import check_filter
 from .errors import CoordinateError
 
@@ -262,23 +261,17 @@ class _NameIndex:
             self._by[kind] = by
         return self._by[kind]
 
-    def _lookup(self, kind, name):
+    def find(self, kind, name):
+        """The files with this name of this kind (id, key, url or resource)."""
         found = self._names(kind).get(name)
         return [] if found is None else found if isinstance(found, list) else [found]
 
     def get(self, name, *, resource=True):
-        """Every file with this key, URL, ID or (with resource) resource name.
-
-        IDs are SHA256s: a name is looked up as one when it looks like one, or
-        when it isn't any other kind of name, which saves building their index.
-        """
+        """Every file with this ID, key, URL or (with resource) resource name."""
         if not isinstance(name, str):
             return []
-        kinds = ["key", *(["resource"] if resource else []), *(["url"] if "://" in name else [])]
-        found = {id(file): file for kind in kinds for file in self._lookup(kind, name)}
-        if not found or is_sha256(name):
-            found.update((id(file), file) for file in self._lookup("id", name))
-        return list(found.values())
+        kinds = ["id", "key", *(["resource"] if resource else []), *(["url"] if "://" in name else [])]
+        return list({id(file): file for kind in kinds for file in self.find(kind, name)}.values())
 
 
 @dataclass(frozen=True)

@@ -214,7 +214,7 @@ def sample_files_view(sample, data, *, width=None, local=None):
         lines.append("BAMs: none")
     if sample.missing_bams:
         lines.append("The site names BAMs the bucket doesn't have: " + "; ".join(sample.missing_bams))
-    folders = _fastq_folders(sample, sample.files)
+    folders = _fastq_folders(sample, data.files.select(sample=sample.id))
     lines.append("")
     if folders:
         lines.append(f"FASTQ folders, raw reads ({len(folders)}):")
