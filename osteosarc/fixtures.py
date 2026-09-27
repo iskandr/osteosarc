@@ -12,7 +12,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
-from .cache import digest, stable_id
+from .cache import digest, is_sha256, stable_id
 from .errors import IntegrityError, SchemaError
 from .models import Region
 from .reads import ReadSubset, assembly_from_header, normalize_assembly, resolve_regions
@@ -99,8 +99,7 @@ def validate_recipe(recipe):
             if not isinstance(policy.get("records"), dict):
                 raise SchemaError("Exact selection requires an explicit records mapping (empty if intentional)")
             for checksum, n in policy["records"].items():
-                if (not isinstance(checksum, str) or len(checksum) != 64
-                        or any(c not in "0123456789abcdef" for c in checksum)):
+                if not is_sha256(checksum):
                     raise SchemaError("Invalid record checksum")
                 _count(n, "record multiplicity")
                 if not n:

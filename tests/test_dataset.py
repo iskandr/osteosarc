@@ -711,6 +711,20 @@ def test_a_name_two_files_have_as_different_kinds_of_name_is_ambiguous(dataset):
     for name in (None, Path("solo.bam")):
         with pytest.raises(KeyError, match="found 0"):
             dataset.file(name)
+    # Any kind of name, even a key that looks like a URL; equal entries are still two files.
+    odd = File("c", "mirrors/https://example.org/a.bam", "https://example.test/c", "alignment", "bam")
+    same_url = File("d", "d.tsv", "https://example.test/c", "table", "tsv")
+    twice = File("e", "e.bam", "https://example.test/e.bam", "alignment", "bam")
+    dataset.files = Files([odd, same_url, twice, File(**{f: getattr(twice, f) for f in ("id", "key", "url", "kind", "format")})])
+    dataset.__dict__.pop("_file_index", None)
+    assert dataset.file("mirrors/https://example.org/a.bam") is odd
+    for ambiguous in ("https://example.test/c", "e.bam"):
+        with pytest.raises(KeyError, match="found 2"):
+            dataset.file(ambiguous)
+    # A sample named twice on a file lists it once; a sample that isn't a name finds nothing.
+    tagged = File("f", "f.bam", "https://example.test/f.bam", "alignment", "bam", metadata={"samples": ("S", "S")})
+    assert list(Files([tagged]).select(sample="S")) == [tagged]
+    assert not Files([tagged]).select(sample=["S"])
 
 
 def test_a_sample_whose_bams_are_all_skipped_is_an_error(dataset, monkeypatch, capsys):

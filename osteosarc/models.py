@@ -220,14 +220,14 @@ class Files(Collection):
                 if value not in values or (len(values) > 1 and not include_conflicts):
                     return False
             return True
-        pool = self if sample is None else self._by_sample.get(sample, ())
+        pool = self if sample is None else self._by_sample.get(sample, ()) if isinstance(sample, str) else ()
         return type(self)((file for file in pool if match(file)), source=self.source)
 
     @cached_property
     def _by_sample(self):
         by_sample = defaultdict(list)
         for file in self:
-            for sample in file.samples:
+            for sample in dict.fromkeys(file.samples):
                 by_sample[sample].append(file)
         return by_sample
 

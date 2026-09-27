@@ -364,11 +364,12 @@ class Curation:
         return [c for c in self.corrections
                 if any(change.source in sources for group in c.versions for change in group)]
 
-    def warn(self, stale):
-        """Warn once of each stale correction in {ID: warning}."""
+    def warn(self, stale, stacklevel=4):
+        """Warn once of each stale correction in {ID: warning}; by default, as from
+        the code that asked for records."""
         for correction_id, text in stale.items():
             if correction_id not in self._warned:
-                warnings.warn(text, CurationWarning, stacklevel=4)
+                warnings.warn(text, CurationWarning, stacklevel=stacklevel)
                 self._warned.add(correction_id)
 
     def _evaluate_changes(self, changes):

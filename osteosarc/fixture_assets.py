@@ -3,7 +3,6 @@
 Migrated from Topiary (Apache-2.0); offline resolution never needs another repo.
 """
 import json
-import re
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
@@ -50,6 +49,7 @@ def fixture_paths(manifest, *, directory=None, cache=None):
     identities and provenance must be versioned separately by the consumer.
     """
     from osteosarc import Cache, IntegrityError, digest
+    from osteosarc.cache import is_sha256
 
     versions = ("vaccine-rna-v1", "topiary-sid-v1")
     if (manifest.get("schema_version") != 1 or manifest.get("dataset") != "osteosarc"
@@ -67,7 +67,7 @@ def fixture_paths(manifest, *, directory=None, cache=None):
         url = urlsplit(asset["url"])
         if url.scheme != "https" or Path(unquote(url.path)).name != Path(name).name:
             raise ValueError(f"Fixture URL must retain its original HTTPS filename: {name}")
-        if not re.fullmatch(r"[0-9a-f]{64}", asset["sha256"]):
+        if not is_sha256(asset["sha256"]):
             raise ValueError(f"Invalid fixture SHA-256: {name}")
         if type(asset["size_bytes"]) is not int or asset["size_bytes"] < 0:
             raise ValueError(f"Invalid fixture byte size: {name}")

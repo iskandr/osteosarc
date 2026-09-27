@@ -156,7 +156,7 @@ def test_files_are_shareable_and_local_digests_are_remembered(tmp_path, download
     from osteosarc.cache import file_identity, stable_id
     folder = cache.workspace / "digests" / f"u{os.getuid()}"
     assert stat.S_IMODE(folder.stat().st_mode) == 0o700
-    record = folder / f"{stable_id(file_identity(local))}.json"
+    record = folder / f"{stable_id(file_identity(local, changed=True))}.json"
 
     def replace_with(make):
         record.unlink()
@@ -167,6 +167,20 @@ def test_files_are_shareable_and_local_digests_are_remembered(tmp_path, download
         damage()
         assert cache.file_digest(local) == second
     assert len(calls) == 7
+    # A download isn't hashed again when it's first used.
+    fresh = Cache(tmp_path / "fresh")
+    receipt = fresh.fetch("https://example.test/shared.tsv")
+    with monkeypatch.context() as patched:
+        patched.setattr(Cache, "_remembered_digest", lambda *a: pytest.fail("hashed a verified download again"))
+        fresh.path(receipt)
+    # Records unused for 30 days, and leftovers of interrupted writes, are removed.
+    stale, leftover = folder / ("0" * 64 + ".json"), folder / ".own-x"
+    for path in (stale, leftover):
+        path.write_text("{}")
+        os.utime(path, (1_000_000_000, 1_000_000_000))
+    local.write_bytes(b"once more")
+    cache.file_digest(local)
+    assert not stale.exists() and not leftover.exists()
     # A cached object edited in place, with its modification time set back, is caught.
     receipt = cache.fetch("https://example.test/shared.tsv")
     path = cache.path(receipt)

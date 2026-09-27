@@ -16,11 +16,12 @@ import fcntl
 import hashlib
 import json
 import os
-import re
+import secrets
 import shutil
 import stat
 import sys
 import tempfile
+import time
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -72,35 +73,46 @@ def file_identity(path, *, changed=False):
     return [*identity, status.st_ctime_ns] if changed else identity
 
 
-def private_folder(folder):
-    """folder/u<uid>, a folder only this user can write in, made if need be.
+def is_sha256(value):
+    """Whether value is a SHA256 digest in lowercase hexadecimal."""
+    return isinstance(value, str) and len(value) == 64 and not value.strip("0123456789abcdef")
 
-    None if it can't be: when it isn't theirs, or on a drive without Unix
-    permissions (exFAT, most network drives).
+
+@contextmanager
+def private_folder(folder):
+    """An open descriptor of folder/u<uid>, a folder only this user can write in,
+    made if need be; None if it can't be (not theirs, or on a drive without Unix
+    permissions, such as exFAT). Its files are reached through the descriptor, so
+    the folder can't be swapped for another once it's checked.
     """
     path = Path(folder) / f"u{os.getuid()}"
+    descriptor = None
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         try:
             os.mkdir(path, 0o700)
         except FileExistsError:
             pass
-        status = os.lstat(path)
+        descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        status = os.fstat(descriptor)
+        if status.st_uid != os.getuid() or status.st_mode & 0o022:
+            os.close(descriptor)
+            descriptor = None
     except OSError:
-        return None
-    if not stat.S_ISDIR(status.st_mode) or status.st_uid != os.getuid() or status.st_mode & 0o022:
-        return None
-    return path
-
-
-def read_own(path):
-    """The bytes of a file this user owns and no one else can write, else None.
-
-    What's checked is the file opened, never a link, pipe or folder, so it can't
-    be swapped for another between the check and the read.
-    """
+        descriptor = None
     try:
-        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        yield descriptor
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
+def read_own(folder, name):
+    """The bytes of a file in a private folder (a descriptor) if this user owns it
+    and no one else can write it, else None. It's checked once open, and is never
+    a link, pipe or folder."""
+    try:
+        descriptor = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=folder)
     except OSError:
         return None
     try:
@@ -115,17 +127,37 @@ def read_own(path):
         os.close(descriptor)
 
 
-def write_own(path, data):
-    """Atomically write bytes only this user can read or write (see read_own)."""
-    path = Path(path)
-    descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix=".own-")
+def write_own(folder, name, write):
+    """Atomically write a file in a private folder that only this user can read or
+    write; write(handle) writes its contents."""
+    temporary = f".own-{secrets.token_hex(8)}"
+    descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=folder)
     try:
         with os.fdopen(descriptor, "wb") as handle:
-            handle.write(data)
-        os.replace(temporary, path)
+            write(handle)
+        os.replace(temporary, name, src_dir_fd=folder, dst_dir_fd=folder)
     except BaseException:
-        Path(temporary).unlink(missing_ok=True)
+        try:
+            os.unlink(temporary, dir_fd=folder)
+        except OSError:
+            pass
         raise
+
+
+def prune_own(folder, suffix, days):
+    """In a private folder, remove the files ending in suffix unused for days, and
+    leftovers of interrupted writes; returns {name: mtime} of those kept."""
+    now, kept = time.time(), {}
+    for name in os.listdir(folder):
+        try:
+            mtime = os.stat(name, dir_fd=folder, follow_symlinks=False).st_mtime
+            if (name.startswith(".own-") and mtime < now - 86400) or (name.endswith(suffix) and mtime < now - days * 86400):
+                os.unlink(name, dir_fd=folder)
+            elif name.endswith(suffix):
+                kept[name] = mtime
+        except OSError:
+            pass
+    return kept
 
 
 _UMASK = os.umask(0)
@@ -256,7 +288,7 @@ class Cache:
         """
         if not isinstance(receipt, Receipt):
             receipt = Receipt(**receipt)
-        if (len(receipt.sha256) != 64 or any(c not in "0123456789abcdef" for c in receipt.sha256)
+        if (not is_sha256(receipt.sha256)
                 or Path(receipt.filename).name != receipt.filename or receipt.filename in ("", ".", "..")):
             raise IntegrityError("Invalid cache receipt path")
         path = self.objects / object_name(receipt.sha256, receipt.filename)
@@ -270,7 +302,7 @@ class Cache:
                 raise IntegrityError(f"Cached object size differs from receipt: {path}")
             key = json.dumps(identity)
             if self._verified.get(key) != receipt.sha256:
-                if self._remembered_digest(path, identity, changed=True) != receipt.sha256:
+                if self._remembered_digest(path, identity) != receipt.sha256:
                     raise IntegrityError(f"Cached object was modified: {path}")
                 self._verified[key] = receipt.sha256
         return path
@@ -278,30 +310,32 @@ class Cache:
     def file_digest(self, path):
         """SHA256 of a local file, remembered on disk by file identity.
 
-        Local BAMs are large; an unchanged file (same size, mtime and inode) is
+        Local BAMs are large; an unchanged file (same size, times and inode) is
         not re-read. Any rewrite changes its identity and forces a new hash.
         """
-        return self._remembered_digest(path, file_identity(path))
+        return self._remembered_digest(path, file_identity(path, changed=True))
 
-    def _remembered_digest(self, path, identity, *, changed=False):
+    def _remembered_digest(self, path, identity):
         """Each user keeps their own records, in a private folder; a damaged one is
         hashed again, and none are kept where no folder can be private."""
-        folder = private_folder(self.workspace / "digests")
-        memo = folder / f"{stable_id(identity)}.json" if folder else None
-        if memo is not None:
-            try:
-                record = json.loads(read_own(memo) or "{}")
-                if record.get("identity") == identity and re.fullmatch("[0-9a-f]{64}", record.get("sha256")):
-                    return record["sha256"]
-            except (ValueError, AttributeError, TypeError):
-                pass
-        value = digest(path)
-        if memo is not None and file_identity(path, changed=changed) == identity:
-            try:
-                write_own(memo, json.dumps(dict(identity=identity, sha256=value)).encode())
-            except OSError:
-                pass  # a read-only cache: hashed again next time
-        return value
+        name = f"{stable_id(identity)}.json"
+        with private_folder(self.workspace / "digests") as folder:
+            if folder is not None:
+                try:
+                    record = json.loads(read_own(folder, name) or "{}")
+                    if record.get("identity") == identity and is_sha256(record.get("sha256")):
+                        return record["sha256"]
+                except (ValueError, AttributeError):
+                    pass
+            value = digest(path)
+            if folder is not None and file_identity(path, changed=True) == identity:
+                try:
+                    record = json.dumps(dict(identity=identity, sha256=value)).encode()
+                    write_own(folder, name, lambda handle: handle.write(record))
+                    prune_own(folder, ".json", 30)
+                except OSError:
+                    pass  # a read-only cache: hashed again next time
+            return value
 
     def fetch(self, url, *, refresh=False, sha256=None, md5=None, size=None, max_bytes=None):
         """Download or verify cached bytes, returning their immutable receipt.
@@ -312,8 +346,7 @@ class Cache:
         """
         if urlsplit(url).scheme not in ("https", "http"):
             raise ValueError("Downloads require an HTTP(S) URL; use Cache.import_file for local data")
-        if sha256 is not None and (not isinstance(sha256, str) or len(sha256) != 64
-                                   or any(c not in "0123456789abcdef" for c in sha256.lower())):
+        if sha256 is not None and not (isinstance(sha256, str) and is_sha256(sha256.lower())):
             raise ValueError("sha256 must be a 64-character hexadecimal digest")
         if refresh and self.offline:
             raise OfflineError("Cannot refresh in offline mode")
@@ -420,12 +453,12 @@ class Cache:
         output.parent.mkdir(parents=True, exist_ok=True)
         # The object may already be shared by another OpenVax tool; never rewrite valid bytes.
         if output.is_file() and output.stat().st_size == receipt.size and digest(output) == checksum:
-            self._verified[json.dumps(file_identity(output))] = checksum
+            self._verified[json.dumps(file_identity(output, changed=True))] = checksum
             return receipt
         if move:
             share(path)
             os.replace(path, output)
-            self._verified[json.dumps(file_identity(output))] = checksum
+            self._verified[json.dumps(file_identity(output, changed=True))] = checksum
             return receipt
         fd, temporary = tempfile.mkstemp(dir=output.parent, prefix=".object-")
         try:

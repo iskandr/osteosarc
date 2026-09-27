@@ -2,6 +2,7 @@ import os
 import stat
 import time
 import warnings
+from pathlib import Path
 
 import pytest
 
@@ -20,7 +21,7 @@ def test_a_catalogue_is_built_once(tmp_path, monkeypatch):
     (path,) = (tmp_path / f"u{os.getuid()}").glob("*.pickle.gz")
     assert stat.S_IMODE(path.parent.stat().st_mode) == 0o700 and path.name.startswith("files-snapshot-")
     # A copy that can't be marked as used is still a good copy.
-    monkeypatch.setattr(os, "utime", lambda *a: (_ for _ in ()).throw(PermissionError()))
+    monkeypatch.setattr(os, "utime", lambda *a, **k: (_ for _ in ()).throw(PermissionError()))
     assert saved.load_or_build(tmp_path, "files", "snapshot", build) == {"files": [1, 2, 3]}
     assert len(builds) == 1
     # With no key for what it's built from, nothing is saved.
@@ -55,8 +56,7 @@ def test_damaged_foreign_or_misnamed_copies_are_built_again(tmp_path):
 
 
 def test_a_read_only_cache_still_works(tmp_path, monkeypatch):
-    from osteosarc import cache
-    monkeypatch.setattr(cache.tempfile, "mkstemp", lambda **k: (_ for _ in ()).throw(PermissionError()))
+    monkeypatch.setattr(saved, "write_own", lambda *a: (_ for _ in ()).throw(PermissionError()))
     assert saved.load_or_build(tmp_path, "files", "a", lambda: 4) == 4
     assert not list((tmp_path / f"u{os.getuid()}").iterdir())
 
@@ -171,3 +171,48 @@ def test_the_corrections_key_is_the_same_in_every_process(dataset):
     custom = Correction("custom", "x", (Change("bams", {"a": 1}, set={"parse": lambda v: v}),))
     assert Dataset.open(dataset.name, cache=dataset.cache,
                         corrections=[*CORRECTIONS, custom])._corrections_key is None
+
+
+def test_catalogues_list_the_sources_their_builds_correct(dataset, monkeypatch):
+    # A catalogue warns of stale corrections to the sources it names (Dataset._saved);
+    # its build must use no others.
+    import osteosarc.dataset as ds
+    from osteosarc import Dataset
+    from osteosarc.curation import Curation
+    declared, used = {}, set()
+    real_saved, real_records = ds.Dataset._saved, Curation.records
+
+    def saved_noting(self, name, build, sources):
+        declared[name] = set(sources)
+        return real_saved(self, name, build, sources)
+    monkeypatch.setattr(ds.Dataset, "_saved", saved_noting)
+    monkeypatch.setattr(Curation, "records", lambda self, source: used.add(source) or real_records(self, source))
+    monkeypatch.setattr(saved, "code_key", lambda: None)
+    for build in (lambda d: d.files, lambda d: d.variants("all"), lambda d: d._download_header):
+        used.clear()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            build(Dataset.open(dataset.name, cache=dataset.cache))
+        name = {"files", "variants", "header"} & set(declared)
+        assert used <= set().union(*(declared[n] for n in name)), used
+        declared.clear()
+
+
+def test_saved_warnings_come_from_osteosarc(dataset):
+    from osteosarc import Dataset
+    from osteosarc.curation import CurationWarning
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        Dataset.open(dataset.name, cache=dataset.cache).files  # loaded
+    files = {Path(w.filename).name for w in caught if w.category is CurationWarning}
+    assert files == {"dataset.py"}
+
+
+def test_corrections_differing_only_in_type_have_different_keys(dataset):
+    from osteosarc import CORRECTIONS, Change, Correction, Dataset, glob
+
+    def key(value, match="x*"):
+        custom = Correction("custom", "x", (Change("bams", {"a": match}, set={"tags": value}),))
+        return Dataset.open(dataset.name, cache=dataset.cache, corrections=[*CORRECTIONS, custom])._corrections_key
+    assert len({key(("a",)), key(["a"]), key({1: "a"}), key({"1": "a"}), key(1), key("1")}) == 6
+    assert key(1, glob("x*")) != key(1, {"pattern": "x*"})

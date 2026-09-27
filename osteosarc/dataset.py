@@ -3,18 +3,18 @@
 from __future__ import annotations
 
 import copy
+import dataclasses
 import json
 import re
 import warnings
 from collections import Counter, defaultdict
-from dataclasses import asdict
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from functools import cached_property
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
 
-from .cache import Cache, Receipt, file_lock, place, stable_id, write_json
+from .cache import Cache, Receipt, file_lock, is_sha256, place, stable_id, write_json
 from .catalog import (
     BUCKET,
     SNAPSHOT_SOURCES,
@@ -44,6 +44,7 @@ from .parsing import (
     parse_variants,
     read_text,
 )
+from .saved import load_or_build
 
 
 def _check_inventory_time(file, receipt):
@@ -127,6 +128,23 @@ def choose_snapshot(rows, name=None, *, date=None, root=None):
 
 
 
+def _canonical(value):
+    """value as JSON that tells types apart: a tuple from a list, 1 from "1", a
+    Glob from a dict. Raises TypeError for anything else."""
+    if dataclasses.is_dataclass(value) and not isinstance(value, type):
+        return [type(value).__qualname__, [[f.name, _canonical(getattr(value, f.name))]
+                                           for f in dataclasses.fields(value)]]
+    if isinstance(value, (list, tuple)):
+        return [type(value).__name__, [_canonical(v) for v in value]]
+    if isinstance(value, dict):
+        return ["dict", sorted(([_canonical(k), _canonical(v)] for k, v in value.items()), key=json.dumps)]
+    if isinstance(value, (set, frozenset)):
+        return [type(value).__name__, sorted((_canonical(v) for v in value), key=json.dumps)]
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return [type(value).__name__, value]
+    raise TypeError(f"{type(value).__name__} can't be written down exactly")
+
+
 class _FileIndex:
     """Files by ID, key, URL or resource name. Each kind of name gets its own
     dictionary when first looked up: building one from the files takes about a
@@ -154,20 +172,16 @@ class _FileIndex:
         return [] if found is None else found if isinstance(found, list) else [found]
 
     def get(self, name, default=()):
+        """Every file with this ID, key, URL or resource name."""
         if not isinstance(name, str):
             return list(default)
+        kinds = ["key", "resource"]
         if "://" in name:
-            # A bucket URL is its key under the download base: look the key up instead.
-            try:
-                key = object_key(name, self._base)
-            except SchemaError:
-                key = None
-            found = [f for f in self._lookup("key", key) if f.url == name] if key else []
-            found = found or self._lookup("url", name)
-        else:  # a name several files have, as different kinds of name, is ambiguous
-            kinds = ("id", "key", "resource") if re.fullmatch(r"[0-9a-f]{64}", name) else ("key", "resource")
-            found = [file for kind in kinds for file in self._lookup(kind, name)]
-        return list(dict.fromkeys(found)) or list(default)
+            kinds.append("url")
+        if is_sha256(name):
+            kinds.append("id")
+        found = {id(file): file for kind in kinds for file in self._lookup(kind, name)}
+        return list(found.values()) or list(default)
 
 
 class Dataset:
@@ -608,31 +622,25 @@ class Dataset:
         it, with the stale corrections to the sources it's built from, and warned
         of whether it's built or loaded.
         """
-        from .saved import load_or_build
-
         def build_noting_problems():
             value, problems = build()
             return value, problems, self.curation.stale(self.curation.of_sources(*sources))
         corrections = self._corrections_key
         value, problems, stale = load_or_build(self.cache.workspace / "catalogs", name,
                                                corrections and f"{self.id}-{corrections}", build_noting_problems)
-        self.curation.warn(stale)
+        self.curation.warn(stale, stacklevel=2)  # from here, as when it's built
         for problem in problems:
-            warnings.warn(problem, stacklevel=3)
+            warnings.warn(problem, stacklevel=1)
         return value
 
     @cached_property
     def _corrections_key(self):
         """The corrections in use, as a key that's the same in every process; None
-        (nothing saved) if they hold values JSON can't write."""
-        def canonical(value):  # sets, in a fixed order
-            if isinstance(value, (set, frozenset)):
-                return sorted(value, key=json.dumps)
-            raise TypeError(f"{type(value).__name__} isn't JSON")
-        chosen = [asdict(c) for c in self.curation.corrections] if self.curation.enabled else []
+        (nothing saved) if they hold values that can't be written down exactly."""
+        chosen = self.curation.corrections if self.curation.enabled else ()
         try:
-            return stable_id(json.loads(json.dumps(chosen, default=canonical)))[:12]
-        except (TypeError, ValueError):
+            return stable_id(_canonical(chosen))[:12]
+        except TypeError:
             return None
 
     def _build_files(self):
