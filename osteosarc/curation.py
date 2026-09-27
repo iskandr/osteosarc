@@ -344,9 +344,10 @@ class Curation:
         self._selected[correction.id] = correction.versions[selected]
         for n, indices in enumerate(matched):
             self._matched[correction.id, n] = indices
-        self._evaluated[correction.id] = status, details
         if status == "stale" and self.enabled:
-            self.warn(self.stale([correction]))
+            # Before it's remembered: warnings made errors are raised on every try.
+            self.warn({correction.id: _stale_warning(correction, details)})
+        self._evaluated[correction.id] = status, details
         return status, details
 
     def stale(self, corrections):
@@ -355,12 +356,7 @@ class Curation:
         for correction in corrections:
             status, details = self.evaluate(correction) if self.enabled else ("disabled", ())
             if status == "stale":
-                problems = "; ".join(f"{d['source']} {d['match']}: {d['state']}"
-                                     + (f" ({', '.join(d['differing'])})" if d["differing"] else "")
-                                     for d in details if d["state"] in
-                                     ("missing", "changed", "unexpected", "ambiguous_versions"))
-                found[correction.id] = (f"Correction {correction.id!r} was not applied because its source "
-                                        f"changed: {problems}. Review data.corrections.")
+                found[correction.id] = _stale_warning(correction, details)
         return found
 
     def of_sources(self, *sources):
@@ -372,8 +368,8 @@ class Curation:
         """Warn once of each stale correction in {ID: warning}."""
         for correction_id, text in stale.items():
             if correction_id not in self._warned:
-                self._warned.add(correction_id)
                 warnings.warn(text, CurationWarning, stacklevel=4)
+                self._warned.add(correction_id)
 
     def _evaluate_changes(self, changes):
         details, matches = [], []
@@ -492,9 +488,6 @@ class Curation:
         for key in [k for k in self._indexes if k[0] == source]:
             del self._indexes[key]
 
-    def applied(self):
-        return tuple(c.id for c in self.corrections if self.enabled and self.evaluate(c)[0] == "applied")
-
     def ids_in(self, *marks):
         """IDs of the corrections in these marks ({record index: correction IDs}, as
         records() gives them), in the corrections' order: those a result depends on."""
@@ -511,6 +504,13 @@ class Curation:
                              changes=details, evidence=list(correction.evidence),
                              verified=correction.verified))
         return rows
+
+
+def _stale_warning(correction, details):
+    problems = "; ".join(f"{d['source']} {d['match']}: {d['state']}"
+                         + (f" ({', '.join(d['differing'])})" if d["differing"] else "")
+                         for d in details if d["state"] in ("missing", "changed", "unexpected", "ambiguous_versions"))
+    return f"Correction {correction.id!r} was not applied because its source changed: {problems}. Review data.corrections."
 
 
 def _describe(match):

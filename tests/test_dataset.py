@@ -701,6 +701,18 @@ def test_short_names_tell_same_named_files_apart(dataset):
         "Pool_1.possorted_genome_bam", "Pool_2.possorted_genome_bam", "rna-seq.x_sorted", "vendor.x_sorted", "unique"]
 
 
+def test_a_name_two_files_have_as_different_kinds_of_name_is_ambiguous(dataset):
+    from osteosarc import File, Files
+    named = File("b", "other.tsv", "https://example.test/other.tsv", "table", "tsv", metadata={"resource": "solo.bam"})
+    dataset.files = Files([File("a", "solo.bam", "https://example.test/solo.bam", "alignment", "bam"), named])
+    dataset.__dict__.pop("_file_index", None)
+    with pytest.raises(KeyError, match="found 2"):
+        dataset.file("solo.bam")
+    for name in (None, Path("solo.bam")):
+        with pytest.raises(KeyError, match="found 0"):
+            dataset.file(name)
+
+
 def test_a_sample_whose_bams_are_all_skipped_is_an_error(dataset, monkeypatch, capsys):
     import osteosarc.cli as cli
     from osteosarc import CoordinateError

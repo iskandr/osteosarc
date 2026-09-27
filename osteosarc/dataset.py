@@ -154,6 +154,8 @@ class _FileIndex:
         return [] if found is None else found if isinstance(found, list) else [found]
 
     def get(self, name, default=()):
+        if not isinstance(name, str):
+            return list(default)
         if "://" in name:
             # A bucket URL is its key under the download base: look the key up instead.
             try:
@@ -162,12 +164,9 @@ class _FileIndex:
                 key = None
             found = [f for f in self._lookup("key", key) if f.url == name] if key else []
             found = found or self._lookup("url", name)
-        else:
-            found = []
-            for kind in ("id", "key") if re.fullmatch(r"[0-9a-f]{64}", name) else ("key", "resource"):
-                found = self._lookup(kind, name)
-                if found:  # the first kind of name that matches
-                    break
+        else:  # a name several files have, as different kinds of name, is ambiguous
+            kinds = ("id", "key", "resource") if re.fullmatch(r"[0-9a-f]{64}", name) else ("key", "resource")
+            found = [file for kind in kinds for file in self._lookup(kind, name)]
         return list(dict.fromkeys(found)) or list(default)
 
 
@@ -614,8 +613,9 @@ class Dataset:
         def build_noting_problems():
             value, problems = build()
             return value, problems, self.curation.stale(self.curation.of_sources(*sources))
-        value, problems, stale = load_or_build(self.cache.workspace / "catalogs",
-                                               f"{self.id}-{name}-{self._corrections_key}", build_noting_problems)
+        corrections = self._corrections_key
+        value, problems, stale = load_or_build(self.cache.workspace / "catalogs", name,
+                                               corrections and f"{self.id}-{corrections}", build_noting_problems)
         self.curation.warn(stale)
         for problem in problems:
             warnings.warn(problem, stacklevel=3)
@@ -623,10 +623,17 @@ class Dataset:
 
     @cached_property
     def _corrections_key(self):
-        def canonical(value):  # sets in a fixed order
-            return sorted(value, key=repr) if isinstance(value, (set, frozenset)) else repr(value)
+        """The corrections in use, as a key that's the same in every process; None
+        (nothing saved) if they hold values JSON can't write."""
+        def canonical(value):  # sets, in a fixed order
+            if isinstance(value, (set, frozenset)):
+                return sorted(value, key=json.dumps)
+            raise TypeError(f"{type(value).__name__} isn't JSON")
         chosen = [asdict(c) for c in self.curation.corrections] if self.curation.enabled else []
-        return stable_id(json.loads(json.dumps(chosen, default=canonical)))[:12]
+        try:
+            return stable_id(json.loads(json.dumps(chosen, default=canonical)))[:12]
+        except (TypeError, ValueError):
+            return None
 
     def _build_files(self):
         bams = self._json("bams")

@@ -61,33 +61,63 @@ def digests(path, algorithms=("sha256",)):
     return {name: result.hexdigest() for name, result in results.items()}
 
 
-def file_identity(path):
-    """Size, modification time and inode: changes whenever a file is rewritten."""
+def file_identity(path, *, changed=False):
+    """Size, modification time and inode: changes whenever a file is rewritten.
+
+    changed=True adds the change time, which a rewrite changes even if it sets the
+    modification time back (as linking or chmod-ing the file do).
+    """
     status = Path(path).stat()
-    return [str(Path(path).resolve()), status.st_size, status.st_mtime_ns, status.st_ino, status.st_dev]
+    identity = [str(Path(path).resolve()), status.st_size, status.st_mtime_ns, status.st_ino, status.st_dev]
+    return [*identity, status.st_ctime_ns] if changed else identity
+
+
+def private_folder(folder):
+    """folder/u<uid>, a folder only this user can write in, made if need be.
+
+    None if it can't be: when it isn't theirs, or on a drive without Unix
+    permissions (exFAT, most network drives).
+    """
+    path = Path(folder) / f"u{os.getuid()}"
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            os.mkdir(path, 0o700)
+        except FileExistsError:
+            pass
+        status = os.lstat(path)
+    except OSError:
+        return None
+    if not stat.S_ISDIR(status.st_mode) or status.st_uid != os.getuid() or status.st_mode & 0o022:
+        return None
+    return path
 
 
 def read_own(path):
     """The bytes of a file this user owns and no one else can write, else None.
 
-    What's checked is the file opened, never a symbolic link, so it can't be
-    swapped for another between the check and the read.
+    What's checked is the file opened, never a link, pipe or folder, so it can't
+    be swapped for another between the check and the read.
     """
     try:
-        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
     except OSError:
         return None
-    with os.fdopen(descriptor, "rb") as handle:
-        status = os.fstat(handle.fileno())
+    try:
+        status = os.fstat(descriptor)
         if not stat.S_ISREG(status.st_mode) or status.st_uid != os.getuid() or status.st_mode & 0o022:
             return None
-        return handle.read()
+        with os.fdopen(descriptor, "rb", closefd=False) as handle:
+            return handle.read()
+    except OSError:
+        return None
+    finally:
+        os.close(descriptor)
 
 
 def write_own(path, data):
     """Atomically write bytes only this user can read or write (see read_own)."""
     path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix=".own-")
     try:
         with os.fdopen(descriptor, "wb") as handle:
@@ -222,7 +252,7 @@ class Cache:
         """Resolve a receipt, detecting missing or modified bytes.
 
         An object is hashed once, and its checksum remembered on disk by its
-        size, mtime and inode (see file_digest); a rewritten file is hashed again.
+        size, times and inode; a rewritten file is hashed again.
         """
         if not isinstance(receipt, Receipt):
             receipt = Receipt(**receipt)
@@ -233,33 +263,40 @@ class Cache:
         if not path.is_file():
             raise OfflineError(f"Cached object is missing: {receipt.url}")
         if verify:
-            current = file_identity(path)
-            if current[1] != receipt.size:
+            # With the change time: an object edited in place, even with its modification
+            # time set back, is hashed again (and so is one just linked or chmod-ed, once).
+            identity = file_identity(path, changed=True)
+            if identity[1] != receipt.size:
                 raise IntegrityError(f"Cached object size differs from receipt: {path}")
-            identity = json.dumps(current)
-            if self._verified.get(identity) != receipt.sha256:
-                if self.file_digest(path) != receipt.sha256:
+            key = json.dumps(identity)
+            if self._verified.get(key) != receipt.sha256:
+                if self._remembered_digest(path, identity, changed=True) != receipt.sha256:
                     raise IntegrityError(f"Cached object was modified: {path}")
-                self._verified[identity] = receipt.sha256
+                self._verified[key] = receipt.sha256
         return path
 
     def file_digest(self, path):
         """SHA256 of a local file, remembered on disk by file identity.
 
         Local BAMs are large; an unchanged file (same size, mtime and inode) is
-        not re-read. Any rewrite changes its identity and forces a new hash. Each
-        user keeps their own records, and a damaged one is hashed again.
+        not re-read. Any rewrite changes its identity and forces a new hash.
         """
-        identity = file_identity(path)
-        memo = self.workspace / "digests" / f"{stable_id(identity)}-u{os.getuid()}.json"
-        try:
-            record = json.loads(read_own(memo) or "{}")
-            if record.get("identity") == identity and re.fullmatch("[0-9a-f]{64}", record.get("sha256")):
-                return record["sha256"]
-        except (ValueError, AttributeError, TypeError):
-            pass
+        return self._remembered_digest(path, file_identity(path))
+
+    def _remembered_digest(self, path, identity, *, changed=False):
+        """Each user keeps their own records, in a private folder; a damaged one is
+        hashed again, and none are kept where no folder can be private."""
+        folder = private_folder(self.workspace / "digests")
+        memo = folder / f"{stable_id(identity)}.json" if folder else None
+        if memo is not None:
+            try:
+                record = json.loads(read_own(memo) or "{}")
+                if record.get("identity") == identity and re.fullmatch("[0-9a-f]{64}", record.get("sha256")):
+                    return record["sha256"]
+            except (ValueError, AttributeError, TypeError):
+                pass
         value = digest(path)
-        if file_identity(path) == identity:
+        if memo is not None and file_identity(path, changed=changed) == identity:
             try:
                 write_own(memo, json.dumps(dict(identity=identity, sha256=value)).encode())
             except OSError:
