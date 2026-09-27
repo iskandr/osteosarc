@@ -16,6 +16,7 @@ import fcntl
 import hashlib
 import json
 import os
+import random
 import secrets
 import shutil
 import stat
@@ -32,23 +33,37 @@ import requests
 
 from .errors import IntegrityError, OfflineError, OsteosarcError
 
-#: Tries at an HTTP request that fails transiently (see _transient), a second, then
-#: 2, 4 and 8 seconds apart, before it's an error.
+#: Tries at an identity check (an HTTP HEAD) that meets a passing failure (_transient).
 ATTEMPTS = 5
 
 
 def _transient(error):
     """Whether a request may succeed if tried again: a server error or too many
-    requests (500, 502, 503, 504, 429), a dropped connection or a timeout. Not a
-    refusal (other 4xx), nor anything to do with the bytes themselves."""
+    requests (500, 502, 503, 504, 429), or a dropped connection. Not a refusal
+    (other 4xx), a timeout (callers bound their time with it), or a TLS or proxy
+    error, which trying again doesn't fix."""
     if isinstance(error, requests.HTTPError):
         return error.response is not None and error.response.status_code in (429, 500, 502, 503, 504)
-    return isinstance(error, (requests.ConnectionError, requests.Timeout))
+    return isinstance(error, requests.ConnectionError) and not isinstance(
+        error, (requests.exceptions.SSLError, requests.exceptions.ProxyError, requests.exceptions.ConnectTimeout))
 
 
-def http_identity(url, timeout, *, optional=False):
+def _retry_delay(error, attempt):
+    """Seconds to wait before trying again: what the server's Retry-After says, if it
+    does (None, give up, if that's over 30 s), else about 1, 2, 4 or 8, with jitter so
+    workers don't retry together."""
+    response = getattr(error, "response", None)
+    retry_after = response.headers.get("Retry-After") if response is not None else None
+    try:
+        seconds = float(retry_after)
+    except (TypeError, ValueError):  # absent, or given as a date
+        return 2 ** attempt * random.uniform(1, 1.5)
+    return seconds if seconds <= 30 else None
+
+
+def http_identity(url, timeout, *, optional=False, attempts=ATTEMPTS):
     """HTTP evidence for a remote object; datacache returns file paths only."""
-    for attempt in range(ATTEMPTS):
+    for attempt in range(attempts):
         try:
             with requests.head(url, allow_redirects=True, timeout=timeout,
                                headers={"Accept-Encoding": "identity"}) as response:
@@ -58,10 +73,10 @@ def http_identity(url, timeout, *, optional=False):
         except requests.RequestException as error:
             if optional and error.response is not None and error.response.status_code in (405, 501):
                 return dict.fromkeys(("etag", "last-modified", "content-length"))
-            if attempt + 1 < ATTEMPTS and _transient(error):
-                time.sleep(2 ** attempt)
-                continue
-            raise OsteosarcError(f"Cannot inspect {url}: {error}") from error
+            delay = _retry_delay(error, attempt) if attempt + 1 < attempts and _transient(error) else None
+            if delay is None:
+                raise OsteosarcError(f"Cannot inspect {url}: {error}") from error
+            time.sleep(delay)
 
 
 def digest(path, algorithm="sha256"):
@@ -415,7 +430,17 @@ class Cache:
                 # Keep the source suffix: datacache interprets removing .gz/.zip
                 # from an explicit destination as a decompression request.
                 path = Path(temporary) / filename
-                before = http_identity(url, min(self.timeout, 60), optional=True)
+
+                def identity():
+                    """The object's HTTP identity; with a checksum to vouch for the bytes,
+                    a check that fails is no reason to fail the download."""
+                    try:
+                        return http_identity(url, min(self.timeout, 60), optional=True)
+                    except OsteosarcError:
+                        if sha256 is None:
+                            raise
+                        return None
+                before = identity()
 
                 def check_size(done, total):
                     if max_bytes is not None and (done > max_bytes or
@@ -424,21 +449,20 @@ class Cache:
 
                 import datacache  # it imports pandas: only when a file is fetched
                 try:
-                    # datacache retries the same transient failures, with backoff.
+                    # datacache tries a download again after a passing failure itself.
                     datacache.fetch_file(url, destination=path, decompress=False,
                                          expected_sha256=sha256, expected_size=size,
-                                         timeout=self.timeout, progress_callback=check_size,
-                                         max_retries=ATTEMPTS - 1)
+                                         timeout=self.timeout, progress_callback=check_size)
                 except datacache.FileValidationError as error:
                     raise IntegrityError(str(error)) from error
                 except requests.RequestException as error:
                     raise OsteosarcError(f"Cannot download {url}: {error}") from error
-                after = http_identity(url, min(self.timeout, 60), optional=True)
-                if before != after:
+                after = identity()
+                if before is not None and after is not None and before != after:
                     raise IntegrityError(f"Remote object changed during download: {url}")
                 hashes = digests(path, ("sha256", "md5") if md5 else ("sha256",))
                 self._validate(path, sha256=sha256, md5=md5, size=size, max_bytes=max_bytes, hashes=hashes)
-                receipt = self._store(path, url, after, md5, move=True, checksum=hashes["sha256"])
+                receipt = self._store(path, url, after or {}, md5, move=True, checksum=hashes["sha256"])
             write_json(pointer, receipt.to_dict())
             return receipt
 

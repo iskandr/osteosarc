@@ -259,7 +259,7 @@ def test_direct_acquisition_preserves_inventory_size_pin(bam, tmp_path, monkeypa
     source["identity"]["size"] = bam.stat().st_size + 100
     source["index"] = str(bam) + ".bai"
     source["regions"] = [dict(contig="chr1", start=100, end=1100, assembly="GRCh38")]
-    monkeypatch.setattr(reads, "_remote_identity", lambda *a: {"content-length": str(bam.stat().st_size)})
+    monkeypatch.setattr(reads, "_remote_identity", lambda *a, **k: {"content-length": str(bam.stat().st_size)})
     original = reads._run
     url = source["identity"]["url"]
 
@@ -287,7 +287,7 @@ def test_dataset_acquisition_accepts_identity_without_url(bam, dataset, tmp_path
     source["identity"] = {lookup: getattr(asset, lookup)}
     source["index"] = str(bam) + ".bai"
     source["regions"] = [dict(contig="chr1", start=100, end=1100, assembly="GRCh38")]
-    monkeypatch.setattr(reads, "_remote_identity", lambda *a: {"content-length": str(asset.size) if asset.size is not None else None})
+    monkeypatch.setattr(reads, "_remote_identity", lambda *a, **k: {"content-length": str(asset.size) if asset.size is not None else None})
     original = reads._run
     monkeypatch.setattr(reads, "_run", lambda command, timeout: original(
         [str(bam) if arg == asset.url else arg for arg in command], timeout))

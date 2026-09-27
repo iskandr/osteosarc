@@ -14,22 +14,21 @@ from osteosarc.cache import stable_id
 @pytest.fixture
 def download_transport(monkeypatch):
     """Run the real datacache downloader over an in-memory HTTP response."""
-    # transient: statuses (or exceptions) the next requests, HEAD or GET, meet first.
+    # transient: what the next requests, HEAD or GET, meet first: a status, a status
+    # with headers, or an exception.
     state = dict(body=b"original bytes", calls=0, fail=False, etag='"opaque-multipart-2"', transient=[])
 
     class Response:
-        def __init__(self, body=b"", fail=False):
-            self.body, self.status = body, 404 if fail else state["transient"].pop(0) if state["transient"] else 200
-            if isinstance(self.status, Exception):
-                raise self.status
+        def __init__(self, body=b"", status=200, headers=()):
+            self.body, self.status = body, status
             self.headers = requests.structures.CaseInsensitiveDict({
                 "ETag": state["etag"], "Last-Modified": "yesterday",
-                "Content-Length": str(len(state["body"]))})
+                "Content-Length": str(len(state["body"])), **dict(headers)})
 
         def raise_for_status(self):
             if self.status != 200:
                 response = requests.Response()
-                response.status_code = self.status
+                response.status_code, response.headers = self.status, self.headers
                 raise requests.HTTPError(f"{self.status} error", response=response)
 
         def iter_content(self, chunk_size):
@@ -45,12 +44,18 @@ def download_transport(monkeypatch):
         def __exit__(self, *args):
             self.close()
 
+    def respond(body=b""):
+        status = state["transient"].pop(0) if state["transient"] else 200
+        if isinstance(status, Exception):
+            raise status
+        return Response(body, *status) if isinstance(status, tuple) else Response(body, status)
+
     def get(url, **kwargs):
         state["calls"] += 1
-        return Response(state["body"], state["fail"])
+        return Response(state["body"], 404) if state["fail"] else respond(state["body"])
 
     monkeypatch.setattr("requests.get", get)
-    monkeypatch.setattr("requests.head", lambda *a, **k: Response())
+    monkeypatch.setattr("requests.head", lambda *a, **k: respond())
     return state
 
 
@@ -325,22 +330,26 @@ def test_transient_failure_is_retried_by_datacache(tmp_path, download_transport,
     assert cache.path(receipt).read_bytes() == download_transport["body"]
 
 
-def test_transient_http_failures_are_tried_again(tmp_path, download_transport, monkeypatch):
+def test_passing_http_failures_are_tried_again(tmp_path, download_transport, monkeypatch):
     import osteosarc.cache as module
     slept = []
-    monkeypatch.setattr(module.time, "sleep", slept.append)
-    monkeypatch.setattr("datacache.retries.time.sleep", slept.append, raising=False)
-    monkeypatch.setattr("datacache.download.time.sleep", slept.append, raising=False)
-    # A server error at the first identity check, a dropped connection and a 503
-    # while downloading, and a 429 at the last check: all tried again.
-    download_transport["transient"] = [500, requests.ConnectionError("reset"), 503, 429]
+    monkeypatch.setattr(module.time, "sleep", slept.append)  # the one time.sleep, datacache's too
+    monkeypatch.setattr(module.random, "uniform", lambda low, high: 1)
+    # A server error at the first identity check, a dropped connection and a 503 while
+    # downloading (datacache's own retries), and a 429 asking for 2 s at the last check.
+    download_transport["transient"] = [500, requests.ConnectionError("reset"), 503, (429, {"Retry-After": "2"})]
     receipt = Cache(tmp_path / "cache").fetch("https://example.test/bundle.tar.gz")
     assert Cache(tmp_path / "cache").path(receipt).read_bytes() == b"original bytes"
-    assert len(slept) == 4
-    # A refusal isn't, and neither are persistent server errors past the last try.
-    download_transport["transient"] = [403]
-    with pytest.raises(OsteosarcError, match="403"):
-        Cache(tmp_path / "other").fetch("https://example.test/private.tar.gz")
-    download_transport["transient"] = [500] * module.ATTEMPTS
-    with pytest.raises(OsteosarcError, match="500"):
-        Cache(tmp_path / "another").fetch("https://example.test/down.tar.gz")
+    assert slept[0] == 1 and slept[-1] == 2 and len(slept) == 4 and not download_transport["transient"]
+    # Not tried again: a refusal, a timeout, a TLS error, a wait over 30 s, and any
+    # failure past the last of five tries.
+    for failures in ([403], [requests.Timeout("slow")], [requests.exceptions.SSLError("certificate")],
+                     [(503, {"Retry-After": "60"})], [500] * module.ATTEMPTS):
+        download_transport["transient"] = list(failures)
+        with pytest.raises(OsteosarcError):
+            Cache(tmp_path / "other").fetch("https://example.test/unpinned.tar.gz")
+        assert not download_transport["transient"], failures
+    # With a checksum to vouch for the bytes, a failing identity check doesn't fail the download.
+    download_transport["transient"] = [404, 200] + [500] * module.ATTEMPTS  # before, download, after
+    pinned = Cache(tmp_path / "pinned").fetch("https://example.test/pinned.tar.gz", sha256=receipt.sha256)
+    assert pinned.sha256 == receipt.sha256 and pinned.etag is None

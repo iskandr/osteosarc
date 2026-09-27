@@ -7,12 +7,16 @@ snapshot (by name or download date) for reproducible analyses. Full release note
 
 ## 0.14.1 (unreleased)
 
-- **Downloads survive a passing server error.** A download, including a published
-  bundle such as openvax-v1, and the checks before and after it are tried again after
-  a server error, too many requests, a dropped connection or a timeout: up to five
-  times, 1, 2, 4 and 8 seconds apart
-  ([#86](https://github.com/iskandr/osteosarc/issues/86)). A refusal, such as a 403 or
-  404, or a wrong checksum still fails at once.
+Downloads survive a passing server error ([#86](https://github.com/iskandr/osteosarc/issues/86)).
+
+- The checks of a remote object's identity, made before and after a download and when
+  reading reads from a remote BAM, are tried again after a server error (500, 502,
+  503, 504), too many requests (429) or a dropped connection: up to five tries, about
+  1, 2, 4 and 8 seconds apart, or as long as the server asks, up to 30 s. A timeout,
+  a TLS error or a refusal (other 4xx) still fails at once. The download itself was
+  already tried again by datacache.
+- A download pinned by checksum, such as a published bundle, no longer fails when
+  those checks do: the checksum vouches for the bytes.
 
 ## 0.14.0 (2026-09-27)
 
