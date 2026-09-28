@@ -459,9 +459,7 @@ def _source_entry(dataset, file, header, regions, label, unplaced_mates):
     if assembly is None:
         raise IntegrityError(f"Can't tell the assembly of {file.key} from its header")
     samples = file.samples
-    # With its index's URL, a recipe can be read again with no snapshot at all.
-    return dict(identity=dict(id=file.id, key=file.key, url=file.url, size=file.size, modified=file.modified,
-                              index_urls=list(file.index_urls)),
+    return dict(identity=dict(id=file.id, key=file.key, url=file.url, size=file.size, modified=file.modified),
                 assembly=assembly, sample=samples[0] if len(samples) == 1 else None,
                 library=file.resolved("library"), product=file.key, label=label,
                 acquisition=dict(fetch_pairs=True, timeout=EXTRACTION_TIMEOUT,

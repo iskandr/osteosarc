@@ -171,10 +171,10 @@ osteosarc --offline test-data make bundle --recipe recipe.json --source rna=arch
 ```
 
 The second uses a BAM you already have for the recipe's source rna. In Python,
-`generate_bundle(recipe, "bundle", dataset=data)` does the same. The recipe's sources
-are read from any snapshot in which each BAM is still the one the recipe pins (its URL,
-size and modification time), and, since 0.14.3, recipes name each BAM's index, so
-`generate_bundle(recipe, "bundle")` reads them with no snapshot at all.
+`generate_bundle(recipe, "bundle", dataset=data)` does the same. Any snapshot will do
+that lists each BAM as the recipe pins it (the same URL, key, size and modification
+time): with no `--snapshot`, osteosarc uses the recipe's own if you have it, else your
+newest.
 
 A recipe has targets (what each piece of test data is about), sources (the BAMs its
 reads come from) and members (one target in one source, with a rule for picking
@@ -186,7 +186,7 @@ targets:   small_variant   one-based position, ref and alt, and where it came fr
            sv              two or more breakends (zero-based, with orientation + / - / null)
            fixture         one of a library's test files, with a description
            unresolved      a reason; gets no reads
-sources:   identity        which file: {"key": ...} or {"url": ...}, and its "index_urls"
+sources:   identity        which file: {"key": ...} or {"url": ...}
            assembly, sample, library, product   (null when unknown)
 members:   target, source, regions (zero-based, half-open), and a policy:
            regional        reads overlapping the regions, optionally capped

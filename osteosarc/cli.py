@@ -609,7 +609,8 @@ def test_data(args, cache):
     """test-data make, list, verify, export and check."""
     from pathlib import Path
 
-    from .bundles import export_bundle, generate_bundle, list_bundle, verify_bundle
+    from .bundles import export_bundle, generate_bundle, list_bundle, sources_to_read, verify_bundle
+    from .fixtures import validate_recipe
     from .shared import bundle_folder, check_fixtures, read_json
     from .views import plural, table
     action = args.test_data_command
@@ -618,16 +619,15 @@ def test_data(args, cache):
             if args.sources or args.variant or args.sv or args.assay or args.platform or args.unplaced_mates:
                 raise ValueError("--recipe makes the bundle from the recipe alone, which says how each BAM is read; "
                                  "drop the BAMs, --variant, --sv and --unplaced-mates")
-            recipe = read_json(args.recipe)
+            recipe = validate_recipe(read_json(args.recipe))
             given = dict(item.split("=", 1) for item in args.source)
             dataset = None
-            needed = [source for sid, source in recipe.get("sources", {}).items() if sid not in given]
-            if any(not (s.get("identity", {}).get("url") and s["identity"].get("index_urls")) for s in needed):
-                # Found through a snapshot: the recipe's own if it's here, else the newest, as
-                # long as each BAM is still the one the recipe pins.
-                named = recipe.get("snapshot", {}).get("name")
-                here = {row["name"] for row in Dataset.snapshots(cache=cache)}
-                args.snapshot = args.snapshot or (named if named in here else None)
+            if set(sources_to_read(recipe)) - set(given):
+                # Its BAMs are found through a snapshot: --snapshot, else the recipe's own if
+                # it's here, else the newest. Any will do in which each BAM is unchanged.
+                made_in = recipe["snapshot"].get("id") if isinstance(recipe.get("snapshot"), dict) else None
+                if args.snapshot is None and any(row["id"] == made_in for row in Dataset.snapshots(cache=cache)):
+                    args.snapshot = made_in
                 dataset = open_snapshot(args, cache, not args.offline)
             manifest = generate_bundle(recipe, args.output, sources=given, cache=cache, dataset=dataset,
                                        size_budget=args.size_budget, header_policy=args.header_policy)

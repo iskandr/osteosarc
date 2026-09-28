@@ -10,11 +10,11 @@ snapshot (by name or download date) for reproducible analyses. Full release note
 Anyone can rebuild a bundle from its recipe
 ([#89](https://github.com/iskandr/osteosarc/issues/89)).
 
-- A recipe's sources can be read from any snapshot in which each BAM is still the one
-  the recipe pins (its URL, key, size and modification time), not only the snapshot it
-  was made from, which only its builder had.
-- Recipes name each source's index (`identity.index_urls`), so `generate_bundle` and
-  `osteosarc test-data make --recipe` read them with no snapshot at all.
+- A recipe's BAMs can be read through any snapshot that lists each one unchanged (the
+  same URL, key, size and modification time as the recipe pins), not only through the
+  snapshot it was made from, which only its builder had. `osteosarc test-data make
+  --recipe` uses `--snapshot` if you give one, else the recipe's own snapshot if you
+  have it, else your newest.
 
 ## 0.14.2 (2026-09-27)
 

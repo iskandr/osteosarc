@@ -245,15 +245,27 @@ def test_a_bundle_is_made_from_variants_and_files_and_read_back(dataset, tmp_pat
     # Mates with no position are left out, the slow part of reading a remote RNA-seq BAM.
     (source,) = json.loads((folder / "recipe.json").read_text())["sources"].values()
     assert source["acquisition"]["unplaced_mates"] is False
-    # The source names its index, so the recipe can be read again with no snapshot; and any
-    # snapshot will do in which the BAM is unchanged.
-    assert source["identity"]["index_urls"] == list(dataset.file(key).index_urls)
+    # Any snapshot will do that lists the BAM unchanged, as its size and modification time pin it.
+    from osteosarc import SchemaError, generate_bundle
     recipe = json.loads((folder / "recipe.json").read_text())
     for entry in recipe["sources"].values():
         entry["snapshot_id"] = "0" * 64
-    from osteosarc import generate_bundle
     again = generate_bundle(recipe, tmp_path / "again", dataset=dataset)
     assert again["members"] == json.loads((folder / "manifest.json").read_text())["members"]
+    (entry,) = recipe["sources"].values()
+    entry["identity"]["size"] += 1
+    with pytest.raises(IntegrityError, match=r"another BAM for source .* \(its size changed\)"):
+        generate_bundle(recipe, tmp_path / "changed", dataset=dataset)
+    # Without them, only the snapshot it was made from will do.
+    entry["identity"] = dict(key=key)
+    with pytest.raises(IntegrityError, match="pins no size and modification time"):
+        generate_bundle(recipe, tmp_path / "unpinned", dataset=dataset)
+    entry["snapshot_id"] = dataset.id
+    generate_bundle(recipe, tmp_path / "pinned", dataset=dataset)
+    # Without a snapshot, a BAM on the web needs its index named.
+    entry["identity"] = dict(url=dataset.file(key).url)
+    with pytest.raises(SchemaError, match="names no index"):
+        generate_bundle(recipe, tmp_path / "direct")
     member = "BG003082.Aligned.sortedByCoord.out.md.DYNC1H1-chr14-101980529"
     assert list(list_bundle(folder)) == [member]
     # A test reads the member as a local, read-only BAM, exported once and then reused offline.
@@ -321,23 +333,36 @@ def test_the_cli_makes_a_bundle_from_a_sample_and_variants(dataset, tmp_path, mo
     cli.main(["--offline", "test-data", "make", str(tmp_path / "b"), "--variant", "DYNC1H1-chr14-101980529",
               "T2_tumor", "--unplaced-mates"])
     assert made["unplaced_mates"] is True
-    # A recipe's sources come from the snapshot it names if it's here, else the newest
-    # (each BAM must still be the one pinned); with URLs and indexes, from none at all.
+    # A recipe's BAMs are found through --snapshot, else its own snapshot if it's here (by
+    # ID), else the newest; a recipe that reads no BAM opens none.
+    import osteosarc.bundles as bundles
+
+    def generate_bundle(recipe, output, **kwargs):
+        raise shared.OfflineError("stop here")
+    monkeypatch.setattr(bundles, "generate_bundle", generate_bundle)
     recipe = tmp_path / "recipe.json"
-    for name, expected in (("fixture", "fixture"), ("2026-01-01", None)):
-        recipe.write_text(json.dumps(dict(schema_version=1, id="x", snapshot=dict(name=name, id="a" * 64),
-                                          targets={}, sources={"rna": {"identity": {}}}, members={})))
-        cli.main(["--offline", "--cache", str(dataset.cache.root), "test-data", "make", str(tmp_path / "c"),
-                  "--recipe", str(recipe)])
-        assert opened[-1] == expected
-    opened.clear()
-    recipe.write_text(json.dumps(dict(schema_version=1, id="x", snapshot=dict(name="gone", id="a" * 64), targets={},
-                                      sources={"rna": {"identity": {"url": "https://example.test/x.bam",
-                                                                    "index_urls": ["https://example.test/x.bam.bai"]}}},
+
+    def make(snapshot_id, policy=None, *options):
+        recipe.write_text(json.dumps(dict(
+            schema_version=1, id="x", snapshot=dict(name="2026-01-01", id=snapshot_id),
+            targets=dict(t=dict(kind="fixture", assembly="GRCh38", reference={"source": "test"}, description="t")),
+            sources=dict(rna=dict(identity=dict(key="x.bam"), assembly="GRCh38", sample=None, library=None,
+                                  product=None)),
+            members=dict(m=dict(target="t", source="rna", policy=policy or dict(version=1, kind="empty"))))))
+        opened.clear()
+        code = cli.main(["--offline", "--cache", str(dataset.cache.root), "test-data", "make",
+                         str(tmp_path / "c"), "--recipe", str(recipe), *options])
+        assert code == 1 and "stop here" in capsys.readouterr().err
+        return opened
+    assert make(dataset.id) == [dataset.id]
+    assert make("a" * 64) == [None]
+    assert make(dataset.id, None, "--snapshot", "other") == ["other"]
+    assert make(dataset.id, dict(version=1, kind="omitted", reason="none here")) == []
+    # A malformed recipe is reported, not a traceback.
+    recipe.write_text(json.dumps(dict(schema_version=1, id="x", targets={}, sources={"rna": {"identity": None}},
                                       members={})))
-    cli.main(["--offline", "--cache", str(dataset.cache.root), "test-data", "make", str(tmp_path / "c"),
-              "--recipe", str(recipe)])
-    assert not opened
+    assert cli.main(["--offline", "test-data", "make", str(tmp_path / "c"), "--recipe", str(recipe)]) == 1
+    assert "requires identity" in capsys.readouterr().err
 
 
 def test_making_a_bundle_fails_early_and_clearly(dataset, tmp_path, monkeypatch):

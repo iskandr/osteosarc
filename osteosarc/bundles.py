@@ -447,12 +447,27 @@ def _same_export(made, target, format):
         return False
 
 
+def _active(recipe, sid):
+    """A source's members that need reads."""
+    return [m for m in recipe["members"].values() if m["source"] == sid
+            and m["policy"]["kind"] != "omitted" and recipe["targets"][m["target"]]["kind"] != "unresolved"]
+
+
+def sources_to_read(recipe):
+    """The sources generate_bundle reads from their BAMs: those with members that need
+    reads, and no archive."""
+    return [sid for sid, source in recipe["sources"].items() if "archive" not in source and _active(recipe, sid)]
+
+
 def generate_bundle(recipe, destination, *, sources=None, cache=None, dataset=None, **pack_options):
     """Acquire declared pinned archives or indexed windows, select and pack.
 
     Explicit ``sources`` take precedence and are checked against archive hashes.
     A source ``archive`` requires url/sha256/size_bytes; it is a bounded historical
-    input, not permission to download the original full BAM. Otherwise source
+    input, not permission to download the original full BAM. Otherwise, with a
+    ``dataset``, each BAM is the one it lists under the source's identity, unchanged:
+    any snapshot will do in which it is, when the identity pins the BAM's size and
+    modification time, as make_bundle's do. Without one, the source's
     ``identity.url`` and ``index`` plus declared regions drive indexed acquisition.
     """
     recipe = validate_recipe(recipe)
@@ -460,8 +475,7 @@ def generate_bundle(recipe, destination, *, sources=None, cache=None, dataset=No
     inputs = dict(sources or {})
     archive_receipts = {}
     for sid, source in recipe["sources"].items():
-        active = [m for m in recipe["members"].values() if m["source"] == sid
-                  and m["policy"]["kind"] != "omitted" and recipe["targets"][m["target"]]["kind"] != "unresolved"]
+        active = _active(recipe, sid)
         if not active or sid in inputs:
             continue
         if "archive" in source:
@@ -483,6 +497,9 @@ def generate_bundle(recipe, destination, *, sources=None, cache=None, dataset=No
                 if not identity.get("url"):
                     raise SchemaError(f"Source {sid} requires identity.url without a Dataset")
                 url = identity["url"]
+                if "://" in url and source.get("index") is None and not identity.get("index_urls"):
+                    raise SchemaError(f"Source {sid} names no index for its BAM; pass dataset=, a snapshot "
+                                      "that lists it")
                 inferred_format = "cram" if Path(urlsplit(url).path).suffix.lower() == ".cram" else "bam"
                 asset = File(id=identity.get("id", stable_id(url)), key=identity.get("key", url), url=url,
                               kind="alignment", format=identity.get("format", inferred_format),
@@ -494,11 +511,16 @@ def generate_bundle(recipe, destination, *, sources=None, cache=None, dataset=No
                 identity = source["identity"]
                 lookup = identity["key"] if "key" in identity else identity.get("url", identity.get("id"))
                 asset = dataset.file(lookup)
-                # Any snapshot will do in which the BAM is still the one pinned: the same URL,
-                # key, size and modification time (the records are checked by checksum too).
-                for key in ("id", "key", "url", "size", "modified"):
-                    if key in source["identity"] and getattr(asset, key) != source["identity"][key]:
-                        raise IntegrityError(f"Snapshot source identity changed: {sid}/{key}")
+                made_in = source.get("snapshot_id", dataset.id)
+                if made_in != dataset.id and any(identity.get(key) is None for key in ("size", "modified")):
+                    raise IntegrityError(f"Snapshot identity differs: source {sid} pins no size and modification "
+                                         f"time, so only the snapshot it was made from ({made_in[:12]}) can read it")
+                changed = [key for key in ("id", "key", "url", "size", "modified")
+                           if key in identity and getattr(asset, key) != identity[key]]
+                if changed:
+                    raise IntegrityError(f"Snapshot {dataset.name} lists another BAM for source {sid} than the "
+                                         f"recipe pins (its {', '.join(changed)} changed); open a snapshot in "
+                                         "which it's unchanged")
                 if source.get("index") is not None:
                     options["index"] = source["index"]
                 inputs[sid] = dataset.extract_reads(asset, regions, **options)
