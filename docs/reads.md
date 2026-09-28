@@ -2,7 +2,7 @@
 
 Copy just the reads you need out of the remote BAMs into small local BAMs: test
 data for a unit test in seconds, without downloading any BAM whole. You need
-SAMtools on your PATH (1.21 is tested); reopening reads you already fetched
+SAMtools 1.21 or newer on your PATH; reopening reads you already fetched
 doesn't.
 
 ## Make test data
