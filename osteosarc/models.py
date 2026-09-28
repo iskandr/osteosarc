@@ -14,7 +14,8 @@ from .errors import CoordinateError
 
 @dataclass(frozen=True)
 class Region:
-    """Zero-based, half-open interval on a named assembly.
+    """Zero-based, half-open interval on a named assembly, or with assembly None,
+    on whatever genome build the alignment it's read from uses (its header says).
 
     reference_length optionally pins the contig length, and is mandatory for
     GRCh37 mitochondrial extraction because hg19 and hs37d5 differ there.
@@ -29,7 +30,7 @@ class Region:
     def __post_init__(self):
         if (not self.contig or self.contig in ("*", ".") or re.search(r"[\s:]", self.contig)
                 or not isinstance(self.start, int) or not isinstance(self.end, int)
-                or self.start < 0 or self.end <= self.start or not self.assembly):
+                or self.start < 0 or self.end <= self.start or self.assembly == ""):
             raise CoordinateError(f"Invalid zero-based, half-open region: {self}")
         if self.reference_length is not None and self.end > self.reference_length:
             raise CoordinateError("Region extends beyond its reference length")

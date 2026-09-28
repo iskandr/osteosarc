@@ -182,17 +182,16 @@ def test_cli_reads_accepts_catalogue_variants(dataset, capsys, monkeypatch, tmp_
 
     for arguments, message in [
         (["--variant", "NOT-A-VARIANT"], "Unknown variant ID"),
-        (["chr14:1-2", "--variant", ids[0]], "either regions (with --assembly) or --variant"),
-        (["--variant", ids[0], "chr14:1-2"], "either regions (with --assembly) or --variant"),
-        (["--variant", ids[0], "--assembly", "GRCh38"], "either regions (with --assembly) or --variant"),
+        (["chr14:1-2", "--variant", ids[0]], "either regions or --variant"),
+        (["--variant", ids[0], "chr14:1-2"], "either regions or --variant"),
+        (["--variant", ids[0], "--assembly", "GRCh38"], "either regions or --variant"),
     ]:
         assert main(["--cache", root, "reads", "--snapshot", "fixture", source, *arguments]) == 1
         assert message in capsys.readouterr().err
     assert not calls
     # Without --assembly, a BAM's regions are in its own genome build; a sample's BAMs may differ.
-    monkeypatch.setattr(Dataset, "inspect_alignment", lambda self, file, **k: type("Info", (), {"assembly": "GRCh38"}))
     assert main(["--cache", root, "reads", "--snapshot", "fixture", source, "chr14:101980529-101980530"]) == 0
-    assert calls.pop()["regions"][0].assembly == "GRCh38"
+    assert calls.pop()["regions"][0].assembly is None
     capsys.readouterr()
     assert main(["--cache", root, "reads", "--snapshot", "fixture", "T1_tumor", "chr14:1-2"]) == 1
     assert "Give --assembly with regions and a sample" in capsys.readouterr().err
@@ -566,6 +565,13 @@ def test_downloads_are_listed_found_and_placed_under_their_own_names(dataset, tm
     listing.write_text("<ListBucketResult/>")
     dataset.cache.import_file(listing, base + "?list-type=2&prefix=calls%2F")
     assert not any("list-type" in r["url"] for r in dataset.downloads())
+    # Nor is a file another snapshot downloaded as its own metadata.
+    other = base + "calls/metadata-of-another-snapshot.tsv"
+    dataset.files = Files([*dataset.files, File(stable_id(other), "calls/metadata-of-another-snapshot.tsv", other,
+                                                "table", "tsv", size=19)])
+    dataset.cache.import_file(listing, other)
+    (dataset.cache.workspace / "snapshots" / "older.json").write_text(json.dumps(dict(sources={"x": {"url": other}})))
+    assert other not in {r["url"] for r in dataset.downloads()}
     rows = {r["key"]: r for r in dataset.downloads()}
     assert rows[key]["kind"] == "file" and rows[key]["path"] == str(cached)
     assert "vafs" not in rows and not any(k.startswith("https://osteosarc.com") for k in rows)
@@ -816,11 +822,26 @@ def test_tables_mark_what_they_cut_and_fit_the_terminal():
     from osteosarc.views import table
     rows = [dict(id="a", note="a long note that won't fit", empty="", key="x" * 60),
             dict(id="b", note="short", empty=None, key="y")]
-    text = table(rows, ("id", "note", "empty", "key"), width=40, fixed=("key",))
+    text = table(rows, ("id", "note", "empty", "key"), width=40, fixed=("key",), drop_empty=True)
     header, rule, first, _ = text.splitlines()
-    assert "empty" not in header  # a column empty in every row is left out
+    assert "empty" not in header  # a column empty in every row is left out, when asked
     assert "…" in first and "x" * 60 in first  # a cut is marked; a fixed column never is
-    assert len(rule) <= 40  # the rule stops at the terminal's edge
+    assert len(rule) <= 40 and rule.startswith("--  ")  # each rule under its column, up to the edge
+    assert "empty" in table(rows, ("id", "note", "empty", "key"), width=40).splitlines()[0]
+    # Optional columns go, the last first, when nothing else fits, and the table says so.
+    wide = [dict(id="a" * 30, allele="b" * 30, x="c" * 30, y="d" * 30)]
+    narrow = table(wide, ("id", "allele", "x", "y"), width=80, fixed=("allele",), optional=("x", "y"))
+    assert narrow.splitlines()[0].split() == ["id", "allele", "x"] and "Too narrow for y" in narrow
+
+
+def test_prose_and_the_timeline_listing_wrap_but_never_split_a_word(dataset):
+    from osteosarc.views import prose
+    path = "s3://bucket/" + "x" * 120
+    wrapped = prose(f"The site names BAMs the bucket doesn't have: {path}", 60)
+    assert path in wrapped and all(len(line) <= 60 for line in wrapped.splitlines() if path not in line)
+    listing = str(dataset.timeline.listing(100))
+    assert all(len(line) <= 100 for line in listing.splitlines())
+    assert any(line.startswith(" " * 30) for line in listing.splitlines())  # something wrapped, under itself
 
 
 def test_test_data_alone_shows_its_help(capsys):

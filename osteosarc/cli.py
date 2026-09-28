@@ -265,8 +265,7 @@ def pinned_sources(revision):
 def read_targets(dataset, args):
     """Parse the reads command's regions or catalogue variants; Dataset.extract_reads checks the rest."""
     if args.variant and (args.regions or args.assembly or args.reference_length):
-        raise ValueError("Supply either regions (with --assembly) or --variant, not both; "
-                         "variants carry their own assembly")
+        raise ValueError("Supply either regions or --variant, not both; variants carry their own assembly")
     if args.variant:
         found = dataset.variants("all", ids=args.variant)
         missing = sorted(set(args.variant) - {v.id for v in found})
@@ -277,14 +276,10 @@ def read_targets(dataset, args):
         order = {v: i for i, v in enumerate(dict.fromkeys(args.variant))}
         variants = type(found)(sorted(found, key=lambda v: order[v.id]), source=found.source)  # as given
         return dict(variants=variants, padding=args.padding)
-    assembly = args.assembly
-    if args.regions and assembly is None:  # a BAM's regions are in its own genome build
-        if is_sample(dataset, args.file):
-            raise ValueError("Give --assembly with regions and a sample: its BAMs may use different genome builds")
-        assembly = dataset.inspect_alignment(dataset.file(args.file)).assembly
-        if assembly is None:
-            raise ValueError(f"Can't tell {args.file}'s genome build from its header; give --assembly")
-    return dict(regions=[Region.from_samtools(r, assembly=assembly, reference_length=args.reference_length)
+    if args.regions and args.assembly is None and is_sample(dataset, args.file):
+        raise ValueError("Give --assembly with regions and a sample: its BAMs may use different genome builds")
+    # Without --assembly, a BAM's regions are in its own genome build (Region's None).
+    return dict(regions=[Region.from_samtools(r, assembly=args.assembly, reference_length=args.reference_length)
                          for r in args.regions], padding=args.padding)
 
 
@@ -430,12 +425,12 @@ def browse(args, dataset):
             raise ValueError("--days sets the window around --around DATE; give a date too")
         if args.around:
             events = events.around(args.around, args.days)
-            print_json(events.to_records()) if args.json else print(events.listing() or "(no events)")
+            print_json(events.to_records()) if args.json else print(events.listing(args.width) or "(no events)")
             return 0
         if args.json:
             print_json(events.to_records())
         elif args.list:
-            print(events.listing() or "(no events)")
+            print(events.listing(args.width) or "(no events)")
         else:
             # Asking for a lane or text shows it even when it's one the chart leaves out.
             print(events.render(width=args.width, since=args.since, until=args.until,
@@ -500,7 +495,8 @@ def get_data(args, dataset):
             print(dataset.download(file.index_urls[0], to=args.to))  # already placed; this names it
     elif args.command == "reads":
         from concurrent.futures import ThreadPoolExecutor, as_completed
-        targets, sources = read_targets(dataset, args), read_sources(dataset, args)
+        sources = read_sources(dataset, args)
+        targets = read_targets(dataset, args)
 
         def extract(file):
             return dataset.extract_reads(file, **targets, reference=args.reference, index=args.index,

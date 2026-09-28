@@ -1,4 +1,5 @@
 import json
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
@@ -220,7 +221,12 @@ def test_objects_use_the_shared_openvax_layout(tmp_path, download_transport, mon
     monkeypatch.setenv("OSTEOSARC_CACHE", str(tmp_path / "isolated"))
     assert Cache().root == (tmp_path / "isolated").resolve()
     monkeypatch.delenv("OPENVAX_DATA_CACHE")
-    assert default_root().name == "openvax"
+    # Else the platform's "openvax" folder, as datacache resolves it for every OpenVax library.
+    expected = Path.home() / ("Library/Caches" if sys.platform == "darwin" else ".cache") / "openvax"
+    monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
+    assert default_root() == expected
+    monkeypatch.setenv("OPENVAX_DATA_CACHE", "  ")  # blank is unset
+    assert default_root() == expected
 
 
 def test_objects_written_by_another_openvax_tool_are_reused(tmp_path, download_transport):

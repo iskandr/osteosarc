@@ -20,6 +20,7 @@ from datetime import date, timedelta
 from .cache import stable_id
 from .display import Text
 from .models import Collection
+from .views import plural
 
 #: Display order of lanes; unlisted lanes follow alphabetically within their category.
 LANE_ORDER = (
@@ -160,14 +161,14 @@ class Timeline(Collection):
             when = e.date + (f"..{e.end}" + ("+" if e.open_end else "") if e.end else "")
             label = e.label + (f" = {e.value}" if e.kind == "event" and e.value else "")
             notes = f"(corrections: {', '.join(e.corrections)})" if e.corrections else ""
-            room = max(40, width - len(indent))
-            parts = textwrap.wrap(label, room, break_on_hyphens=False) or [""]
+            room = max(20, width - len(indent))
+            parts = textwrap.wrap(label, room, break_on_hyphens=False, break_long_words=False) or [""]
             if notes:  # kept whole: on the label's last line if it fits, else a line of its own
                 if len(parts[-1]) + 2 + len(notes) <= room:
                     parts[-1] = f"{parts[-1]}  {notes}".strip()
                 else:
                     parts.append(notes)
-            lines.append(f"{when:<23} {e.lane:<{lanes}}  " + f"\n{indent}".join(parts))
+            lines.append((f"{when:<23} {e.lane:<{lanes}}  " + f"\n{indent}".join(parts)).rstrip())
         return Text("\n".join(lines))
 
     def render(self, *, width=None, since=None, until=None, everything=False, legend=True):
@@ -503,8 +504,8 @@ def events_from_pathology(document, *, marks=None, undated=None):
         kind = group["specimen"].split("_", 1)[1]
         result.append(_event("pathology", {k: group.get(k) for k in ("id", "title", "specimen", "ids")}, n,
                              date=day, lane="Pathology slides", category="Pathology", subcategory=kind,
-                             label=f"{group.get('title', group['specimen'])} ({len(group.get('ids', ()))} slide"
-                                   f"{'' if len(group.get('ids', ())) == 1 else 's'})",
+                             label=f"{group.get('title', group['specimen'])} "
+                                   f"({plural(len(group.get('ids', ())), 'slide')})",
                              links=tuple(group.get("ids", ())), corrections=corrections))
     return result
 

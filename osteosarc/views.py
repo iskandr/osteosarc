@@ -25,52 +25,54 @@ KIND_NAMES = {"alignment": "BAM/CRAM aligned reads", "reads": "FASTQ raw reads",
               "other": "logs, raw signal and the rest"}
 
 
-def table(rows, columns, *, width=None, limit=None, wrap=False, fixed=(), optional=(), total=None):
+def table(rows, columns, *, width=None, limit=None, wrap=False, fixed=(), optional=(), drop_empty=False,
+          total=None):
     """Fixed-width text table; long cells are cut, with an ellipsis, to fit the terminal.
 
-    Columns in fixed, such as file keys people copy, are never shortened; the
-    line under the headers stops at the terminal's edge. Columns empty in every
-    row shown are left out, and so are those in optional (the last first) while
-    the table is too wide even with every column at its narrowest, with a line
-    saying so. total is the full row count when rows holds only the first few.
+    Columns in fixed, such as file keys people copy, are never shortened, and the
+    line under the headers stops at the terminal's edge. With drop_empty, columns
+    empty in every row shown are left out. Columns in optional are left out, the
+    last first, while the table is too wide even with every column at its
+    narrowest, with a line saying so. total is the full row count when rows holds
+    only the first few.
     """
     if limit is not None and (not isinstance(limit, int) or isinstance(limit, bool) or limit < 0):
         raise ValueError("limit must be a nonnegative integer")
     rows = list(rows)
     shown = rows if limit is None else rows[:limit]
-    if shown:
-        columns = [c for i, c in enumerate(columns) if i == 0 or any(_text(row.get(c)) for row in shown)]
     width = width or shutil.get_terminal_size((120, 24)).columns
-    dropped = []
+    text = {c: [_text(row.get(c)) for row in shown] for c in columns}
+    natural = {c: max([len(c)] + [len(t) for t in text[c]]) for c in columns}
+    columns = [c for i, c in enumerate(columns) if not drop_empty or i == 0 or any(text[c])]
 
     def narrowest(columns):
-        return sum(max(len(c), max((len(_text(row.get(c))) for row in shown), default=0))
-                   if i == 0 or c in fixed else min(12, max(len(c), max((len(_text(row.get(c))) for row in shown),
-                                                                        default=0)))
-                   for i, c in enumerate(columns)) + 2 * (len(columns) - 1)
+        return sum(natural[c] if i == 0 or c in fixed else min(12, natural[c]) for i, c in enumerate(columns)) \
+            + 2 * (len(columns) - 1)
+    dropped = []
     for c in reversed(optional):
         if c in columns and narrowest(columns) > width:
             columns = [other for other in columns if other != c]
             dropped.insert(0, c)
-    cells = [[_text(row.get(c)) for c in columns] for row in shown]
-    widths = [max([len(c)] + [len(r[i]) for r in cells]) for i, c in enumerate(columns)]
+    widths = [natural[c] for c in columns]
     # Shrink the widest columns to fit, but never the first (identifying) column.
     shrinkable = [i for i in range(1, len(widths)) if columns[i] not in fixed]
     while sum(widths) + 2 * (len(widths) - 1) > width and max((widths[i] for i in shrinkable), default=0) > 12:
         widest = max(shrinkable, key=widths.__getitem__)
         widths[widest] -= 1
-    line = "  ".join
-    rules, used = [], 0
-    for c, w in zip(columns, widths):  # a column wider than the terminal is ruled to its edge
-        rules.append("-" * max(len(c), min(w, width - used)))
+    rule, used = [], 0
+    for w in widths:  # under each column, as far as the terminal's edge
+        if used >= width:
+            break
+        rule.append("-" * min(w, width - used))
         used += w + 2
-    out = [line(_cut(c, w).ljust(w) for c, w in zip(columns, widths)).rstrip(), line(rules)]
-    for row in cells:
+    line = "  ".join
+    out = [line(_cut(c, w).ljust(w) for c, w in zip(columns, widths)).rstrip(), line(rule)]
+    for i in range(len(shown)):
+        cells = [text[c][i] for c in columns]
         parts = [textwrap.wrap(cell, width=w, break_on_hyphens=False) or [""] if wrap else [_cut(cell, w)]
-                 for cell, w in zip(row, widths)]
-        for i in range(max(map(len, parts), default=0)):
-            out.append(line((part[i] if i < len(part) else "").ljust(w)
-                            for part, w in zip(parts, widths)).rstrip())
+                 for cell, w in zip(cells, widths)]
+        for j in range(max(map(len, parts), default=0)):
+            out.append(line((part[j] if j < len(part) else "").ljust(w) for part, w in zip(parts, widths)).rstrip())
     total = len(rows) if total is None else total
     if limit is not None and total > limit:
         out.append(f"... {total - limit:,} more")
@@ -82,7 +84,7 @@ def table(rows, columns, *, width=None, limit=None, wrap=False, fixed=(), option
 def prose(text, width=None):
     """A paragraph wrapped to the terminal (at most 100 columns), later lines indented."""
     width = min(width or shutil.get_terminal_size((100, 24)).columns, 100)
-    return textwrap.fill(text, width, subsequent_indent="  ", break_on_hyphens=False)
+    return textwrap.fill(text, width, subsequent_indent="  ", break_on_hyphens=False, break_long_words=False)
 
 
 def _cut(text, width):
@@ -240,7 +242,7 @@ def sample_files_view(sample, data, *, width=None, local=None):
         lines.append(f"BAMs, aligned reads ({len(bams)}"
                      + (f", {downloaded} downloaded" if downloaded else "") + "):")
         lines.append(table(bams, ("assay", "platform", "provider", "size", "local", "key"),
-                           width=width, fixed=("key",)))
+                           width=width, fixed=("key",), drop_empty=True))
     else:
         lines.append("BAMs: none")
     if sample.missing_bams:
@@ -250,7 +252,7 @@ def sample_files_view(sample, data, *, width=None, local=None):
     if folders:
         lines.append(f"FASTQ folders, raw reads ({len(folders)}):")
         lines.append(table(folders, ("assay", "platform", "library", "provider", "files", "size", "folder"),
-                           width=width, fixed=("folder", "library")))
+                           width=width, fixed=("folder", "library"), drop_empty=True))
     else:
         lines.append("FASTQ folders: none")
     return "\n".join(lines), bams, folders
@@ -393,17 +395,16 @@ def files_view(files, data, *, limit=50, width=None, more="Use --limit N to show
                  provider=_text(f.values("provider")), size=size_text(f.size),
                  local="yes" if f.url in local else "", notes=_text(f.metadata.get("corrections")), key=f.key)
             for f in (files if limit is None else files[:limit])]
-    columns = [c for c in ("kind", "sample", "assay", "provider") if any(r[c] for r in rows) or c == "kind"]
+    columns = ["kind", "sample", "assay", "provider", "size", "local", "notes", "key"]
     if len({f.kind for f in files}) == 1:
         columns.remove("kind")
-    columns += ["size", "local", *(("notes",) if any(r["notes"] for r in rows) else ()), "key"]
     total = sum(f.size or 0 for f in files)
-    shown = table(rows, columns, width=width, limit=limit, total=len(files), fixed=("key",))
+    shown = table(rows, columns, width=width, limit=limit, total=len(files), fixed=("key",), drop_empty=True)
     return (f"{plural(len(files), 'file')} ({size_text(total) or '0 B'})\n{shown}"
             + (f"\n{more}" if limit is not None and len(files) > limit else ""))
 
 
-def downloads_view(rows, cache_root, *, width=None):
+def downloads_view(rows, cache_root):
     """Downloaded files and extracted reads: each one's size and key (and regions),
     and on the next line where it is, whole, to copy."""
     files = [r for r in rows if r["kind"] == "file"]
@@ -446,9 +447,9 @@ def variants_view(variants, *, width=None, limit=None):
             for v in variants]
     ready = sum(v.status == "ready" for v in variants)
     columns = ("id", *(("status",) if ready < len(variants) else ()), "allele", "protein", "vaccines",
-               "found_by", *(("corrections",) if any(r["corrections"] for r in rows) else ()))
+               "found_by", "corrections")
     return (f"{len(variants)} variants, {ready} with a ready allele\n"
-            + table(rows, columns, width=width, limit=limit, fixed=("id", "allele"),
+            + table(rows, columns, width=width, limit=limit, fixed=("id", "allele"), drop_empty=True,
                     optional=("vaccines", "found_by", "corrections")))
 
 

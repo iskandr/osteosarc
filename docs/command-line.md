@@ -43,10 +43,11 @@ result, even offline.
 
 Give a file's key instead of a sample to read one BAM, and repeat `--variant` for
 several variants. For a region instead, give it one-based and inclusive, like
-SAMtools, with its assembly:
+SAMtools, in the BAM's own genome build (or say which with `--assembly`, as you must
+with a sample):
 
 ```sh
-osteosarc reads rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam chr14:101980429-101980629 --assembly GRCh38
+osteosarc reads rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam chr14:101980429-101980629
 ```
 
 | Option | Effect |

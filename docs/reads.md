@@ -48,13 +48,15 @@ with subset.open() as bam:
 ```
 
 In Python, regions are zero-based and half-open. On the command line they're
-one-based and inclusive, like SAMtools, and need the genome build:
+one-based and inclusive, like SAMtools, and in the BAM's own genome build unless you
+say otherwise with `--assembly` (a sample's BAMs may differ, so with a sample you must):
 
 ```sh
-osteosarc reads rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam chr14:101980529-101980530 --assembly GRCh38
+osteosarc reads rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam chr14:101980529-101980530
 ```
 
-`Region.from_samtools("chr14:101980529-101980530", assembly="GRCh38")` converts one.
+`Region.from_samtools("chr14:101980529-101980530", assembly="GRCh38")` converts one;
+a Region's assembly can be None, for the build of whatever BAM it's read from.
 Overlapping regions are merged. Reads come back exactly as stored, duplicates and
 tags included; a region with no reads gives an empty BAM.
 
