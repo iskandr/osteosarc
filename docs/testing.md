@@ -39,7 +39,7 @@ Ensembl 95 annotation. On an empty cache, check the README first so that a snaps
 exists.
 
 A weekly drift workflow checks that every correction still matches the live website,
-then runs all the examples.
+and, separately, runs all the examples.
 
 ## Repeat the live read check
 
