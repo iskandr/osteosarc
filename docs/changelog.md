@@ -25,6 +25,8 @@ openvax-v2, the next bundle of reads the OpenVax libraries share
   insertion.
 - Carrying a bundle's library records forward keeps a source's mates with no position
   only if one of those records lacks a position.
+- Reading past `max_records` raises RecordLimitError (an IntegrityError), and the cache
+  remembers it: asking again, even offline, gives the same answer without reading.
 
 openvax-v1 stays published, and the libraries move to openvax-v2 at their own pace.
 

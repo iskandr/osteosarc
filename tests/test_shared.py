@@ -575,3 +575,9 @@ def test_a_source_keeps_mates_with_no_position_only_where_a_librarys_records_may
     assert _needs_unplaced(dict(names=["r1"]))  # a named read's mate could be anywhere
     assert _needs_unplaced(dict(records={"a" * 64: 1}))  # unless its bundle said otherwise
     assert not _needs_unplaced(dict(records={"a" * 64: 1}, unplaced_mates=False))
+
+
+def test_a_sam_line_that_covers_no_reference_bases_still_has_a_one_base_span():
+    assert sam_span("r\t0\tchr1\t100\t60\t40S\t*\t0\t0\t" + "A" * 40 + "\t*") == ("chr1", 99, 100)
+    assert sam_span("r\t0\tchr1\t100\t60\t*\t*\t0\t0\t*\t*") == ("chr1", 99, 100)
+    assert sam_span("r\t0\tchr1\t100\t60\t5S10M2D3M\t*\t0\t0\t" + "A" * 18 + "\t*") == ("chr1", 99, 114)

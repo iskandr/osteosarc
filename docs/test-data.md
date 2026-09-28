@@ -122,7 +122,7 @@ matter. The command fails if any file differs.
 
 ## How reads are chosen
 
-Bundles you make and openvax-v2 choose reads the same way. At each small variant,
+Bundles you make and openvax-v2 choose reads the same way (openvax-v2 also adds split alignments). At each small variant,
 osteosarc sorts every template (a
 read with its mate) by what it shows across the allele: alt, ref, something else, or
 nothing, when it doesn't span it. Indels are judged across any repeat they could

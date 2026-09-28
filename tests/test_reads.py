@@ -60,6 +60,21 @@ def test_cached_reads_verified_and_reused_offline(bam, tmp_path, monkeypatch):
         extract_reads(bam, regions, cache=cache)
 
 
+def test_too_many_records_is_remembered_too(bam, tmp_path, monkeypatch):
+    import osteosarc.reads
+    from osteosarc.errors import RecordLimitError
+    cache = Cache(tmp_path / "cache")
+    regions = [Region("chr1", 100, 160, "GRCh38")]
+    with pytest.raises(RecordLimitError):
+        extract_reads(bam, regions, cache=cache, max_records=5)  # it holds 6
+    # Asked again, even offline, the answer comes from the cache without reading.
+    monkeypatch.setattr(osteosarc.reads, "_run_bounded", lambda *a: pytest.fail("read the records again"))
+    with pytest.raises(RecordLimitError):
+        extract_reads(bam, regions, cache=Cache(cache.root, offline=True), max_records=5)
+    monkeypatch.undo()
+    assert extract_reads(bam, regions, cache=cache, max_records=6).receipt["records"] == 6
+
+
 def test_cached_header_reuse_and_corruption(bam, tmp_path, monkeypatch):
     cache = Cache(tmp_path / "cache", offline=True)
     info = inspect_alignment(bam, cache=cache)

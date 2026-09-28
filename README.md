@@ -68,7 +68,7 @@ Only the reads near the variants are fetched, into a small indexed BAM; asking a
 reuses it, even offline. For a bundle anyone can rebuild, with a balanced set of reads
 at each variant and every record pinned, use `osteosarc test-data make`; a test then
 reads a member with `osteosarc.bundle_file(bundle, member)`. The OpenVax libraries share
-one such bundle, openvax-v1.
+one such bundle, openvax-v2.
 
 The website changes over time, so its metadata is saved as dated snapshots:
 `osteosarc snapshots` lists them, and `--snapshot 2026-09` picks the newest from that
@@ -83,7 +83,7 @@ in the website's data; `osteosarc --no-corrections` shows the published values.
 | Find a sample's files, and download them | [Samples and files](https://iskandr.github.io/osteosarc/samples/) |
 | Get alleles, read counts and vaccine peptides | [Variants and vaccines](https://iskandr.github.io/osteosarc/variants/) |
 | Fetch reads by variant or region | [Reads](https://iskandr.github.io/osteosarc/reads/) |
-| Make a bundle of test reads, or use the shared openvax-v1 | [Test data](https://iskandr.github.io/osteosarc/test-data/) |
+| Make a bundle of test reads, or use the shared openvax-v2 | [Test data](https://iskandr.github.io/osteosarc/test-data/) |
 | Chart treatments, scans and MRD | [Timeline](https://iskandr.github.io/osteosarc/timeline/) |
 | Pass data to Varcode, Isovar, Topiary or Vaxrank | [OpenVax libraries](https://iskandr.github.io/osteosarc/openvax/) |
 | Look through 637 candidate structural variants | [SV candidates](https://iskandr.github.io/osteosarc/sv-candidates/) |

@@ -41,7 +41,14 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from .alleles import CLASSES, allele_window, read_allele, template_allele
-from .errors import CoordinateError, IntegrityError, OfflineError, OsteosarcError, SchemaError
+from .errors import (
+    CoordinateError,
+    IntegrityError,
+    OfflineError,
+    OsteosarcError,
+    RecordLimitError,
+    SchemaError,
+)
 from .models import Region
 from .reads import merge_spans, resolve_regions
 from .records import cigar_length, read_records, read_template, split_alignments
@@ -219,7 +226,8 @@ def sam_span(line):
     contig, position, cigar = fields[2], int(fields[3]), fields[5]
     if contig == "*" or position == 0:
         return None
-    return contig, position - 1, position - 1 + (cigar_length(cigar) if cigar != "*" else 1)
+    # A record that covers no reference bases (all clipped, say) still counts one, as in samtools.
+    return contig, position - 1, position - 1 + max(1, cigar_length(cigar))
 
 
 def _context_window(contig, position, ref, alt, assembly, *, cache, reference_length=None):
@@ -749,9 +757,7 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, req
             try:  # a region in a pileup (a repeat that draws millions of reads) costs more than it's worth
                 dataset.extract_reads(plan["file"], [region], max_records=SPLIT_DEPTH)
                 added.append(region)
-            except IntegrityError as error:
-                if "record limit" not in str(error):
-                    raise
+            except RecordLimitError:
                 crowded += 1
         if added:
             plan["source"]["regions"] = _region_dicts(resolve_regions(
@@ -849,7 +855,8 @@ REDISTRIBUTION = {"license": "CC0-1.0", "source": "https://registry.opendata.aws
 
 def make_bundle(dataset, to, *, variants=(), svs=(), files=(), caps=None, unplaced_mates=False,
                 size_budget=64 * 1024 * 1024, header_policy="full", log=None):
-    """Make a bundle of test reads with the shared bundles' selection; return its manifest.
+    """Make a bundle of test reads, chosen as the shared bundles' are (without their split
+    alignments); return its manifest.
 
     See Dataset.make_bundle. log, if given, gets a line of progress for each BAM
     and each BAM skipped; without it, skips are warnings. Every requested target
