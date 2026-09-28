@@ -254,7 +254,7 @@ all four now use.
 
 The OpenVax libraries can take their test reads from one place: **openvax-v1**, chosen
 once here ([#56](https://github.com/iskandr/osteosarc/issues/56)). See
-[shared test data](test-data.md#shared-test-data-openvax-v1).
+[shared test data](test-data.md#shared-test-data).
 
 - **What it holds:** reads at every variant on the site plus other alleles the
   libraries test, reads joining the breakends of 7 RNA fusions and 8 DNA SVs, and
