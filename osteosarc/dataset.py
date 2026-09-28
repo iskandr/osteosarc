@@ -854,8 +854,14 @@ class Dataset:
         return next(iter(self.files._names.find("url", url)), None)
 
     def _downloaded_files(self):
-        """downloads()' rows for whole files."""
+        """downloads()' rows for whole files: not any snapshot's own metadata, nor pages of
+        the bucket's listing (URLs with a query, which no bucket object has)."""
         sources = {r["url"] for r in self.manifest["sources"].values()}
+        for path in (self.cache.workspace / "snapshots").glob("*.json"):
+            try:
+                sources.update(r["url"] for r in json.loads(path.read_text())["sources"].values())
+            except (OSError, ValueError, KeyError, TypeError, AttributeError):
+                pass  # snapshots() says which can't be read
         self.files  # first: building it reads the bucket header too, so that's read once
         base = self._download_header.get("download_base", BUCKET)
         receipts = {}
@@ -867,7 +873,7 @@ class Dataset:
                     receipts.setdefault(receipt.url, []).append(receipt)
         rows = []
         for url, candidates in sorted(receipts.items()):
-            if url in sources:
+            if url in sources or urlsplit(url).query:
                 continue
             file = self._url_file(url)
             if not (file or url.startswith(base)):

@@ -20,6 +20,7 @@ from datetime import date, timedelta
 from .cache import stable_id
 from .display import Text
 from .models import Collection
+from .views import plural
 
 #: Display order of lanes; unlisted lanes follow alphabetically within their category.
 LANE_ORDER = (
@@ -149,15 +150,25 @@ class Timeline(Collection):
         return sorted(seen, key=lambda lane: (categories.get(seen[lane], len(categories)),
                                               order.get(lane, len(order)), lane))
 
-    def listing(self):
-        """One line per event: dates, lane, label, and any corrections."""
-        width = max((len(e.lane) for e in self), default=0)
+    def listing(self, width=None):
+        """One line per event: dates, lane, label, and any corrections; a long label
+        wraps under itself, to fit the terminal."""
+        lanes = max((len(e.lane) for e in self), default=0)
+        width = width or shutil.get_terminal_size((120, 24)).columns
+        indent = " " * (23 + 1 + lanes + 2)
         lines = []
         for e in self:
             when = e.date + (f"..{e.end}" + ("+" if e.open_end else "") if e.end else "")
             label = e.label + (f" = {e.value}" if e.kind == "event" and e.value else "")
-            notes = f"  (corrections: {', '.join(e.corrections)})" if e.corrections else ""
-            lines.append(f"{when:<23} {e.lane:<{width}}  {label}{notes}".rstrip())
+            notes = f"(corrections: {', '.join(e.corrections)})" if e.corrections else ""
+            room = max(20, width - len(indent))
+            parts = textwrap.wrap(label, room, break_on_hyphens=False, break_long_words=False) or [""]
+            if notes:  # kept whole: on the label's last line if it fits, else a line of its own
+                if len(parts[-1]) + 2 + len(notes) <= room:
+                    parts[-1] = f"{parts[-1]}  {notes}".strip()
+                else:
+                    parts.append(notes)
+            lines.append((f"{when:<23} {e.lane:<{lanes}}  " + f"\n{indent}".join(parts)).rstrip())
         return Text("\n".join(lines))
 
     def render(self, *, width=None, since=None, until=None, everything=False, legend=True):
@@ -493,7 +504,8 @@ def events_from_pathology(document, *, marks=None, undated=None):
         kind = group["specimen"].split("_", 1)[1]
         result.append(_event("pathology", {k: group.get(k) for k in ("id", "title", "specimen", "ids")}, n,
                              date=day, lane="Pathology slides", category="Pathology", subcategory=kind,
-                             label=f"{group.get('title', group['specimen'])} ({len(group.get('ids', ()))} slides)",
+                             label=f"{group.get('title', group['specimen'])} "
+                                   f"({plural(len(group.get('ids', ())), 'slide')})",
                              links=tuple(group.get("ids", ())), corrections=corrections))
     return result
 

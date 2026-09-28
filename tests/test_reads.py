@@ -301,3 +301,10 @@ def test_mates_with_no_position_can_be_left_out(bam, tmp_path):
     for regions, count in [(around_every_mate, 21), ([Region("chr2", 10, 20, "GRCh38")], 0)]:
         subset = extract_reads(paired, regions, cache=cache, fetch_pairs=True, unplaced_mates=False)
         assert subset.receipt["records"] == count and "mates_command" not in subset.receipt
+
+
+def test_a_region_with_no_assembly_is_in_the_bams_own_build(bam, tmp_path):
+    subset = extract_reads(bam, [Region("chr1", 100, 160, None)], cache=tmp_path)
+    assert subset.receipt["records"] == 6 and subset.receipt["resolved_regions"][0]["assembly"] == "GRCh38"
+    with pytest.raises(CoordinateError):
+        Region("chr1", 100, 160, "")

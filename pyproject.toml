@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "osteosarc"
-version = "0.14.1"
+version = "0.14.2"
 description = "Reproducible access to the public osteosarc.com dataset"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -25,7 +25,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
 ]
-dependencies = ["beautifulsoup4>=4.12", "datacache>=1.9.1", "pysam>=0.22", "requests>=2.28"]
+dependencies = ["beautifulsoup4>=4.12", "datacache>=1.12.0", "pysam>=0.22", "requests>=2.28"]
 
 [project.urls]
 Documentation = "https://iskandr.github.io/osteosarc/"

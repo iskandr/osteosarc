@@ -5,6 +5,34 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.14.2 (2026-09-27)
+
+A tidier command line, from running every command and reading what it printed, and one
+place that decides where the OpenVax libraries' shared cache is.
+
+- **The shared cache is datacache's.** osteosarc finds its cache with
+  `datacache.get_cache_root("openvax", "OSTEOSARC_CACHE", "OPENVAX_DATA_CACHE")`, as the
+  other OpenVax libraries can, so test data they share is downloaded once. It needs
+  datacache 1.12.0, which no longer imports pandas.
+- **Regions in a BAM's own genome build.** A Region's assembly can be None, meaning
+  the build of the BAM it's read from, and `osteosarc reads FILE REGION` uses that
+  when `--assembly` is left out (a sample, whose BAMs may differ, still needs it).
+- `osteosarc test-data` on its own shows its actions and examples.
+- **Tables.**
+  - A cut cell ends with "…" instead of mid-word or mid-number.
+  - The line under the headers sits under its columns and stops at the terminal's
+    edge.
+  - Command-line lists leave out columns empty in every row.
+  - When even that is too wide, `osteosarc variants` leaves out its vaccines,
+    found_by and corrections columns, and says so.
+- **Wrapping.** A sample's notes and corrections wrap without splitting a word, and so
+  do the one-week timeline's entries, which follow `--width`. `osteosarc files` shows
+  each kind's two commonest formats, counts whole.
+- **`osteosarc downloads`** lists each file's size and key, then its whole path. It no
+  longer lists snapshots' metadata or pages of the bucket's listing.
+- `--min-mapq` and `--exclude-flags` say what they do; "1 record" and "1 slide" are
+  singular.
+
 ## 0.14.1 (2026-09-27)
 
 Downloads survive a passing server error ([#86](https://github.com/iskandr/osteosarc/issues/86)).

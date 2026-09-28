@@ -25,37 +25,70 @@ KIND_NAMES = {"alignment": "BAM/CRAM aligned reads", "reads": "FASTQ raw reads",
               "other": "logs, raw signal and the rest"}
 
 
-def table(rows, columns, *, width=None, limit=None, wrap=False, fixed=(), total=None):
-    """Fixed-width text table; long cells are truncated to fit the terminal.
+def table(rows, columns, *, width=None, limit=None, wrap=False, fixed=(), optional=(), drop_empty=False,
+          total=None):
+    """Fixed-width text table; long cells are cut, with an ellipsis, to fit the terminal.
 
-    Columns in fixed, such as file keys people copy, are never shortened. total
-    is the full row count when rows holds only the first few.
+    Columns in fixed, such as file keys people copy, are never shortened, and the
+    line under the headers stops at the terminal's edge. With drop_empty, columns
+    empty in every row shown are left out. Columns in optional are left out, the
+    last first, while the table is too wide even with every column at its
+    narrowest, with a line saying so. total is the full row count when rows holds
+    only the first few.
     """
     if limit is not None and (not isinstance(limit, int) or isinstance(limit, bool) or limit < 0):
         raise ValueError("limit must be a nonnegative integer")
     rows = list(rows)
     shown = rows if limit is None else rows[:limit]
-    cells = [[_text(row.get(c)) for c in columns] for row in shown]
-    widths = [max([len(c)] + [len(r[i]) for r in cells]) for i, c in enumerate(columns)]
     width = width or shutil.get_terminal_size((120, 24)).columns
+    text = {c: [_text(row.get(c)) for row in shown] for c in columns}
+    natural = {c: max([len(c)] + [len(t) for t in text[c]]) for c in columns}
+    columns = [c for i, c in enumerate(columns) if not drop_empty or i == 0 or any(text[c])]
+
+    def narrowest(columns):
+        return sum(natural[c] if i == 0 or c in fixed else min(12, natural[c]) for i, c in enumerate(columns)) \
+            + 2 * (len(columns) - 1)
+    dropped = []
+    for c in reversed(optional):
+        if c in columns and narrowest(columns) > width:
+            columns = [other for other in columns if other != c]
+            dropped.insert(0, c)
+    widths = [natural[c] for c in columns]
     # Shrink the widest columns to fit, but never the first (identifying) column.
     shrinkable = [i for i in range(1, len(widths)) if columns[i] not in fixed]
     while sum(widths) + 2 * (len(widths) - 1) > width and max((widths[i] for i in shrinkable), default=0) > 12:
         widest = max(shrinkable, key=widths.__getitem__)
         widths[widest] -= 1
+    rule, used = [], 0
+    for w in widths:  # under each column, as far as the terminal's edge
+        if used >= width:
+            break
+        rule.append("-" * min(w, width - used))
+        used += w + 2
     line = "  ".join
-    out = [line(c[:w].ljust(w) for c, w in zip(columns, widths)).rstrip(),
-           line("-" * w for w in widths)]
-    for row in cells:
-        parts = [textwrap.wrap(cell, width=w, break_on_hyphens=False) or [""] if wrap else [cell[:w]]
-                 for cell, w in zip(row, widths)]
-        for i in range(max(map(len, parts), default=0)):
-            out.append(line((part[i] if i < len(part) else "").ljust(w)
-                            for part, w in zip(parts, widths)).rstrip())
+    out = [line(_cut(c, w).ljust(w) for c, w in zip(columns, widths)).rstrip(), line(rule)]
+    for i in range(len(shown)):
+        cells = [text[c][i] for c in columns]
+        parts = [textwrap.wrap(cell, width=w, break_on_hyphens=False) or [""] if wrap else [_cut(cell, w)]
+                 for cell, w in zip(cells, widths)]
+        for j in range(max(map(len, parts), default=0)):
+            out.append(line((part[j] if j < len(part) else "").ljust(w) for part, w in zip(parts, widths)).rstrip())
     total = len(rows) if total is None else total
     if limit is not None and total > limit:
         out.append(f"... {total - limit:,} more")
+    if dropped:
+        out.append(f"(Too narrow for {' and '.join(dropped)}: widen the terminal, or see --json.)")
     return "\n".join(out)
+
+
+def prose(text, width=None):
+    """A paragraph wrapped to the terminal (at most 100 columns), later lines indented."""
+    width = min(width or shutil.get_terminal_size((100, 24)).columns, 100)
+    return textwrap.fill(text, width, subsequent_indent="  ", break_on_hyphens=False, break_long_words=False)
+
+
+def _cut(text, width):
+    return text if len(text) <= width else text[:width - 1] + "…"
 
 
 def _text(value):
@@ -209,17 +242,17 @@ def sample_files_view(sample, data, *, width=None, local=None):
         lines.append(f"BAMs, aligned reads ({len(bams)}"
                      + (f", {downloaded} downloaded" if downloaded else "") + "):")
         lines.append(table(bams, ("assay", "platform", "provider", "size", "local", "key"),
-                           width=width, fixed=("key",)))
+                           width=width, fixed=("key",), drop_empty=True))
     else:
         lines.append("BAMs: none")
     if sample.missing_bams:
-        lines.append("The site names BAMs the bucket doesn't have: " + "; ".join(sample.missing_bams))
+        lines.append(prose("The site names BAMs the bucket doesn't have: " + "; ".join(sample.missing_bams), width))
     folders = _fastq_folders(sample, data.files.select(sample=sample.id))
     lines.append("")
     if folders:
         lines.append(f"FASTQ folders, raw reads ({len(folders)}):")
         lines.append(table(folders, ("assay", "platform", "library", "provider", "files", "size", "folder"),
-                           width=width, fixed=("folder", "library")))
+                           width=width, fixed=("folder", "library"), drop_empty=True))
     else:
         lines.append("FASTQ folders: none")
     return "\n".join(lines), bams, folders
@@ -234,9 +267,9 @@ def sample_view(sample, data=None, *, width=None, python=False):
     if sample.providers:
         lines.append(f"Providers: {', '.join(sample.providers)}")
     if sample.notes:
-        lines.append(f"Note from the site: {sample.notes}")
+        lines.append(prose(f"Note from the site: {sample.notes}", width))
     for item in sample.disagreements:
-        lines.append(f"The {item['source']} source gives {item['field']} {item['value']}.")
+        lines.append(prose(f"The {item['source']} source gives {item['field']} {item['value']}.", width))
     if sample.corrections and data is not None:
         lines += corrected_lines(data, sample.corrections)
     if data is None:
@@ -293,7 +326,7 @@ def example_variant(data):
 def corrected_lines(data, ids):
     """Each correction's summary, wrapped, under its ID."""
     summaries = {c.id: c.summary for c in data.curation.corrections}  # no need to evaluate them
-    return [textwrap.fill(f"Corrected by {i}: {summaries.get(i, '')}", 100, subsequent_indent="  ")
+    return [prose(f"Corrected by {i}: {summaries.get(i, '')}")
             for i in ids]
 
 
@@ -330,7 +363,9 @@ def files_overview(data, *, width=None):
         tops[top] += 1
         top_sizes[top] += file.size or 0
     by_kind = [dict(kind=kind, files=f"{kinds[kind]:,}", size=size_text(sizes[kind]),
-                    formats=", ".join(f"{fmt} {n:,}" for fmt, n in formats[kind].most_common(3)),
+                    # The two commonest, whole: a count cut short would mislead.
+                    formats=", ".join([f"{fmt} {n:,}" for fmt, n in formats[kind].most_common(2)]
+                                      + (["…"] if len(formats[kind]) > 2 else [])),
                     what=KIND_NAMES.get(kind, "")) for kind in KINDS if kinds[kind]]
     folders = [dict(folder=top, files=f"{tops[top]:,}", size=size_text(top_sizes[top]))
                for top, _ in top_sizes.most_common(12)]
@@ -360,24 +395,30 @@ def files_view(files, data, *, limit=50, width=None, more="Use --limit N to show
                  provider=_text(f.values("provider")), size=size_text(f.size),
                  local="yes" if f.url in local else "", notes=_text(f.metadata.get("corrections")), key=f.key)
             for f in (files if limit is None else files[:limit])]
-    columns = [c for c in ("kind", "sample", "assay", "provider") if any(r[c] for r in rows) or c == "kind"]
+    columns = ["kind", "sample", "assay", "provider", "size", "local", "notes", "key"]
     if len({f.kind for f in files}) == 1:
         columns.remove("kind")
-    columns += ["size", "local", *(("notes",) if any(r["notes"] for r in rows) else ()), "key"]
     total = sum(f.size or 0 for f in files)
-    shown = table(rows, columns, width=width, limit=limit, total=len(files), fixed=("key",))
+    shown = table(rows, columns, width=width, limit=limit, total=len(files), fixed=("key",), drop_empty=True)
     return (f"{plural(len(files), 'file')} ({size_text(total) or '0 B'})\n{shown}"
             + (f"\n{more}" if limit is not None and len(files) > limit else ""))
 
 
-def downloads_view(rows, cache_root, *, width=None):
+def downloads_view(rows, cache_root):
+    """Downloaded files and extracted reads: each one's size and key (and regions),
+    and on the next line where it is, whole, to copy."""
     files = [r for r in rows if r["kind"] == "file"]
     reads = [r for r in rows if r["kind"] == "reads"]
+
+    def listing(rows, *labels):
+        sizes = [size_text(r["size"]) for r in rows]
+        pad = max(map(len, sizes), default=0)
+        return "\n".join(f"{size.rjust(pad)}  {'  '.join(r[label] for label in labels)}\n{' ' * (pad + 2)}{r['path']}"
+                         for size, r in zip(sizes, rows))
     out = []
     if files:
         out.append(f"Downloaded files ({len(files)}, {size_text(sum(r['size'] or 0 for r in files))}):")
-        out.append(table([dict(r, size=size_text(r["size"])) for r in files], ("key", "size", "path"),
-                         width=width, fixed=("key", "path")))
+        out.append(listing(files, "key"))
         out.append("Cached files are named by content. Put one in a folder under its own name with\n"
                    "osteosarc download KEY --to DIR (a read-only hard link, so no second copy).")
     else:
@@ -385,9 +426,8 @@ def downloads_view(rows, cache_root, *, width=None):
     out.append("")
     if reads:
         out.append(f"Extracted reads ({len(reads)}):")
-        out.append(table([dict(r, size=size_text(r["size"])) for r in reads], ("key", "regions", "size", "path"),
-                         width=width, fixed=("path", "regions")))
-        out.append("The same request reuses its extract; osteosarc reads prints the path.")
+        out.append(listing(reads, "key", "regions"))
+        out.append("The same request reuses its extract; osteosarc reads prints its path.")
     else:
         out.append("Extracted reads: none yet (osteosarc reads FILE REGION)")
     out.append(f"\nCache: {cache_root} (set OSTEOSARC_CACHE to use another).")
@@ -407,9 +447,10 @@ def variants_view(variants, *, width=None, limit=None):
             for v in variants]
     ready = sum(v.status == "ready" for v in variants)
     columns = ("id", *(("status",) if ready < len(variants) else ()), "allele", "protein", "vaccines",
-               "found_by", *(("corrections",) if any(r["corrections"] for r in rows) else ()))
+               "found_by", "corrections")
     return (f"{len(variants)} variants, {ready} with a ready allele\n"
-            + table(rows, columns, width=width, limit=limit, fixed=("id", "allele")))
+            + table(rows, columns, width=width, limit=limit, fixed=("id", "allele"), drop_empty=True,
+                    optional=("vaccines", "found_by", "corrections")))
 
 
 def variant_view(variant, data, *, width=None):
@@ -436,8 +477,8 @@ def variant_view(variant, data, *, width=None):
         lines += ["", f"Read counts published by the site ({len(rows)}):",
                   table(rows, ("sample", "alt/total", "VAF", "BAM"), width=width)]
     if variant.status == "ready":
-        lines += ["", "Reads around it: osteosarc reads BAM_KEY --variant "
-                      f"{variant.id} --padding 100   (BAM keys: osteosarc files --kind alignment)"]
+        lines += ["", f"Reads around it: osteosarc reads BAM_KEY --variant {variant.id} --padding 100",
+                  "  (BAM keys: osteosarc files --kind alignment, or a sample ID for all its BAMs)"]
     return "\n".join(lines)
 
 
@@ -466,7 +507,7 @@ def correction_view(row):
     lines = [f"{row['id']} ({row['status']}, {row['action']})", "", textwrap.fill(row["summary"], 88), ""]
     lines.append("Records it checks or changes:")
     for change in row["changes"]:
-        lines.append(f"  {change['source']}: {change['match']} ({change['records']} records, {change['state']})")
+        lines.append(f"  {change['source']}: {change['match']} ({plural(change['records'], 'record')}, {change['state']})")
     lines += ["", "Evidence:", *(f"  - {item}" for item in row["evidence"])]
     return "\n".join(lines)
 

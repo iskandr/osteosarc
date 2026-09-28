@@ -7,7 +7,7 @@ OpenVax tools use, so identical bytes are stored once:
     <root>/osteosarc/...                                 osteosarc's own records
 
 <root> is OSTEOSARC_CACHE (an isolated cache), else OPENVAX_DATA_CACHE, else
-the platform cache directory for "openvax" (as appdirs/datacache choose it).
+the platform cache directory for "openvax": datacache.get_cache_root decides.
 """
 
 from __future__ import annotations
@@ -20,7 +20,6 @@ import random
 import secrets
 import shutil
 import stat
-import sys
 import tempfile
 import time
 from contextlib import contextmanager
@@ -29,6 +28,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
+import datacache
 import requests
 
 from .errors import IntegrityError, OfflineError, OsteosarcError
@@ -239,12 +239,13 @@ def place(path, destination):
 
 
 def default_root():
-    """The shared OpenVax cache root, resolved exactly as vaxrank/datacache resolve it."""
-    if os.environ.get("OPENVAX_DATA_CACHE"):
-        return Path(os.environ["OPENVAX_DATA_CACHE"])
-    if sys.platform == "darwin":
-        return Path.home() / "Library" / "Caches" / "openvax"
-    return Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "openvax"
+    """The OpenVax libraries' shared cache, as datacache.get_cache_root gives it:
+    OPENVAX_DATA_CACHE when it's set (that folder itself), else the platform's
+    "openvax" cache folder (~/Library/Caches/openvax on macOS, ~/.cache/openvax on
+    Linux). Vaxrank, Isovar, Topiary and Varcode use the same folder, so published
+    test data is downloaded once for all of them. Cache checks OSTEOSARC_CACHE first.
+    """
+    return Path(datacache.get_cache_root("openvax", "OPENVAX_DATA_CACHE"))
 
 
 def object_name(sha256, filename):
@@ -311,7 +312,8 @@ class Cache:
     """
 
     def __init__(self, root=None, *, offline=False, timeout=600):
-        self.root = Path(root or os.environ.get("OSTEOSARC_CACHE") or default_root()).expanduser().resolve()
+        self.root = Path(root or datacache.get_cache_root("openvax", "OSTEOSARC_CACHE", "OPENVAX_DATA_CACHE")
+                         ).expanduser().resolve()
         self.objects = self.root / "objects" / "sha256"
         self.workspace = self.root / "osteosarc"
         self.offline = offline
@@ -447,7 +449,6 @@ class Cache:
                                                  (total is not None and total > max_bytes)):
                         raise IntegrityError(f"Download exceeds {max_bytes} bytes: {url}")
 
-                import datacache  # it imports pandas: only when a file is fetched
                 try:
                     # datacache tries a download again after a passing failure itself.
                     datacache.fetch_file(url, destination=path, decompress=False,

@@ -73,7 +73,7 @@ def resolve_regions(regions, header):
     order = {name: i for i, name in enumerate(lengths)}
     resolved = []
     for region in regions:
-        if normalize_assembly(region.assembly) != observed:
+        if region.assembly is not None and normalize_assembly(region.assembly) != observed:
             raise CoordinateError(f"Requested {region.assembly}; header establishes {observed}")
         canonical = region.contig.removeprefix("chr")
         aliases = {"M", "MT", "chrM", "chrMT"} if canonical in ("M", "MT") else {canonical, "chr" + canonical}
