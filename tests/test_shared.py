@@ -197,8 +197,10 @@ def test_fixtures_kept_in_json_are_read_in_each_layout(tmp_path):
             _local_sam(dict(json="f.json", pointer=pointer), tmp_path)
 
 
-def _dync1h1_bam(path):
-    """A local BAM at DYNC1H1-chr14-101980529 (G>A): 3 alt and 2 ref reads, and reference context."""
+def _dync1h1_bam(path, split=False):
+    """A local BAM at DYNC1H1-chr14-101980529 (G>A): 3 alt and 2 ref reads, and reference context.
+    With split, alt1 is split: part of it aligns on chr2 (a supplementary record, its SA tag);
+    alt2's SA tag names only alignments to pass over."""
     position = 101980529
     start = position - 1 - 20
     reference = {i: "ACGT"[(i * 7) % 4] for i in range(start - 200, start + 260)}
@@ -206,6 +208,18 @@ def _dync1h1_bam(path):
     header = dict(HD={"VN": "1.6", "SO": "coordinate"},
                   SQ=[dict(SN="chr1", LN=248956422), dict(SN="chr2", LN=242193529), dict(SN="chr14", LN=107043718)])
     with pysam.AlignmentFile(str(path), "wb", header=header) as out:
+        if split:
+            part = pysam.AlignedSegment(out.header)
+            part.query_name, part.flag, part.reference_id, part.reference_start = "alt1", 2048, 1, 5000
+            part.cigarstring, part.query_sequence = "40M", "ACGT" * 10
+            part.query_qualities, part.mapping_quality = pysam.qualitystring_to_array("I" * 40), 60
+            part.set_tag("SA", f"chr14,{start + 1},+,40M,60,0;")
+            out.write(part)
+            other = pysam.AlignedSegment(out.header)  # another read there, in no kept template
+            other.query_name, other.flag, other.reference_id, other.reference_start = "other", 0, 1, 5000
+            other.cigarstring, other.query_sequence = "40M", "ACGT" * 10
+            other.query_qualities, other.mapping_quality = pysam.qualitystring_to_array("I" * 40), 60
+            out.write(other)
         for name, base in [("alt1", "A"), ("alt2", "A"), ("alt3", "A"), ("ref1", "G"), ("ref2", "G")]:
             read = pysam.AlignedSegment(out.header)
             sequence = "".join(base if i == position - 1 else reference[i] for i in range(start, start + 40))
@@ -213,6 +227,10 @@ def _dync1h1_bam(path):
             read.cigarstring, read.query_sequence = "40M", sequence
             read.query_qualities = pysam.qualitystring_to_array("I" * 40)
             read.mapping_quality = 60
+            if name == "alt1" and split:
+                read.set_tag("SA", "chr2,5001,+,40M,60,0;")
+            if name == "alt2" and split:  # mapping quality 0, a contig the BAM lacks, malformed
+                read.set_tag("SA", "chr1,9001,+,40M,0,0;chrUn_x,10,+,40M,60,0;chr1,0,+,40M,60,0;")
             if name == "alt3":  # its mate didn't align and has no position, as STAR writes it
                 read.flag, read.next_reference_id, read.next_reference_start = 1 | 8 | 64, -1, -1
             out.write(read)
@@ -494,3 +512,72 @@ def test_selecting_from_windows_matches_selecting_from_every_record(tmp_path):
     assert members["source.v"]["observed"]["alt"] > DEFAULT_CAPS["alt"]
     assert members["source.sv"]["observed"]["joined"] > 25
     assert len(_source_index(path, plan, windows).records) < len(everything.records) / 2
+
+
+def test_kept_templates_keep_their_split_alignments_when_the_spec_asks(dataset, tmp_path, monkeypatch):
+    import shutil
+
+    import osteosarc.shared as shared
+    from osteosarc import extract_reads, generate_bundle, inspect_alignment
+    from osteosarc.records import record_multiset
+    from osteosarc.shared import build_shared_recipe, bundle_spec
+    if shutil.which("samtools") is None:
+        pytest.skip("samtools required")
+    local = tmp_path / "rna.bam"
+    monkeypatch.setattr(shared, "reference_sequence", _dync1h1_bam(local, split=True))
+    monkeypatch.setattr(dataset, "inspect_alignment", lambda file, **kw: inspect_alignment(str(local), cache=dataset.cache))
+    monkeypatch.setattr(dataset, "extract_reads", lambda file, regions, **kw: extract_reads(
+        str(local), regions, cache=dataset.cache, fetch_pairs=kw.get("fetch_pairs", False),
+        unplaced_mates=kw.get("unplaced_mates", True), max_records=kw.get("max_records")))
+    key = "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"
+    spec = bundle_spec(dataset, "split", variants=["DYNC1H1-chr14-101980529"], files=[key])
+    plain = build_shared_recipe(spec, dataset, required={}, log=lambda text: None)
+    spec["selection"]["supplementary"] = True
+    logged = []
+    split = build_shared_recipe(spec, dataset, required={}, log=logged.append)
+    (source,) = split["sources"].values()
+    assert split["selection"]["supplementary"] and "supplementary" not in plain["selection"]
+    # The region reaches the alignment's first base, which is enough to read it, so a rebuild reads it too.
+    assert [r for r in source["regions"] if r["contig"] != "chr14"] == [
+        dict(contig="chr2", start=5000, end=5001, assembly="GRCh38")]
+    assert ("with split alignments in 1 more region; passed over 3 split alignments (1 malformed, "
+            "1 on contigs this BAM lacks, 1 with mapping quality 0)") in "\n".join(logged)
+    (before,), (after,) = plain["members"].values(), split["members"].values()
+    assert len(after["policy"]["records"]) == len(before["policy"]["records"]) + 1
+    folder = generate_bundle(split, tmp_path / "bundle", dataset=dataset)
+    assert sum(record_multiset(tmp_path / "bundle" / folder["sources"][next(iter(folder["sources"]))]["bam"]).values()) \
+        == sum(after["policy"]["records"].values())
+    # A split alignment in a pileup is left out: reading it would cost more than it's worth.
+    monkeypatch.setattr(shared, "SPLIT_DEPTH", 1)
+    logged.clear()
+    crowded = build_shared_recipe(spec, dataset, required={}, log=logged.append)
+    assert crowded["sources"] == plain["sources"] and crowded["members"] == plain["members"]
+    assert "left out 1 region of split alignments in a pileup" in "\n".join(logged)
+
+
+def test_sv_targets_keep_their_retained_sides_and_inserted_sequence():
+    from osteosarc.shared import BUNDLES, read_json, structural_targets
+    targets, _, _ = structural_targets(read_json(BUNDLES / "openvax-v2.spec.json"))
+    dlg5 = targets["DLG5-deletion"]
+    assert [(e["position"], e["retained_side"]) for e in dlg5["breakends"]] == [(77850914, "left"), (77930460, "right")]
+    assert dlg5["inserted_sequence"] == "CTTCTCTGAAATGATGCTTCTCCA"
+    # From the spec, the SV panel and the SV candidates alike.
+    for name in ("ATP5MG--KMT2A", "SV0055", "KLF15--PPIAP72"):
+        assert all(e["retained_side"] in ("left", "right") for e in targets[name]["breakends"])
+
+
+def test_a_source_keeps_mates_with_no_position_only_where_a_librarys_records_may_need_them():
+    from osteosarc.shared import _needs_unplaced
+    placed = "r1\t0\tchr1\t100\t60\t10M\t*\t0\t0\tACGTACGTAC\t*"
+    lost = "r1\t69\t*\t0\t0\t*\t=\t100\t0\tACGTACGTAC\t*"
+    assert not _needs_unplaced(dict(sam=[placed]))
+    assert _needs_unplaced(dict(sam=[placed, lost]))
+    assert _needs_unplaced(dict(names=["r1"]))  # a named read's mate could be anywhere
+    assert _needs_unplaced(dict(records={"a" * 64: 1}))  # unless its bundle said otherwise
+    assert not _needs_unplaced(dict(records={"a" * 64: 1}, unplaced_mates=False))
+
+
+def test_a_sam_line_that_covers_no_reference_bases_still_has_a_one_base_span():
+    assert sam_span("r\t0\tchr1\t100\t60\t40S\t*\t0\t0\t" + "A" * 40 + "\t*") == ("chr1", 99, 100)
+    assert sam_span("r\t0\tchr1\t100\t60\t*\t*\t0\t0\t*\t*") == ("chr1", 99, 100)
+    assert sam_span("r\t0\tchr1\t100\t60\t5S10M2D3M\t*\t0\t0\t" + "A" * 18 + "\t*") == ("chr1", 99, 114)

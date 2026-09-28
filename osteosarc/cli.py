@@ -28,7 +28,7 @@ COMMANDS = (
         ("download FILE", "A whole file (--to DIR puts it, and its index, in DIR)"),
         ("downloads", "What's already on this computer, and where"))),
     ("Test data for libraries", (
-        ("test-data ...", "Bundles of test reads: make your own, or use the shared openvax-v1"),)),
+        ("test-data ...", "Bundles of test reads: make your own, or use the shared openvax-v2"),)),
     ("Snapshots of the website's metadata", (
         ("sync", "Download the current metadata (about 57 MB); commands use the newest"),
         ("snapshots", "Saved snapshots, by download date"),
@@ -193,10 +193,10 @@ def parser():
     test_data = command("test-data", data=False, epilog="examples:\n"
                         "  osteosarc test-data make tests/data/dync1h1 T0_tumor --assay rna-seq "
                         "--variant DYNC1H1-chr14-101980529\n"
-                        "  osteosarc test-data list openvax-v1\n"
-                        "  osteosarc test-data export openvax-v1 tests/data --member "
+                        "  osteosarc test-data list openvax-v2\n"
+                        "  osteosarc test-data export openvax-v2 tests/data --member "
                         "IPISRC044_tumor_T2_ucla.redux.DYNC1H1-chr14-101980529\n"
-                        "  osteosarc test-data check openvax-v1 fixtures.json")
+                        "  osteosarc test-data check openvax-v2 fixtures.json")
     actions = test_data.add_subparsers(dest="test_data_command", metavar="ACTION")
     make = actions.add_parser(
         "make", parents=[snapshot], formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -235,7 +235,7 @@ def parser():
                        ("verify", "Check a bundle's files, records and indexes"),
                        ("export", "Write members into a folder as indexed BAMs (or SAM), named after them")):
         action = actions.add_parser(name, help=what)
-        action.add_argument("bundle", help="A published bundle such as openvax-v1, or a bundle folder's path")
+        action.add_argument("bundle", help="A published bundle such as openvax-v2, or a bundle folder's path")
         if name == "export":
             action.add_argument("output", help="Folder to write the members into; it may already exist")
             action.add_argument("--member", action="append", help="Only these members; repeat for several")
@@ -247,7 +247,7 @@ def parser():
                                 help="Every member's records and reasons as JSON" if name == "list"
                                 else "The bundle's manifest as JSON")
     check = actions.add_parser("check", help="Compare your library's test files with a bundle's members")
-    check.add_argument("bundle", help="A published bundle such as openvax-v1, or a bundle folder's path")
+    check.add_argument("bundle", help="A published bundle such as openvax-v2, or a bundle folder's path")
     check.add_argument("fixtures", help='JSON mapping member names to your files: a BAM, SAM or SAM.gz path, '
                                         'or {"json": path, "pointer": "/path/to/lines"}; paths are relative '
                                         "to this JSON file's folder")

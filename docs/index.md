@@ -101,7 +101,7 @@ checksums, and a cached file that no longer matches it is an error.
 | Find a sample's files, and download them | [Samples and files](samples.md) |
 | Get alleles, read counts and vaccine peptides | [Variants and vaccines](variants.md) |
 | Fetch reads by variant or region | [Reads](reads.md) |
-| Make a bundle of test reads, or use the shared openvax-v1 | [Test data](test-data.md) |
+| Make a bundle of test reads, or use the shared openvax-v2 | [Test data](test-data.md) |
 | Chart treatments, scans and MRD | [Timeline](timeline.md) |
 | Look through 637 candidate structural variants | [SV candidates](sv-candidates.md) |
 | Use every command | [Command line](command-line.md) |

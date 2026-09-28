@@ -35,16 +35,24 @@ import gzip
 import hashlib
 import json
 import os
+import re
 import warnings
 from collections import Counter, defaultdict
 from pathlib import Path
 
 from .alleles import CLASSES, allele_window, read_allele, template_allele
-from .errors import CoordinateError, IntegrityError, OfflineError, OsteosarcError, SchemaError
+from .errors import (
+    CoordinateError,
+    IntegrityError,
+    OfflineError,
+    OsteosarcError,
+    RecordLimitError,
+    SchemaError,
+)
 from .models import Region
 from .reads import merge_spans, resolve_regions
-from .records import read_records, read_template
-from .reference import reference_sequence
+from .records import cigar_length, read_records, read_template, split_alignments
+from .reference import MITOCHONDRIA, reference_sequence
 from .views import plural
 
 DEFAULT_CAPS = {"alt": 20, "ref": 10, "other": 5, "uncallable": 2}
@@ -218,15 +226,8 @@ def sam_span(line):
     contig, position, cigar = fields[2], int(fields[3]), fields[5]
     if contig == "*" or position == 0:
         return None
-    length, number = 0, ""
-    for char in cigar:
-        if char.isdigit():
-            number += char
-            continue
-        if char in "MDN=X":
-            length += int(number)
-        number = ""
-    return contig, position - 1, position - 1 + max(1, length)
+    # A record that covers no reference bases (all clipped, say) still counts one, as in samtools.
+    return contig, position - 1, position - 1 + max(1, cigar_length(cigar))
 
 
 def _context_window(contig, position, ref, alt, assembly, *, cache, reference_length=None):
@@ -308,7 +309,8 @@ def structural_targets(spec):
         else:
             base, reference = entry, dict(source="library", note=entry.get("reason", ""))
         reference["used_by"] = entry.get("used_by", [])
-        ends = [dict(contig=e["contig"], position=e["position"], orientation=e.get("orientation"))
+        ends = [dict(contig=e["contig"], position=e["position"], orientation=e.get("orientation"),
+                     **({"retained_side": e["retained_side"]} if e.get("retained_side") else {}))
                 for e in base.get("breakends", ())]
         if base.get("kind") == "unresolved" or len(ends) < 2:
             targets[name] = dict(kind="unresolved", label=entry["label"], reference=reference,
@@ -316,7 +318,9 @@ def structural_targets(spec):
                                                                "select reads by")
             continue
         targets[name] = dict(kind="sv", assembly=base.get("assembly", "GRCh38"), coordinates="zero-based-interbase",
-                             breakends=ends, reference=reference, label=entry["label"])
+                             breakends=ends, reference=reference, label=entry["label"],
+                             **({"inserted_sequence": base["inserted_sequence"]} if base.get("inserted_sequence")
+                                else {}))
         breakends[name] = ends
     return targets, breakends, observed_in
 
@@ -379,7 +383,8 @@ def select_breakend_templates(templates, breakends, *, pad=1000, cap=50):
 def bundle_fixtures(bundle):
     """A bundle's library fixtures as required subsets pinned by checksum, so the
     next bundle keeps exactly their records once libraries no longer keep their
-    own copies: {name: dict(consumer, source, records, regions, description)}.
+    own copies: {name: dict(consumer, source, records, regions, description,
+    unplaced_mates)}, where unplaced_mates says whether any record has no position.
 
     Each fixture is planned from the regions its target records; bundles built
     before targets recorded them (openvax-v1) use the spans of their records.
@@ -388,7 +393,7 @@ def bundle_fixtures(bundle):
     bundle = Path(bundle)
     manifest = verify_bundle(bundle)
     recipe = read_json(bundle / "recipe.json")
-    subsets, unplanned = {}, defaultdict(list)
+    subsets, by_source = {}, defaultdict(list)
     for name, member in sorted(recipe["members"].items()):
         target = recipe["targets"][member["target"]]
         if target["kind"] != "fixture":
@@ -401,15 +406,29 @@ def bundle_fixtures(bundle):
                              description=target.get("description", name))
         if "regions" in target:
             subsets[name]["regions"] = target["regions"]
-        else:
-            unplanned[member["source"]].append(name)
-    for sid, names in unplanned.items():
+        by_source[member["source"]].append(name)
+    for sid, names in by_source.items():
         wanted = {key for name in names for key in subsets[name]["records"]}
-        spans = {r.digest: (r.read.reference_name, r.read.reference_start, r.read.reference_end)
-                 for r in _source_records(bundle, manifest, sid) if r.digest in wanted and not r.read.is_unmapped}
+        spans, unplaced = {}, set()
+        for r in _source_records(bundle, manifest, sid):
+            if r.digest in wanted:
+                if r.read.reference_id < 0 or r.read.reference_start < 0:
+                    unplaced.add(r.digest)
+                elif not r.read.is_unmapped:
+                    spans[r.digest] = (r.read.reference_name, r.read.reference_start, r.read.reference_end)
         for name in names:
-            subsets[name]["regions"] = merge_spans(spans[key] for key in subsets[name]["records"] if key in spans)
+            subsets[name]["unplaced_mates"] = any(key in unplaced for key in subsets[name]["records"])
+            if "regions" not in subsets[name]:
+                subsets[name]["regions"] = merge_spans(spans[key] for key in subsets[name]["records"] if key in spans)
     return subsets
+
+
+def _needs_unplaced(subset):
+    """Whether a library's required records may include mates with no position: pinned
+    records unless their bundle said none do, SAM lines with no position, and named
+    reads, whose mates could be anywhere."""
+    return bool(subset.get("unplaced_mates", "records" in subset) or subset.get("names")
+                or any(sam_span(line) is None for line in subset.get("sam", ())))
 
 
 def merge_required(carried, paths):
@@ -464,9 +483,42 @@ def _source_entry(dataset, file, header, regions, label, unplaced_mates):
                 library=file.resolved("library"), product=file.key, label=label,
                 acquisition=dict(fetch_pairs=True, timeout=EXTRACTION_TIMEOUT,
                                  **({} if unplaced_mates else {"unplaced_mates": False})), snapshot_id=dataset.id,
-                regions=[dict(contig=r.contig, start=r.start, end=r.end, assembly=r.assembly,
-                              **({"reference_length": r.reference_length} if r.reference_length else {}))
-                         for r in regions])
+                regions=_region_dicts(regions))
+
+
+def _region_dicts(regions):
+    return [dict(contig=r.contig, start=r.start, end=r.end, assembly=r.assembly,
+                 **({"reference_length": r.reference_length} if r.reference_length else {})) for r in regions]
+
+
+SPLIT_REGIONS = 100  # the most places a source's kept templates may send it for their split alignments
+SPLIT_DEPTH = 10_000  # the most records at one of those places; more is a pileup, too costly to read
+
+
+def _split_alignments(index, members, regions, lengths):
+    """Where the kept templates' other alignments lie (their records' SA tags), as
+    one-base spans (contig, start, start + 1) at each alignment's start, which is
+    enough to fetch it, outside the source's regions; and a count of the SA entries
+    passed over: malformed ones, those with mapping quality 0, and those on contigs
+    the BAM doesn't have or a region can't name."""
+    from .reads import overlap_test
+    kept = {digest for member in members.values() for digest in member["policy"]["records"]}
+    inside = overlap_test((r["contig"], r["start"], r["end"]) for r in regions)
+    spans, skipped = [], Counter()
+    for record in index.records:
+        if record.digest not in kept:
+            continue
+        entries, malformed = split_alignments(record.read)
+        skipped["malformed"] += len(malformed)
+        for entry in entries:
+            contig, start = entry["contig"], entry["start"]
+            if entry["mapq"] == 0:
+                skipped["with mapping quality 0"] += 1
+            elif start >= lengths.get(contig, 0) or re.search(r"[\s:]", contig):
+                skipped["on contigs this BAM lacks"] += 1
+            elif not inside(contig, start, start + 1):
+                spans.append((contig, start, start + 1))
+    return merge_spans(spans), +skipped
 
 
 def _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, everywhere, sv_everywhere, pad,
@@ -477,11 +529,11 @@ def _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, e
     header = dataset.inspect_alignment(file).header
     assembly = assembly_from_header(header)
     lengths = {row["SN"]: row["LN"] for row in header.get("SQ", [])}
-    mito = {lengths[c] for c in ("chrM", "MT", "M", "chrMT") if c in lengths}
+    mito = {lengths[c] for c in MITOCHONDRIA if c in lengths}
 
     def region(contig, start, end, reference_length=None):
         # GRCh37 mitochondria come in two lengths; say which this source has.
-        if contig in ("chrM", "MT", "M", "chrMT") and reference_length is None:
+        if contig in MITOCHONDRIA and reference_length is None:
             reference_length = next(iter(mito), None)
         return Region(contig, start, end, assembly, reference_length)
     spans = [span for s in mine.values() for span in required_spans(s)]
@@ -512,9 +564,9 @@ def _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, e
         return "none of the targets applies to it"
     label = dataset.short_name(file)  # names members as osteosarc reads --to names files
     return dict(file=file, label=label, mine=mine, covered=covered, sv_covered=sv_covered, pad=pad,
-                # A library's pinned records can include mates with no position: those sources keep them.
+                # A source keeps mates with no position where a library's records may need them.
                 source=_source_entry(dataset, file, header, resolve_regions(wanted, header), label,
-                                     unplaced_mates=unplaced_mates or bool(mine)),
+                                     unplaced_mates=unplaced_mates or any(map(_needs_unplaced, mine.values()))),
                 # Each target's window and breakends, in this source's contig names.
                 variant_regions={n: resolve_regions([r], header)[0] for n, r in variant_regions.items()},
                 breakend_regions={n: [resolve_regions([r], header)[0] for r in rs]
@@ -645,10 +697,12 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, req
     observed = ({url for found in observed_in.values() for url in found}
                 if spec.get("sources", {}).get("observed", True) else set())
     urls = sorted(everywhere | sv_everywhere | {s["source"] for s in subsets.values()} | observed)
+    split = selection.get("supplementary", False)
     recipe = dict(schema_version=1, id=spec["id"], kind="shared",
                   snapshot=dict(name=dataset.name, id=dataset.id),
                   selection=dict(classifier="osteosarc.alleles v1", caps=caps, low_quality_alt=low_quality_alt,
-                                 structural=structural, order="SHA-256 of read group, tab, read name"),
+                                 structural=structural, order="SHA-256 of read group, tab, read name",
+                                 **({"supplementary": True} if split else {})),
                   aliases=spec["targets"].get("renamed", {}), targets=targets, sources={}, members={},
                   redistribution=spec.get("redistribution", {"license": "unresolved"}))
     plans = []
@@ -680,22 +734,52 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, req
     for name in subsets:
         _add_member(names, name, None)
 
-    def extract(plan):
+    def select(plan):
+        """A source's members: read its regions, and select. With supplementary, the
+        kept templates' alignments elsewhere (SA tags) join the regions, unless in a
+        pileup, and the source is read and selected again: the same templates, now with
+        those records too."""
         subset = dataset.extract_reads(plan["file"], [Region(**r) for r in plan["source"]["regions"]],
                                        **plan["source"]["acquisition"])
-        return plan, subset
+        index = _source_index(subset.path, plan, windows)
+        selected = _select_source(plan, index, windows, targets, caps, low_quality_alt, structural["cap"])
+        header = dataset.inspect_alignment(plan["file"]).header
+        lengths = {row["SN"]: row["LN"] for row in header.get("SQ", [])}
+        elsewhere, skipped = (_split_alignments(index, selected[0], plan["source"]["regions"], lengths)
+                              if split else ([], Counter()))
+        if len(elsewhere) > SPLIT_REGIONS:
+            raise IntegrityError(f"{plan['file'].key}: the kept templates' split alignments lie in "
+                                 f"{len(elsewhere)} more regions, over the limit of {SPLIT_REGIONS}")
+        assembly = plan["source"]["assembly"]
+        added, crowded = [], 0
+        for contig, start, end in elsewhere:
+            region = Region(contig, start, end, assembly, lengths[contig] if contig in MITOCHONDRIA else None)
+            try:  # a region in a pileup (a repeat that draws millions of reads) costs more than it's worth
+                dataset.extract_reads(plan["file"], [region], max_records=SPLIT_DEPTH)
+                added.append(region)
+            except RecordLimitError:
+                crowded += 1
+        if added:
+            plan["source"]["regions"] = _region_dicts(resolve_regions(
+                [Region(**r) for r in plan["source"]["regions"]] + added, header))
+            subset = dataset.extract_reads(plan["file"], [Region(**r) for r in plan["source"]["regions"]],
+                                           **plan["source"]["acquisition"])
+            index = _source_index(subset.path, plan, windows)
+            selected = _select_source(plan, index, windows, targets, caps, low_quality_alt, structural["cap"])
+        return plan, subset, added, crowded, skipped, selected
 
     problems, results = [], {}
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        for future in as_completed([pool.submit(extract, plan) for plan in plans]):
-            plan, subset = future.result()
-            index = _source_index(subset.path, plan, windows)
-            members, fixtures, missing = _select_source(plan, index, windows, targets, caps, low_quality_alt,
-                                                        structural["cap"])
+        for future in as_completed([pool.submit(select, plan) for plan in plans]):
+            plan, subset, added, crowded, skipped, (members, fixtures, missing) = future.result()
             results[plan["label"]] = (plan, members, fixtures)
             problems += missing
             log(f"{plan['file'].key}: read {plural(subset.receipt['records'], 'record')}, "
-                f"kept {plural(len(members) + len(fixtures), 'member')}")
+                f"kept {plural(len(members) + len(fixtures), 'member')}"
+                + (f", with split alignments in {plural(len(added), 'more region')}" if added else "")
+                + (f"; left out {plural(crowded, 'region')} of split alignments in a pileup" if crowded else "")
+                + (f"; passed over {plural(sum(skipped.values()), 'split alignment')} ("
+                   + ", ".join(f"{n} {why}" for why, n in sorted(skipped.items())) + ")" if skipped else ""))
     if problems:
         # Every source was read (and its extraction cached), so a rerun after fixing these is quick.
         raise IntegrityError(f"{len(problems)} required fixtures couldn't be matched:\n" + "\n".join(problems))
@@ -757,7 +841,7 @@ BUNDLES = Path(__file__).with_name("data") / "bundles"
 
 
 def published(name):
-    """Where a published bundle (such as openvax-v1) is, and its checksums."""
+    """Where a published bundle (such as openvax-v2) is, and its checksums."""
     path = BUNDLES / f"{name}.release.json"
     if not path.is_file():
         known = sorted(p.name.removesuffix(".release.json") for p in BUNDLES.glob("*.release.json"))
@@ -771,7 +855,8 @@ REDISTRIBUTION = {"license": "CC0-1.0", "source": "https://registry.opendata.aws
 
 def make_bundle(dataset, to, *, variants=(), svs=(), files=(), caps=None, unplaced_mates=False,
                 size_budget=64 * 1024 * 1024, header_policy="full", log=None):
-    """Make a bundle of test reads with openvax-v1's selection; return its manifest.
+    """Make a bundle of test reads, chosen as the shared bundles' are (without their split
+    alignments); return its manifest.
 
     See Dataset.make_bundle. log, if given, gets a line of progress for each BAM
     and each BAM skipped; without it, skips are warnings. Every requested target
@@ -885,13 +970,13 @@ def _sv_entry(sv, candidates):
 def bundle_file(bundle, member, *, format="bam", cache=None, offline=False):
     """One member of a bundle as a local file, for a test to read.
 
-    bundle is a published bundle's name (such as openvax-v1, downloaded the
+    bundle is a published bundle's name (such as openvax-v2, downloaded the
     first time) or a bundle folder. The member comes back as an indexed BAM (or
     format="sam" or "sam.gz") of exactly its records, exported into the cache
     with the other members from its source BAM, made read-only, and reused
     afterward, offline.
 
-        bam = osteosarc.bundle_file("openvax-v1", "topiary/osteosarc/bulk_star_t0.sam.gz")
+        bam = osteosarc.bundle_file("openvax-v2", "topiary/osteosarc/bulk_star_t0.sam.gz")
     """
     import difflib
     import tempfile

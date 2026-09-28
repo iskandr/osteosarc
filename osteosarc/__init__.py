@@ -9,7 +9,7 @@ Test data:
 
     data.extract_reads(key, variants=[...], to="tests/data")      # a quick BAM of the reads there
     data.make_bundle("tests/data/mine", variants=[...], files=[...])  # a bundle anyone can rebuild
-    osteosarc.bundle_file("openvax-v1", member)                   # one member, as a local BAM
+    osteosarc.bundle_file("openvax-v2", member)                   # one member, as a local BAM
 
 Importing performs no network I/O.
 """
@@ -35,6 +35,7 @@ from .errors import (
     NoSnapshotsError,
     OfflineError,
     OsteosarcError,
+    RecordLimitError,
     SchemaError,
 )
 from .fixtures import load_panel, validate_recipe
@@ -55,7 +56,7 @@ from .shared import bundle_file, check_fixtures, fetch_bundle
 from .sv_candidates import load_sv_candidates
 from .timeline import Event, Timeline
 
-__version__ = "0.14.3"
+__version__ = "0.14.4"
 
 # The public API. A few other helpers are importable from here because the OpenVax
 # libraries use them (digest, parse_variants, inspect_alignment, ...); everything
@@ -73,5 +74,5 @@ __all__ = [
     # Corrections
     "CORRECTIONS", "Change", "Correction", "CurationWarning", "glob",
     # Errors
-    "OsteosarcError", "CoordinateError", "IntegrityError", "NoSnapshotsError", "OfflineError", "SchemaError",
+    "OsteosarcError", "CoordinateError", "IntegrityError", "NoSnapshotsError", "OfflineError", "RecordLimitError", "SchemaError",
 ]

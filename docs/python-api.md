@@ -75,18 +75,18 @@ see [Reads](reads.md).
 | `bundle_file("dir", member)` | One member as a local indexed BAM (or SAM), exported once into the cache and reused offline |
 | `list_bundle("dir")` | Each member, with its records and why they were kept |
 | `export_bundle("dir", "tests/data", members=[...])` | Write members into a folder as indexed BAMs (or SAM), named after them |
-| `check_fixtures("openvax-v1", {"member": "file.bam"}, root="tests/data")` | Compare your own files with a bundle's members; returns those that differ |
+| `check_fixtures("openvax-v2", {"member": "file.bam"}, root="tests/data")` | Compare your own files with a bundle's members; returns those that differ |
 | `verify_bundle("dir")` | Check every file, record and index |
-| `fetch_bundle("openvax-v1")` | Download a published bundle once, and return its folder (`offline=True` never downloads) |
+| `fetch_bundle("openvax-v2")` | Download a published bundle once, and return its folder (`offline=True` never downloads) |
 | `generate_bundle(recipe, "dir", dataset=data)` | Make a bundle from a [recipe](test-data.md#recipes) |
 | `validate_recipe(recipe)` | Check a recipe before fetching anything |
 | `load_panel("vaccine-loci-v1")`, `load_sv_candidates()` | Shipped lists of targets, and the [SV candidates](sv-candidates.md) |
 
 bundle_file, list_bundle, export_bundle, check_fixtures and verify_bundle take a
-bundle's folder or the name of a published bundle, such as openvax-v1, the reads the
+bundle's folder or the name of a published bundle, such as openvax-v2, the reads the
 OpenVax libraries share; fetch_bundle takes a name. In make_bundle, files can also be
 samples, by ID or as data.samples[...].
-`osteosarc.shared.published("openvax-v1")` gives a published bundle's release
+`osteosarc.shared.published("openvax-v2")` gives a published bundle's release
 record, with the manifest checksum to record alongside your results. See
 [Test data](test-data.md).
 
@@ -107,6 +107,8 @@ Osteosarc's errors all derive from OsteosarcError:
 
 - **OfflineError:** something isn't downloaded and the snapshot is offline.
 - **IntegrityError:** a checksum or a file's identity doesn't match.
+- **RecordLimitError:** reading some regions found more records than `max_records`
+  allows (an IntegrityError).
 - **CoordinateError:** a region or variant can't be used, for example on another genome build.
 - **SchemaError:** a source or recipe isn't in the expected shape.
 - **NoSnapshotsError:** there's no snapshot yet; run `Dataset.sync()`.

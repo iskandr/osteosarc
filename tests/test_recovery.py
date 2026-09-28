@@ -78,7 +78,8 @@ def test_cap_is_distinct_from_empty_and_cache_reuse_needs_no_commands(split_bam,
 
 
 def test_record_limit_fails_instead_of_publishing_partial_success(split_bam, tmp_path):
-    with pytest.raises(IntegrityError, match="limit"):
+    from osteosarc import RecordLimitError
+    with pytest.raises(RecordLimitError, match="limit"):
         extract_reads(split_bam, [Region("chr1", 100, 150, "GRCh38")], cache=tmp_path / "cache",
                       recovery=RecoveryPolicy(max_records=2))
     assert not list((Cache(tmp_path / "cache").workspace / "derived").glob("*/reads.bam"))
@@ -125,7 +126,8 @@ def test_later_lead_reuses_candidate_in_visited_window(split_bam, tmp_path):
 
 def test_candidate_limit_counts_unselected_records(split_bam, tmp_path):
     # The seed is five records; the first partner window also sees another RG.
-    with pytest.raises(IntegrityError, match="candidates exceed"):
+    from osteosarc import RecordLimitError
+    with pytest.raises(RecordLimitError, match="candidates exceed"):
         extract_reads(split_bam, [Region("chr1", 100, 150, "GRCh38")], cache=tmp_path / "cache",
                       recovery=RecoveryPolicy(max_records=7))
 

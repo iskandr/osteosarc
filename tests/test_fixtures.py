@@ -202,3 +202,19 @@ def test_reading_only_pinned_records_selects_the_same(bam):
     one, other = select_fixtures(pinned_only, {"rna": bam}), select_fixtures(everything, {"rna": bam})
     assert one.members["alt"] == other.members["alt"]
     assert len(one.records["rna"]) <= len(other.records["rna"])
+
+
+def test_sv_breakends_may_say_which_side_is_kept_and_what_was_inserted():
+    from osteosarc import SchemaError
+    from osteosarc.fixtures import validate_recipe
+    ends = [dict(contig="chr10", position=100, orientation=None, retained_side="left"),
+            dict(contig="chr10", position=200, orientation=None, retained_side="right")]
+    recipe = dict(schema_version=1, id="sv", sources={}, members={}, targets={"sv": dict(
+        kind="sv", assembly="GRCh38", reference={"id": "GRCh38"}, coordinates="zero-based-interbase",
+        breakends=ends, inserted_sequence="CTTC")})
+    validate_recipe(recipe)
+    for key, value in (("retained_side", "up"), ("inserted_sequence", "ctt"), ("inserted_sequence", 5)):
+        bad = json.loads(json.dumps(recipe))
+        (bad["targets"]["sv"]["breakends"][0] if key == "retained_side" else bad["targets"]["sv"])[key] = value
+        with pytest.raises(SchemaError):
+            validate_recipe(bad)

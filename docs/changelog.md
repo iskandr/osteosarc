@@ -5,6 +5,32 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.14.4 (2026-09-28)
+
+openvax-v2, the next bundle of reads the OpenVax libraries share
+([#71](https://github.com/iskandr/osteosarc/issues/71),
+[#88](https://github.com/iskandr/osteosarc/issues/88)). See
+[shared test data](test-data.md#shared-test-data).
+
+- It has openvax-v1's 993 members, the libraries' 429 record for record, and leaves
+  out mates with no position of their own (116 records, none of them the libraries'),
+  so it rebuilds without reading any BAM's unplaced reads.
+- The reads it keeps bring their split alignments: 14 more records that their SA tags
+  name. An alignment in a pileup, with more than 10,000 records at its first base, is
+  left out.
+- SV targets say which side of each breakend they keep, where that's known, and any
+  sequence inserted at the junction. openvax-v1's recipe dropped the sides the SV panel
+  and catalogue give; ATP5MG--KMT2A, FOXO3--STRADA-CCDC47 and TPST1--CRCP now give
+  theirs, and DLG5's deletion is at the junction esvee resolved, with its 24-base
+  insertion.
+- Carrying a bundle's library records forward keeps a source's mates with no position
+  only if one of those records lacks a position.
+- Reading past `max_records`, or a recovery policy's, raises RecordLimitError (an
+  IntegrityError). For regional reads the cache remembers it: asking again, even
+  offline, gives the same answer without reading.
+
+openvax-v1 stays published, and the libraries move to openvax-v2 at their own pace.
+
 ## 0.14.3 (2026-09-27)
 
 Anyone can rebuild a bundle from its recipe
@@ -231,7 +257,7 @@ all four now use.
 
 The OpenVax libraries can take their test reads from one place: **openvax-v1**, chosen
 once here ([#56](https://github.com/iskandr/osteosarc/issues/56)). See
-[shared test data](test-data.md#shared-test-data-openvax-v1).
+[shared test data](test-data.md#shared-test-data).
 
 - **What it holds:** reads at every variant on the site plus other alleles the
   libraries test, reads joining the breakends of 7 RNA fusions and 8 DNA SVs, and

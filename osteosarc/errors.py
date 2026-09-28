@@ -9,6 +9,10 @@ class IntegrityError(OsteosarcError, ValueError):
     """Cached bytes or source claims do not match the recorded receipt."""
 
 
+class RecordLimitError(IntegrityError):
+    """Reading some regions found more records than the limit asked for (max_records)."""
+
+
 class OfflineError(OsteosarcError):
     """An operation needs bytes that are not present in the local cache."""
 

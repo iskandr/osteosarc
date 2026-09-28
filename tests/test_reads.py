@@ -60,6 +60,21 @@ def test_cached_reads_verified_and_reused_offline(bam, tmp_path, monkeypatch):
         extract_reads(bam, regions, cache=cache)
 
 
+def test_too_many_records_is_remembered_too(bam, tmp_path, monkeypatch):
+    import osteosarc.reads
+    from osteosarc.errors import RecordLimitError
+    cache = Cache(tmp_path / "cache")
+    regions = [Region("chr1", 100, 160, "GRCh38")]
+    with pytest.raises(RecordLimitError):
+        extract_reads(bam, regions, cache=cache, max_records=5)  # it holds 6
+    # Asked again, even offline, the answer comes from the cache without reading.
+    monkeypatch.setattr(osteosarc.reads, "_run_bounded", lambda *a: pytest.fail("read the records again"))
+    with pytest.raises(RecordLimitError):
+        extract_reads(bam, regions, cache=Cache(cache.root, offline=True), max_records=5)
+    monkeypatch.undo()
+    assert extract_reads(bam, regions, cache=cache, max_records=6).receipt["records"] == 6
+
+
 def test_cached_header_reuse_and_corruption(bam, tmp_path, monkeypatch):
     cache = Cache(tmp_path / "cache", offline=True)
     info = inspect_alignment(bam, cache=cache)
@@ -108,6 +123,22 @@ def test_remote_extraction_refuses_changed_header_source(bam, tmp_path, monkeypa
     with pytest.raises(IntegrityError, match="changed during extraction"):
         extract_reads(url, [Region("chr1", 100, 170, "GRCh38")], cache=cache,
                       index=str(bam) + ".bai", snapshot_id="snapshot")
+
+    # Too many records is remembered only while the object is still the one read.
+    from osteosarc.errors import RecordLimitError
+    monkeypatch.setattr(reads, "_run", remote)
+
+    def too_many(*args, changed):
+        if changed:
+            identity["etag"] = '"replacement"'
+        raise RecordLimitError("Acquisition exceeds record limit")
+    for changed in (True, False):
+        identity["etag"] = '"original"'
+        monkeypatch.setattr(reads, "_run_bounded", lambda *a, changed=changed: too_many(*a, changed=changed))
+        with pytest.raises(RecordLimitError):
+            extract_reads(url, [Region("chr1", 100, 180, "GRCh38")], cache=cache,
+                          index=str(bam) + ".bai", snapshot_id="snapshot", max_records=1)
+        assert len(list((cache.workspace / "derived").glob("*.over-limit.json"))) == (0 if changed else 1)
 
 
 def test_samtools_version_ignores_non_utf8_distribution_build_flags(monkeypatch):

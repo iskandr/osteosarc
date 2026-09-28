@@ -25,7 +25,7 @@ from .cache import (
     stable_id,
     write_json,
 )
-from .errors import CoordinateError, IntegrityError, OfflineError, OsteosarcError
+from .errors import CoordinateError, IntegrityError, OfflineError, OsteosarcError, RecordLimitError
 from .models import File, Region
 
 ASSEMBLY_LENGTHS = {
@@ -252,7 +252,7 @@ def _run_bounded(command, output, max_records, timeout):
                 with pysam.AlignmentFile(output, "wb", template=bam) as out:
                     for count, read in enumerate(bam, 1):
                         if count > max_records:
-                            raise IntegrityError("Acquisition exceeds record limit")
+                            raise RecordLimitError("Acquisition exceeds record limit")
                         out.write(read)
             returncode = process.wait()
             if returncode:
@@ -415,7 +415,8 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
     Cached results are immutable snapshot derivatives; they are verified offline
     without rechecking the remote object. New requests check remote identity
     before and after extraction and retain that identity in their receipt.
-    max_records stops acquisition on overflow and discards the partial output.
+    max_records stops acquisition on overflow, discards the partial output and
+    raises RecordLimitError; asking again, even offline, raises it without reading.
     """
     if max_records is not None and (type(max_records) is not int or max_records < 1):
         raise ValueError("max_records must be a positive integer")
@@ -475,10 +476,15 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
         request["max_records"] = max_records
     request = json.loads(json.dumps(request))
     directory = cache.workspace / "derived" / stable_id(request)
+    # Reads past max_records aren't kept, but that they were too many is, so asking
+    # again (even offline) gets the same answer without reading them again.
+    over_limit = directory.with_name(directory.name + ".over-limit.json")
     with file_lock(cache.workspace / "locks" / (directory.name + ".lock")):
         cached = _cached_subset(directory, request)
         if cached is not None:
             return cached
+        if over_limit.exists() and json.loads(over_limit.read_text()).get("request") == request:
+            raise RecordLimitError("Acquisition exceeds record limit")
         if remote and cache.offline:
             raise OfflineError("Regional reads are not cached")
         require_samtools(fetch_pairs=fetch_pairs, unplaced_mates=unplaced_mates, filters=filters)
@@ -570,7 +576,7 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
                 mates_command = view(work / "mates.bed", work / "mates.bam", name_list=work / "templates.txt")
                 count += _add_mates(regional, work / "mates.bam", inside, output)
                 if max_records is not None and count > max_records:
-                    raise IntegrityError("Acquisition exceeds record limit")
+                    raise RecordLimitError("Acquisition exceeds record limit")
                 _run(["samtools", "quickcheck", "-v", str(output)], min(left(), 60))
                 (work / "mates.bam").unlink()  # made again by mates_command
                 return dict(command=[str(regional) if c == str(output) else c for c in command],
@@ -578,6 +584,14 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
 
             try:
                 commands, count = acquire()
+            except RecordLimitError:
+                try:  # remembered only if the remote object is still the one read
+                    unchanged = not remote or _remote_identity(location, min(timeout, 60)) == before
+                except OsteosarcError:
+                    unchanged = False
+                if unchanged:
+                    write_json(over_limit, dict(request=request, max_records=max_records))
+                raise
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
                 if remote:  # samtools may have failed because the object changed: say so if it did
                     try:  # once: this only says why the read failed
