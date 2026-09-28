@@ -183,7 +183,9 @@ to the library that uses them, and a member's reads are never an estimate of VAF
 
 ```text
 targets:   small_variant   one-based position, ref and alt, and where it came from
-           sv              two or more breakends (zero-based, with orientation + / - / null)
+           sv              two or more breakends (zero-based, with orientation + / - / null,
+                           and the side each keeps, left or right, if known), and any
+                           sequence inserted at the junction
            fixture         one of a library's test files, with a description
            unresolved      a reason; gets no reads
 sources:   identity        which file: {"key": ...} or {"url": ...}

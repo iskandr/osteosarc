@@ -215,6 +215,11 @@ def _dync1h1_bam(path, split=False):
             part.query_qualities, part.mapping_quality = pysam.qualitystring_to_array("I" * 40), 60
             part.set_tag("SA", f"chr14,{start + 1},+,40M,60,0;")
             out.write(part)
+            other = pysam.AlignedSegment(out.header)  # another read there, in no kept template
+            other.query_name, other.flag, other.reference_id, other.reference_start = "other", 0, 1, 5000
+            other.cigarstring, other.query_sequence = "40M", "ACGT" * 10
+            other.query_qualities, other.mapping_quality = pysam.qualitystring_to_array("I" * 40), 60
+            out.write(other)
         for name, base in [("alt1", "A"), ("alt2", "A"), ("alt3", "A"), ("ref1", "G"), ("ref2", "G")]:
             read = pysam.AlignedSegment(out.header)
             sequence = "".join(base if i == position - 1 else reference[i] for i in range(start, start + 40))
@@ -523,7 +528,7 @@ def test_kept_templates_keep_their_split_alignments_when_the_spec_asks(dataset, 
     monkeypatch.setattr(dataset, "inspect_alignment", lambda file, **kw: inspect_alignment(str(local), cache=dataset.cache))
     monkeypatch.setattr(dataset, "extract_reads", lambda file, regions, **kw: extract_reads(
         str(local), regions, cache=dataset.cache, fetch_pairs=kw.get("fetch_pairs", False),
-        unplaced_mates=kw.get("unplaced_mates", True)))
+        unplaced_mates=kw.get("unplaced_mates", True), max_records=kw.get("max_records")))
     key = "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"
     spec = bundle_spec(dataset, "split", variants=["DYNC1H1-chr14-101980529"], files=[key])
     plain = build_shared_recipe(spec, dataset, required={}, log=lambda text: None)
@@ -542,6 +547,12 @@ def test_kept_templates_keep_their_split_alignments_when_the_spec_asks(dataset, 
     folder = generate_bundle(split, tmp_path / "bundle", dataset=dataset)
     assert sum(record_multiset(tmp_path / "bundle" / folder["sources"][next(iter(folder["sources"]))]["bam"]).values()) \
         == sum(after["policy"]["records"].values())
+    # A split alignment in a pileup is left out: reading it would cost more than it's worth.
+    monkeypatch.setattr(shared, "SPLIT_DEPTH", 1)
+    logged.clear()
+    crowded = build_shared_recipe(spec, dataset, required={}, log=logged.append)
+    assert crowded["sources"] == plain["sources"] and crowded["members"] == plain["members"]
+    assert "left out 1 region of split alignments in a pileup" in "\n".join(logged)
 
 
 def test_sv_targets_keep_their_retained_sides_and_inserted_sequence():

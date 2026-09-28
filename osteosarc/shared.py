@@ -468,7 +468,8 @@ def _region_dicts(regions):
                  **({"reference_length": r.reference_length} if r.reference_length else {})) for r in regions]
 
 
-SPLIT_REGIONS = 1000  # the most places a source's kept templates may send it for their split alignments
+SPLIT_REGIONS = 100  # the most places a source's kept templates may send it for their split alignments
+SPLIT_DEPTH = 10_000  # the most records at one of those places; more is a pileup, too costly to read
 
 
 def _split_alignments(index, members, regions, lengths):
@@ -712,8 +713,9 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, req
 
     def select(plan):
         """A source's members: read its regions, and select. With supplementary, the
-        kept templates' alignments elsewhere (SA tags) join the regions, and the source
-        is read and selected again: the same templates, now with those records too."""
+        kept templates' alignments elsewhere (SA tags) join the regions, unless in a
+        pileup, and the source is read and selected again: the same templates, now with
+        those records too."""
         subset = dataset.extract_reads(plan["file"], [Region(**r) for r in plan["source"]["regions"]],
                                        **plan["source"]["acquisition"])
         index = _source_index(subset.path, plan, windows)
@@ -725,27 +727,36 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, req
         if len(elsewhere) > SPLIT_REGIONS:
             raise IntegrityError(f"{plan['file'].key}: the kept templates' split alignments lie in "
                                  f"{len(elsewhere)} more regions, over the limit of {SPLIT_REGIONS}")
-        if elsewhere:
-            assembly = plan["source"]["assembly"]
-            added = [Region(contig, start, end, assembly, lengths[contig] if contig in MITOCHONDRIA else None)
-                     for contig, start, end in elsewhere]
+        assembly = plan["source"]["assembly"]
+        added, crowded = [], 0
+        for contig, start, end in elsewhere:
+            region = Region(contig, start, end, assembly, lengths[contig] if contig in MITOCHONDRIA else None)
+            try:  # a region in a pileup (a repeat that draws millions of reads) costs more than it's worth
+                dataset.extract_reads(plan["file"], [region], max_records=SPLIT_DEPTH)
+                added.append(region)
+            except IntegrityError as error:
+                if "record limit" not in str(error):
+                    raise
+                crowded += 1
+        if added:
             plan["source"]["regions"] = _region_dicts(resolve_regions(
                 [Region(**r) for r in plan["source"]["regions"]] + added, header))
             subset = dataset.extract_reads(plan["file"], [Region(**r) for r in plan["source"]["regions"]],
                                            **plan["source"]["acquisition"])
             index = _source_index(subset.path, plan, windows)
             selected = _select_source(plan, index, windows, targets, caps, low_quality_alt, structural["cap"])
-        return plan, subset, elsewhere, skipped, selected
+        return plan, subset, added, crowded, skipped, selected
 
     problems, results = [], {}
     with ThreadPoolExecutor(max_workers=workers) as pool:
         for future in as_completed([pool.submit(select, plan) for plan in plans]):
-            plan, subset, elsewhere, skipped, (members, fixtures, missing) = future.result()
+            plan, subset, added, crowded, skipped, (members, fixtures, missing) = future.result()
             results[plan["label"]] = (plan, members, fixtures)
             problems += missing
             log(f"{plan['file'].key}: read {plural(subset.receipt['records'], 'record')}, "
                 f"kept {plural(len(members) + len(fixtures), 'member')}"
-                + (f", with split alignments in {plural(len(elsewhere), 'more region')}" if elsewhere else "")
+                + (f", with split alignments in {plural(len(added), 'more region')}" if added else "")
+                + (f"; left out {plural(crowded, 'region')} of split alignments in a pileup" if crowded else "")
                 + (f"; passed over {plural(sum(skipped.values()), 'split alignment')} ("
                    + ", ".join(f"{n} {why}" for why, n in sorted(skipped.items())) + ")" if skipped else ""))
     if problems:
