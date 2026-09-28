@@ -35,6 +35,7 @@ import gzip
 import hashlib
 import json
 import os
+import re
 import warnings
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -43,8 +44,8 @@ from .alleles import CLASSES, allele_window, read_allele, template_allele
 from .errors import CoordinateError, IntegrityError, OfflineError, OsteosarcError, SchemaError
 from .models import Region
 from .reads import merge_spans, resolve_regions
-from .records import read_records, read_template
-from .reference import reference_sequence
+from .records import cigar_length, read_records, read_template, split_alignments
+from .reference import MITOCHONDRIA, reference_sequence
 from .views import plural
 
 DEFAULT_CAPS = {"alt": 20, "ref": 10, "other": 5, "uncallable": 2}
@@ -218,15 +219,7 @@ def sam_span(line):
     contig, position, cigar = fields[2], int(fields[3]), fields[5]
     if contig == "*" or position == 0:
         return None
-    length, number = 0, ""
-    for char in cigar:
-        if char.isdigit():
-            number += char
-            continue
-        if char in "MDN=X":
-            length += int(number)
-        number = ""
-    return contig, position - 1, position - 1 + max(1, length)
+    return contig, position - 1, position - 1 + (cigar_length(cigar) if cigar != "*" else 1)
 
 
 def _context_window(contig, position, ref, alt, assembly, *, cache, reference_length=None):
@@ -308,7 +301,8 @@ def structural_targets(spec):
         else:
             base, reference = entry, dict(source="library", note=entry.get("reason", ""))
         reference["used_by"] = entry.get("used_by", [])
-        ends = [dict(contig=e["contig"], position=e["position"], orientation=e.get("orientation"))
+        ends = [dict(contig=e["contig"], position=e["position"], orientation=e.get("orientation"),
+                     **({"retained_side": e["retained_side"]} if e.get("retained_side") else {}))
                 for e in base.get("breakends", ())]
         if base.get("kind") == "unresolved" or len(ends) < 2:
             targets[name] = dict(kind="unresolved", label=entry["label"], reference=reference,
@@ -316,7 +310,9 @@ def structural_targets(spec):
                                                                "select reads by")
             continue
         targets[name] = dict(kind="sv", assembly=base.get("assembly", "GRCh38"), coordinates="zero-based-interbase",
-                             breakends=ends, reference=reference, label=entry["label"])
+                             breakends=ends, reference=reference, label=entry["label"],
+                             **({"inserted_sequence": base["inserted_sequence"]} if base.get("inserted_sequence")
+                                else {}))
         breakends[name] = ends
     return targets, breakends, observed_in
 
@@ -472,29 +468,33 @@ def _region_dicts(regions):
                  **({"reference_length": r.reference_length} if r.reference_length else {})) for r in regions]
 
 
-def _cigar_length(cigar):
-    """Reference bases a CIGAR string covers."""
-    import re
-    return sum(int(n) for n, op in re.findall(r"(\d+)([MIDNSHP=X])", cigar) if op in "MDN=X")
+SPLIT_REGIONS = 1000  # the most places a source's kept templates may send it for their split alignments
 
 
-def _split_alignments(index, members, regions):
-    """Where the kept templates' other alignments (their records' SA tags) lie,
-    as (contig, start, end) spans the source's regions don't reach."""
+def _split_alignments(index, members, regions, lengths):
+    """Where the kept templates' other alignments lie (their records' SA tags), as
+    one-base spans (contig, start, start + 1) at each alignment's start, which is
+    enough to fetch it, outside the source's regions; and a count of the SA entries
+    passed over: malformed ones, those with mapping quality 0, and those on contigs
+    the BAM doesn't have or a region can't name."""
     from .reads import overlap_test
     kept = {digest for member in members.values() for digest in member["policy"]["records"]}
     inside = overlap_test((r["contig"], r["start"], r["end"]) for r in regions)
-    spans = []
+    spans, skipped = [], Counter()
     for record in index.records:
-        if record.digest in kept and record.read.has_tag("SA"):
-            for entry in record.read.get_tag("SA").split(";"):
-                if entry:
-                    contig, position, _strand, cigar, *_ = entry.split(",")
-                    start = int(position) - 1
-                    end = start + max(1, _cigar_length(cigar))
-                    if not inside(contig, start, end):
-                        spans.append((contig, start, end))
-    return merge_spans(spans)
+        if record.digest not in kept:
+            continue
+        entries, malformed = split_alignments(record.read)
+        skipped["malformed"] += len(malformed)
+        for entry in entries:
+            contig, start = entry["contig"], entry["start"]
+            if entry["mapq"] == 0:
+                skipped["with mapping quality 0"] += 1
+            elif start >= lengths.get(contig, 0) or re.search(r"[\s:]", contig):
+                skipped["on contigs this BAM lacks"] += 1
+            elif not inside(contig, start, start + 1):
+                spans.append((contig, start, start + 1))
+    return merge_spans(spans), +skipped
 
 
 def _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, everywhere, sv_everywhere, pad,
@@ -505,11 +505,11 @@ def _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, e
     header = dataset.inspect_alignment(file).header
     assembly = assembly_from_header(header)
     lengths = {row["SN"]: row["LN"] for row in header.get("SQ", [])}
-    mito = {lengths[c] for c in ("chrM", "MT", "M", "chrMT") if c in lengths}
+    mito = {lengths[c] for c in MITOCHONDRIA if c in lengths}
 
     def region(contig, start, end, reference_length=None):
         # GRCh37 mitochondria come in two lengths; say which this source has.
-        if contig in ("chrM", "MT", "M", "chrMT") and reference_length is None:
+        if contig in MITOCHONDRIA and reference_length is None:
             reference_length = next(iter(mito), None)
         return Region(contig, start, end, assembly, reference_length)
     spans = [span for s in mine.values() for span in required_spans(s)]
@@ -718,29 +718,36 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, req
                                        **plan["source"]["acquisition"])
         index = _source_index(subset.path, plan, windows)
         selected = _select_source(plan, index, windows, targets, caps, low_quality_alt, structural["cap"])
-        elsewhere = _split_alignments(index, selected[0], plan["source"]["regions"]) if split else []
+        header = dataset.inspect_alignment(plan["file"]).header
+        lengths = {row["SN"]: row["LN"] for row in header.get("SQ", [])}
+        elsewhere, skipped = (_split_alignments(index, selected[0], plan["source"]["regions"], lengths)
+                              if split else ([], Counter()))
+        if len(elsewhere) > SPLIT_REGIONS:
+            raise IntegrityError(f"{plan['file'].key}: the kept templates' split alignments lie in "
+                                 f"{len(elsewhere)} more regions, over the limit of {SPLIT_REGIONS}")
         if elsewhere:
-            header = dataset.inspect_alignment(plan["file"]).header
-            lengths = {row["SN"]: row["LN"] for row in header.get("SQ", [])}
             assembly = plan["source"]["assembly"]
-            added = [Region(contig, start, end, assembly, lengths.get(contig)) for contig, start, end in elsewhere]
+            added = [Region(contig, start, end, assembly, lengths[contig] if contig in MITOCHONDRIA else None)
+                     for contig, start, end in elsewhere]
             plan["source"]["regions"] = _region_dicts(resolve_regions(
                 [Region(**r) for r in plan["source"]["regions"]] + added, header))
             subset = dataset.extract_reads(plan["file"], [Region(**r) for r in plan["source"]["regions"]],
                                            **plan["source"]["acquisition"])
             index = _source_index(subset.path, plan, windows)
             selected = _select_source(plan, index, windows, targets, caps, low_quality_alt, structural["cap"])
-        return plan, subset, elsewhere, selected
+        return plan, subset, elsewhere, skipped, selected
 
     problems, results = [], {}
     with ThreadPoolExecutor(max_workers=workers) as pool:
         for future in as_completed([pool.submit(select, plan) for plan in plans]):
-            plan, subset, elsewhere, (members, fixtures, missing) = future.result()
+            plan, subset, elsewhere, skipped, (members, fixtures, missing) = future.result()
             results[plan["label"]] = (plan, members, fixtures)
             problems += missing
             log(f"{plan['file'].key}: read {plural(subset.receipt['records'], 'record')}, "
                 f"kept {plural(len(members) + len(fixtures), 'member')}"
-                + (f", with split alignments in {plural(len(elsewhere), 'more region')}" if elsewhere else ""))
+                + (f", with split alignments in {plural(len(elsewhere), 'more region')}" if elsewhere else "")
+                + (f"; passed over {plural(sum(skipped.values()), 'split alignment')} ("
+                   + ", ".join(f"{n} {why}" for why, n in sorted(skipped.items())) + ")" if skipped else ""))
     if problems:
         # Every source was read (and its extraction cached), so a rerun after fixing these is quick.
         raise IntegrityError(f"{len(problems)} required fixtures couldn't be matched:\n" + "\n".join(problems))

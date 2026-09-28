@@ -214,15 +214,17 @@
      {
       "contig": "chr11",
       "position": 118401717,
-      "orientation": null
+      "orientation": null,
+      "retained_side": "left"
      },
      {
       "contig": "chr11",
       "position": 118468774,
-      "orientation": null
+      "orientation": null,
+      "retained_side": "right"
      }
     ],
-    "reason": "Isovar's fusion junction boundaries (zero-based)."
+    "reason": "Isovar's fusion junction boundaries (zero-based); the retained sides are where its junction reads align."
    },
    {
     "name": "FOXO3--STRADA-CCDC47",
@@ -235,15 +237,17 @@
      {
       "contig": "chr6",
       "position": 108611245,
-      "orientation": null
+      "orientation": null,
+      "retained_side": "left"
      },
      {
       "contig": "chr17",
       "position": 63745979,
-      "orientation": null
+      "orientation": null,
+      "retained_side": "right"
      }
     ],
-    "reason": "Isovar's fusion junction boundaries (zero-based)."
+    "reason": "Isovar's fusion junction boundaries (zero-based); the retained sides are where its junction reads align."
    },
    {
     "name": "TPST1--CRCP",
@@ -257,15 +261,17 @@
      {
       "contig": "chr7",
       "position": 66205522,
-      "orientation": null
+      "orientation": null,
+      "retained_side": "left"
      },
      {
       "contig": "chr7",
       "position": 66127703,
-      "orientation": null
+      "orientation": null,
+      "retained_side": "right"
      }
     ],
-    "reason": "Isovar's fusion junction boundaries (zero-based)."
+    "reason": "Isovar's fusion junction boundaries (zero-based); the retained sides are where its junction reads align."
    },
    {
     "name": "KLF15--PPIAP72",
@@ -337,16 +343,19 @@
     "breakends": [
      {
       "contig": "chr10",
-      "position": 77850921,
-      "orientation": null
+      "position": 77850914,
+      "orientation": null,
+      "retained_side": "left"
      },
      {
       "contig": "chr10",
-      "position": 77930452,
-      "orientation": null
+      "position": 77930460,
+      "orientation": null,
+      "retained_side": "right"
      }
     ],
-    "reason": "Isovar's DLG5 deletion (DRAGEN and PURPLE calls)."
+    "reason": "Isovar's DLG5 deletion, at the junction esvee resolved (IPISRC044_tumor_T2_ucla records 26313 and 26315), with its 24-base insertion; DRAGEN's nominal breakends were chr10:77850921 and 77930452.",
+    "inserted_sequence": "CTTCTCTGAAATGATGCTTCTCCA"
    },
    {
     "name": "SV0384",

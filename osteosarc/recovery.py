@@ -12,7 +12,7 @@ from .cache import Cache, digest, file_lock, stable_id, write_json
 from .errors import CoordinateError, IntegrityError, OsteosarcError
 from .models import Region
 from .reads import ReadFilter, _cached_subset, extract_reads, inspect_alignment, resolve_regions
-from .records import read_records, record_multiset
+from .records import read_records, record_multiset, split_alignments
 
 
 @dataclass(frozen=True)
@@ -65,20 +65,10 @@ def _leads(record, policy):
             leads.append(dict(base, kind="mate", contig=r.next_reference_name,
                               start=r.next_reference_start, segment=192 ^ record.segment,
                               reverse=r.mate_is_reverse))
-    if policy.supplementary and r.has_tag("SA"):
-        for entry in r.get_tag("SA").split(";"):
-            if not entry:
-                continue
-            try:
-                contig, pos, strand, cigar, mapq, nm = entry.split(",")
-                start = int(pos) - 1
-                if start < 0 or strand not in ("+", "-") or not cigar or not 0 <= int(mapq) <= 255 or int(nm) < 0:
-                    raise ValueError
-                leads.append(dict(base, kind="SA", contig=contig, start=start,
-                                  segment=record.segment, reverse=strand == "-", cigar=cigar,
-                                  mapq=int(mapq), nm=int(nm)))
-            except (TypeError, ValueError):
-                problems.append(dict(record=record.digest, reason="malformed SA entry", entry=entry))
+    if policy.supplementary:
+        entries, malformed = split_alignments(r)
+        leads += [dict(base, kind="SA", segment=record.segment, **entry) for entry in entries]
+        problems += [dict(record=record.digest, reason="malformed SA entry", entry=entry) for entry in malformed]
     return leads, problems
 
 

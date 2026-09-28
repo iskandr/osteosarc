@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
@@ -60,8 +61,12 @@ def validate_recipe(recipe):
                 raise SchemaError("SVs require at least two explicit interbase breakends")
             for end in target["breakends"]:
                 _count(end.get("position"), "breakend position")
-                if not end.get("contig") or end.get("orientation") not in ("+", "-", None):
+                if (not end.get("contig") or end.get("orientation") not in ("+", "-", None)
+                        or end.get("retained_side") not in ("left", "right", None)):
                     raise SchemaError("Invalid oriented breakend")
+            inserted = target.get("inserted_sequence")
+            if inserted is not None and not (isinstance(inserted, str) and re.fullmatch("[ACGTN]*", inserted)):
+                raise SchemaError(f"SV {name}'s inserted sequence must be bases (ACGTN)")
         elif kind == "fixture":
             if not target.get("description"):
                 raise SchemaError(f"Fixture target {name} needs a description")

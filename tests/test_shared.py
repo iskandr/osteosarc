@@ -199,7 +199,8 @@ def test_fixtures_kept_in_json_are_read_in_each_layout(tmp_path):
 
 def _dync1h1_bam(path, split=False):
     """A local BAM at DYNC1H1-chr14-101980529 (G>A): 3 alt and 2 ref reads, and reference context.
-    With split, alt1 is split: part of it aligns on chr2 (a supplementary record, its SA tag)."""
+    With split, alt1 is split: part of it aligns on chr2 (a supplementary record, its SA tag);
+    alt2's SA tag names only alignments to pass over."""
     position = 101980529
     start = position - 1 - 20
     reference = {i: "ACGT"[(i * 7) % 4] for i in range(start - 200, start + 260)}
@@ -223,6 +224,8 @@ def _dync1h1_bam(path, split=False):
             read.mapping_quality = 60
             if name == "alt1" and split:
                 read.set_tag("SA", "chr2,5001,+,40M,60,0;")
+            if name == "alt2" and split:  # mapping quality 0, a contig the BAM lacks, malformed
+                read.set_tag("SA", "chr1,9001,+,40M,0,0;chrUn_x,10,+,40M,60,0;chr1,0,+,40M,60,0;")
             if name == "alt3":  # its mate didn't align and has no position, as STAR writes it
                 read.flag, read.next_reference_id, read.next_reference_start = 1 | 8 | 64, -1, -1
             out.write(read)
@@ -525,12 +528,28 @@ def test_kept_templates_keep_their_split_alignments_when_the_spec_asks(dataset, 
     spec = bundle_spec(dataset, "split", variants=["DYNC1H1-chr14-101980529"], files=[key])
     plain = build_shared_recipe(spec, dataset, required={}, log=lambda text: None)
     spec["selection"]["supplementary"] = True
-    split = build_shared_recipe(spec, dataset, required={}, log=lambda text: None)
+    logged = []
+    split = build_shared_recipe(spec, dataset, required={}, log=logged.append)
     (source,) = split["sources"].values()
     assert split["selection"]["supplementary"] and "supplementary" not in plain["selection"]
-    assert any(r["contig"] == "chr2" for r in source["regions"])  # so a rebuild reads it too
+    # The region reaches the alignment's first base, which is enough to read it, so a rebuild reads it too.
+    assert [r for r in source["regions"] if r["contig"] != "chr14"] == [
+        dict(contig="chr2", start=5000, end=5001, assembly="GRCh38")]
+    assert ("with split alignments in 1 more region; passed over 3 split alignments (1 malformed, "
+            "1 on contigs this BAM lacks, 1 with mapping quality 0)") in "\n".join(logged)
     (before,), (after,) = plain["members"].values(), split["members"].values()
     assert len(after["policy"]["records"]) == len(before["policy"]["records"]) + 1
     folder = generate_bundle(split, tmp_path / "bundle", dataset=dataset)
     assert sum(record_multiset(tmp_path / "bundle" / folder["sources"][next(iter(folder["sources"]))]["bam"]).values()) \
         == sum(after["policy"]["records"].values())
+
+
+def test_sv_targets_keep_their_retained_sides_and_inserted_sequence():
+    from osteosarc.shared import BUNDLES, read_json, structural_targets
+    targets, _, _ = structural_targets(read_json(BUNDLES / "openvax-v2.spec.json"))
+    dlg5 = targets["DLG5-deletion"]
+    assert [(e["position"], e["retained_side"]) for e in dlg5["breakends"]] == [(77850914, "left"), (77930460, "right")]
+    assert dlg5["inserted_sequence"] == "CTTCTCTGAAATGATGCTTCTCCA"
+    # From the spec, the SV panel and the SV candidates alike.
+    for name in ("ATP5MG--KMT2A", "SV0055", "KLF15--PPIAP72"):
+        assert all(e["retained_side"] in ("left", "right") for e in targets[name]["breakends"])

@@ -76,6 +76,38 @@ def record_multiset(path):
     return Counter(bam_record_digests(path))
 
 
+def cigar_length(cigar):
+    """Reference bases a CIGAR string covers."""
+    length, number = 0, ""
+    for char in cigar:
+        if char.isdigit():
+            number += char
+            continue
+        if char in "MDN=X":
+            length += int(number or 0)
+        number = ""
+    return length
+
+
+def split_alignments(read):
+    """A read's other alignments, from its SA tag: (entries, malformed), each entry a
+    dict of contig, start (zero-based), reverse, cigar, mapq and nm."""
+    entries, malformed = [], []
+    for entry in (read.get_tag("SA").split(";") if read.has_tag("SA") else ()):
+        if not entry:
+            continue
+        try:
+            contig, position, strand, cigar, mapq, nm = entry.split(",")
+            start = int(position) - 1
+            if start < 0 or strand not in ("+", "-") or not cigar or not 0 <= int(mapq) <= 255 or int(nm) < 0:
+                raise ValueError
+            entries.append(dict(contig=contig, start=start, reverse=strand == "-", cigar=cigar,
+                                mapq=int(mapq), nm=int(nm)))
+        except (TypeError, ValueError):
+            malformed.append(entry)
+    return entries, malformed
+
+
 def read_template(read):
     """A pysam read's template: its read group (or None) and name."""
     return read.get_tag("RG") if read.has_tag("RG") else None, read.query_name
