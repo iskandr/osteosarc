@@ -18,7 +18,7 @@ from .reads import ReadFilter
 COMMANDS = (
     ("Browse", (
         ("samples [SAMPLE]", "Tumor, organoid and blood samples; one sample's files and how to get them"),
-        ("files", "Files in the S3 bucket: an overview, or a list with --kind, --sample or --prefix"),
+        ("files", "Files in the S3 bucket: an overview, or a list by --kind, --sample or --prefix"),
         ("variants [ID]", "The variant catalogue, with alleles, vaccines and read counts"),
         ("vaccines", "Vaccine targets and ELISPOT results"),
         ("timeline", "Treatments, procedures, scans and MRD over time (--around DATE for one week)"),
@@ -166,12 +166,13 @@ def parser():
     reads.add_argument("--variant", action="append", default=[], metavar="ID",
                        help="A catalogue variant with a ready allele; repeat for several")
     reads.add_argument("--padding", type=int, default=0, help="Bases added on each side of each --variant")
-    reads.add_argument("--assembly", help="Assembly of explicit regions, such as GRCh38")
+    reads.add_argument("--assembly", help="Assembly of explicit regions, such as GRCh38 (default: a BAM's own)")
     reads.add_argument("--reference", help="Local indexed FASTA (required for CRAM)")
     reads.add_argument("--index", help="Explicit index path/URL when the bucket has none")
     reads.add_argument("--reference-length", type=int, help="Expected contig length (mitochondrial queries)")
-    reads.add_argument("--min-mapq", type=int, default=0)
-    reads.add_argument("--exclude-flags", type=lambda s: int(s, 0), default=0)
+    reads.add_argument("--min-mapq", type=int, default=0, help="Only reads with at least this mapping quality")
+    reads.add_argument("--exclude-flags", type=lambda s: int(s, 0), default=0,
+                       help="Leave out reads with any of these SAM flags, such as 0x400 (duplicates)")
     mates = reads.add_mutually_exclusive_group()
     mates.add_argument("--fetch-pairs", action="store_true",
                        help="Also retrieve mates outside the regions, except those with no position")
@@ -196,7 +197,7 @@ def parser():
                         "  osteosarc test-data export openvax-v1 tests/data --member "
                         "IPISRC044_tumor_T2_ucla.redux.DYNC1H1-chr14-101980529\n"
                         "  osteosarc test-data check openvax-v1 fixtures.json")
-    actions = test_data.add_subparsers(dest="test_data_command", required=True, metavar="ACTION")
+    actions = test_data.add_subparsers(dest="test_data_command", metavar="ACTION")
     make = actions.add_parser(
         "make", parents=[snapshot], formatter_class=argparse.RawDescriptionHelpFormatter,
         help="Make a bundle of test reads for variants and SVs in some BAMs (or from a recipe)",
@@ -276,9 +277,14 @@ def read_targets(dataset, args):
         order = {v: i for i, v in enumerate(dict.fromkeys(args.variant))}
         variants = type(found)(sorted(found, key=lambda v: order[v.id]), source=found.source)  # as given
         return dict(variants=variants, padding=args.padding)
-    if args.regions and args.assembly is None:
-        raise ValueError("--assembly is required with explicit regions")
-    return dict(regions=[Region.from_samtools(r, assembly=args.assembly, reference_length=args.reference_length)
+    assembly = args.assembly
+    if args.regions and assembly is None:  # a BAM's regions are in its own genome build
+        if is_sample(dataset, args.file):
+            raise ValueError("Give --assembly with regions and a sample: its BAMs may use different genome builds")
+        assembly = dataset.inspect_alignment(dataset.file(args.file)).assembly
+        if assembly is None:
+            raise ValueError(f"Can't tell {args.file}'s genome build from its header; give --assembly")
+    return dict(regions=[Region.from_samtools(r, assembly=assembly, reference_length=args.reference_length)
                          for r in args.regions], padding=args.padding)
 
 
@@ -552,6 +558,8 @@ def main(argv=None):
         print(start(Cache(offline=True)))
         return 0
     args, extra = root.parse_known_args(arguments)
+    if args.command == "test-data" and args.test_data_command is None:
+        root.parse_args([*arguments, "--help"])  # its actions, and examples (exits)
     # Before Python 3.13, argparse binds an optional list positional (reads' regions,
     # test-data make's BAMs) before any option, so items written after an option
     # arrive here as extra arguments.

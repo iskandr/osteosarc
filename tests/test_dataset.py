@@ -185,11 +185,17 @@ def test_cli_reads_accepts_catalogue_variants(dataset, capsys, monkeypatch, tmp_
         (["chr14:1-2", "--variant", ids[0]], "either regions (with --assembly) or --variant"),
         (["--variant", ids[0], "chr14:1-2"], "either regions (with --assembly) or --variant"),
         (["--variant", ids[0], "--assembly", "GRCh38"], "either regions (with --assembly) or --variant"),
-        (["chr14:1-2"], "--assembly is required"),
     ]:
         assert main(["--cache", root, "reads", "--snapshot", "fixture", source, *arguments]) == 1
         assert message in capsys.readouterr().err
     assert not calls
+    # Without --assembly, a BAM's regions are in its own genome build; a sample's BAMs may differ.
+    monkeypatch.setattr(Dataset, "inspect_alignment", lambda self, file, **k: type("Info", (), {"assembly": "GRCh38"}))
+    assert main(["--cache", root, "reads", "--snapshot", "fixture", source, "chr14:101980529-101980530"]) == 0
+    assert calls.pop()["regions"][0].assembly == "GRCh38"
+    capsys.readouterr()
+    assert main(["--cache", root, "reads", "--snapshot", "fixture", "T1_tumor", "chr14:1-2"]) == 1
+    assert "Give --assembly with regions and a sample" in capsys.readouterr().err
     # Dataset.extract_reads enforces the remaining rules, with the same messages as in Python.
     monkeypatch.undo()
     for arguments, message in [
@@ -555,6 +561,11 @@ def test_downloads_are_listed_found_and_placed_under_their_own_names(dataset, tm
     assert placed == tmp_path / "out" / "tumor.vcf.gz" and placed.read_bytes() == source.read_bytes()
     assert (tmp_path / "out" / "tumor.vcf.gz.tbi").read_bytes() == b"index"
     assert dataset.download(key, to=tmp_path / "out") == placed  # again: nothing changes
+    # A page of the bucket's listing (a URL with a query) is metadata, not a downloaded file.
+    listing = tmp_path / "page.xml"
+    listing.write_text("<ListBucketResult/>")
+    dataset.cache.import_file(listing, base + "?list-type=2&prefix=calls%2F")
+    assert not any("list-type" in r["url"] for r in dataset.downloads())
     rows = {r["key"]: r for r in dataset.downloads()}
     assert rows[key]["kind"] == "file" and rows[key]["path"] == str(cached)
     assert "vafs" not in rows and not any(k.startswith("https://osteosarc.com") for k in rows)
@@ -799,3 +810,20 @@ def test_a_failed_bam_stops_a_samples_others_and_fetched_pairs_skip_unplaced_mat
     with pytest.raises(SystemExit):  # one way to fetch mates at a time
         main(["--cache", str(dataset.cache.root), "reads", "--snapshot", "fixture", "T1_tumor",
               "--variant", variant, "--unplaced-mates", "--recover-linked"])
+
+
+def test_tables_mark_what_they_cut_and_fit_the_terminal():
+    from osteosarc.views import table
+    rows = [dict(id="a", note="a long note that won't fit", empty="", key="x" * 60),
+            dict(id="b", note="short", empty=None, key="y")]
+    text = table(rows, ("id", "note", "empty", "key"), width=40, fixed=("key",))
+    header, rule, first, _ = text.splitlines()
+    assert "empty" not in header  # a column empty in every row is left out
+    assert "…" in first and "x" * 60 in first  # a cut is marked; a fixed column never is
+    assert len(rule) <= 40  # the rule stops at the terminal's edge
+
+
+def test_test_data_alone_shows_its_help(capsys):
+    with pytest.raises(SystemExit) as stop:
+        main(["test-data"])
+    assert stop.value.code == 0 and "check" in capsys.readouterr().out

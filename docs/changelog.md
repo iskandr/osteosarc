@@ -5,6 +5,25 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.14.2 (unreleased)
+
+A tidier command line, from running every command and reading what it printed.
+
+- `osteosarc reads FILE REGION` reads the region in the BAM's own genome build when
+  `--assembly` is left out (a sample, whose BAMs may differ, still needs it).
+- `osteosarc test-data` on its own shows its actions and examples.
+- Tables mark a cut cell with "…" instead of ending it mid-word or mid-number, leave
+  out columns empty in every row, and draw the line under the headers no wider than
+  the terminal. When even that is too wide, `osteosarc variants` leaves out the
+  vaccines, found_by and corrections columns, and says so.
+- `osteosarc files` shows each kind's two commonest formats, with their counts whole;
+  a sample's notes and corrections wrap to the terminal; the one-week timeline wraps
+  long entries under themselves.
+- `osteosarc downloads` lists each file's size and key, then its whole path on the next
+  line, and no longer lists snapshots' metadata or pages of the bucket's listing.
+- `--min-mapq` and `--exclude-flags` say what they do; "1 record" and "1 slide" are
+  singular.
+
 ## 0.14.1 (2026-09-27)
 
 Downloads survive a passing server error ([#86](https://github.com/iskandr/osteosarc/issues/86)).
