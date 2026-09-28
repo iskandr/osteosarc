@@ -835,7 +835,7 @@ BUNDLES = Path(__file__).with_name("data") / "bundles"
 
 
 def published(name):
-    """Where a published bundle (such as openvax-v1) is, and its checksums."""
+    """Where a published bundle (such as openvax-v2) is, and its checksums."""
     path = BUNDLES / f"{name}.release.json"
     if not path.is_file():
         known = sorted(p.name.removesuffix(".release.json") for p in BUNDLES.glob("*.release.json"))
@@ -849,7 +849,7 @@ REDISTRIBUTION = {"license": "CC0-1.0", "source": "https://registry.opendata.aws
 
 def make_bundle(dataset, to, *, variants=(), svs=(), files=(), caps=None, unplaced_mates=False,
                 size_budget=64 * 1024 * 1024, header_policy="full", log=None):
-    """Make a bundle of test reads with openvax-v1's selection; return its manifest.
+    """Make a bundle of test reads with the shared bundles' selection; return its manifest.
 
     See Dataset.make_bundle. log, if given, gets a line of progress for each BAM
     and each BAM skipped; without it, skips are warnings. Every requested target
@@ -963,13 +963,13 @@ def _sv_entry(sv, candidates):
 def bundle_file(bundle, member, *, format="bam", cache=None, offline=False):
     """One member of a bundle as a local file, for a test to read.
 
-    bundle is a published bundle's name (such as openvax-v1, downloaded the
+    bundle is a published bundle's name (such as openvax-v2, downloaded the
     first time) or a bundle folder. The member comes back as an indexed BAM (or
     format="sam" or "sam.gz") of exactly its records, exported into the cache
     with the other members from its source BAM, made read-only, and reused
     afterward, offline.
 
-        bam = osteosarc.bundle_file("openvax-v1", "topiary/osteosarc/bulk_star_t0.sam.gz")
+        bam = osteosarc.bundle_file("openvax-v2", "topiary/osteosarc/bulk_star_t0.sam.gz")
     """
     import difflib
     import tempfile

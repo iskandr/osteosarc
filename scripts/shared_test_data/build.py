@@ -1,6 +1,6 @@
 """Build shared test data from its spec: the frozen recipe, the bundle, and its release record.
 
-python scripts/shared_test_data/build.py openvax-v2 OUT_DIR --carry openvax-v1 [--required FILE ...]
+python scripts/shared_test_data/build.py openvax-v3 OUT_DIR --carry openvax-v2 [--required FILE ...]
 
 1. Selects every member's records from the snapshot that
    osteosarc/data/bundles/NAME.spec.json pins (osteosarc.shared.build_shared_recipe),

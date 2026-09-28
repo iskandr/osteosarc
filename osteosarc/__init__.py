@@ -9,7 +9,7 @@ Test data:
 
     data.extract_reads(key, variants=[...], to="tests/data")      # a quick BAM of the reads there
     data.make_bundle("tests/data/mine", variants=[...], files=[...])  # a bundle anyone can rebuild
-    osteosarc.bundle_file("openvax-v1", member)                   # one member, as a local BAM
+    osteosarc.bundle_file("openvax-v2", member)                   # one member, as a local BAM
 
 Importing performs no network I/O.
 """
