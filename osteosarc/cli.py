@@ -220,8 +220,9 @@ def parser():
     make.add_argument("--assay", help="With a sample: only its BAMs of this assay, such as rna-seq")
     make.add_argument("--platform", help="With a sample: only its BAMs from this platform, such as ont")
     make.add_argument("--recipe", metavar="FILE",
-                      help="Make the bundle from a recipe instead, such as another bundle's recipe.json; its "
-                           "sources are fetched from the snapshot it names, unless given with --source")
+                      help="Make the bundle from a recipe instead, such as another bundle's recipe.json. Its "
+                           "BAMs are read through --snapshot, else the recipe's own snapshot if you have it, else "
+                           "your newest, which must list each BAM unchanged; or give them with --source")
     make.add_argument("--source", action="append", default=[], metavar="ID=LOCAL_BAM",
                       help="With --recipe: use a BAM you already have for one of its sources")
     make.add_argument("--header-policy", choices=("full", "compact"), default="full",
@@ -609,7 +610,8 @@ def test_data(args, cache):
     """test-data make, list, verify, export and check."""
     from pathlib import Path
 
-    from .bundles import export_bundle, generate_bundle, list_bundle, verify_bundle
+    from .bundles import export_bundle, generate_bundle, list_bundle, sources_to_read, verify_bundle
+    from .fixtures import validate_recipe
     from .shared import bundle_folder, check_fixtures, read_json
     from .views import plural, table
     action = args.test_data_command
@@ -618,12 +620,17 @@ def test_data(args, cache):
             if args.sources or args.variant or args.sv or args.assay or args.platform or args.unplaced_mates:
                 raise ValueError("--recipe makes the bundle from the recipe alone, which says how each BAM is read; "
                                  "drop the BAMs, --variant, --sv and --unplaced-mates")
-            recipe = read_json(args.recipe)
+            recipe = validate_recipe(read_json(args.recipe))
             given = dict(item.split("=", 1) for item in args.source)
             dataset = None
-            if set(recipe.get("sources", {})) - set(given):
-                # Its other sources are fetched from the snapshot the recipe was made from.
-                args.snapshot = args.snapshot or recipe.get("snapshot", {}).get("name")
+            if set(sources_to_read(recipe)) - set(given):
+                # Its BAMs are found through a snapshot: --snapshot, else the recipe's own if
+                # it's here, else the newest. Any will do in which each BAM is unchanged.
+                named = recipe["snapshot"] if isinstance(recipe.get("snapshot"), dict) else {}
+                own = [row["id"] for row in Dataset.snapshots(cache=cache) if row["id"] == named.get("id")
+                       or (named.get("id") is None and row["name"] == named.get("name"))]
+                if args.snapshot is None and own:
+                    args.snapshot = own[0]  # by ID: a name like 2026-09-25 would be read as a date
                 dataset = open_snapshot(args, cache, not args.offline)
             manifest = generate_bundle(recipe, args.output, sources=given, cache=cache, dataset=dataset,
                                        size_budget=args.size_budget, header_policy=args.header_policy)
