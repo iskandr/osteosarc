@@ -564,3 +564,14 @@ def test_sv_targets_keep_their_retained_sides_and_inserted_sequence():
     # From the spec, the SV panel and the SV candidates alike.
     for name in ("ATP5MG--KMT2A", "SV0055", "KLF15--PPIAP72"):
         assert all(e["retained_side"] in ("left", "right") for e in targets[name]["breakends"])
+
+
+def test_a_source_keeps_mates_with_no_position_only_where_a_librarys_records_may_need_them():
+    from osteosarc.shared import _needs_unplaced
+    placed = "r1\t0\tchr1\t100\t60\t10M\t*\t0\t0\tACGTACGTAC\t*"
+    lost = "r1\t69\t*\t0\t0\t*\t=\t100\t0\tACGTACGTAC\t*"
+    assert not _needs_unplaced(dict(sam=[placed]))
+    assert _needs_unplaced(dict(sam=[placed, lost]))
+    assert _needs_unplaced(dict(names=["r1"]))  # a named read's mate could be anywhere
+    assert _needs_unplaced(dict(records={"a" * 64: 1}))  # unless its bundle said otherwise
+    assert not _needs_unplaced(dict(records={"a" * 64: 1}, unplaced_mates=False))

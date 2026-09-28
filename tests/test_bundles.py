@@ -411,6 +411,8 @@ def test_the_cli_lists_and_checks_a_published_bundle(bam, tmp_path, capsys, tiny
 
 
 def test_a_bundles_library_fixtures_carry_forward_by_checksum(bam, tmp_path):
+    import pysam
+
     from osteosarc import SchemaError
     from osteosarc.shared import bundle_fixtures, match_records
     recipe = bundle_recipe(bam)
@@ -436,10 +438,26 @@ def test_a_bundles_library_fixtures_carry_forward_by_checksum(bam, tmp_path):
     assert carried["isovar/planned.sam"]["regions"] == [["chr1", 0, 5000]]
     assert all(contig == "chr1" for contig, _, _ in subset["regions"]) and subset["regions"]
     assert carried["isovar/none.sam"] == dict(subset, records={}, regions=[])
+    # None of these records lacks a position, so the next bundle's source needn't read those.
+    assert subset["unplaced_mates"] is False
     records = list(read_records(bam))
     assert match_records(records, subset["records"]) == subset["records"]
     with pytest.raises(IntegrityError, match="pinned records"):
         match_records(records[:1], subset["records"])
+    # A record with no position (an unaligned mate) makes the source keep them.
+    unplaced = tmp_path / "unplaced.bam"
+    with pysam.AlignmentFile(str(bam)) as source, pysam.AlignmentFile(str(unplaced), "wb", template=source) as out:
+        for read in source:
+            out.write(read)
+        read.query_name, read.flag, read.reference_id, read.reference_start = "lost", 1 | 4 | 128, -1, -1
+        read.cigarstring, read.mapping_quality = None, 0
+        out.write(read)
+    pysam.index(str(unplaced))
+    with_unplaced = copy.deepcopy(recipe)
+    with_unplaced["members"]["isovar/x.sam"]["policy"]["records"] = dict(record_multiset(unplaced))
+    with_unplaced["sources"]["rna"]["archive_sha256"] = digest(unplaced)
+    generate_bundle(with_unplaced, tmp_path / "with-unplaced", sources={"rna": unplaced})
+    assert bundle_fixtures(tmp_path / "with-unplaced")["isovar/x.sam"]["unplaced_mates"] is True
     recipe["targets"]["fixture:isovar/x.sam"].pop("consumer")
     generate_bundle(recipe, tmp_path / "anonymous", sources={"rna": bam})
     with pytest.raises(SchemaError, match="Can't carry isovar/x.sam"):

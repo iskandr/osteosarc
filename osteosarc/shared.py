@@ -375,7 +375,8 @@ def select_breakend_templates(templates, breakends, *, pad=1000, cap=50):
 def bundle_fixtures(bundle):
     """A bundle's library fixtures as required subsets pinned by checksum, so the
     next bundle keeps exactly their records once libraries no longer keep their
-    own copies: {name: dict(consumer, source, records, regions, description)}.
+    own copies: {name: dict(consumer, source, records, regions, description,
+    unplaced_mates)}, where unplaced_mates says whether any record has no position.
 
     Each fixture is planned from the regions its target records; bundles built
     before targets recorded them (openvax-v1) use the spans of their records.
@@ -384,7 +385,7 @@ def bundle_fixtures(bundle):
     bundle = Path(bundle)
     manifest = verify_bundle(bundle)
     recipe = read_json(bundle / "recipe.json")
-    subsets, unplanned = {}, defaultdict(list)
+    subsets, by_source = {}, defaultdict(list)
     for name, member in sorted(recipe["members"].items()):
         target = recipe["targets"][member["target"]]
         if target["kind"] != "fixture":
@@ -397,15 +398,29 @@ def bundle_fixtures(bundle):
                              description=target.get("description", name))
         if "regions" in target:
             subsets[name]["regions"] = target["regions"]
-        else:
-            unplanned[member["source"]].append(name)
-    for sid, names in unplanned.items():
+        by_source[member["source"]].append(name)
+    for sid, names in by_source.items():
         wanted = {key for name in names for key in subsets[name]["records"]}
-        spans = {r.digest: (r.read.reference_name, r.read.reference_start, r.read.reference_end)
-                 for r in _source_records(bundle, manifest, sid) if r.digest in wanted and not r.read.is_unmapped}
+        spans, unplaced = {}, set()
+        for r in _source_records(bundle, manifest, sid):
+            if r.digest in wanted:
+                if r.read.reference_id < 0 or r.read.reference_start < 0:
+                    unplaced.add(r.digest)
+                elif not r.read.is_unmapped:
+                    spans[r.digest] = (r.read.reference_name, r.read.reference_start, r.read.reference_end)
         for name in names:
-            subsets[name]["regions"] = merge_spans(spans[key] for key in subsets[name]["records"] if key in spans)
+            subsets[name]["unplaced_mates"] = any(key in unplaced for key in subsets[name]["records"])
+            if "regions" not in subsets[name]:
+                subsets[name]["regions"] = merge_spans(spans[key] for key in subsets[name]["records"] if key in spans)
     return subsets
+
+
+def _needs_unplaced(subset):
+    """Whether a library's required records may include mates with no position: pinned
+    records unless their bundle said none do, SAM lines with no position, and named
+    reads, whose mates could be anywhere."""
+    return bool(subset.get("unplaced_mates", "records" in subset) or subset.get("names")
+                or any(sam_span(line) is None for line in subset.get("sam", ())))
 
 
 def merge_required(carried, paths):
@@ -541,9 +556,9 @@ def _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, e
         return "none of the targets applies to it"
     label = dataset.short_name(file)  # names members as osteosarc reads --to names files
     return dict(file=file, label=label, mine=mine, covered=covered, sv_covered=sv_covered, pad=pad,
-                # A library's pinned records can include mates with no position: those sources keep them.
+                # A source keeps mates with no position where a library's records may need them.
                 source=_source_entry(dataset, file, header, resolve_regions(wanted, header), label,
-                                     unplaced_mates=unplaced_mates or bool(mine)),
+                                     unplaced_mates=unplaced_mates or any(map(_needs_unplaced, mine.values()))),
                 # Each target's window and breakends, in this source's contig names.
                 variant_regions={n: resolve_regions([r], header)[0] for n, r in variant_regions.items()},
                 breakend_regions={n: [resolve_regions([r], header)[0] for r in rs]
