@@ -621,9 +621,13 @@ def test_data(args, cache):
             recipe = read_json(args.recipe)
             given = dict(item.split("=", 1) for item in args.source)
             dataset = None
-            if set(recipe.get("sources", {})) - set(given):
-                # Its other sources are fetched from the snapshot the recipe was made from.
-                args.snapshot = args.snapshot or recipe.get("snapshot", {}).get("name")
+            needed = [source for sid, source in recipe.get("sources", {}).items() if sid not in given]
+            if any(not (s.get("identity", {}).get("url") and s["identity"].get("index_urls")) for s in needed):
+                # Found through a snapshot: the recipe's own if it's here, else the newest, as
+                # long as each BAM is still the one the recipe pins.
+                named = recipe.get("snapshot", {}).get("name")
+                here = {row["name"] for row in Dataset.snapshots(cache=cache)}
+                args.snapshot = args.snapshot or (named if named in here else None)
                 dataset = open_snapshot(args, cache, not args.offline)
             manifest = generate_bundle(recipe, args.output, sources=given, cache=cache, dataset=dataset,
                                        size_budget=args.size_budget, header_policy=args.header_policy)

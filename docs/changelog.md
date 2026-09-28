@@ -5,6 +5,17 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.14.3 (unreleased)
+
+Anyone can rebuild a bundle from its recipe
+([#89](https://github.com/iskandr/osteosarc/issues/89)).
+
+- A recipe's sources can be read from any snapshot in which each BAM is still the one
+  the recipe pins (its URL, key, size and modification time), not only the snapshot it
+  was made from, which only its builder had.
+- Recipes name each source's index (`identity.index_urls`), so `generate_bundle` and
+  `osteosarc test-data make --recipe` read them with no snapshot at all.
+
 ## 0.14.2 (2026-09-27)
 
 A tidier command line, from running every command and reading what it printed, and one

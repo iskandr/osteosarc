@@ -494,11 +494,11 @@ def generate_bundle(recipe, destination, *, sources=None, cache=None, dataset=No
                 identity = source["identity"]
                 lookup = identity["key"] if "key" in identity else identity.get("url", identity.get("id"))
                 asset = dataset.file(lookup)
+                # Any snapshot will do in which the BAM is still the one pinned: the same URL,
+                # key, size and modification time (the records are checked by checksum too).
                 for key in ("id", "key", "url", "size", "modified"):
                     if key in source["identity"] and getattr(asset, key) != source["identity"][key]:
                         raise IntegrityError(f"Snapshot source identity changed: {sid}/{key}")
-                if source.get("snapshot_id", dataset.id) != dataset.id:
-                    raise IntegrityError(f"Snapshot identity differs: {sid}")
                 if source.get("index") is not None:
                     options["index"] = source["index"]
                 inputs[sid] = dataset.extract_reads(asset, regions, **options)
