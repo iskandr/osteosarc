@@ -514,7 +514,7 @@ def generate_bundle(recipe, destination, *, sources=None, cache=None, dataset=No
                 made_in = source.get("snapshot_id", dataset.id)
                 if made_in != dataset.id and any(identity.get(key) is None for key in ("size", "modified")):
                     raise IntegrityError(f"Snapshot identity differs: source {sid} pins no size and modification "
-                                         f"time, so only the snapshot it was made from ({made_in[:12]}) can read it")
+                                         f"time, so only the snapshot it was made from ({str(made_in)[:12]}) can read it")
                 changed = [key for key in ("id", "key", "url", "size", "modified")
                            if key in identity and getattr(asset, key) != identity[key]]
                 if changed:

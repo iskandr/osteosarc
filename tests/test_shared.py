@@ -260,6 +260,9 @@ def test_a_bundle_is_made_from_variants_and_files_and_read_back(dataset, tmp_pat
     entry["identity"] = dict(key=key)
     with pytest.raises(IntegrityError, match="pins no size and modification time"):
         generate_bundle(recipe, tmp_path / "unpinned", dataset=dataset)
+    entry["snapshot_id"] = None
+    with pytest.raises(IntegrityError, match="pins no size and modification time"):
+        generate_bundle(recipe, tmp_path / "unpinned", dataset=dataset)
     entry["snapshot_id"] = dataset.id
     generate_bundle(recipe, tmp_path / "pinned", dataset=dataset)
     # Without a snapshot, a BAM on the web needs its index named.
@@ -336,6 +339,7 @@ def test_the_cli_makes_a_bundle_from_a_sample_and_variants(dataset, tmp_path, mo
     # A recipe's BAMs are found through --snapshot, else its own snapshot if it's here (by
     # ID), else the newest; a recipe that reads no BAM opens none.
     import osteosarc.bundles as bundles
+    from osteosarc import Dataset
 
     def generate_bundle(recipe, output, **kwargs):
         raise shared.OfflineError("stop here")
@@ -356,6 +360,16 @@ def test_the_cli_makes_a_bundle_from_a_sample_and_variants(dataset, tmp_path, mo
         return opened
     assert make(dataset.id) == [dataset.id]
     assert make("a" * 64) == [None]
+    assert make(None) == [None]
+    (row,) = [row for row in Dataset.snapshots(cache=dataset.cache) if row["id"] == dataset.id]
+    recipe.write_text(recipe.read_text().replace('"2026-01-01"', json.dumps(row["name"])))
+    opened.clear()
+    cli.main(["--offline", "--cache", str(dataset.cache.root), "test-data", "make", str(tmp_path / "c"),
+              "--recipe", str(recipe)])
+    assert opened == [dataset.id]  # a recipe with only a name: that snapshot, if it's here
+    capsys.readouterr()
+    # Opened by its full ID, not taken as a name or date.
+    assert Dataset.open(name=dataset.id, cache=dataset.cache, offline=True).id == dataset.id
     assert make(dataset.id, None, "--snapshot", "other") == ["other"]
     assert make(dataset.id, dict(version=1, kind="omitted", reason="none here")) == []
     # A malformed recipe is reported, not a traceback.
