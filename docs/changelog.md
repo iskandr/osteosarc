@@ -5,6 +5,10 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## Unreleased
+
+- Python 3.14 support: the tests run on Python 3.9 to 3.14.
+
 ## 0.14.4 (2026-09-28)
 
 openvax-v2, the next bundle of reads the OpenVax libraries share
