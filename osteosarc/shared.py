@@ -464,9 +464,37 @@ def _source_entry(dataset, file, header, regions, label, unplaced_mates):
                 library=file.resolved("library"), product=file.key, label=label,
                 acquisition=dict(fetch_pairs=True, timeout=EXTRACTION_TIMEOUT,
                                  **({} if unplaced_mates else {"unplaced_mates": False})), snapshot_id=dataset.id,
-                regions=[dict(contig=r.contig, start=r.start, end=r.end, assembly=r.assembly,
-                              **({"reference_length": r.reference_length} if r.reference_length else {}))
-                         for r in regions])
+                regions=_region_dicts(regions))
+
+
+def _region_dicts(regions):
+    return [dict(contig=r.contig, start=r.start, end=r.end, assembly=r.assembly,
+                 **({"reference_length": r.reference_length} if r.reference_length else {})) for r in regions]
+
+
+def _cigar_length(cigar):
+    """Reference bases a CIGAR string covers."""
+    import re
+    return sum(int(n) for n, op in re.findall(r"(\d+)([MIDNSHP=X])", cigar) if op in "MDN=X")
+
+
+def _split_alignments(index, members, regions):
+    """Where the kept templates' other alignments (their records' SA tags) lie,
+    as (contig, start, end) spans the source's regions don't reach."""
+    from .reads import overlap_test
+    kept = {digest for member in members.values() for digest in member["policy"]["records"]}
+    inside = overlap_test((r["contig"], r["start"], r["end"]) for r in regions)
+    spans = []
+    for record in index.records:
+        if record.digest in kept and record.read.has_tag("SA"):
+            for entry in record.read.get_tag("SA").split(";"):
+                if entry:
+                    contig, position, _strand, cigar, *_ = entry.split(",")
+                    start = int(position) - 1
+                    end = start + max(1, _cigar_length(cigar))
+                    if not inside(contig, start, end):
+                        spans.append((contig, start, end))
+    return merge_spans(spans)
 
 
 def _plan_source(url, dataset, targets, windows, breakends, observed_in, mine, everywhere, sv_everywhere, pad,
@@ -645,10 +673,12 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, req
     observed = ({url for found in observed_in.values() for url in found}
                 if spec.get("sources", {}).get("observed", True) else set())
     urls = sorted(everywhere | sv_everywhere | {s["source"] for s in subsets.values()} | observed)
+    split = selection.get("supplementary", False)
     recipe = dict(schema_version=1, id=spec["id"], kind="shared",
                   snapshot=dict(name=dataset.name, id=dataset.id),
                   selection=dict(classifier="osteosarc.alleles v1", caps=caps, low_quality_alt=low_quality_alt,
-                                 structural=structural, order="SHA-256 of read group, tab, read name"),
+                                 structural=structural, order="SHA-256 of read group, tab, read name",
+                                 **({"supplementary": True} if split else {})),
                   aliases=spec["targets"].get("renamed", {}), targets=targets, sources={}, members={},
                   redistribution=spec.get("redistribution", {"license": "unresolved"}))
     plans = []
@@ -680,22 +710,37 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, req
     for name in subsets:
         _add_member(names, name, None)
 
-    def extract(plan):
+    def select(plan):
+        """A source's members: read its regions, and select. With supplementary, the
+        kept templates' alignments elsewhere (SA tags) join the regions, and the source
+        is read and selected again: the same templates, now with those records too."""
         subset = dataset.extract_reads(plan["file"], [Region(**r) for r in plan["source"]["regions"]],
                                        **plan["source"]["acquisition"])
-        return plan, subset
+        index = _source_index(subset.path, plan, windows)
+        selected = _select_source(plan, index, windows, targets, caps, low_quality_alt, structural["cap"])
+        elsewhere = _split_alignments(index, selected[0], plan["source"]["regions"]) if split else []
+        if elsewhere:
+            header = dataset.inspect_alignment(plan["file"]).header
+            lengths = {row["SN"]: row["LN"] for row in header.get("SQ", [])}
+            assembly = plan["source"]["assembly"]
+            added = [Region(contig, start, end, assembly, lengths.get(contig)) for contig, start, end in elsewhere]
+            plan["source"]["regions"] = _region_dicts(resolve_regions(
+                [Region(**r) for r in plan["source"]["regions"]] + added, header))
+            subset = dataset.extract_reads(plan["file"], [Region(**r) for r in plan["source"]["regions"]],
+                                           **plan["source"]["acquisition"])
+            index = _source_index(subset.path, plan, windows)
+            selected = _select_source(plan, index, windows, targets, caps, low_quality_alt, structural["cap"])
+        return plan, subset, elsewhere, selected
 
     problems, results = [], {}
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        for future in as_completed([pool.submit(extract, plan) for plan in plans]):
-            plan, subset = future.result()
-            index = _source_index(subset.path, plan, windows)
-            members, fixtures, missing = _select_source(plan, index, windows, targets, caps, low_quality_alt,
-                                                        structural["cap"])
+        for future in as_completed([pool.submit(select, plan) for plan in plans]):
+            plan, subset, elsewhere, (members, fixtures, missing) = future.result()
             results[plan["label"]] = (plan, members, fixtures)
             problems += missing
             log(f"{plan['file'].key}: read {plural(subset.receipt['records'], 'record')}, "
-                f"kept {plural(len(members) + len(fixtures), 'member')}")
+                f"kept {plural(len(members) + len(fixtures), 'member')}"
+                + (f", with split alignments in {plural(len(elsewhere), 'more region')}" if elsewhere else ""))
     if problems:
         # Every source was read (and its extraction cached), so a rerun after fixing these is quick.
         raise IntegrityError(f"{len(problems)} required fixtures couldn't be matched:\n" + "\n".join(problems))

@@ -197,8 +197,9 @@ def test_fixtures_kept_in_json_are_read_in_each_layout(tmp_path):
             _local_sam(dict(json="f.json", pointer=pointer), tmp_path)
 
 
-def _dync1h1_bam(path):
-    """A local BAM at DYNC1H1-chr14-101980529 (G>A): 3 alt and 2 ref reads, and reference context."""
+def _dync1h1_bam(path, split=False):
+    """A local BAM at DYNC1H1-chr14-101980529 (G>A): 3 alt and 2 ref reads, and reference context.
+    With split, alt1 is split: part of it aligns on chr2 (a supplementary record, its SA tag)."""
     position = 101980529
     start = position - 1 - 20
     reference = {i: "ACGT"[(i * 7) % 4] for i in range(start - 200, start + 260)}
@@ -206,6 +207,13 @@ def _dync1h1_bam(path):
     header = dict(HD={"VN": "1.6", "SO": "coordinate"},
                   SQ=[dict(SN="chr1", LN=248956422), dict(SN="chr2", LN=242193529), dict(SN="chr14", LN=107043718)])
     with pysam.AlignmentFile(str(path), "wb", header=header) as out:
+        if split:
+            part = pysam.AlignedSegment(out.header)
+            part.query_name, part.flag, part.reference_id, part.reference_start = "alt1", 2048, 1, 5000
+            part.cigarstring, part.query_sequence = "40M", "ACGT" * 10
+            part.query_qualities, part.mapping_quality = pysam.qualitystring_to_array("I" * 40), 60
+            part.set_tag("SA", f"chr14,{start + 1},+,40M,60,0;")
+            out.write(part)
         for name, base in [("alt1", "A"), ("alt2", "A"), ("alt3", "A"), ("ref1", "G"), ("ref2", "G")]:
             read = pysam.AlignedSegment(out.header)
             sequence = "".join(base if i == position - 1 else reference[i] for i in range(start, start + 40))
@@ -213,6 +221,8 @@ def _dync1h1_bam(path):
             read.cigarstring, read.query_sequence = "40M", sequence
             read.query_qualities = pysam.qualitystring_to_array("I" * 40)
             read.mapping_quality = 60
+            if name == "alt1" and split:
+                read.set_tag("SA", "chr2,5001,+,40M,60,0;")
             if name == "alt3":  # its mate didn't align and has no position, as STAR writes it
                 read.flag, read.next_reference_id, read.next_reference_start = 1 | 8 | 64, -1, -1
             out.write(read)
@@ -494,3 +504,33 @@ def test_selecting_from_windows_matches_selecting_from_every_record(tmp_path):
     assert members["source.v"]["observed"]["alt"] > DEFAULT_CAPS["alt"]
     assert members["source.sv"]["observed"]["joined"] > 25
     assert len(_source_index(path, plan, windows).records) < len(everything.records) / 2
+
+
+def test_kept_templates_keep_their_split_alignments_when_the_spec_asks(dataset, tmp_path, monkeypatch):
+    import shutil
+
+    import osteosarc.shared as shared
+    from osteosarc import extract_reads, generate_bundle, inspect_alignment
+    from osteosarc.records import record_multiset
+    from osteosarc.shared import build_shared_recipe, bundle_spec
+    if shutil.which("samtools") is None:
+        pytest.skip("samtools required")
+    local = tmp_path / "rna.bam"
+    monkeypatch.setattr(shared, "reference_sequence", _dync1h1_bam(local, split=True))
+    monkeypatch.setattr(dataset, "inspect_alignment", lambda file, **kw: inspect_alignment(str(local), cache=dataset.cache))
+    monkeypatch.setattr(dataset, "extract_reads", lambda file, regions, **kw: extract_reads(
+        str(local), regions, cache=dataset.cache, fetch_pairs=kw.get("fetch_pairs", False),
+        unplaced_mates=kw.get("unplaced_mates", True)))
+    key = "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"
+    spec = bundle_spec(dataset, "split", variants=["DYNC1H1-chr14-101980529"], files=[key])
+    plain = build_shared_recipe(spec, dataset, required={}, log=lambda text: None)
+    spec["selection"]["supplementary"] = True
+    split = build_shared_recipe(spec, dataset, required={}, log=lambda text: None)
+    (source,) = split["sources"].values()
+    assert split["selection"]["supplementary"] and "supplementary" not in plain["selection"]
+    assert any(r["contig"] == "chr2" for r in source["regions"])  # so a rebuild reads it too
+    (before,), (after,) = plain["members"].values(), split["members"].values()
+    assert len(after["policy"]["records"]) == len(before["policy"]["records"]) + 1
+    folder = generate_bundle(split, tmp_path / "bundle", dataset=dataset)
+    assert sum(record_multiset(tmp_path / "bundle" / folder["sources"][next(iter(folder["sources"]))]["bam"]).values()) \
+        == sum(after["policy"]["records"].values())
