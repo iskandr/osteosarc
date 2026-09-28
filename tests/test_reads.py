@@ -124,6 +124,22 @@ def test_remote_extraction_refuses_changed_header_source(bam, tmp_path, monkeypa
         extract_reads(url, [Region("chr1", 100, 170, "GRCh38")], cache=cache,
                       index=str(bam) + ".bai", snapshot_id="snapshot")
 
+    # Too many records is remembered only while the object is still the one read.
+    from osteosarc.errors import RecordLimitError
+    monkeypatch.setattr(reads, "_run", remote)
+
+    def too_many(*args, changed):
+        if changed:
+            identity["etag"] = '"replacement"'
+        raise RecordLimitError("Acquisition exceeds record limit")
+    for changed in (True, False):
+        identity["etag"] = '"original"'
+        monkeypatch.setattr(reads, "_run_bounded", lambda *a, changed=changed: too_many(*a, changed=changed))
+        with pytest.raises(RecordLimitError):
+            extract_reads(url, [Region("chr1", 100, 180, "GRCh38")], cache=cache,
+                          index=str(bam) + ".bai", snapshot_id="snapshot", max_records=1)
+        assert len(list((cache.workspace / "derived").glob("*.over-limit.json"))) == (0 if changed else 1)
+
 
 def test_samtools_version_ignores_non_utf8_distribution_build_flags(monkeypatch):
     from subprocess import CompletedProcess

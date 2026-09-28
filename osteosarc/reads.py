@@ -415,7 +415,8 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
     Cached results are immutable snapshot derivatives; they are verified offline
     without rechecking the remote object. New requests check remote identity
     before and after extraction and retain that identity in their receipt.
-    max_records stops acquisition on overflow and discards the partial output.
+    max_records stops acquisition on overflow, discards the partial output and
+    raises RecordLimitError; asking again, even offline, raises it without reading.
     """
     if max_records is not None and (type(max_records) is not int or max_records < 1):
         raise ValueError("max_records must be a positive integer")
@@ -584,7 +585,12 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
             try:
                 commands, count = acquire()
             except RecordLimitError:
-                write_json(over_limit, dict(request=request, max_records=max_records))
+                try:  # remembered only if the remote object is still the one read
+                    unchanged = not remote or _remote_identity(location, min(timeout, 60)) == before
+                except OsteosarcError:
+                    unchanged = False
+                if unchanged:
+                    write_json(over_limit, dict(request=request, max_records=max_records))
                 raise
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
                 if remote:  # samtools may have failed because the object changed: say so if it did

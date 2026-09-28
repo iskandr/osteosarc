@@ -9,7 +9,7 @@ from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass, replace
 
 from .cache import Cache, digest, file_lock, stable_id, write_json
-from .errors import CoordinateError, IntegrityError, OsteosarcError
+from .errors import CoordinateError, IntegrityError, OsteosarcError, RecordLimitError
 from .models import Region
 from .reads import ReadFilter, _cached_subset, extract_reads, inspect_alignment, resolve_regions
 from .records import read_records, record_multiset, split_alignments
@@ -253,7 +253,7 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
             fetched = list(read_records(subset.path))
             candidate_counts |= Counter(r.digest for r in fetched)
             if sum(candidate_counts.values()) > policy.max_records:
-                raise IntegrityError("Acquired candidates exceed recovery record limit")
+                raise RecordLimitError("Acquired candidates exceed recovery record limit")
             add_candidates(fetched)
             found = Counter()
             found_records = {}
@@ -271,7 +271,7 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
                 else:
                     unresolved.setdefault(identity, "missing partner or conflicting alignment fields")
             if sum((counts | found).values()) > policy.max_records:
-                raise IntegrityError("Retained records exceed recovery record limit")
+                raise RecordLimitError("Retained records exceed recovery record limit")
             counts |= found
             records.update(found_records)
             round_number += 1

@@ -5,7 +5,7 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
-## 0.14.4 (unreleased)
+## 0.14.4 (2026-09-28)
 
 openvax-v2, the next bundle of reads the OpenVax libraries share
 ([#71](https://github.com/iskandr/osteosarc/issues/71),
@@ -25,8 +25,9 @@ openvax-v2, the next bundle of reads the OpenVax libraries share
   insertion.
 - Carrying a bundle's library records forward keeps a source's mates with no position
   only if one of those records lacks a position.
-- Reading past `max_records` raises RecordLimitError (an IntegrityError), and the cache
-  remembers it: asking again, even offline, gives the same answer without reading.
+- Reading past `max_records`, or a recovery policy's, raises RecordLimitError (an
+  IntegrityError). For regional reads the cache remembers it: asking again, even
+  offline, gives the same answer without reading.
 
 openvax-v1 stays published, and the libraries move to openvax-v2 at their own pace.
 

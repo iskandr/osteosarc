@@ -107,6 +107,8 @@ Osteosarc's errors all derive from OsteosarcError:
 
 - **OfflineError:** something isn't downloaded and the snapshot is offline.
 - **IntegrityError:** a checksum or a file's identity doesn't match.
+- **RecordLimitError:** reading some regions found more records than `max_records`
+  allows (an IntegrityError).
 - **CoordinateError:** a region or variant can't be used, for example on another genome build.
 - **SchemaError:** a source or recipe isn't in the expected shape.
 - **NoSnapshotsError:** there's no snapshot yet; run `Dataset.sync()`.

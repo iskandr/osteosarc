@@ -35,6 +35,7 @@ from .errors import (
     NoSnapshotsError,
     OfflineError,
     OsteosarcError,
+    RecordLimitError,
     SchemaError,
 )
 from .fixtures import load_panel, validate_recipe
@@ -73,5 +74,5 @@ __all__ = [
     # Corrections
     "CORRECTIONS", "Change", "Correction", "CurationWarning", "glob",
     # Errors
-    "OsteosarcError", "CoordinateError", "IntegrityError", "NoSnapshotsError", "OfflineError", "SchemaError",
+    "OsteosarcError", "CoordinateError", "IntegrityError", "NoSnapshotsError", "OfflineError", "RecordLimitError", "SchemaError",
 ]
