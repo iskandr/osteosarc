@@ -5,7 +5,7 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
-## 0.14.2 (unreleased)
+## 0.14.2 (2026-09-27)
 
 A tidier command line, from running every command and reading what it printed, and one
 place that decides where the OpenVax libraries' shared cache is.
