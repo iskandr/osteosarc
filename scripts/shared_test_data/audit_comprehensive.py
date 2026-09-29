@@ -24,6 +24,7 @@ from osteosarc.corpus import (  # noqa: E402
     NEGATIVE_CONTROLS,
     RNA_ASSAYS,
     snv_read_support,
+    verify_control_extracts,
 )
 from osteosarc.reads import resolve_regions  # noqa: E402
 from osteosarc.reference import reference_sequence  # noqa: E402
@@ -36,6 +37,10 @@ INPUT = ROOT / "tests/data/comprehensive"
 def audit(output, cache=None):
     spec = read_json(INPUT / "spec.json")
     catalog = read_json(INPUT / "catalog.json.gz")
+    control_data = read_json(output / "controls/audit.json")
+    if control_data["snapshot"] != spec["snapshot"] or control_data["catalog_sha256"] != digest(INPUT / "catalog.json.gz"):
+        raise ValueError("Control extracts refer to other inputs")
+    verify_control_extracts(output, control_data)
     bundle = output / spec["id"]
     manifest = verify_bundle(bundle)
     recipe = read_json(bundle / "recipe.json")
@@ -101,12 +106,6 @@ def audit(output, cache=None):
                             if target["kind"] == "sv" else "Balanced fixtures are not abundance estimates."))
     audits = []
     import pysam
-    control_data = read_json(output / "controls/audit.json")
-    if control_data["snapshot"] != spec["snapshot"] or control_data["catalog_sha256"] != digest(INPUT / "catalog.json.gz"):
-        raise ValueError("Control extracts refer to other inputs")
-    for name, checksum in control_data["files"].items():
-        if digest(output / "controls" / name) != checksum:
-            raise ValueError(f"Control extract changed: {name}")
     if {a["source_url"] for a in control_data["audits"]} != expected_sources:
         raise ValueError("Control extracts do not cover every all-target source")
     for sid, source in recipe["sources"].items():

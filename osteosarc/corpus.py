@@ -6,6 +6,7 @@ products of the same biological sample. A zero is only a measured zero.
 """
 
 from collections import Counter, defaultdict
+from pathlib import Path
 
 from .errors import IntegrityError
 
@@ -17,6 +18,51 @@ AUDIT_SNVS = (*NEGATIVE_CONTROLS, *DISCORDANCE_CONTROLS)
 CONTROL_THRESHOLDS = dict(tumor_depth=50, tumor_alt=10, tumor_vaf=0.10,
                           normal_depth=30, normal_max_vaf=0.01, rna_ref=20)
 COUNT_FIELDS = ("ref_reads", "alt_reads", "other_reads", "total_reads")
+
+
+def verify_control_extracts(output, control):
+    """Bind each control's source and delivered BAM/index to its acquisition receipt.
+
+    Recounting verifies the bases in an extract, not which source supplied them.
+    Both corpus audits use these checks before attributing counts to a product.
+    Receipts remain evidence of acquisition, not proof of biological identity.
+    """
+    from .bundles import safe_path, verify_manifest_files
+
+    directory = Path(output) / "controls"
+    files = control["files"]
+    verify_manifest_files(directory, files)
+    sources = {}
+    for row in control["audits"]:
+        source = row["source"]
+        identity = (row["source_url"], row["extract_file"], row["source_extract_sha256"])
+        if source in sources and sources[source] != identity:
+            raise IntegrityError(f"Conflicting control source/extract: {source}")
+        sources[source] = identity
+    if set(sources) != set(control["acquisition"]):
+        raise IntegrityError("Control sources differ from acquisition receipts")
+    if len({identity[0] for identity in sources.values()}) != len(sources):
+        raise IntegrityError("Multiple control labels refer to the same source URL")
+    used = set()
+    for source, (url, filename, checksum) in sources.items():
+        receipt = control["acquisition"][source]
+        request = receipt.get("request", {})
+        if request.get("source") != url:
+            raise IntegrityError(f"Control source URL differs from acquisition receipt: {source}")
+        if request.get("snapshot_id") != control["snapshot"]["id"]:
+            raise IntegrityError(f"Control snapshot differs from acquisition receipt: {source}")
+        path = safe_path(output, filename)
+        if path.parent != directory:
+            raise IntegrityError(f"Control extract must be in controls/: {filename}")
+        bam, index = path.name, path.name + ".bai"
+        acquired = receipt.get("files", {})
+        if not checksum or checksum != files.get(bam) or checksum != acquired.get("reads.bam"):
+            raise IntegrityError(f"Control BAM differs from acquisition receipt: {source}")
+        if not files.get(index) or files[index] != acquired.get("reads.bam.bai"):
+            raise IntegrityError(f"Control index differs from acquisition receipt: {source}")
+        used.update((bam, index))
+    if used != set(files):
+        raise IntegrityError("Control file inventory differs from the audited BAM/index pairs")
 
 
 def counts(row):

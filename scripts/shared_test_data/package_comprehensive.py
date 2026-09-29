@@ -20,8 +20,8 @@ INPUT = ROOT / "tests/data/comprehensive"
 
 
 def package(output, *, evidence_only=False):
-    from verify_evidence_comprehensive import verify
-    verify(output)
+    from scripts.shared_test_data.verify_evidence_comprehensive import verify
+    evidence_audit = verify(output)
     spec = read_json(INPUT / "spec.json")
     bundle = output / spec["id"]
     if not evidence_only:
@@ -43,6 +43,17 @@ def package(output, *, evidence_only=False):
         if digest(INPUT / name) != checksum:
             raise ValueError(f"Evidence input changed: {name}")
     files = {"evidence/" + p.name: p for p in INPUT.iterdir() if p.is_file()}
+    discrepancies = evidence_audit["published_zero_rna_discrepancies"]
+    if discrepancies:
+        rna_result = (
+            f"Independent recounts found high-quality ALT templates in {len(discrepancies)} "
+            "control/source comparisons despite published zero RNA ALT counts. "
+            "These controls are not uniformly RNA-negative; see published_zero_rna_discrepancies "
+            "in audit/evidence-audit.json for the affected variants, sources and counts. ")
+    else:
+        rna_result = (
+            f"The {len(evidence_audit['negative_controls'])} controls have zero high-quality ALT templates "
+            f"in all {evidence_audit['tumor_rna_products_checked']} tested tumor RNA products. ")
     readme_path = output / ("README-evidence.md" if evidence_only else "README-dataset.md")
     readme_path.write_text(
         "# Osteosarc comprehensive test dataset\n\n"
@@ -53,9 +64,10 @@ def package(output, *, evidence_only=False):
           "manifest.json pins every delivered file by SHA-256. Dataset: CC0-1.0; code: Apache-2.0.\n\n"
           "From this extracted directory, with Python and the dependencies in reproduction/pyproject.toml installed:\n\n"
           "```sh\npython reproduction/scripts/shared_test_data/verify_evidence_comprehensive.py .\n```\n\n"
-          "This reproduces the catalogue and all 140 control recounts offline. It needs no source BAM downloads or website snapshot. "
-          "The four controls have zero high-quality ALT templates in all 15 tested tumor RNA products. "
-          "Coverage limitations, BTN3A3's blood-RNA summary exception, and NR2F2's historical RNA evidence are preserved explicitly.\n")
+          f"This reproduces the catalogue and all {evidence_audit['control_recounts_verified']} control recounts offline. "
+          "It needs no source BAM downloads or website snapshot. "
+        + rna_result
+        + "Coverage limitations, BTN3A3's blood-RNA summary exception, and NR2F2's historical RNA evidence are preserved explicitly.\n")
     files["README.md"] = readme_path
     if not evidence_only:
         files.update({"reads/" + str(p.relative_to(bundle)): p for p in bundle.rglob("*") if p.is_file()})

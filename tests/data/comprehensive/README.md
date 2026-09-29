@@ -98,6 +98,10 @@ and base quality ≥20. MAPQ 255 is accepted only with NH=1; missing base qualit
 are unknown. Overlapping mates with conflicting bases count as `other`.
 Any alternate reads contradicting the published zeros are reported in
 `published_zero_rna_discrepancies`, not hidden by changing thresholds.
+The packaged README reports these discrepancies when present; it claims zero
+high-quality RNA ALT only when the independent recounts confirm that result.
+Both audit paths bind every count source and delivered BAM/index checksum to
+the original acquisition receipt and snapshot before attributing its reads.
 
 ## Meaning of a support cell
 
@@ -157,7 +161,8 @@ repeated from the delivered files without downloading any BAMs.
 Every selected record is pinned with its binary BAM identity and multiplicity.
 All openvax-v2 library members are checked for exact preservation. Vaccine
 coverage is checked against every all-target source, including empty members.
-Carry-forward acquisition queries known mapped record starts, avoiding the long
+Carry-forward acquisition queries known record starts, including placed-unmapped
+records, avoiding the long
 introns spanned by historical fixture windows; every required binary record and
 its multiplicity must still be recovered.
 The new recipe gives the GABBR1/SLC29A1, OTUD7A/FMN1 and PARD3B/CDKN2B fusions

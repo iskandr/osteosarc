@@ -388,9 +388,10 @@ def bundle_fixtures(bundle, *, compact_regions=False):
 
     Each fixture is planned from the regions its target records; bundles built
     before targets recorded them (openvax-v1) use the spans of their records.
-    With compact_regions, mapped records are queried at their first reference
-    base instead. This avoids fetching entire introns of spliced RNA records;
-    exact record checksums and multiplicities still determine what is kept.
+    With compact_regions, positioned records (including placed-unmapped ones)
+    are queried at their first reference base instead. This avoids fetching entire
+    introns of spliced RNA records; exact record checksums and multiplicities
+    still determine what is kept.
     """
     from .bundles import verify_bundle
     bundle = Path(bundle)
@@ -417,7 +418,7 @@ def bundle_fixtures(bundle, *, compact_regions=False):
             if r.digest in wanted:
                 if r.read.reference_id < 0 or r.read.reference_start < 0:
                     unplaced.add(r.digest)
-                elif not r.read.is_unmapped:
+                elif compact_regions or not r.read.is_unmapped:
                     spans[r.digest] = (r.read.reference_name, r.read.reference_start,
                                        r.read.reference_start + 1 if compact_regions else r.read.reference_end)
         for name in names:

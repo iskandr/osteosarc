@@ -22,6 +22,7 @@ from osteosarc.corpus import (  # noqa: E402
     RNA_ASSAYS,
     evidence_catalog,
     snv_read_support,
+    verify_control_extracts,
 )
 from osteosarc.reads import resolve_regions  # noqa: E402
 from osteosarc.shared import read_json  # noqa: E402
@@ -40,9 +41,7 @@ def verify(output):
     control = read_json(output / "controls/audit.json")
     if control["snapshot"] != spec["snapshot"] or control["catalog_sha256"] != digest(INPUT / "catalog.json.gz"):
         raise ValueError("Controls refer to different evidence inputs")
-    for name, checksum in control["files"].items():
-        if digest(output / "controls" / name) != checksum:
-            raise ValueError(f"Control file changed: {name}")
+    verify_control_extracts(output, control)
     expected = {(url, vid) for url in spec["sources"]["all_targets"] for vid in AUDIT_SNVS}
     rows = control["audits"]
     if len(rows) != len(expected) or {(r["source_url"], r["variant_id"]) for r in rows} != expected:
@@ -65,6 +64,7 @@ def verify(output):
     report = dict(schema_version=1, component="evidence-and-unsampled-controls", snapshot=spec["snapshot"],
                   catalog_sha256=digest(INPUT / "catalog.json.gz"), controls_audit_sha256=digest(output / "controls/audit.json"),
                   catalogue_rebuilt_exactly=True, control_recounts_verified=len(rows),
+                  tumor_rna_products_checked=len(rna),
                   tumor_rna_negative_recounts=len(negative), published_zero_rna_discrepancies=discrepancies,
                   negative_controls=catalog["negative_controls"], known_rna_disagreements=catalog["known_rna_disagreements"],
                   summary=catalog["summary"],

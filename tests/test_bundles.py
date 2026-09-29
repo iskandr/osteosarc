@@ -534,6 +534,35 @@ def test_a_bundles_library_fixtures_carry_forward_by_checksum(bam, tmp_path):
         bundle_fixtures(tmp_path / "anonymous")
 
 
+def test_compact_carry_recovers_placed_unmapped_records(bam, tmp_path):
+    import pysam
+
+    from osteosarc import Region, extract_reads
+    from osteosarc.shared import bundle_fixtures, match_records
+
+    placed = tmp_path / "placed.bam"
+    with pysam.AlignmentFile(bam) as source, pysam.AlignmentFile(placed, "wb", template=source) as out:
+        read = pysam.AlignedSegment(out.header)
+        read.query_name, read.flag = "placed-unmapped", 4
+        read.reference_id, read.reference_start = 0, 100
+        read.query_sequence, read.query_qualities = "ACGT", [40] * 4
+        out.write(read)
+        out.write(read)  # Keep exact multiplicity, too.
+    pysam.index(str(placed))
+    recipe = bundle_recipe(placed)
+    recipe["targets"] = {"fixture": dict(kind="fixture", assembly="GRCh38", reference=dict(source="library"),
+        consumer="isovar", description="Placed-unmapped records", regions=[["chr1", 100, 101]])}
+    recipe["members"] = {"isovar/placed.bam": dict(source="rna", target="fixture",
+        policy=dict(kind="exact", version=1, records=dict(record_multiset(placed))))}
+    generate_bundle(recipe, tmp_path / "bundle", sources={"rna": placed})
+    carried = bundle_fixtures(tmp_path / "bundle", compact_regions=True)["isovar/placed.bam"]
+    assert carried["regions"] == [["chr1", 100, 101]]
+    assert carried["unplaced_mates"] is False
+    recovered = extract_reads(placed, [Region(c, s, e, "GRCh38") for c, s, e in carried["regions"]],
+                              cache=tmp_path / "cache")
+    assert match_records(list(read_records(recovered.path)), carried["records"]) == record_multiset(placed)
+
+
 def test_fresh_lists_replace_a_librarys_carried_fixtures(tmp_path):
     import gzip
 

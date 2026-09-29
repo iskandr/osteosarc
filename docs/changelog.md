@@ -24,6 +24,9 @@ snapshot (by name or download date) for reproducible analyses. Full release note
   openvax-v3 read specification is an unpublished candidate.
 - Shared read builds can checkpoint completed source selections and set their
   supplementary-alignment depth and region limits explicitly in the spec.
+- Compact carry-forward preserves query positions for placed-unmapped records.
+  Comprehensive control audits verify source URLs and BAM/index checksums against
+  acquisition receipts; packaged RNA-support claims follow the actual recounts.
 
 ## 0.14.4 (2026-09-28)
 
