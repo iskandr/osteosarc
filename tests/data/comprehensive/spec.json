@@ -1,0 +1,555 @@
+{
+  "description": "Comprehensive vaccine and longitudinal RNA test corpus, with all catalog variants, RNA-negative DNA-positive SNVs, and structural regressions. Candidate build; not published.",
+  "id": "openvax-v3",
+  "redistribution": {
+    "license": "CC0-1.0",
+    "source": "https://registry.opendata.aws/sid-osteosarc/"
+  },
+  "selection": {
+    "caps": {
+      "alt": 20,
+      "other": 5,
+      "ref": 10,
+      "uncallable": 2
+    },
+    "low_quality_alt": 2,
+    "split_depth": 1000000,
+    "split_regions": 2000,
+    "structural": {
+      "cap": 50,
+      "window": 1000
+    },
+    "supplementary": true,
+    "unplaced_mates": false
+  },
+  "snapshot": {
+    "id": "efb65d4b683bda162879c86c0ea889afcc64704b5228224c061109f306503b91",
+    "name": "2026-09-28"
+  },
+  "sources": {
+    "all_targets": [
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT_dedup/IPISRC044_T1_sclrs_ONT_dedup.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT_dedup/IPISRC044_T2_sclrs_ONT_dedup.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T3_sclrs_ONT/IPISRC044_T3_sclrs_ONT/IPISRC044_T3_sclrs_ONT_dedup/IPISRC044_T3_sclrs_ONT_dedup.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2025.01.06/RNA/2025.01.06.rna.ucla-core/processed/STAR/25.03.23.rna.ucla.2025.01.resection.tcga.d32.protocolAligned.sorted.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-duplicates/sarek24_bostongene/alignment/preprocessing/recalibrated/normal_bg24/normal_bg24.recal.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-duplicates/sarek24_bostongene/alignment/preprocessing/recalibrated/tumor_bg24/tumor_bg24.recal.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-duplicates/sarek_bostongene22/sarek_bostongene22_alignment/alignment/preprocessing/recalibrated/normal_bg22/normal_bg22.recal.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-duplicates/sarek_bostongene22/sarek_bostongene22_alignment/alignment/preprocessing/recalibrated/tumor_bg22/tumor_bg22.recal.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T0_personalis/alignments/dna/IPISRC044_normal_personalis.redux.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T0_personalis/alignments/dna/IPISRC044_tumor_T0_personalis.redux.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T0_personalis/alignments/rna/IPISRC044_tumor_T0_personalis_rna.md.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T1_organoid_ucla/alignments/dna/IPISRC044_normal_ucla.redux.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T1_organoid_ucla/alignments/dna/IPISRC044_tumor_T1_organoid_ucla.redux.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T1_ucla/alignments/dna/IPISRC044_normal_ucla.redux.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T1_ucla/alignments/dna/IPISRC044_tumor_T1_ucla.redux.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T1_ucla/alignments/rna/IPISRC044_tumor_T1_ucla_rna.md.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T2_ucla/alignments/dna/IPISRC044_normal_ucla.redux.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T2_ucla/alignments/dna/IPISRC044_tumor_T2_ucla.redux.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T2_ucla/alignments/rna/IPISRC044_tumor_T2_ucla_rna.md.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/tumor/output/T1/outs/per_sample_outs/T1/sample_alignments.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/tumor/output/T2/outs/per_sample_outs/T2/sample_alignments.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/tumor/output/T3/outs/per_sample_outs/T3/sample_alignments.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/tumor/output/T3_CD45neg/outs/per_sample_outs/T3_CD45neg/sample_alignments.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/pacbio/IPISRC044_T1_sclrs_live_pbmm2_mapped.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/BG009368/BG009368.Aligned.sortedByCoord.out.md.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/SARC0277/SARC0277.Aligned.sortedByCoord.out.md.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/TL-24-KCVBE1UI1P/TL-24-KCVBE1UI1P.Aligned.sortedByCoord.out.md.bam"
+    ],
+    "structural": [
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT_dedup/IPISRC044_T1_sclrs_ONT_dedup.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT_dedup/IPISRC044_T2_sclrs_ONT_dedup.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T3_sclrs_ONT/IPISRC044_T3_sclrs_ONT/IPISRC044_T3_sclrs_ONT_dedup/IPISRC044_T3_sclrs_ONT_dedup.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2025.01.06/RNA/2025.01.06.rna.ucla-core/processed/STAR/25.03.23.rna.ucla.2025.01.resection.tcga.d32.protocolAligned.sorted.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-duplicates/sarek24_bostongene/alignment/preprocessing/recalibrated/normal_bg24/normal_bg24.recal.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-duplicates/sarek24_bostongene/alignment/preprocessing/recalibrated/tumor_bg24/tumor_bg24.recal.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-duplicates/sarek_bostongene22/sarek_bostongene22_alignment/alignment/preprocessing/recalibrated/normal_bg22/normal_bg22.recal.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-duplicates/sarek_bostongene22/sarek_bostongene22_alignment/alignment/preprocessing/recalibrated/tumor_bg22/tumor_bg22.recal.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T0_personalis/alignments/dna/IPISRC044_normal_personalis.redux.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T0_personalis/alignments/dna/IPISRC044_tumor_T0_personalis.redux.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T0_personalis/alignments/rna/IPISRC044_tumor_T0_personalis_rna.md.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T1_organoid_ucla/alignments/dna/IPISRC044_normal_ucla.redux.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T1_organoid_ucla/alignments/dna/IPISRC044_tumor_T1_organoid_ucla.redux.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T1_ucla/alignments/dna/IPISRC044_normal_ucla.redux.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T1_ucla/alignments/dna/IPISRC044_tumor_T1_ucla.redux.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T1_ucla/alignments/rna/IPISRC044_tumor_T1_ucla_rna.md.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T2_ucla/alignments/dna/IPISRC044_normal_ucla.redux.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T2_ucla/alignments/dna/IPISRC044_tumor_T2_ucla.redux.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/oncoanalyser/IPISRC044_T2_ucla/alignments/rna/IPISRC044_tumor_T2_ucla_rna.md.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/tumor/output/T1/outs/per_sample_outs/T1/sample_alignments.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/tumor/output/T2/outs/per_sample_outs/T2/sample_alignments.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/tumor/output/T3/outs/per_sample_outs/T3/sample_alignments.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/kamil/tumor/output/T3_CD45neg/outs/per_sample_outs/T3_CD45neg/sample_alignments.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/pacbio/IPISRC044_T1_sclrs_live_pbmm2_mapped.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/BG009368/BG009368.Aligned.sortedByCoord.out.md.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/SARC0277/SARC0277.Aligned.sortedByCoord.out.md.bam",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/TL-24-KCVBE1UI1P/TL-24-KCVBE1UI1P.Aligned.sortedByCoord.out.md.bam"
+    ]
+  },
+  "targets": {
+    "catalog": "all",
+    "extra": [
+      {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "contig": "chr2",
+        "label": "historical",
+        "name": "MAP2-chr2-209694768-historical",
+        "position": 209694768,
+        "reason": "The site's allele before the allele-MAP2-chr2-209694768 correction; the libraries' tests still use it.",
+        "ref": "CCTGGGCTACTGTGTGTTCAATA",
+        "used_by": [
+          "isovar",
+          "topiary",
+          "vaxrank"
+        ],
+        "variant_id": "MAP2-chr2-209694768"
+      },
+      {
+        "alt": "T",
+        "assembly": "GRCh37",
+        "contig": "chr15",
+        "label": "native_grch37",
+        "name": "NR2F2-chr15-96332299-GRCh37",
+        "position": 96875528,
+        "reason": "The catalog allele at its GRCh37 position, for GRCh37 BAMs.",
+        "ref": "G",
+        "used_by": [
+          "isovar",
+          "vaxrank"
+        ],
+        "variant_id": "NR2F2-chr15-96332299"
+      },
+      {
+        "alt": "A",
+        "assembly": "GRCh37",
+        "contig": "chrM",
+        "label": "mitochondrial",
+        "name": "MT_ND5-chrM-12994-hg19",
+        "position": 12995,
+        "reason": "The catalog allele on hg19's chrM (16571 bases), as CeGaT's BAMs use.",
+        "ref": "G",
+        "reference_length": 16571,
+        "used_by": [
+          "isovar",
+          "vaxrank"
+        ],
+        "variant_id": "MT_ND5-chrM-12994"
+      },
+      {
+        "alt": "A",
+        "assembly": "GRCh37",
+        "contig": "MT",
+        "label": "mitochondrial",
+        "name": "MT_ND5-chrM-12994-GRCh37",
+        "position": 12994,
+        "reason": "The catalog allele on GRCh37's MT (the revised Cambridge sequence), as Tempus's BAMs use.",
+        "ref": "G",
+        "reference_length": 16569,
+        "used_by": [
+          "isovar",
+          "vaxrank"
+        ],
+        "variant_id": "MT_ND5-chrM-12994"
+      },
+      {
+        "alt": "GT",
+        "assembly": "GRCh38",
+        "contig": "chr12",
+        "label": "library_allele",
+        "name": "NTF3-chr12-5494381-compound",
+        "position": 5494381,
+        "reason": "The catalog's A>G together with the next base's G>T, as one compound allele.",
+        "ref": "AG",
+        "used_by": [
+          "isovar",
+          "vaxrank"
+        ],
+        "variant_id": "NTF3-chr12-5494381"
+      }
+    ],
+    "renamed": {
+      "CABLES1-chr18-23135500": "CABLES1-chr18-23135764",
+      "CCDC40-chr17-80058951": "CCDC40-chr17-80090148",
+      "DCHS2-chr4-154322488": "DCHS2-chr4-154323273",
+      "GAPVD1-chr9-125299105": "GAPVD1-chr9-125301980",
+      "GOLGA6L2-chr15-23441121": "GOLGA6L2-chr15-23440197",
+      "USH2A-chr1-215560752": "USH2A-chr1-215650752"
+    },
+    "structural": [
+      {
+        "assembly": "GRCh38",
+        "breakends": [
+          {
+            "contig": "chr6",
+            "orientation": "-",
+            "position": 29612905,
+            "retained_side": "right"
+          },
+          {
+            "contig": "chr6",
+            "orientation": "+",
+            "position": 44218907,
+            "retained_side": "right"
+          }
+        ],
+        "label": "fusion",
+        "name": "GABBR1--SLC29A1",
+        "reason": "Retained sides established from junction reads in openvax-v2; https://github.com/iskandr/osteosarc/issues/96. Original panel: GABBR1-SLC29A1",
+        "used_by": [
+          "isovar",
+          "topiary",
+          "varcode"
+        ]
+      },
+      {
+        "assembly": "GRCh38",
+        "breakends": [
+          {
+            "contig": "chr15",
+            "orientation": "-",
+            "position": 31743669,
+            "retained_side": "right"
+          },
+          {
+            "contig": "chr15",
+            "orientation": "+",
+            "position": 33043478,
+            "retained_side": "right"
+          }
+        ],
+        "label": "fusion",
+        "name": "OTUD7A--FMN1",
+        "reason": "Retained sides established from junction reads in openvax-v2; https://github.com/iskandr/osteosarc/issues/96. Original panel: OTUD7A-FMN1",
+        "used_by": [
+          "isovar",
+          "topiary",
+          "varcode"
+        ]
+      },
+      {
+        "assembly": "GRCh38",
+        "breakends": [
+          {
+            "contig": "chr2",
+            "orientation": "+",
+            "position": 205310103,
+            "retained_side": "left"
+          },
+          {
+            "contig": "chr9",
+            "orientation": "+",
+            "position": 22007647,
+            "retained_side": "right"
+          }
+        ],
+        "label": "fusion",
+        "name": "PARD3B--CDKN2B-AS1-CDKN2B",
+        "reason": "Retained sides established from junction reads in openvax-v2; https://github.com/iskandr/osteosarc/issues/96. Original panel: PARD3B-CDKN2B",
+        "used_by": [
+          "isovar"
+        ]
+      },
+      {
+        "assembly": "GRCh38",
+        "breakends": [
+          {
+            "contig": "chr11",
+            "orientation": null,
+            "position": 118401717,
+            "retained_side": "left"
+          },
+          {
+            "contig": "chr11",
+            "orientation": null,
+            "position": 118468774,
+            "retained_side": "right"
+          }
+        ],
+        "label": "fusion",
+        "name": "ATP5MG--KMT2A",
+        "reason": "Isovar's fusion junction boundaries (zero-based); the retained sides are where its junction reads align.",
+        "used_by": [
+          "isovar",
+          "vaxrank"
+        ]
+      },
+      {
+        "assembly": "GRCh38",
+        "breakends": [
+          {
+            "contig": "chr6",
+            "orientation": null,
+            "position": 108611245,
+            "retained_side": "left"
+          },
+          {
+            "contig": "chr17",
+            "orientation": null,
+            "position": 63745979,
+            "retained_side": "right"
+          }
+        ],
+        "label": "fusion",
+        "name": "FOXO3--STRADA-CCDC47",
+        "reason": "Isovar's fusion junction boundaries (zero-based); the retained sides are where its junction reads align.",
+        "used_by": [
+          "isovar"
+        ]
+      },
+      {
+        "assembly": "GRCh38",
+        "breakends": [
+          {
+            "contig": "chr7",
+            "orientation": null,
+            "position": 66205522,
+            "retained_side": "left"
+          },
+          {
+            "contig": "chr7",
+            "orientation": null,
+            "position": 66127703,
+            "retained_side": "right"
+          }
+        ],
+        "label": "fusion",
+        "name": "TPST1--CRCP",
+        "reason": "Isovar's fusion junction boundaries (zero-based); the retained sides are where its junction reads align.",
+        "used_by": [
+          "isovar",
+          "vaxrank"
+        ]
+      },
+      {
+        "from": {
+          "sv_candidates": "SV0172"
+        },
+        "label": "fusion",
+        "name": "KLF15--PPIAP72",
+        "used_by": [
+          "varcode"
+        ]
+      },
+      {
+        "from": {
+          "id": "SV0055",
+          "panel": "sv-regressions-v1"
+        },
+        "label": "sv",
+        "name": "SV0055",
+        "reason": "osteosarc's sv-regressions-v1 panel.",
+        "used_by": []
+      },
+      {
+        "from": {
+          "id": "SV0175",
+          "panel": "sv-regressions-v1"
+        },
+        "label": "sv",
+        "name": "SV0175",
+        "reason": "osteosarc's sv-regressions-v1 panel.",
+        "used_by": []
+      },
+      {
+        "from": {
+          "id": "SV0402",
+          "panel": "sv-regressions-v1"
+        },
+        "label": "sv",
+        "name": "SV0402",
+        "reason": "osteosarc's sv-regressions-v1 panel.",
+        "used_by": []
+      },
+      {
+        "from": {
+          "id": "SV0461",
+          "panel": "sv-regressions-v1"
+        },
+        "label": "sv",
+        "name": "SV0461",
+        "reason": "osteosarc's sv-regressions-v1 panel.",
+        "used_by": []
+      },
+      {
+        "from": {
+          "id": "SV0499",
+          "panel": "sv-regressions-v1"
+        },
+        "label": "sv",
+        "name": "SV0499",
+        "reason": "osteosarc's sv-regressions-v1 panel.",
+        "used_by": []
+      },
+      {
+        "assembly": "GRCh38",
+        "breakends": [
+          {
+            "contig": "chr10",
+            "orientation": null,
+            "position": 77850914,
+            "retained_side": "left"
+          },
+          {
+            "contig": "chr10",
+            "orientation": null,
+            "position": 77930460,
+            "retained_side": "right"
+          }
+        ],
+        "inserted_sequence": "CTTCTCTGAAATGATGCTTCTCCA",
+        "label": "sv",
+        "name": "DLG5-deletion",
+        "reason": "Isovar's DLG5 deletion, at the junction esvee resolved (IPISRC044_tumor_T2_ucla records 26313 and 26315), with its 24-base insertion; DRAGEN's nominal breakends were chr10:77850921 and 77930452.",
+        "used_by": [
+          "isovar"
+        ]
+      },
+      {
+        "from": {
+          "sv_candidates": "SV0384"
+        },
+        "label": "sv",
+        "name": "SV0384",
+        "used_by": [
+          "varcode"
+        ]
+      },
+      {
+        "from": {
+          "sv_candidates": "SV0324"
+        },
+        "label": "sv",
+        "name": "SV0324",
+        "used_by": [
+          "varcode"
+        ]
+      },
+      {
+        "from": {
+          "sv_candidates": "SV0009"
+        },
+        "label": "sv",
+        "name": "SV0009",
+        "used_by": [
+          "varcode"
+        ]
+      },
+      {
+        "from": {
+          "sv_candidates": "SV0030"
+        },
+        "label": "sv",
+        "name": "SV0030",
+        "used_by": [
+          "varcode"
+        ]
+      },
+      {
+        "from": {
+          "sv_candidates": "SV0178"
+        },
+        "label": "sv",
+        "name": "SV0178",
+        "used_by": [
+          "varcode"
+        ]
+      },
+      {
+        "from": {
+          "sv_candidates": "SV0186"
+        },
+        "label": "sv",
+        "name": "SV0186",
+        "used_by": [
+          "varcode"
+        ]
+      },
+      {
+        "from": {
+          "sv_candidates": "SV0521"
+        },
+        "label": "sv",
+        "name": "SV0521",
+        "used_by": [
+          "varcode"
+        ]
+      },
+      {
+        "from": {
+          "sv_candidates": "SV0522"
+        },
+        "label": "sv",
+        "name": "SV0522",
+        "used_by": [
+          "varcode"
+        ]
+      },
+      {
+        "from": {
+          "sv_candidates": "SV0244"
+        },
+        "label": "sv",
+        "name": "SV0244",
+        "reason": "Additional RNA-supported SV candidate: retains exact-allele and geometry evidence separately.",
+        "used_by": []
+      },
+      {
+        "from": {
+          "sv_candidates": "SV0281"
+        },
+        "label": "sv",
+        "name": "SV0281",
+        "reason": "Additional RNA-supported SV candidate: retains exact-allele and geometry evidence separately.",
+        "used_by": []
+      },
+      {
+        "from": {
+          "sv_candidates": "SV0318"
+        },
+        "label": "sv",
+        "name": "SV0318",
+        "reason": "Additional RNA-supported SV candidate: retains exact-allele and geometry evidence separately.",
+        "used_by": []
+      },
+      {
+        "from": {
+          "sv_candidates": "SV0357"
+        },
+        "label": "sv",
+        "name": "SV0357",
+        "reason": "Additional RNA-supported SV candidate: retains exact-allele and geometry evidence separately.",
+        "used_by": []
+      },
+      {
+        "from": {
+          "sv_candidates": "SV0373"
+        },
+        "label": "sv",
+        "name": "SV0373",
+        "reason": "Additional RNA-supported SV candidate: retains exact-allele and geometry evidence separately.",
+        "used_by": []
+      },
+      {
+        "from": {
+          "sv_candidates": "SV0381"
+        },
+        "label": "sv",
+        "name": "SV0381",
+        "reason": "Additional RNA-supported SV candidate: retains exact-allele and geometry evidence separately.",
+        "used_by": []
+      },
+      {
+        "from": {
+          "sv_candidates": "SV0525"
+        },
+        "label": "sv",
+        "name": "SV0525",
+        "reason": "Additional RNA-supported SV candidate: retains exact-allele and geometry evidence separately.",
+        "used_by": []
+      }
+    ]
+  }
+}

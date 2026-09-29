@@ -1,5 +1,29 @@
 # Samples and files
 
+## Known overlapping RNA evidence
+
+The reprocessed Tempus ALMY2X4KMV and KCVBE1UI1P products overlap almost completely
+in the audited vaccine regions: 18,971 shared read names and 40,684 matching core
+alignment records out of 40,696 per file, including base qualities. They must not
+be counted as independent RNA evidence. This is a regional observation, not proof
+that the full libraries are identical or that either biological sample label is correct.
+See [the provenance investigation](https://github.com/iskandr/osteosarc/issues/100).
+
+Each `file.evidence_overlaps` lists reviewed relationships for its exact product
+URL. A selection's `files.overlap_groups` reports pairs present together, and
+`files.require_no_known_overlaps()` raises before they can be used as independent
+evidence. To keep one explicitly, call
+`files.without_known_overlaps(prefer=[chosen_url])`. The returned selection records
+every exclusion in `files.source["excluded_evidence_overlaps"]`; original labels,
+sample claims and receipts remain unchanged. No listed overlap means no reviewed
+overlap is known, not proof of independence.
+
+The original FASTQ checksums and processing/upload manifests are still needed to
+resolve the label discrepancy. Both alignment headers use generic R1/R2 input
+paths, so the headers alone cannot identify which sample was processed.
+
+## Catalogue
+
 - **Samples** are what was collected: tumor biopsies and resections at time points T0
   to T3, an organoid grown from the T1 tumor, and blood draws.
 - **Files** are what's in the public S3 bucket: aligned reads (BAMs), raw reads

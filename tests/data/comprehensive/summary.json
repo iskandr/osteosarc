@@ -1,0 +1,22 @@
+{
+  "annotated_frameshifts": 12,
+  "count_sources": 37,
+  "negative_controls": 4,
+  "rna_count_sources": 15,
+  "samples": 21,
+  "source_summary_products": 71,
+  "source_summary_rows": 12638,
+  "statuses": {
+    "alt_observed": 2173,
+    "covered_no_alt": 3972,
+    "no_coverage": 903,
+    "not_measured": 259,
+    "other_only": 93,
+    "unresolved_allele": 74
+  },
+  "structural_candidates": 637,
+  "support_cells": 7474,
+  "vaccine_rows": 38,
+  "vaccine_variants": 51,
+  "variants": 202
+}

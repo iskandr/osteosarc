@@ -18,6 +18,7 @@ from .bundles import (  # noqa: F401
     export_bundle,
     generate_bundle,
     list_bundle,
+    subset_bundle,
     verify_bundle,
     verify_digest,
     verify_gzip_digests,
@@ -68,7 +69,7 @@ __all__ = [
     # Reads and test data
     "extract_reads", "ReadFilter", "ReadSubset", "RecoveryPolicy",
     "bundle_file", "fetch_bundle", "list_bundle", "export_bundle", "check_fixtures", "verify_bundle",
-    "generate_bundle", "validate_recipe",
+    "generate_bundle", "subset_bundle", "validate_recipe",
     "load_panel",
     "load_sv_candidates",
     # Corrections

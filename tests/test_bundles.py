@@ -6,7 +6,14 @@ from pathlib import Path
 
 import pytest
 
-from osteosarc import IntegrityError, export_bundle, generate_bundle, list_bundle, verify_bundle
+from osteosarc import (
+    IntegrityError,
+    export_bundle,
+    generate_bundle,
+    list_bundle,
+    subset_bundle,
+    verify_bundle,
+)
 from osteosarc.bundles import pack_bundle
 from osteosarc.cache import digest
 from osteosarc.cli import main
@@ -48,6 +55,59 @@ def test_generate_pack_export_verify_fresh_offline_directory(bam, tmp_path, monk
     assert (tmp_path / "exported/duplicates.bam.bai").is_file()
     sam = export_bundle(fresh, tmp_path / "sam", members=["duplicates"], format="sam.gz")
     assert sam == {"duplicates": tmp_path / "sam/duplicates.sam.gz"}
+
+
+@pytest.mark.parametrize("header_policy", ["full", "compact"])
+def test_subset_preserves_provenance_and_outcomes_without_reselection(bam, tmp_path, monkeypatch, header_policy):
+    import osteosarc.bundles
+
+    recipe = bundle_recipe(bam)
+    duplicate = next(key for key, count in record_multiset(bam).items() if count == 2)
+    recipe["members"]["keep/repeats"] = dict(source="rna", target="snv",
+        policy=dict(kind="exact", version=1, records={duplicate: 2}))
+    recipe["members"]["keep/empty"] = dict(source="rna", target="snv", policy=dict(kind="empty", version=1))
+    recipe["sources"]["unused"] = copy.deepcopy(recipe["sources"]["rna"])
+    recipe["targets"]["unknown"] = dict(kind="unresolved", reason="no coordinates")
+    recipe["members"]["keep/unknown"] = dict(source="unused", target="unknown", policy=dict(kind="empty", version=1))
+    selection = select_fixtures(recipe, {"rna": bam})
+    selection.headers["rna"]["HD"]["GO"] = "none"
+    selection.headers["rna"]["HD"]["SS"] = "coordinate:queryname"
+    selection.receipts["rna"]["source_receipt"] = dict(url="https://example.test/original.bam", sha256="a" * 64)
+    parent = tmp_path / "parent"
+    original = pack_bundle(selection, parent, header_policy=header_policy)
+    names = [name for name in original["members"] if name.startswith("keep/")]
+    monkeypatch.setattr(osteosarc.bundles, "select_fixtures", lambda *a, **kw: pytest.fail("reselected reads"))
+    bam.unlink()
+    child = tmp_path / "child"
+    result = subset_bundle(parent, names, child, recipe_id="library-subset")
+    assert verify_bundle(child) == result
+    assert result["members"] == {name: original["members"][name] for name in names}
+    assert result["sources"]["rna"]["records"] == {duplicate: 2}
+    assert (child / "acquisition.json").read_bytes() == (parent / "acquisition.json").read_bytes()
+    header = original["sources"]["rna"]["original_header"]
+    assert (child / header).read_bytes() == (parent / header).read_bytes()
+    assert result["parent"]["manifest_sha256"] == digest(parent / "manifest.json")
+    assert result["header_policy"] == header_policy
+    assert json.loads((child / "recipe.json").read_text())["id"] == "library-subset"
+    with pytest.raises(KeyError, match="Unknown bundle members"):
+        subset_bundle(parent, ["absent"], tmp_path / "absent")
+    assert not (tmp_path / "absent").exists()
+    with pytest.raises(TypeError, match="iterable"):
+        subset_bundle(parent, "keep/empty", tmp_path / "wrong")
+    # Sources with only unresolved members do not gain fabricated BAMs/receipts.
+    only = subset_bundle(parent, ["keep/unknown"], tmp_path / "unresolved")
+    assert only["sources"] == {}
+
+
+def test_cli_subset_prefixes(bam, tmp_path, capsys):
+    parent = tmp_path / "parent"
+    generate_bundle(bundle_recipe(bam), parent, sources={"rna": bam})
+    assert main(["--offline", "test-data", "make", str(tmp_path / "child"), "--from", str(parent),
+                 "--member", "dupl", "--json"]) == 0
+    assert set(json.loads(capsys.readouterr().out)["members"]) == {"duplicates"}
+    assert main(["--offline", "test-data", "make", str(tmp_path / "no-match"), "--from", str(parent),
+                 "--member", "absent"]) == 1
+    assert "No bundle member" in capsys.readouterr().err
 
 
 def test_cli_and_dataset_produce_same_bundle(bam, dataset, tmp_path, capsys):
@@ -442,6 +502,15 @@ def test_a_bundles_library_fixtures_carry_forward_by_checksum(bam, tmp_path):
     assert subset["unplaced_mates"] is False
     records = list(read_records(bam))
     assert match_records(records, subset["records"]) == subset["records"]
+    compact = bundle_fixtures(tmp_path / "bundle", compact_regions=True)
+    compact_subset = compact["isovar/planned.sam"]
+    assert compact_subset["records"] == exact["records"]
+    assert sum(end - start for _, start, end in compact_subset["regions"]) < 5000
+    # One-base queries still retrieve the exact pinned records, including duplicates.
+    from osteosarc import Region, extract_reads
+    recovered = extract_reads(bam, [Region(c, s, e, "GRCh38") for c, s, e in compact_subset["regions"]],
+                              cache=tmp_path / "compact-cache")
+    assert match_records(list(read_records(recovered.path)), exact["records"]) == exact["records"]
     with pytest.raises(IntegrityError, match="pinned records"):
         match_records(records[:1], subset["records"])
     # A record with no position (an unaligned mate) makes the source keep them.
@@ -458,6 +527,7 @@ def test_a_bundles_library_fixtures_carry_forward_by_checksum(bam, tmp_path):
     with_unplaced["sources"]["rna"]["archive_sha256"] = digest(unplaced)
     generate_bundle(with_unplaced, tmp_path / "with-unplaced", sources={"rna": unplaced})
     assert bundle_fixtures(tmp_path / "with-unplaced")["isovar/x.sam"]["unplaced_mates"] is True
+    assert bundle_fixtures(tmp_path / "with-unplaced", compact_regions=True)["isovar/x.sam"]["unplaced_mates"] is True
     recipe["targets"]["fixture:isovar/x.sam"].pop("consumer")
     generate_bundle(recipe, tmp_path / "anonymous", sources={"rna": bam})
     with pytest.raises(SchemaError, match="Can't carry isovar/x.sam"):

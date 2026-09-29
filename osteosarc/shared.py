@@ -380,7 +380,7 @@ def select_breakend_templates(templates, breakends, *, pad=1000, cap=50):
     return {t: "joins the breakends (hash order)" for t in chosen}, len(joined)
 
 
-def bundle_fixtures(bundle):
+def bundle_fixtures(bundle, *, compact_regions=False):
     """A bundle's library fixtures as required subsets pinned by checksum, so the
     next bundle keeps exactly their records once libraries no longer keep their
     own copies: {name: dict(consumer, source, records, regions, description,
@@ -388,6 +388,9 @@ def bundle_fixtures(bundle):
 
     Each fixture is planned from the regions its target records; bundles built
     before targets recorded them (openvax-v1) use the spans of their records.
+    With compact_regions, mapped records are queried at their first reference
+    base instead. This avoids fetching entire introns of spliced RNA records;
+    exact record checksums and multiplicities still determine what is kept.
     """
     from .bundles import verify_bundle
     bundle = Path(bundle)
@@ -415,10 +418,11 @@ def bundle_fixtures(bundle):
                 if r.read.reference_id < 0 or r.read.reference_start < 0:
                     unplaced.add(r.digest)
                 elif not r.read.is_unmapped:
-                    spans[r.digest] = (r.read.reference_name, r.read.reference_start, r.read.reference_end)
+                    spans[r.digest] = (r.read.reference_name, r.read.reference_start,
+                                       r.read.reference_start + 1 if compact_regions else r.read.reference_end)
         for name in names:
             subsets[name]["unplaced_mates"] = any(key in unplaced for key in subsets[name]["records"])
-            if "regions" not in subsets[name]:
+            if "regions" not in subsets[name] or compact_regions:
                 subsets[name]["regions"] = merge_spans(spans[key] for key in subsets[name]["records"] if key in spans)
     return subsets
 
@@ -669,12 +673,15 @@ def _uncovered(target):
     return f"none of them is on its genome build, {target['assembly']}"
 
 
-def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, required_targets=()):
+def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, required_targets=(), checkpoint=None):
     """Select the spec's records and return its frozen recipe (see the module docs).
 
     Sources are extracted in parallel (workers at a time). Each name in
     required_targets must be covered by some source, which is checked before any
-    reads are fetched. dataset must be opened with offline=False the first time,
+    reads are fetched. An optional checkpoint directory saves completed source
+    selections, keyed by their spec, source plan and required records; packing
+    still verifies every selected record against the source. dataset must be
+    opened with offline=False the first time,
     to stream reads; extractions are cached, so rebuilding is quick and offline.
     """
     from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -698,6 +705,12 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, req
                 if spec.get("sources", {}).get("observed", True) else set())
     urls = sorted(everywhere | sv_everywhere | {s["source"] for s in subsets.values()} | observed)
     split = selection.get("supplementary", False)
+    split_depth = selection.get("split_depth", SPLIT_DEPTH)
+    if type(split_depth) is not int or split_depth <= 0:
+        raise SchemaError("selection.split_depth must be a positive integer")
+    split_regions = selection.get("split_regions", SPLIT_REGIONS)
+    if type(split_regions) is not int or split_regions <= 0:
+        raise SchemaError("selection.split_regions must be a positive integer")
     recipe = dict(schema_version=1, id=spec["id"], kind="shared",
                   snapshot=dict(name=dataset.name, id=dataset.id),
                   selection=dict(classifier="osteosarc.alleles v1", caps=caps, low_quality_alt=low_quality_alt,
@@ -705,6 +718,10 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, req
                                  **({"supplementary": True} if split else {})),
                   aliases=spec["targets"].get("renamed", {}), targets=targets, sources={}, members={},
                   redistribution=spec.get("redistribution", {"license": "unresolved"}))
+    if "split_depth" in selection:
+        recipe["selection"]["split_depth"] = split_depth
+    if "split_regions" in selection:
+        recipe["selection"]["split_regions"] = split_regions
     plans = []
     for url in urls:
         mine = {n: s for n, s in subsets.items() if s["source"] == url}
@@ -739,6 +756,21 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, req
         kept templates' alignments elsewhere (SA tags) join the regions, unless in a
         pileup, and the source is read and selected again: the same templates, now with
         those records too."""
+        checkpoint_path = None
+        if checkpoint is not None:
+            from .cache import stable_id, write_json
+            key = stable_id(dict(version=1, spec=spec, source=plan["source"], required=plan["mine"],
+                                 targets=targets, caps=caps, structural=structural,
+                                 low_quality_alt=low_quality_alt, split_depth=split_depth,
+                                 split_regions=split_regions))
+            checkpoint_path = Path(checkpoint) / (key + ".json")
+            if checkpoint_path.exists():
+                state = read_json(checkpoint_path)
+                if state.get("key") != key or state.get("sha256") != stable_id(state.get("result")):
+                    raise IntegrityError(f"Invalid source-selection checkpoint: {checkpoint_path}")
+                result = state["result"]
+                plan["source"] = result["source"]
+                return plan, result["records"], result["added"], result["crowded"], result["skipped"], result["selected"]
         subset = dataset.extract_reads(plan["file"], [Region(**r) for r in plan["source"]["regions"]],
                                        **plan["source"]["acquisition"])
         index = _source_index(subset.path, plan, windows)
@@ -747,15 +779,15 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, req
         lengths = {row["SN"]: row["LN"] for row in header.get("SQ", [])}
         elsewhere, skipped = (_split_alignments(index, selected[0], plan["source"]["regions"], lengths)
                               if split else ([], Counter()))
-        if len(elsewhere) > SPLIT_REGIONS:
+        if len(elsewhere) > split_regions:
             raise IntegrityError(f"{plan['file'].key}: the kept templates' split alignments lie in "
-                                 f"{len(elsewhere)} more regions, over the limit of {SPLIT_REGIONS}")
+                                 f"{len(elsewhere)} more regions, over the limit of {split_regions}")
         assembly = plan["source"]["assembly"]
         added, crowded = [], 0
         for contig, start, end in elsewhere:
             region = Region(contig, start, end, assembly, lengths[contig] if contig in MITOCHONDRIA else None)
             try:  # a region in a pileup (a repeat that draws millions of reads) costs more than it's worth
-                dataset.extract_reads(plan["file"], [region], max_records=SPLIT_DEPTH)
+                dataset.extract_reads(plan["file"], [region], max_records=split_depth)
                 added.append(region)
             except RecordLimitError:
                 crowded += 1
@@ -766,20 +798,32 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, req
                                            **plan["source"]["acquisition"])
             index = _source_index(subset.path, plan, windows)
             selected = _select_source(plan, index, windows, targets, caps, low_quality_alt, structural["cap"])
-        return plan, subset, added, crowded, skipped, selected
+        if checkpoint_path is not None:
+            result = dict(source=plan["source"], records=subset.receipt["records"], added=_region_dicts(added),
+                          crowded=crowded, skipped=dict(skipped), selected=selected)
+            write_json(checkpoint_path, dict(key=key, sha256=stable_id(result), result=result))
+        return plan, subset.receipt["records"], added, crowded, skipped, selected
 
-    problems, results = [], {}
+    problems, results, failures = [], {}, []
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        for future in as_completed([pool.submit(select, plan) for plan in plans]):
-            plan, subset, added, crowded, skipped, (members, fixtures, missing) = future.result()
+        futures = {pool.submit(select, plan): plan for plan in plans}
+        for future in as_completed(futures):
+            try:
+                plan, record_count, added, crowded, skipped, (members, fixtures, missing) = future.result()
+            except Exception as error:
+                log(f"FAILED {futures[future]['file'].key}: {error}")
+                failures.append(error)
+                continue
             results[plan["label"]] = (plan, members, fixtures)
             problems += missing
-            log(f"{plan['file'].key}: read {plural(subset.receipt['records'], 'record')}, "
+            log(f"{plan['file'].key}: read {plural(record_count, 'record')}, "
                 f"kept {plural(len(members) + len(fixtures), 'member')}"
                 + (f", with split alignments in {plural(len(added), 'more region')}" if added else "")
                 + (f"; left out {plural(crowded, 'region')} of split alignments in a pileup" if crowded else "")
                 + (f"; passed over {plural(sum(skipped.values()), 'split alignment')} ("
                    + ", ".join(f"{n} {why}" for why, n in sorted(skipped.items())) + ")" if skipped else ""))
+    if failures:
+        raise failures[0]
     if problems:
         # Every source was read (and its extraction cached), so a rerun after fixing these is quick.
         raise IntegrityError(f"{len(problems)} required fixtures couldn't be matched:\n" + "\n".join(problems))
@@ -956,11 +1000,11 @@ def _sv_entry(sv, candidates):
     from .fixtures import load_panel
     if sv in candidates:
         base, origin = candidates[sv], {"sv_candidates": sv}
-    elif sv in (regressions := load_panel("sv-regressions-v1")):
-        base, origin = regressions[sv], {"panel": "sv-regressions-v1", "id": sv}
+    elif sv in (regressions := load_panel("sv-regressions-v2")):
+        base, origin = regressions[sv], {"panel": "sv-regressions-v2", "id": sv}
     else:
         raise ValueError(f"No SV {sv}: give an SV candidate ID, from load_sv_candidates() (see the SV candidates "
-                         "docs), or a regression target from load_panel('sv-regressions-v1')")
+                         "docs), or a regression target from load_panel('sv-regressions-v2')")
     if base.get("kind") == "unresolved" or len(base.get("breakends", ())) < 2:
         raise ValueError(f"{sv} has no two resolved breakends to take reads between"
                          + (f" ({base['reason']})" if base.get("reason") else ""))

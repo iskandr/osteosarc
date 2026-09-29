@@ -14,7 +14,7 @@ from urllib.parse import urlsplit
 
 from .cache import Cache, digest, file_lock, is_sha256, stable_id, write_json
 from .errors import IntegrityError, SchemaError
-from .fixtures import select_fixtures, validate_recipe
+from .fixtures import FixtureSelection, select_fixtures, validate_recipe
 from .models import File, Region
 from .reads import extract_reads
 from .records import RECORD_ENCODING, read_records, record_multiset
@@ -337,6 +337,46 @@ def list_bundle(bundle, *, cache=None):
     """Each member of a bundle (a published name such as openvax-v2, or a folder):
     its status, record counts and the reasons its records were kept."""
     return verify_bundle(bundle, cache=cache)["members"]
+
+
+def subset_bundle(bundle, members, destination, *, recipe_id=None, cache=None,
+                  size_budget=DEFAULT_SIZE_BUDGET):
+    """Repack named members offline, preserving original headers and receipts.
+
+    Members are exact names, including empty, omitted and unresolved members.
+    Selection policies are not rerun: their recorded outcomes and reasons survive
+    unchanged. Only referenced sources, targets and record occurrences are kept.
+    The parent manifest checksum pins the provenance of this subset. A published
+    bundle name is downloaded on first use; a local folder needs no cache/network.
+    """
+    if isinstance(members, (str, bytes)):
+        raise TypeError("members must be an iterable of exact member names, not a string")
+    names = sorted(set(members))
+    root = _folder(bundle, cache)
+    manifest = verify_bundle(root)
+    if missing := set(names) - manifest["members"].keys():
+        raise KeyError(f"Unknown bundle members: {sorted(missing)}")
+    recipe = json.loads((root / "recipe.json").read_text())
+    recipe["id"] = recipe_id if recipe_id is not None else recipe["id"] + "-subset-" + stable_id(names)[:12]
+    recipe["members"] = {name: recipe["members"][name] for name in names}
+    for section, field in (("sources", "source"), ("targets", "target")):
+        needed = {m[field] for m in recipe["members"].values()}
+        recipe[section] = {key: value for key, value in recipe[section].items() if key in needed}
+    recipe = validate_recipe(recipe)
+    selected = {name: copy.deepcopy(manifest["members"][name]) for name in names}
+    active = {m["source"] for m in selected.values() if m["status"] not in ("omitted", "unresolved")}
+    headers, records = {}, {}
+    for sid in sorted(active):
+        source = manifest["sources"][sid]
+        headers[sid] = json.loads(safe_path(root, source["original_header"]).read_text())
+        records[sid] = list(read_records(safe_path(root, source["bam"])))
+    receipts = json.loads((root / "acquisition.json").read_text())
+    selection = FixtureSelection(recipe, selected, headers, records,
+                                 {sid: value for sid, value in receipts.items() if sid in recipe["sources"]})
+    return pack_bundle(selection, destination, header_policy=manifest["header_policy"],
+                       size_budget=size_budget,
+                       parent=dict(manifest_sha256=digest(root / "manifest.json"),
+                                   recipe_sha256=manifest["recipe_sha256"]))
 
 
 def export_bundle(bundle, to, *, members=None, format="bam", cache=None):

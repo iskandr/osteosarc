@@ -1,0 +1,6 @@
+{
+  "tumor_scrnaseq_T1.bam": "kamil/tumor/output/T1/outs/per_sample_outs/T1/sample_alignments.bam",
+  "tumor_scrnaseq_T2.bam": "kamil/tumor/output/T2/outs/per_sample_outs/T2/sample_alignments.bam",
+  "tumor_scrnaseq_T3.bam": "kamil/tumor/output/T3/outs/per_sample_outs/T3/sample_alignments.bam",
+  "tumor_scrnaseq_T3_CD45neg.bam": "kamil/tumor/output/T3_CD45neg/outs/per_sample_outs/T3_CD45neg/sample_alignments.bam"
+}

@@ -6,3 +6,6 @@ recursive-include tests/data/allele_resolution *.fasta *.vcf *.txt *.md
 recursive-include scripts *.py
 
 recursive-include tests/data/additional_svs *.bam *.bai *.md
+recursive-include tests/data/comprehensive *.json.gz *.md
+recursive-include tests/data/evidence-overlap *.bam *.md
+recursive-include tests/data/retrieval *.bam *.bai *.md

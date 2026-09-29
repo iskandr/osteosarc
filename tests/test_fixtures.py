@@ -103,6 +103,20 @@ def test_panels_are_offline_copies():
     assert load_panel("sv-regressions-v1")["SV0461"]["kind"] == "sv"
 
 
+def test_v2_fusion_retained_sides_preserve_historical_panel():
+    old = load_panel("sv-regressions-v1")
+    new = load_panel("sv-regressions-v2")
+    for name, sides in {"GABBR1-SLC29A1": ["right", "right"],
+                        "OTUD7A-FMN1": ["right", "right"],
+                        "PARD3B-CDKN2B": ["left", "right"]}.items():
+        assert [e["retained_side"] for e in new[name]["breakends"]] == sides
+        assert all("retained_side" not in e for e in old[name]["breakends"])
+        assert [e["position"] for e in new[name]["breakends"]] == [e["position"] for e in old[name]["breakends"]]
+    assert new["SV0055"] == old["SV0055"]
+    new["GABBR1-SLC29A1"]["breakends"].clear()
+    assert len(load_panel("sv-regressions-v2")["GABBR1-SLC29A1"]["breakends"]) == 2
+
+
 def test_streamed_records_and_regions_match_materialized_selection(bam):
     from osteosarc import Region
     records = list(read_records(bam))

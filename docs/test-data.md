@@ -77,6 +77,54 @@ instead, use `osteosarc test-data export`.
 
 ## Shared test data
 
+To carve out a library's members without reacquiring its source BAMs:
+
+<!-- docs-check: skip (downloads the shared bundle and writes a new folder) -->
+```sh
+osteosarc test-data make isovar-subset --from openvax-v2 --member isovar/
+```
+
+The Python equivalent is `osteosarc.subset_bundle(bundle, members, destination)`;
+`members` contains exact names, whereas the CLI accepts prefixes. This keeps the
+original source headers, acquisition receipts, selection outcomes and record
+multiplicities, and pins the parent manifest checksum. Empty, unresolved and
+omitted members retain their status. A local bundle needs no network access.
+
+New fusion requests use `sv-regressions-v2`. Its GABBR1--SLC29A1 and OTUD7A--FMN1
+breakends retain right/right; PARD3B--CDKN2B retains left/right. The versioned v1
+panel and already published bundles retain their original metadata.
+
+### Historical retrieval cases
+
+The 49 `shared-v1` cases are small indexed-retrieval examples. They use five BAM
+reference dictionaries and **cannot all be merged and queried under one genome
+build or contig naming convention**. Their `variant_id` is the catalogue identity;
+it is not necessarily the coordinate in the BAM. Read the reviewed metadata with
+`osteosarc.retrieval.load_retrieval_cases()`, query each original BAM using its
+`query_region`, and use `assert_compatible_retrieval_cases(cases)` before a raw merge.
+Matching dictionaries establish coordinate compatibility, not sample independence.
+
+| Case | Catalogue position | Native BAM query | Nuclear assembly | Mitochondrial reference |
+| --- | --- | --- | --- | --- |
+| 44, MT-ND5 / Tempus | chrM:12994 | MT:12994 | GRCh37 | rCRS, 16,569 bases; validation uses hg38 chrM |
+| 45, MT-ND5 / CeGaT | chrM:12994 | chrM:12995 | GRCh37 | UCSC hg19 chrM, 16,571 bases |
+| 48, NR2F2 / CeGaT | chr15:96332299 | chr15:96875528 | GRCh37 | Not applicable |
+
+Positions in this table are one-based; `query_region` is zero-based and half-open.
+The new `native-retrieval-v1` metadata preserves the original cases, validation
+receipts and BAM checksums. `annotate_retrieval_manifest(manifest, directory)`
+reproduces it from an existing export, checking every asset and native indexed
+query. No BAM or historical manifest is silently rewritten or lifted over.
+
+### Comprehensive corpus
+
+For the comprehensive vaccine/RNA candidate, see the
+[frozen corpus and build instructions](https://github.com/iskandr/osteosarc/tree/main/tests/data/comprehensive).
+It includes the union of all vaccine membership sources (51 variants in the
+2026-09-28 snapshot), the full per-BAM support matrix, RNA-negative DNA-positive
+SNV controls, frameshifts and structural candidates. Its local openvax-v3 build
+preserves openvax-v2's library fixtures; it is not yet a published bundle.
+
 Isovar, Topiary, Varcode and Vaxrank can all test against one bundle of reads,
 openvax-v2, chosen once, here. It holds:
 
