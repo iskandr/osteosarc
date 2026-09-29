@@ -256,9 +256,17 @@ def evidence_catalog(inputs):
             and row["assay"] not in {"WGS", "WES"} and (row.get("vaf") or 0) > 0]
         if any(row["tissue"] == "tumor" for row in control["nonzero_rna_summary_exceptions"]):
             raise IntegrityError(f"Negative control has a nonzero tumor RNA summary: {control['variant_id']}")
+    overlap_groups = inputs.get("evidence_overlap_registry", {}).get("groups", [])
+    count_sources = {k: dict(v, **inputs["count_sources"].get(k, {})) for k, v in sources.items()}
+    for source in count_sources.values():
+        urls = {f["url"] for f in source.get("files", [])}
+        source["evidence_overlap_groups"] = [g["id"] for g in overlap_groups
+                                             if urls & {s["url"] for s in g["sources"]}]
+        if source["evidence_overlap_groups"]:
+            source["sample_identity_caution"] = "Published labels retained; biological specimen/timepoint unresolved."
     return dict(schema_version=1, snapshot=inputs["snapshot"], provenance=inputs["provenance"],
                 suitable_for_abundance=False, variants=targets, vaccine_rows=vaccine_rows,
-                count_sources={k: dict(v, **inputs["count_sources"].get(k, {})) for k, v in sources.items()},
+                count_sources=count_sources, evidence_overlaps=overlap_groups,
                 allele_support=matrix, source_reported_support=source_summaries,
                 negative_controls=controls, samples=inputs["samples"],
                 historical_rna=historical, known_rna_disagreements=disagreements,

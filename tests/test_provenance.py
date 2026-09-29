@@ -26,6 +26,15 @@ def test_real_overlap_is_reproducible_including_qualities_and_multiplicity():
     assert observed["shared_records_excluding_tags"] == 40684
     assert observed["different_a"] == observed["different_b"] == 12
     assert observed["shared_names"] == observed["union_names"] == 18971
+    published = group["published_delivery_alias"]
+    assert digest(DATA / "fastqs-consolidated.tsv") == published["source"]["receipt"]["sha256"]
+    assert any("Duplicate delivery of TL-24-ALMY2X4KMV RNA" in row["notes"]
+               for row in published["source"]["rows"])
+    for mate in ("1", "3"):
+        objects = [o for o in published["objects"] if o["mate"] == mate]
+        assert len(objects) == 2
+        assert objects[0]["headers"]["ETag"] == objects[1]["headers"]["ETag"]
+        assert objects[0]["headers"]["Content-Length"] == objects[1]["headers"]["Content-Length"]
 
 
 def test_selection_preserves_labels_requires_explicit_preference_and_reports_exclusion():

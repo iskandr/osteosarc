@@ -18,9 +18,13 @@ every exclusion in `files.source["excluded_evidence_overlaps"]`; original labels
 sample claims and receipts remain unchanged. No listed overlap means no reviewed
 overlap is known, not proof of independence.
 
-The original FASTQ checksums and processing/upload manifests are still needed to
-resolve the label discrepancy. Both alignment headers use generic R1/R2 input
-paths, so the headers alone cannot identify which sample was processed.
+The published FASTQ catalogue already identifies KCVBE1UI1P as a duplicate delivery
+of ALMY2X4KMV RNA. Corresponding mate objects also have matching lengths and multipart
+ETags (server metadata, not whole-file SHA-256 hashes). The overlap registry preserves
+that source receipt and the object metadata. The existing `tempus-file-labels`
+curation disputes the published T1 timepoint: several observations point to T0, but
+do not establish the specimen conclusively. Resolving that still requires specimen
+documentation; neither the alias nor this audit silently changes the timepoint.
 
 ## Catalogue
 

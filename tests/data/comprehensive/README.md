@@ -41,6 +41,12 @@ preserves the site's depth/rounded-VAF summaries, including longitudinal blood
 GEX/CITE-seq. These summaries are not independently recounted raw allele counts.
 Samples without a measurement remain without a measurement.
 
+`evidence_overlaps` preserves the reviewed Tempus ALMY/KCV relationship, its raw
+regional audit and published duplicate-delivery evidence. The affected KCV count
+source links to that group and flags its unresolved biological specimen/timepoint.
+The published T1 label is retained as a source assertion. ALMY's reprocessed BAM
+is not a second independent RNA product in this count matrix.
+
 `structural_candidates` preserves **all 637 candidates**, their original calls,
 breakends, adjacency-group IDs, expression annotations and sample-specific RNA
 evidence. The read specification covers **28 structural targets**, including

@@ -54,6 +54,7 @@ def freeze(folder):
                   vaccine_rows=list(data.vaccines), counts=list(data.vafs), count_sources=count_sources,
                   samples=samples, structural_candidates=load_sv_candidates(),
                   historical_rna=read_json(folder / "historical-rna.json"),
+                  evidence_overlap_registry=read_json(ROOT / "osteosarc/data/evidence-overlaps.json"),
                   provenance=dict(sources={k: {f: data.manifest["sources"][k].get(f) for f in
                                                ("url", "sha256", "size", "retrieved_at")}
                                            for k in source_files},
