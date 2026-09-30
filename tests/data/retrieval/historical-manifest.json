@@ -1,0 +1,269 @@
+{
+  "acquisition": "osteosarc; current extraction receipts are in ../../provenance.json",
+  "assets": [
+    {
+      "bundle_path": "osteosarc/shared-v1/00-ABCF2-chr7-151218156-f30f618fb76a0e49.bam",
+      "filename": "00-ABCF2-chr7-151218156-f30f618fb76a0e49.bam",
+      "sha256": "5e95118af62ea8d000100a87d0c0ed0d571045f320d63375e58969bd4ff1fa63",
+      "size_bytes": 4179
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/00-ABCF2-chr7-151218156-f30f618fb76a0e49.bam.bai",
+      "filename": "00-ABCF2-chr7-151218156-f30f618fb76a0e49.bam.bai",
+      "sha256": "11d1472317a1d8dac7285f71b04a777337f76397a30226097100929fc1d628f2",
+      "size_bytes": 75480
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/44-MT_ND5-chrM-12994-238f917202dd9997.bam",
+      "filename": "44-MT_ND5-chrM-12994-238f917202dd9997.bam",
+      "sha256": "510062c3cbe9df54cf4bb15cf96ee83cf9f4f79bde8df536b3e6ee639c42bcb5",
+      "size_bytes": 2055
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/44-MT_ND5-chrM-12994-238f917202dd9997.bam.bai",
+      "filename": "44-MT_ND5-chrM-12994-238f917202dd9997.bam.bai",
+      "sha256": "fd9875ef3646a2a6a3bcaf3277d2d7c2a240f3aaf93697aae78e8c756fe268b3",
+      "size_bytes": 760
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/45-MT_ND5-chrM-12994-fbeb5d8a415e4d18.bam",
+      "filename": "45-MT_ND5-chrM-12994-fbeb5d8a415e4d18.bam",
+      "sha256": "dbdecc9fd5fdc887667153005d300f22f0aaf55606a2d884164cc4e20d139ad2",
+      "size_bytes": 1257
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/45-MT_ND5-chrM-12994-fbeb5d8a415e4d18.bam.bai",
+      "filename": "45-MT_ND5-chrM-12994-fbeb5d8a415e4d18.bam.bai",
+      "sha256": "81752c733dcd56f9cbd040ee5314c1b1868a370f4f744453eb1f3c651c80c7e9",
+      "size_bytes": 288
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/48-NR2F2-chr15-96332299-fbeb5d8a415e4d18.bam",
+      "filename": "48-NR2F2-chr15-96332299-fbeb5d8a415e4d18.bam",
+      "sha256": "b7fcdd4f5ed3c3f97de9e23c3e77fa10033c8a3b927ee75d4888520c99a5fcc9",
+      "size_bytes": 1255
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/48-NR2F2-chr15-96332299-fbeb5d8a415e4d18.bam.bai",
+      "filename": "48-NR2F2-chr15-96332299-fbeb5d8a415e4d18.bam.bai",
+      "sha256": "3facf5d7a5eb2f86eff9feb6b45b72145f196d69a64481c98a842379ad1139a7",
+      "size_bytes": 47584
+    }
+  ],
+  "cache_namespace": "openvax",
+  "cache_object_layout": "objects/sha256/{sha256}{original_suffixes}",
+  "cases": [
+    {
+      "bam": "00-ABCF2-chr7-151218156-f30f618fb76a0e49.bam",
+      "case_id": "00-ABCF2-chr7-151218156-f30f618fb76a0e49",
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "16c085f81a650134624ce7675a576107bfdbac0783a05f11952382d7555d3cc5",
+        "source_receipt_sha256": "6dec36f21a037f16ff5b337b76c71b405d5c783d3011536f0e1b924866bdb066",
+        "source_region_sha256": "8c60781ff61622445c53a6d561660a9edbacfc22764048bcec28e7e175def2ca"
+      },
+      "selected_record_count": 2,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "f30f618fb76a0e49",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr7",
+        "gene": "ABCF2",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 151218186,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 221,
+            "sha256": "afa73fbb385f2ec436bdb3802f31da52d1296aa4d656a0ee2c7a2e62b9c5f942",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr7&start=151218125&end=151218186"
+          },
+          "sequence": "GGGCCCTACCAGAGCCACTCGTGTGTCAAGGTCAATTCCAAATTCTAGATTATTGTAGATG",
+          "start": 151218125
+        },
+        "pos": 151218156,
+        "ref": "G",
+        "source_location": "chr7:151218156",
+        "source_protein_label": "\u2014",
+        "source_url": "https://osteosarc.com/variant/ABCF2-chr7-151218156/",
+        "vaccine_count": 1,
+        "variant_id": "ABCF2-chr7-151218156"
+      }
+    },
+    {
+      "bam": "44-MT_ND5-chrM-12994-238f917202dd9997.bam",
+      "case_id": "44-MT_ND5-chrM-12994-238f917202dd9997",
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": null,
+        "source_receipt_sha256": "681adc14fb73f60564ed8b59616f72f5f0add573c23b3a22f0867df9ad3be861",
+        "source_region_sha256": "bf1166ecd0a642c301191ff19675b4412fb3f12d11da171353f6d2c624829d49"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "238f917202dd9997",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/tempus/TL-24-ALMY2X4KMV/RNA/TL-24-ALMY2X4KMV_T_sorted.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh37",
+        "chrom": "chrM",
+        "coordinate_mapping": {
+          "method": "rCRS MT, not UCSC hg19 chrM",
+          "reference_length": 16569
+        },
+        "gene": "MT-ND5",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 13024,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 213,
+            "sha256": "f36b6b5a1172d89c0f2b801232b8c1993b280019e4f9035acf006562bc92f38c",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chrM&start=12963&end=13024"
+          },
+          "sequence": "CTCACCCCACTACTAGGCCTCCTCCTAGCAGCAGCAGGCAAATCAGCCCAATTAGGTCTCC",
+          "start": 12963
+        },
+        "original_identity": {
+          "alt": "A",
+          "assembly": "GRCh38",
+          "chrom": "chrM",
+          "pos": 12994,
+          "ref": "G"
+        },
+        "pos": 12994,
+        "ref": "G",
+        "source_location": "chrM:12994",
+        "source_protein_label": "p.Ala220Thr",
+        "source_url": "https://osteosarc.com/variant/MT_ND5-chrM-12994/",
+        "vaccine_count": 1,
+        "variant_id": "MT_ND5-chrM-12994"
+      }
+    },
+    {
+      "bam": "45-MT_ND5-chrM-12994-fbeb5d8a415e4d18.bam",
+      "case_id": "45-MT_ND5-chrM-12994-fbeb5d8a415e4d18",
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": null,
+        "source_receipt_sha256": "771bc1d14258b99f336f6ce18a58528fe5831130a25b0c04a4903da8fafe0ac6",
+        "source_region_sha256": "7066148b3a84af932d23ca18097a279fd7ddb40c2aaaeb4bb6a9341c12d227ef"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "fbeb5d8a415e4d18",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/cegat/P116686_2_S000048/P116686_3.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh37",
+        "chrom": "chrM",
+        "coordinate_mapping": {
+          "chain_id": "2406",
+          "chrom": "chrM",
+          "end": 12995,
+          "start": 12994,
+          "strand": "+"
+        },
+        "gene": "MT-ND5",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 13025,
+          "genome": "hg19",
+          "receipt": {
+            "bytes": 213,
+            "sha256": "644822d1d8988e2adde299255f7a1edfbb90fc515305d50dde42a37459355b26",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg19&chrom=chrM&start=12964&end=13025"
+          },
+          "sequence": "CTCACCCCACTACTAGGCCTCCTCCTAGCAGCAGCAGGCAAATCAGCCCAATTAGGTCTCC",
+          "start": 12964
+        },
+        "original_identity": {
+          "alt": "A",
+          "assembly": "GRCh38",
+          "chrom": "chrM",
+          "pos": 12994,
+          "ref": "G"
+        },
+        "pos": 12995,
+        "ref": "G",
+        "source_location": "chrM:12994",
+        "source_protein_label": "p.Ala220Thr",
+        "source_url": "https://osteosarc.com/variant/MT_ND5-chrM-12994/",
+        "vaccine_count": 1,
+        "variant_id": "MT_ND5-chrM-12994"
+      }
+    },
+    {
+      "bam": "48-NR2F2-chr15-96332299-fbeb5d8a415e4d18.bam",
+      "case_id": "48-NR2F2-chr15-96332299-fbeb5d8a415e4d18",
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": null,
+        "source_receipt_sha256": "771bc1d14258b99f336f6ce18a58528fe5831130a25b0c04a4903da8fafe0ac6",
+        "source_region_sha256": "7066148b3a84af932d23ca18097a279fd7ddb40c2aaaeb4bb6a9341c12d227ef"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "fbeb5d8a415e4d18",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/cegat/P116686_2_S000048/P116686_3.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh37",
+        "chrom": "chr15",
+        "coordinate_mapping": {
+          "chain_id": "16",
+          "chrom": "chr15",
+          "end": 96875528,
+          "start": 96875527,
+          "strand": "+"
+        },
+        "gene": "NR2F2",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 96875558,
+          "genome": "hg19",
+          "receipt": {
+            "bytes": 220,
+            "sha256": "1c930cf48c5e8f56d9a0baa0d8b22b9691cd4e4d4bc038dc952526a789e269f4",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg19&chrom=chr15&start=96875497&end=96875558"
+          },
+          "sequence": "CGGCGGCCGGTGGCCAGGGCGGCCCTGGCGGCCCGGGTAGCGACAAGCAGCAGCAGCAGCA",
+          "start": 96875497
+        },
+        "original_identity": {
+          "alt": "T",
+          "assembly": "GRCh38",
+          "chrom": "chr15",
+          "pos": 96332299,
+          "ref": "G"
+        },
+        "pos": 96875528,
+        "ref": "G",
+        "source_location": "chr15:96332299",
+        "source_protein_label": "p.Gly65Val",
+        "source_url": "https://osteosarc.com/variant/NR2F2-chr15-96332299/",
+        "vaccine_count": 3,
+        "variant_id": "NR2F2-chr15-96332299"
+      }
+    }
+  ],
+  "data_version": "minimal-vaccine-rna-v2",
+  "dataset": "osteosarc",
+  "historical_import": {
+    "commit": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+    "generator_path": "tests/data/osteosarc/expansion/fixtures.py",
+    "manifest_sha256": "d656e10c4c2a859e9d7a108e2df68a7bed04189074ae185cba2f1aaddd958e86",
+    "manifest_url": "https://raw.githubusercontent.com/openvax/isovar/0cad5b275c852263a1c77722aa463fe5568b2c76/tests/data/osteosarc/expansion/corpus/manifest.json",
+    "repository": "https://github.com/openvax/isovar"
+  },
+  "interpretation": "Deliberately selected regression reads, not full-source coverage, independent platform samples, somatic truth or validated vaccine targets.",
+  "license_source": "https://registry.opendata.aws/sid-osteosarc/",
+  "original_vaccine_loci": 44,
+  "schema_version": 1,
+  "scope": "49 indexed-retrieval cases; one explicit template per case; not coverage or VAF",
+  "source_data_license": "CC0-1.0",
+  "species": "Homo sapiens",
+  "taxon_id": 9606
+}

@@ -152,8 +152,22 @@ def load_panel(name):
         return load_sv_candidates()["targets"]
     path = Path(__file__).with_name("data") / "panels.json"
     panels = json.loads(path.read_text())
+    if name == "sv-regressions-v2":
+        panel = copy.deepcopy(panels["sv-regressions-v1"])
+        # These are reviewed Isovar fusion traversal conventions, not a generic
+        # conversion of caller orientation into retained genomic sides.
+        sides = {"GABBR1-SLC29A1": ("right", "right"),
+                 "OTUD7A-FMN1": ("right", "right"),
+                 "PARD3B-CDKN2B": ("left", "right")}
+        for key, values in sides.items():
+            for end, side in zip(panel[key]["breakends"], values):
+                end["retained_side"] = side
+            panel[key]["retained_side_provenance"] = {
+                "issue": "https://github.com/iskandr/osteosarc/issues/96",
+                "convention": "Isovar fusion traversal: donor +=left/-=right; acceptor +=right/-=left"}
+        return panel
     if name not in panels:
-        raise KeyError(f"Unknown panel {name!r}; available: {', '.join(sorted([*panels, 'sv-candidates-v1']))}")
+        raise KeyError(f"Unknown panel {name!r}; available: {', '.join(sorted([*panels, 'sv-candidates-v1', 'sv-regressions-v2']))}")
     return copy.deepcopy(panels[name])
 
 

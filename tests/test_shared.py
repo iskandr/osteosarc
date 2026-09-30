@@ -316,7 +316,7 @@ def test_a_bundle_spec_says_what_it_needs(dataset):
     assert bundle_spec(dataset, "x", variants=["DYNC1H1-chr14-101980529"], files=[key],
                        unplaced_mates=True)["selection"]["unplaced_mates"] is True
     assert bundle_spec(dataset, "x", svs=["GABBR1-SLC29A1"], files=[key])["targets"]["structural"][0]["from"] == {
-        "panel": "sv-regressions-v1", "id": "GABBR1-SLC29A1"}
+        "panel": "sv-regressions-v2", "id": "GABBR1-SLC29A1"}
     with pytest.raises(ValueError, match="did you mean DYNC1H1-chr14-101980529"):
         bundle_spec(dataset, "x", variants=["DYNC1H1-chr14-101980528"], files=[key])
     with pytest.raises(ValueError, match="No SV"):
@@ -553,6 +553,31 @@ def test_kept_templates_keep_their_split_alignments_when_the_spec_asks(dataset, 
     crowded = build_shared_recipe(spec, dataset, required={}, log=logged.append)
     assert crowded["sources"] == plain["sources"] and crowded["members"] == plain["members"]
     assert "left out 1 region of split alignments in a pileup" in "\n".join(logged)
+    # A new spec may raise the cap without changing the behavior of published specs.
+    spec["selection"]["split_depth"] = 1_000_000
+    expanded = build_shared_recipe(spec, dataset, required={}, log=lambda text: None)
+    assert expanded["members"] == split["members"] and expanded["sources"] == split["sources"]
+    assert expanded["selection"]["split_depth"] == 1_000_000
+    checkpoints = tmp_path / "selections"
+    saved = build_shared_recipe(spec, dataset, required={}, log=lambda text: None, checkpoint=checkpoints)
+    with monkeypatch.context() as context:
+        context.setattr(dataset, "extract_reads", lambda *a, **kw: pytest.fail("repeated completed selection"))
+        assert build_shared_recipe(spec, dataset, required={}, log=lambda text: None, checkpoint=checkpoints) == saved
+    import json
+    checkpoint_path, = checkpoints.glob("*.json")
+    state = json.loads(checkpoint_path.read_text())
+    state["result"]["records"] += 1
+    checkpoint_path.write_text(json.dumps(state))
+    with pytest.raises(IntegrityError, match="Invalid source-selection checkpoint"):
+        build_shared_recipe(spec, dataset, required={}, log=lambda text: None, checkpoint=checkpoints)
+    for value in (0, -1, True, 1.5, "1000000"):
+        spec["selection"]["split_depth"] = value
+        with pytest.raises(shared.SchemaError, match="positive integer"):
+            build_shared_recipe(spec, dataset, required={}, log=lambda text: None)
+    spec["selection"]["split_depth"] = 1_000_000
+    spec["selection"]["split_regions"] = 0
+    with pytest.raises(shared.SchemaError, match="split_regions"):
+        build_shared_recipe(spec, dataset, required={}, log=lambda text: None)
 
 
 def test_sv_targets_keep_their_retained_sides_and_inserted_sequence():

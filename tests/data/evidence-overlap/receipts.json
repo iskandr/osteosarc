@@ -1,0 +1,1436 @@
+{
+  "c75479dce2b07bbf": {
+    "command": [
+      "samtools",
+      "view",
+      "--no-PG",
+      "-b",
+      "-M",
+      "-X",
+      "-L",
+      "regions.bed",
+      "-q",
+      "0",
+      "-F",
+      "0",
+      "-f",
+      "0",
+      "-o",
+      "reads.bam",
+      "--fetch-pairs",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/TL-24-KCVBE1UI1P/TL-24-KCVBE1UI1P.Aligned.sortedByCoord.out.md.bam",
+      "objects/sha256/76e825657c3b6bdc6aca83deef08cb13ad7261d20de84348ea3a124722dd757a.Aligned.sortedByCoord.out.md.bam.bai"
+    ],
+    "files": {
+      "header.sam": "3e16854aafaf36b29192eb4c20c79470c17946f4d563fb921f1c74b77ac82f2b",
+      "reads.bam": "333b459db4357990cabe80beb361af9279c8e95cd7c9a604216dfcce47be7065",
+      "reads.bam.bai": "a8ad0d16ec8b053b300279cb567e9c699c4aeb8fa235a1d376be097b6df2daf5",
+      "regions.bed": "8498e9f2066de18f2a63db822c9fbbc3ab218d8f6cb9f7f7cc7cc0fc9af410df"
+    },
+    "header_receipt": {
+      "command": [
+        "samtools",
+        "view",
+        "--no-PG",
+        "-H",
+        "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/TL-24-KCVBE1UI1P/TL-24-KCVBE1UI1P.Aligned.sortedByCoord.out.md.bam"
+      ],
+      "files": {
+        "header.sam": "3e16854aafaf36b29192eb4c20c79470c17946f4d563fb921f1c74b77ac82f2b"
+      },
+      "remote_identity": {
+        "content-length": "1518873721",
+        "etag": "\"d4b0ef9bcd9305357dbd3f4b0e79f208-290\"",
+        "last-modified": "Wed, 03 Jun 2026 21:50:31 GMT"
+      },
+      "request": {
+        "operation": "inspect_alignment",
+        "schema_version": 1,
+        "snapshot_id": "160c14e6ddc9c33d0dd7acd70556698d8244e03159f4524b9c474dc9bc4b3535",
+        "source": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/TL-24-KCVBE1UI1P/TL-24-KCVBE1UI1P.Aligned.sortedByCoord.out.md.bam",
+        "source_modified": null,
+        "source_sha256": null,
+        "source_size": 1518873721
+      },
+      "samtools_version": "samtools 1.21"
+    },
+    "index_receipt": {
+      "etag": "\"30f8d79ff861124fc3a67034f2c5bab4\"",
+      "filename": "TL-24-KCVBE1UI1P.Aligned.sortedByCoord.out.md.bam.bai",
+      "last_modified": "Wed, 03 Jun 2026 21:50:30 GMT",
+      "md5": null,
+      "retrieved_at": "2026-09-28T15:54:16.259100+00:00",
+      "sha256": "76e825657c3b6bdc6aca83deef08cb13ad7261d20de84348ea3a124722dd757a",
+      "size": 2601008,
+      "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/TL-24-KCVBE1UI1P/TL-24-KCVBE1UI1P.Aligned.sortedByCoord.out.md.bam.bai"
+    },
+    "pysam_version": "0.24.1",
+    "records": 40696,
+    "remote_identity": {
+      "content-length": "1518873721",
+      "etag": "\"d4b0ef9bcd9305357dbd3f4b0e79f208-290\"",
+      "last-modified": "Wed, 03 Jun 2026 21:50:31 GMT"
+    },
+    "request": {
+      "fetch_pairs": true,
+      "filters": {
+        "barcode_tag": "CB",
+        "barcodes": [],
+        "exclude_flags": 0,
+        "min_mapq": 0,
+        "query_names": [],
+        "require_flags": 0
+      },
+      "index": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/TL-24-KCVBE1UI1P/TL-24-KCVBE1UI1P.Aligned.sortedByCoord.out.md.bam.bai",
+      "index_sha256": null,
+      "operation": "extract_reads",
+      "reference_index_sha256": null,
+      "reference_sha256": null,
+      "regions": [
+        {
+          "assembly": "GRCh38",
+          "contig": "chr1",
+          "end": 151187547,
+          "reference_length": 248956422,
+          "start": 151183546
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr1",
+          "end": 151244179,
+          "reference_length": 248956422,
+          "start": 151240177
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr1",
+          "end": 173813223,
+          "reference_length": 248956422,
+          "start": 173809222
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr1",
+          "end": 23364762,
+          "reference_length": 248956422,
+          "start": 23360761
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr11",
+          "end": 20082142,
+          "reference_length": 135086622,
+          "start": 20078141
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr12",
+          "end": 52953767,
+          "reference_length": 133275309,
+          "start": 52949766
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr12",
+          "end": 5496381,
+          "reference_length": 133275309,
+          "start": 5492380
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr14",
+          "end": 101982529,
+          "reference_length": 107043718,
+          "start": 101978528
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr14",
+          "end": 102032200,
+          "reference_length": 107043718,
+          "start": 102028199
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr14",
+          "end": 39433722,
+          "reference_length": 107043718,
+          "start": 39429721
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr15",
+          "end": 71996488,
+          "reference_length": 101991189,
+          "start": 71992487
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr15",
+          "end": 96334299,
+          "reference_length": 101991189,
+          "start": 96330298
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr16",
+          "end": 30559995,
+          "reference_length": 90338345,
+          "start": 30555994
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr17",
+          "end": 5009293,
+          "reference_length": 83257441,
+          "start": 5005292
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr17",
+          "end": 51156443,
+          "reference_length": 83257441,
+          "start": 51152442
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr17",
+          "end": 75591954,
+          "reference_length": 83257441,
+          "start": 75587952
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr17",
+          "end": 80329833,
+          "reference_length": 83257441,
+          "start": 80325829
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr18",
+          "end": 45927851,
+          "reference_length": 80373285,
+          "start": 45923850
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr2",
+          "end": 171815470,
+          "reference_length": 242193529,
+          "start": 171811469
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr2",
+          "end": 209696790,
+          "reference_length": 242193529,
+          "start": 209692767
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr3",
+          "end": 15647183,
+          "reference_length": 198295559,
+          "start": 15643182
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr3",
+          "end": 46900732,
+          "reference_length": 198295559,
+          "start": 46896731
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr3",
+          "end": 64200863,
+          "reference_length": 198295559,
+          "start": 64196862
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr3",
+          "end": 77609853,
+          "reference_length": 198295559,
+          "start": 77605852
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr5",
+          "end": 138393529,
+          "reference_length": 181538259,
+          "start": 138389528
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr5",
+          "end": 141528090,
+          "reference_length": 181538259,
+          "start": 141524089
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr5",
+          "end": 168401513,
+          "reference_length": 181538259,
+          "start": 168397512
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr6",
+          "end": 110230838,
+          "reference_length": 170805979,
+          "start": 110226837
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr6",
+          "end": 26057839,
+          "reference_length": 170805979,
+          "start": 26053823
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr6",
+          "end": 43188384,
+          "reference_length": 170805979,
+          "start": 43184383
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr6",
+          "end": 46858758,
+          "reference_length": 170805979,
+          "start": 46854757
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr6",
+          "end": 73820405,
+          "reference_length": 170805979,
+          "start": 73816404
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr7",
+          "end": 133276996,
+          "reference_length": 159345973,
+          "start": 133272995
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr7",
+          "end": 151220156,
+          "reference_length": 159345973,
+          "start": 151216155
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr7",
+          "end": 98243128,
+          "reference_length": 159345973,
+          "start": 98239126
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr8",
+          "end": 22194067,
+          "reference_length": 145138636,
+          "start": 22190066
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr8",
+          "end": 99863923,
+          "reference_length": 145138636,
+          "start": 99859922
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr9",
+          "end": 3858157,
+          "reference_length": 138394717,
+          "start": 3854148
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr9",
+          "end": 70300024,
+          "reference_length": 138394717,
+          "start": 70296023
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr9",
+          "end": 97912412,
+          "reference_length": 138394717,
+          "start": 97908411
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chrM",
+          "end": 14994,
+          "reference_length": 16569,
+          "start": 10993
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chrX",
+          "end": 154932861,
+          "reference_length": 156040895,
+          "start": 154928860
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chrX",
+          "end": 46503045,
+          "reference_length": 156040895,
+          "start": 46499044
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chrX",
+          "end": 77601465,
+          "reference_length": 156040895,
+          "start": 77597464
+        }
+      ],
+      "schema_version": 1,
+      "snapshot_id": "160c14e6ddc9c33d0dd7acd70556698d8244e03159f4524b9c474dc9bc4b3535",
+      "source": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/TL-24-KCVBE1UI1P/TL-24-KCVBE1UI1P.Aligned.sortedByCoord.out.md.bam",
+      "source_modified": null,
+      "source_sha256": null,
+      "source_size": 1518873721
+    },
+    "resolved_regions": [
+      {
+        "assembly": "GRCh38",
+        "contig": "chr1",
+        "end": 23364762,
+        "reference_length": 248956422,
+        "start": 23360761
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr1",
+        "end": 151187547,
+        "reference_length": 248956422,
+        "start": 151183546
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr1",
+        "end": 151244179,
+        "reference_length": 248956422,
+        "start": 151240177
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr1",
+        "end": 173813223,
+        "reference_length": 248956422,
+        "start": 173809222
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr2",
+        "end": 171815470,
+        "reference_length": 242193529,
+        "start": 171811469
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr2",
+        "end": 209696790,
+        "reference_length": 242193529,
+        "start": 209692767
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr3",
+        "end": 15647183,
+        "reference_length": 198295559,
+        "start": 15643182
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr3",
+        "end": 46900732,
+        "reference_length": 198295559,
+        "start": 46896731
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr3",
+        "end": 64200863,
+        "reference_length": 198295559,
+        "start": 64196862
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr3",
+        "end": 77609853,
+        "reference_length": 198295559,
+        "start": 77605852
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr5",
+        "end": 138393529,
+        "reference_length": 181538259,
+        "start": 138389528
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr5",
+        "end": 141528090,
+        "reference_length": 181538259,
+        "start": 141524089
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr5",
+        "end": 168401513,
+        "reference_length": 181538259,
+        "start": 168397512
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr6",
+        "end": 26057839,
+        "reference_length": 170805979,
+        "start": 26053823
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr6",
+        "end": 43188384,
+        "reference_length": 170805979,
+        "start": 43184383
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr6",
+        "end": 46858758,
+        "reference_length": 170805979,
+        "start": 46854757
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr6",
+        "end": 73820405,
+        "reference_length": 170805979,
+        "start": 73816404
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr6",
+        "end": 110230838,
+        "reference_length": 170805979,
+        "start": 110226837
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr7",
+        "end": 98243128,
+        "reference_length": 159345973,
+        "start": 98239126
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr7",
+        "end": 133276996,
+        "reference_length": 159345973,
+        "start": 133272995
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr7",
+        "end": 151220156,
+        "reference_length": 159345973,
+        "start": 151216155
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr8",
+        "end": 22194067,
+        "reference_length": 145138636,
+        "start": 22190066
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr8",
+        "end": 99863923,
+        "reference_length": 145138636,
+        "start": 99859922
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr9",
+        "end": 3858157,
+        "reference_length": 138394717,
+        "start": 3854148
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr9",
+        "end": 70300024,
+        "reference_length": 138394717,
+        "start": 70296023
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr9",
+        "end": 97912412,
+        "reference_length": 138394717,
+        "start": 97908411
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr11",
+        "end": 20082142,
+        "reference_length": 135086622,
+        "start": 20078141
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr12",
+        "end": 5496381,
+        "reference_length": 133275309,
+        "start": 5492380
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr12",
+        "end": 52953767,
+        "reference_length": 133275309,
+        "start": 52949766
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr14",
+        "end": 39433722,
+        "reference_length": 107043718,
+        "start": 39429721
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr14",
+        "end": 101982529,
+        "reference_length": 107043718,
+        "start": 101978528
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr14",
+        "end": 102032200,
+        "reference_length": 107043718,
+        "start": 102028199
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr15",
+        "end": 71996488,
+        "reference_length": 101991189,
+        "start": 71992487
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr15",
+        "end": 96334299,
+        "reference_length": 101991189,
+        "start": 96330298
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr16",
+        "end": 30559995,
+        "reference_length": 90338345,
+        "start": 30555994
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr17",
+        "end": 5009293,
+        "reference_length": 83257441,
+        "start": 5005292
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr17",
+        "end": 51156443,
+        "reference_length": 83257441,
+        "start": 51152442
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr17",
+        "end": 75591954,
+        "reference_length": 83257441,
+        "start": 75587952
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr17",
+        "end": 80329833,
+        "reference_length": 83257441,
+        "start": 80325829
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr18",
+        "end": 45927851,
+        "reference_length": 80373285,
+        "start": 45923850
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chrX",
+        "end": 46503045,
+        "reference_length": 156040895,
+        "start": 46499044
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chrX",
+        "end": 77601465,
+        "reference_length": 156040895,
+        "start": 77597464
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chrX",
+        "end": 154932861,
+        "reference_length": 156040895,
+        "start": 154928860
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chrM",
+        "end": 14994,
+        "reference_length": 16569,
+        "start": 10993
+      }
+    ],
+    "samtools_version": "samtools 1.21",
+    "scope": "regional_records_and_paired_mates"
+  },
+  "e5c28abdbf307d55": {
+    "command": [
+      "samtools",
+      "view",
+      "--no-PG",
+      "-b",
+      "-M",
+      "-X",
+      "-L",
+      "regions.bed",
+      "-q",
+      "0",
+      "-F",
+      "0",
+      "-f",
+      "0",
+      "-o",
+      "reads.bam",
+      "--fetch-pairs",
+      "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/TL-24-ALMY2X4KMV/TL-24-ALMY2X4KMV.Aligned.sortedByCoord.out.md.bam",
+      "objects/sha256/08431f84b5daf7cca50a3112ffbf2f673065248c433e869a6e41e8b9d74bf07d.Aligned.sortedByCoord.out.md.bam.bai"
+    ],
+    "files": {
+      "header.sam": "7eebbde17c994c62b8e56c3a3d0780558a889133c6266b8a0921b572f171ea41",
+      "reads.bam": "c6af0965958b55954757945dbd0125eb0b452d60b1c9038bf980621852831f95",
+      "reads.bam.bai": "a7c0c2174786e59c07eccecbad96344d7c69ce3b1ec4dbf780a048d3a20481d6",
+      "regions.bed": "8498e9f2066de18f2a63db822c9fbbc3ab218d8f6cb9f7f7cc7cc0fc9af410df"
+    },
+    "header_receipt": {
+      "command": [
+        "samtools",
+        "view",
+        "--no-PG",
+        "-H",
+        "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/TL-24-ALMY2X4KMV/TL-24-ALMY2X4KMV.Aligned.sortedByCoord.out.md.bam"
+      ],
+      "files": {
+        "header.sam": "7eebbde17c994c62b8e56c3a3d0780558a889133c6266b8a0921b572f171ea41"
+      },
+      "remote_identity": {
+        "content-length": "1518846497",
+        "etag": "\"9f88b09613aebf4c1e6e17c120b435c7-290\"",
+        "last-modified": "Wed, 03 Jun 2026 17:42:55 GMT"
+      },
+      "request": {
+        "operation": "inspect_alignment",
+        "schema_version": 1,
+        "snapshot_id": "160c14e6ddc9c33d0dd7acd70556698d8244e03159f4524b9c474dc9bc4b3535",
+        "source": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/TL-24-ALMY2X4KMV/TL-24-ALMY2X4KMV.Aligned.sortedByCoord.out.md.bam",
+        "source_modified": null,
+        "source_sha256": null,
+        "source_size": 1518846497
+      },
+      "samtools_version": "samtools 1.21"
+    },
+    "index_receipt": {
+      "etag": "\"1b3741e560ed88c1e90c74983da48f3d\"",
+      "filename": "TL-24-ALMY2X4KMV.Aligned.sortedByCoord.out.md.bam.bai",
+      "last_modified": "Wed, 03 Jun 2026 17:42:55 GMT",
+      "md5": null,
+      "retrieved_at": "2026-09-28T15:54:16.645027+00:00",
+      "sha256": "08431f84b5daf7cca50a3112ffbf2f673065248c433e869a6e41e8b9d74bf07d",
+      "size": 2600904,
+      "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/TL-24-ALMY2X4KMV/TL-24-ALMY2X4KMV.Aligned.sortedByCoord.out.md.bam.bai"
+    },
+    "pysam_version": "0.24.1",
+    "records": 40696,
+    "remote_identity": {
+      "content-length": "1518846497",
+      "etag": "\"9f88b09613aebf4c1e6e17c120b435c7-290\"",
+      "last-modified": "Wed, 03 Jun 2026 17:42:55 GMT"
+    },
+    "request": {
+      "fetch_pairs": true,
+      "filters": {
+        "barcode_tag": "CB",
+        "barcodes": [],
+        "exclude_flags": 0,
+        "min_mapq": 0,
+        "query_names": [],
+        "require_flags": 0
+      },
+      "index": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/TL-24-ALMY2X4KMV/TL-24-ALMY2X4KMV.Aligned.sortedByCoord.out.md.bam.bai",
+      "index_sha256": null,
+      "operation": "extract_reads",
+      "reference_index_sha256": null,
+      "reference_sha256": null,
+      "regions": [
+        {
+          "assembly": "GRCh38",
+          "contig": "chr1",
+          "end": 151187547,
+          "reference_length": 248956422,
+          "start": 151183546
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr1",
+          "end": 151244179,
+          "reference_length": 248956422,
+          "start": 151240177
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr1",
+          "end": 173813223,
+          "reference_length": 248956422,
+          "start": 173809222
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr1",
+          "end": 23364762,
+          "reference_length": 248956422,
+          "start": 23360761
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr11",
+          "end": 20082142,
+          "reference_length": 135086622,
+          "start": 20078141
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr12",
+          "end": 52953767,
+          "reference_length": 133275309,
+          "start": 52949766
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr12",
+          "end": 5496381,
+          "reference_length": 133275309,
+          "start": 5492380
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr14",
+          "end": 101982529,
+          "reference_length": 107043718,
+          "start": 101978528
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr14",
+          "end": 102032200,
+          "reference_length": 107043718,
+          "start": 102028199
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr14",
+          "end": 39433722,
+          "reference_length": 107043718,
+          "start": 39429721
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr15",
+          "end": 71996488,
+          "reference_length": 101991189,
+          "start": 71992487
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr15",
+          "end": 96334299,
+          "reference_length": 101991189,
+          "start": 96330298
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr16",
+          "end": 30559995,
+          "reference_length": 90338345,
+          "start": 30555994
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr17",
+          "end": 5009293,
+          "reference_length": 83257441,
+          "start": 5005292
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr17",
+          "end": 51156443,
+          "reference_length": 83257441,
+          "start": 51152442
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr17",
+          "end": 75591954,
+          "reference_length": 83257441,
+          "start": 75587952
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr17",
+          "end": 80329833,
+          "reference_length": 83257441,
+          "start": 80325829
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr18",
+          "end": 45927851,
+          "reference_length": 80373285,
+          "start": 45923850
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr2",
+          "end": 171815470,
+          "reference_length": 242193529,
+          "start": 171811469
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr2",
+          "end": 209696790,
+          "reference_length": 242193529,
+          "start": 209692767
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr3",
+          "end": 15647183,
+          "reference_length": 198295559,
+          "start": 15643182
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr3",
+          "end": 46900732,
+          "reference_length": 198295559,
+          "start": 46896731
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr3",
+          "end": 64200863,
+          "reference_length": 198295559,
+          "start": 64196862
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr3",
+          "end": 77609853,
+          "reference_length": 198295559,
+          "start": 77605852
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr5",
+          "end": 138393529,
+          "reference_length": 181538259,
+          "start": 138389528
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr5",
+          "end": 141528090,
+          "reference_length": 181538259,
+          "start": 141524089
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr5",
+          "end": 168401513,
+          "reference_length": 181538259,
+          "start": 168397512
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr6",
+          "end": 110230838,
+          "reference_length": 170805979,
+          "start": 110226837
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr6",
+          "end": 26057839,
+          "reference_length": 170805979,
+          "start": 26053823
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr6",
+          "end": 43188384,
+          "reference_length": 170805979,
+          "start": 43184383
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr6",
+          "end": 46858758,
+          "reference_length": 170805979,
+          "start": 46854757
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr6",
+          "end": 73820405,
+          "reference_length": 170805979,
+          "start": 73816404
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr7",
+          "end": 133276996,
+          "reference_length": 159345973,
+          "start": 133272995
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr7",
+          "end": 151220156,
+          "reference_length": 159345973,
+          "start": 151216155
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr7",
+          "end": 98243128,
+          "reference_length": 159345973,
+          "start": 98239126
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr8",
+          "end": 22194067,
+          "reference_length": 145138636,
+          "start": 22190066
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr8",
+          "end": 99863923,
+          "reference_length": 145138636,
+          "start": 99859922
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr9",
+          "end": 3858157,
+          "reference_length": 138394717,
+          "start": 3854148
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr9",
+          "end": 70300024,
+          "reference_length": 138394717,
+          "start": 70296023
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chr9",
+          "end": 97912412,
+          "reference_length": 138394717,
+          "start": 97908411
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chrM",
+          "end": 14994,
+          "reference_length": 16569,
+          "start": 10993
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chrX",
+          "end": 154932861,
+          "reference_length": 156040895,
+          "start": 154928860
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chrX",
+          "end": 46503045,
+          "reference_length": 156040895,
+          "start": 46499044
+        },
+        {
+          "assembly": "GRCh38",
+          "contig": "chrX",
+          "end": 77601465,
+          "reference_length": 156040895,
+          "start": 77597464
+        }
+      ],
+      "schema_version": 1,
+      "snapshot_id": "160c14e6ddc9c33d0dd7acd70556698d8244e03159f4524b9c474dc9bc4b3535",
+      "source": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/TL-24-ALMY2X4KMV/TL-24-ALMY2X4KMV.Aligned.sortedByCoord.out.md.bam",
+      "source_modified": null,
+      "source_sha256": null,
+      "source_size": 1518846497
+    },
+    "resolved_regions": [
+      {
+        "assembly": "GRCh38",
+        "contig": "chr1",
+        "end": 23364762,
+        "reference_length": 248956422,
+        "start": 23360761
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr1",
+        "end": 151187547,
+        "reference_length": 248956422,
+        "start": 151183546
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr1",
+        "end": 151244179,
+        "reference_length": 248956422,
+        "start": 151240177
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr1",
+        "end": 173813223,
+        "reference_length": 248956422,
+        "start": 173809222
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr2",
+        "end": 171815470,
+        "reference_length": 242193529,
+        "start": 171811469
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr2",
+        "end": 209696790,
+        "reference_length": 242193529,
+        "start": 209692767
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr3",
+        "end": 15647183,
+        "reference_length": 198295559,
+        "start": 15643182
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr3",
+        "end": 46900732,
+        "reference_length": 198295559,
+        "start": 46896731
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr3",
+        "end": 64200863,
+        "reference_length": 198295559,
+        "start": 64196862
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr3",
+        "end": 77609853,
+        "reference_length": 198295559,
+        "start": 77605852
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr5",
+        "end": 138393529,
+        "reference_length": 181538259,
+        "start": 138389528
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr5",
+        "end": 141528090,
+        "reference_length": 181538259,
+        "start": 141524089
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr5",
+        "end": 168401513,
+        "reference_length": 181538259,
+        "start": 168397512
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr6",
+        "end": 26057839,
+        "reference_length": 170805979,
+        "start": 26053823
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr6",
+        "end": 43188384,
+        "reference_length": 170805979,
+        "start": 43184383
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr6",
+        "end": 46858758,
+        "reference_length": 170805979,
+        "start": 46854757
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr6",
+        "end": 73820405,
+        "reference_length": 170805979,
+        "start": 73816404
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr6",
+        "end": 110230838,
+        "reference_length": 170805979,
+        "start": 110226837
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr7",
+        "end": 98243128,
+        "reference_length": 159345973,
+        "start": 98239126
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr7",
+        "end": 133276996,
+        "reference_length": 159345973,
+        "start": 133272995
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr7",
+        "end": 151220156,
+        "reference_length": 159345973,
+        "start": 151216155
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr8",
+        "end": 22194067,
+        "reference_length": 145138636,
+        "start": 22190066
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr8",
+        "end": 99863923,
+        "reference_length": 145138636,
+        "start": 99859922
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr9",
+        "end": 3858157,
+        "reference_length": 138394717,
+        "start": 3854148
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr9",
+        "end": 70300024,
+        "reference_length": 138394717,
+        "start": 70296023
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr9",
+        "end": 97912412,
+        "reference_length": 138394717,
+        "start": 97908411
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr11",
+        "end": 20082142,
+        "reference_length": 135086622,
+        "start": 20078141
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr12",
+        "end": 5496381,
+        "reference_length": 133275309,
+        "start": 5492380
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr12",
+        "end": 52953767,
+        "reference_length": 133275309,
+        "start": 52949766
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr14",
+        "end": 39433722,
+        "reference_length": 107043718,
+        "start": 39429721
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr14",
+        "end": 101982529,
+        "reference_length": 107043718,
+        "start": 101978528
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr14",
+        "end": 102032200,
+        "reference_length": 107043718,
+        "start": 102028199
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr15",
+        "end": 71996488,
+        "reference_length": 101991189,
+        "start": 71992487
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr15",
+        "end": 96334299,
+        "reference_length": 101991189,
+        "start": 96330298
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr16",
+        "end": 30559995,
+        "reference_length": 90338345,
+        "start": 30555994
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr17",
+        "end": 5009293,
+        "reference_length": 83257441,
+        "start": 5005292
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr17",
+        "end": 51156443,
+        "reference_length": 83257441,
+        "start": 51152442
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr17",
+        "end": 75591954,
+        "reference_length": 83257441,
+        "start": 75587952
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr17",
+        "end": 80329833,
+        "reference_length": 83257441,
+        "start": 80325829
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chr18",
+        "end": 45927851,
+        "reference_length": 80373285,
+        "start": 45923850
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chrX",
+        "end": 46503045,
+        "reference_length": 156040895,
+        "start": 46499044
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chrX",
+        "end": 77601465,
+        "reference_length": 156040895,
+        "start": 77597464
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chrX",
+        "end": 154932861,
+        "reference_length": 156040895,
+        "start": 154928860
+      },
+      {
+        "assembly": "GRCh38",
+        "contig": "chrM",
+        "end": 14994,
+        "reference_length": 16569,
+        "start": 10993
+      }
+    ],
+    "samtools_version": "samtools 1.21",
+    "scope": "regional_records_and_paired_mates"
+  }
+}

@@ -18,6 +18,7 @@ from .bundles import (  # noqa: F401
     export_bundle,
     generate_bundle,
     list_bundle,
+    subset_bundle,
     verify_bundle,
     verify_digest,
     verify_gzip_digests,
@@ -56,7 +57,7 @@ from .shared import bundle_file, check_fixtures, fetch_bundle
 from .sv_candidates import load_sv_candidates
 from .timeline import Event, Timeline
 
-__version__ = "0.14.4"
+__version__ = "0.15.0"
 
 # The public API. A few other helpers are importable from here because the OpenVax
 # libraries use them (digest, parse_variants, inspect_alignment, ...); everything
@@ -68,7 +69,7 @@ __all__ = [
     # Reads and test data
     "extract_reads", "ReadFilter", "ReadSubset", "RecoveryPolicy",
     "bundle_file", "fetch_bundle", "list_bundle", "export_bundle", "check_fixtures", "verify_bundle",
-    "generate_bundle", "validate_recipe",
+    "generate_bundle", "subset_bundle", "validate_recipe",
     "load_panel",
     "load_sv_candidates",
     # Corrections

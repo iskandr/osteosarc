@@ -1,0 +1,183 @@
+{
+  "groups": [
+    {
+      "audit": {
+        "different_a": 12,
+        "different_b": 12,
+        "names_a": 18971,
+        "names_b": 18971,
+        "read_groups_a": [
+          {
+            "ID": "TL-24-ALMY2X4KMV",
+            "SM": "TL-24-ALMY2X4KMV"
+          }
+        ],
+        "read_groups_b": [
+          {
+            "ID": "TL-24-KCVBE1UI1P",
+            "SM": "TL-24-KCVBE1UI1P"
+          }
+        ],
+        "records_a": 40696,
+        "records_b": 40696,
+        "shared_names": 18971,
+        "shared_records_excluding_tags": 40684,
+        "union_names": 18971
+      },
+      "evidence_date": "2026-09-28",
+      "id": "tempus-almy-kcv-regional-v1",
+      "interpretation": "Do not treat these products as independent RNA evidence. Original labels and receipts are retained. Choosing one for analysis does not establish the correct sample identity.",
+      "issue": "https://github.com/iskandr/osteosarc/issues/100",
+      "provenance_gap": "Duplicate delivery is explicitly documented and supported by matching FASTQ object metadata and regional alignment content. The biological specimen/timepoint remains disputed by the existing tempus-file-labels curation; preserve published labels until specimen-level documentation resolves it.",
+      "published_delivery_alias": {
+        "evidence": "The published FASTQ catalogue identifies KCVBE1UI1P as a duplicate delivery of ALMY2X4KMV RNA. Corresponding mate objects have equal byte lengths and equal multipart ETags. ETags are recorded as server metadata, not claimed to be whole-file MD5/SHA-256 hashes.",
+        "object_metadata_checked_at": "2026-09-29T13:50:42.767541+00:00",
+        "objects": [
+          {
+            "headers": {
+              "Content-Length": "680558575",
+              "ETag": "\"acee7145ec61f38fa7b9ea30a7adc3b5-82\"",
+              "Last-Modified": "Mon, 20 Jul 2026 22:47:27 GMT",
+              "x-amz-checksum-sha256": null
+            },
+            "label": "TL-24-ALMY2X4KMV",
+            "mate": "1",
+            "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/tempus/TL-24-ALMY2X4KMV/RNA/FastQ/TL-24-ALMY2X4KMV_T_RSQ1_1.fastq.gz"
+          },
+          {
+            "headers": {
+              "Content-Length": "697402401",
+              "ETag": "\"41da6be7e63ac1aa83a72890686f6be1-84\"",
+              "Last-Modified": "Mon, 20 Jul 2026 22:48:53 GMT",
+              "x-amz-checksum-sha256": null
+            },
+            "label": "TL-24-ALMY2X4KMV",
+            "mate": "3",
+            "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/tempus/TL-24-ALMY2X4KMV/RNA/FastQ/TL-24-ALMY2X4KMV_T_RSQ1_3.fastq.gz"
+          },
+          {
+            "headers": {
+              "Content-Length": "680558575",
+              "ETag": "\"acee7145ec61f38fa7b9ea30a7adc3b5-82\"",
+              "Last-Modified": "Mon, 20 Jul 2026 22:50:40 GMT",
+              "x-amz-checksum-sha256": null
+            },
+            "label": "TL-24-KCVBE1UI1P",
+            "mate": "1",
+            "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/tempus/TL-24-KCVBE1UI1P/RNA/FastQ/TL-24-KCVBE1UI1P_T_RSQ1_1.fastq.gz"
+          },
+          {
+            "headers": {
+              "Content-Length": "697402401",
+              "ETag": "\"41da6be7e63ac1aa83a72890686f6be1-84\"",
+              "Last-Modified": "Mon, 20 Jul 2026 22:50:44 GMT",
+              "x-amz-checksum-sha256": null
+            },
+            "label": "TL-24-KCVBE1UI1P",
+            "mate": "3",
+            "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/tempus/TL-24-KCVBE1UI1P/RNA/FastQ/TL-24-KCVBE1UI1P_T_RSQ1_3.fastq.gz"
+          }
+        ],
+        "source": {
+          "receipt": {
+            "etag": "\"34794b7fe02affb3c5495f6391145e6d\"",
+            "filename": "fastqs-consolidated.tsv",
+            "last_modified": null,
+            "md5": null,
+            "retrieved_at": "2026-09-28T03:09:35.249736+00:00",
+            "sha256": "d5ba79663f1af7fe6faa370698f82d70bbd883693cb7d5404c1d094856363cbf",
+            "size": 54606,
+            "url": "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/scripts/data/fastqs-consolidated.tsv"
+          },
+          "rows": [
+            {
+              "analyst": "",
+              "assay": "RNA",
+              "b2_folder": "",
+              "display_name": "T1 Tempus Tumor RNA 2024-06 (TL-24-ALMY2X4KMV)",
+              "file_count": "2",
+              "is_primary": "",
+              "is_superseded_by": "",
+              "notes": "Tempus ID: TL-24-ALMY2X4KMV",
+              "provider": "Tempus",
+              "s3_folder": "rna-seq/tempus/TL-24-ALMY2X4KMV/RNA",
+              "sample_date": "2024-06",
+              "sample_id": "T1_tumor",
+              "timepoint": "T1",
+              "tissue": "Tumor",
+              "total_size_bytes": "1238829178",
+              "total_size_human": "1.15 GiB"
+            },
+            {
+              "analyst": "",
+              "assay": "RNA",
+              "b2_folder": "",
+              "display_name": "T1 Tempus Tumor RNA 2024-06 (TL-24-ALMY2X4KMV vendor)",
+              "file_count": "2",
+              "is_primary": "",
+              "is_superseded_by": "",
+              "notes": "RNA mates are _1/_3 (_2 was the index read). Byte-identical to the catalog copy under rna-seq/tempus/TL-24-ALMY2X4KMV/RNA/.",
+              "provider": "Tempus",
+              "s3_folder": "vendor/tempus/TL-24-ALMY2X4KMV/RNA/FastQ",
+              "sample_date": "2024-06",
+              "sample_id": "T1_tumor",
+              "timepoint": "T1",
+              "tissue": "Tumor",
+              "total_size_bytes": "1377960976",
+              "total_size_human": "1.28 GiB"
+            },
+            {
+              "analyst": "",
+              "assay": "RNA",
+              "b2_folder": "",
+              "display_name": "T1 Tempus Tumor RNA 2024-06 (TL-24-KCVBE1UI1P vendor)",
+              "file_count": "2",
+              "is_primary": "",
+              "is_superseded_by": "",
+              "notes": "Duplicate delivery of TL-24-ALMY2X4KMV RNA -- identical content, different md5 sidecars because they were hashed after renaming. Do not count as an independent library.",
+              "provider": "Tempus",
+              "s3_folder": "vendor/tempus/TL-24-KCVBE1UI1P/RNA/FastQ",
+              "sample_date": "2024-06",
+              "sample_id": "T1_tumor",
+              "timepoint": "T1",
+              "tissue": "Tumor",
+              "total_size_bytes": "1377960976",
+              "total_size_human": "1.28 GiB"
+            }
+          ]
+        }
+      },
+      "related_curation": [
+        "tempus-file-labels",
+        "tempus-timepoint"
+      ],
+      "scope": "44 vaccine loci with 2000-base flanks and fetched mates; no whole-library identity claim",
+      "sources": [
+        {
+          "id": "e5c28abdbf307d55",
+          "regional_bam": "e5c28abdbf307d55.bam",
+          "regional_bam_sha256": "c6af0965958b55954757945dbd0125eb0b452d60b1c9038bf980621852831f95",
+          "remote_identity": {
+            "content-length": "1518846497",
+            "etag": "\"9f88b09613aebf4c1e6e17c120b435c7-290\"",
+            "last-modified": "Wed, 03 Jun 2026 17:42:55 GMT"
+          },
+          "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/TL-24-ALMY2X4KMV/TL-24-ALMY2X4KMV.Aligned.sortedByCoord.out.md.bam"
+        },
+        {
+          "id": "c75479dce2b07bbf",
+          "regional_bam": "c75479dce2b07bbf.bam",
+          "regional_bam_sha256": "333b459db4357990cabe80beb361af9279c8e95cd7c9a604216dfcce47be7065",
+          "remote_identity": {
+            "content-length": "1518873721",
+            "etag": "\"d4b0ef9bcd9305357dbd3f4b0e79f208-290\"",
+            "last-modified": "Wed, 03 Jun 2026 21:50:31 GMT"
+          },
+          "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/TL-24-KCVBE1UI1P/TL-24-KCVBE1UI1P.Aligned.sortedByCoord.out.md.bam"
+        }
+      ],
+      "status": "biological_identity_unresolved"
+    }
+  ],
+  "schema_version": 1
+}

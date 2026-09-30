@@ -1,0 +1,296 @@
+display_name	tissue	timepoint	sample_date	sample_id	provider	analyst	assay	b2_folder	s3_folder	file_count	total_size_bytes	total_size_human	is_primary	is_superseded_by	notes
+T0 BostonGene Tumor RNA 2022-12	Tumor	T0	2022-12	T0_tumor	BostonGene		RNA		genomics/genomics-bulk/2022.12.16/RNA/2022.12.16.rna.bostongene/fastqs	2	9932494899	9.25 GiB			
+T0 BostonGene Tumor RNA 2022-12 (rna-seq/fastq mirror)	Tumor	T0	2022-12	T0_tumor	BostonGene		RNA		rna-seq/fastq/bostongene_2022	2	9932494899	9.25 GiB			File lives under rna-seq/fastq/; may duplicate a genomics-bulk path
+T0 Tempus Tumor RNA 2022-12 (rna-seq/fastq mirror)	Tumor	T0	2022-12	T0_tumor	Tempus		RNA		rna-seq/fastq/tempus_2022	4	2616790154	2.44 GiB			File lives under rna-seq/fastq/; may duplicate a genomics-bulk path
+T0 BostonGene Tumor RNA 2022-12 (BG003082 vendor)	Tumor	T0	2022-12	T0_tumor	BostonGene		RNA		vendor/bostongene/BG003082/RNASeq-tumor-A01231	4	11007830868	10.25 GiB			As-delivered vendor FASTQ (untrimmed); the older catalog copy was adapter-trimmed before archiving. BAM is byte-identical to the catalog copy at genomics/genomics-bulk/2022.12.16/RNA/2022.12.16.rna.bostongene/processed_by_pfo/RNASeq-tumor.bam.
+T0 CeGaT Tumor RNA 2022-12 (P116686_3 vendor)	Tumor	T0	2022-12	T0_tumor	CeGaT		RNA		vendor/cegat/P116686_2_S000048/P116686_3	2	7210584452	6.72 GiB			CeGaT tumor RNA (STAR 2.7.3a, hg19). Sequenced 2023-03-22 on the T0 material collected 2022-12-16. Files live under P116686_2_S000048/ despite the P116686_3 sample id.
+T0 BostonGene Tumor WES 2022-12	Tumor	T0	2022-12	T0_tumor	BostonGene		WES		genomics/genomics-bulk/2022.12.16/DNA/2022.12.16.dna.bostongene.WES/fastqs/tumor	2	19465508018	18.13 GiB			
+T0 BostonGene Tumor WES 2022-12 (BG003082 vendor)	Tumor	T0	2022-12	T0_tumor	BostonGene		WES		vendor/bostongene/BG003082/WES-tumor-A01231	4	22995318623	21.42 GiB			As-delivered vendor FASTQ (untrimmed); the older catalog copy was adapter-trimmed before archiving. BAM is byte-identical to the catalog copy under genomics/genomics-bulk/2022.12.16/DNA/.../processed_by_pfo/.
+T0 CeGaT Tumor WES 2022-12 (P116686_2 vendor)	Tumor	T0	2022-12	T0_tumor	CeGaT		WES		vendor/cegat/P116686_2_S000048/P116686_2	2	13089275642	12.19 GiB			CeGaT tumor DNA (exome kit S000048, hg19). Sequenced 2023-03-22 on the T0 material collected 2022-12-16. Ships _somatic.tsv; source data for the CeGaT neoantigen vaccine.
+T0 Personalis Tumor WGS 2022-12	Tumor	T0	2022-12	T0_tumor	Personalis		WGS		genomics/genomics-bulk/2022.12.16/DNA/2022.12.16.dna.personalis.WGS/fastqs/tumor	6	98817732608	92.03 GiB			
+T0 BostonGene Blood WES 2022-12	Blood	T0	2022-12	T0_blood	BostonGene		WES		genomics/genomics-bulk/2022.12.16/DNA/2022.12.16.dna.bostongene.WES/fastqs/normal-blood	2	9864267107	9.19 GiB			
+T0 BostonGene Blood WES 2022-12 (BG003082 vendor)	Blood	T0	2022-12	T0_blood	BostonGene		WES		vendor/bostongene/BG003082/WES-normal-A01231	4	11678164961	10.88 GiB			As-delivered vendor FASTQ (untrimmed); the older catalog copy was adapter-trimmed before archiving. BAM is byte-identical to the catalog copy under genomics/genomics-bulk/2022.12.16/DNA/.../processed_by_pfo/.
+T0 BostonGene Blood WES 2022-12 (BG009368 vendor, re-delivered T0 normal)	Blood	T0	2022-12	T0_blood	BostonGene		WES		vendor/bostongene/BG009368/WES-normal-A01231	4	11678164961	10.88 GiB			As-delivered vendor FASTQ (untrimmed); the older catalog copy was adapter-trimmed before archiving. FASTQs are byte-identical to vendor/bostongene/BG003082/WES-normal-A01231 (run 539/HJ3NCDMXY); BostonGene reused the T0 germline normal for the T1 order. The BAM differs slightly -- it was re-aligned for this order.
+T0 CeGaT Blood WES 2022-12 (P116686_1 vendor)	Blood	T0	2022-12	T0_blood	CeGaT		WES		vendor/cegat/P116686_1_S000048/P116686_1	2	11321968597	10.54 GiB			CeGaT normal DNA (exome kit S000048, hg19, chrY PAR masked). Sequenced 2023-03-22 on the T0 material collected 2022-12-16. Source data for the CeGaT peptide neoantigen vaccine.
+T0 Personalis Blood WGS 2022-12	Blood	T0	2022-12	T0_blood	Personalis		WGS		genomics/genomics-bulk/2022.12.16/DNA/2022.12.16.dna.personalis.WGS/fastqs/normal-blood	8	99411928768	92.58 GiB			
+T1 BostonGene Tumor RNA 2024-06 (rna-seq/fastq mirror)	Tumor	T1	2024-06	T1_tumor	BostonGene		RNA		rna-seq/fastq/bostongene_2024	2	8244946583	7.68 GiB			File lives under rna-seq/fastq/; may duplicate a genomics-bulk path
+T1 Tempus Tumor RNA 2024-06 (TL-24-ALMY2X4KMV)	Tumor	T1	2024-06	T1_tumor	Tempus		RNA		rna-seq/tempus/TL-24-ALMY2X4KMV/RNA	2	1238829178	1.15 GiB			Tempus ID: TL-24-ALMY2X4KMV
+T1 BostonGene Tumor RNA 2024-06 (BG009368 vendor)	Tumor	T1	2024-06	T1_tumor	BostonGene		RNA		vendor/bostongene/BG009368/RNASeq-tumor-A01231	8	9240081148	8.61 GiB			As-delivered vendor FASTQ (untrimmed); the older catalog copy was adapter-trimmed before archiving.
+T1 Tempus Tumor RNA 2024-06 (TL-24-ALMY2X4KMV vendor)	Tumor	T1	2024-06	T1_tumor	Tempus		RNA		vendor/tempus/TL-24-ALMY2X4KMV/RNA/FastQ	2	1377960976	1.28 GiB			RNA mates are _1/_3 (_2 was the index read). Byte-identical to the catalog copy under rna-seq/tempus/TL-24-ALMY2X4KMV/RNA/.
+T1 Tempus Tumor RNA 2024-06 (TL-24-KCVBE1UI1P vendor)	Tumor	T1	2024-06	T1_tumor	Tempus		RNA		vendor/tempus/TL-24-KCVBE1UI1P/RNA/FastQ	2	1377960976	1.28 GiB			Duplicate delivery of TL-24-ALMY2X4KMV RNA -- identical content, different md5 sidecars because they were hashed after renaming. Do not count as an independent library.
+T1 BostonGene Tumor WES 2024-06	Tumor	T1	2024-06	T1_tumor	BostonGene		WES		genomics/genomics-bulk/2024.06.06/DNA/2024.06.06.dna.bostongene.WES/raw/tumor	2	16907199063	15.75 GiB			
+T1 BostonGene Tumor WES 2024-06 (BG009368 vendor)	Tumor	T1	2024-06	T1_tumor	BostonGene		WES		vendor/bostongene/BG009368/WES-tumor-A01231	8	20080114801	18.70 GiB			As-delivered vendor FASTQ (untrimmed); the older catalog copy was adapter-trimmed before archiving.
+T1 Tempus Tumor WES 2024-06 (TL-24-5GQLV9WSXQ vendor)	Tumor	T1	2024-06	T1_tumor	Tempus		WES		vendor/tempus/TL-24-5GQLV9WSXQ/DNA/FastQ	2	7916872819	7.37 GiB			Byte-identical to the catalog copy under rna-seq/tempus/TL-24-5GQLV9WSXQ/wes/. The sibling .tar.gz repackages these same FASTQs and is not counted here.
+T1 Tempus Tumor WES 2024-06 (TL-24-ALMY2X4KMV vendor)	Tumor	T1	2024-06	T1_tumor	Tempus		WES		vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/T	2	15470759019	14.41 GiB			Byte-identical to the catalog copy under rna-seq/tempus/TL-24-ALMY2X4KMV/WES/. Tumor and normal share one FastQ/ directory, so the row key appends /T.
+T1 UCLA Tumor WGS 2024-06	Tumor	T1	2024-06	T1_tumor	UCLA		WGS		genomics/genomics-bulk/2024.06.06/DNA/2024.06.06.dna.WGS/raw/tumor	2	184092873973	171.45 GiB			
+T1 UCSF Tumor scRNA_BCR 2024-06	Tumor	T1	2024-06	T1_tumor	UCSF		scRNA_BCR		ucsf/T1/FASTQ/IPISRC044_T1_BCR	4	7748503985	7.22 GiB			
+T1 UCSF Tumor scRNA_GEX 2024-06	Tumor	T1	2024-06	T1_tumor	UCSF		scRNA_GEX		ucsf/T1/FASTQ/IPISRC044_T1_SCG1	4	36867288457	34.34 GiB			
+T1 UCSF Tumor scRNA_ONT 2024-06	Tumor	T1	2024-06	T1_tumor	UCSF		scRNA_ONT		ONT/IPISRC044_ONT_upload/IPISRC044_ONT/fastqs/IPISRC044_T1_ONT_fastqs/fastq_pass	97	223398075228	208.06 GiB			fastq_pass (basecaller-passing reads only)
+T1 UCSF Tumor scRNA_TCR 2024-06	Tumor	T1	2024-06	T1_tumor	UCSF		scRNA_TCR		ucsf/T1/FASTQ/IPISRC044_T1_TCR	4	7413145524	6.90 GiB			
+T1 Tempus Blood WES 2024-06 (TL-24-ALMY2X4KMV vendor)	Blood	T1	2024-06	T1_blood	Tempus		WES		vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/N	2	9202603169	8.57 GiB			Byte-identical to the catalog copy under rna-seq/tempus/TL-24-ALMY2X4KMV/WES/. Tumor and normal share one FastQ/ directory, so the row key appends /N.
+T1 UCLA Blood WGS 2024-06	Blood	T1	2024-06	T1_blood	UCLA		WGS		genomics/genomics-bulk/2024.06.06/DNA/2024.06.06.dna.WGS/raw/normal-blood	2	115047855715	107.15 GiB			
+T1 UCLA Organoid WGS 2024-06	Organoid	T1	2024-06	T1_organoid	UCLA		WGS		genomics/genomics-bulk/2024.06.06/DNA/2024.06.06.dna.WGS/raw/organoid	2	184798645644	172.11 GiB			
+T1 Tempus WES 2024-06 (TL-24-5GQLV9WSXQ)		T1	2024-06		Tempus		WES		rna-seq/tempus/TL-24-5GQLV9WSXQ/wes	2	7916872819	7.37 GiB			Tempus ID: TL-24-5GQLV9WSXQ; contains both normal and tumor reads
+T1 Tempus WES 2024-06 (TL-24-ALMY2X4KMV)		T1	2024-06		Tempus		WES		rna-seq/tempus/TL-24-ALMY2X4KMV/WES	4	24673362188	22.98 GiB			Tempus ID: TL-24-ALMY2X4KMV; contains both normal and tumor reads
+T2 UCSF Tumor CITE 2025-01	Tumor	T2	2025-01	T2_tumor	UCSF		CITE		ucsf/T2/FASTQ/IPISRC044_T2_ADT	4	8328124220	7.76 GiB			
+T2 UCLA Tumor RNA 2025-01 (rna-seq/fastq mirror)	Tumor	T2	2025-01	T2_tumor	UCLA		RNA		rna-seq/fastq/ucla_2025	2	10195778897	9.50 GiB			File lives under rna-seq/fastq/; may duplicate a genomics-bulk path
+T2 UCLA Tumor WGS 2025-01	Tumor	T2	2025-01	T2_tumor	UCLA		WGS		genomics/genomics-bulk/2025.01.06/DNA/2025.01.06.dna.WGS/fastqs/tumor	2	273883526194	255.07 GiB			
+T2 UCSF Tumor scRNA_BCR 2025-01	Tumor	T2	2025-01	T2_tumor	UCSF		scRNA_BCR		ucsf/T2/FASTQ/IPISRC044_T2_BCR	4	27483044748	25.60 GiB			
+T2 UCSF Tumor scRNA_GEX 2025-01	Tumor	T2	2025-01	T2_tumor	UCSF		scRNA_GEX		ucsf/T2/FASTQ/IPISRC044_T2_SCG1	4	38407017555	35.77 GiB			
+T2 UCSF Tumor scRNA_ONT 2025-01	Tumor	T2	2025-01	T2_tumor	UCSF		scRNA_ONT		ONT/IPISRC044_ONT_upload/IPISRC044_ONT/fastqs/IPISRC044_T2_ONT_fastqs/fastq_pass	97	226587432501	211.03 GiB			fastq_pass (basecaller-passing reads only)
+T2 UCSF Tumor scRNA_TCR 2025-01	Tumor	T2	2025-01	T2_tumor	UCSF		scRNA_TCR		ucsf/T2/FASTQ/IPISRC044_T2_TCR	4	21961800745	20.45 GiB			
+T3 UCSF Tumor CITE 2025-04	Tumor	T3	2025-04	T3_tumor	UCSF		CITE		ucsf/T3/FASTQ/IPISRC044_T3_ADT	4	15385452822	14.33 GiB			
+T3 UCSF Tumor scRNA_BCR 2025-04	Tumor	T3	2025-04	T3_tumor	UCSF		scRNA_BCR		ucsf/T3/FASTQ/IPISRC044_T3_BCR	4	14241098983	13.26 GiB			
+T3 UCSF Tumor scRNA_GEX 2025-04 (CD45neg)	Tumor	T3	2025-04	T3_tumor_CD45neg	UCSF		scRNA_GEX		ucsf/T3/FASTQ/IPISRC044_T3_CD45neg_enriched_illumina	4	60828949243	56.65 GiB			CD45-negative enriched fraction
+T3 UCSF Tumor scRNA_GEX 2025-04	Tumor	T3	2025-04	T3_tumor	UCSF		scRNA_GEX		ucsf/T3/FASTQ/IPISRC044_T3_SCG1	4	49059849784	45.69 GiB			
+T3 UCSF Tumor scRNA_ONT 2025-04	Tumor	T3	2025-04	T3_tumor	UCSF		scRNA_ONT		ONT/IPISRC044_ONT_upload/IPISRC044_ONT/fastqs/IPISRC044_T3_ONT_fastqs/fastq_pass	97	234568053243	218.46 GiB			fastq_pass (basecaller-passing reads only)
+T3 UCSF Tumor scRNA_TCR 2025-04	Tumor	T3	2025-04	T3_tumor	UCSF		scRNA_TCR		ucsf/T3/FASTQ/IPISRC044_T3_TCR	4	12049925463	11.22 GiB			
+Hudson Lab Blood scRNA_GEX 2025-01-25 (Pool 1)	Blood		2025-01-25	blood_2025-01-25	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Jan2025 (250125)/GEX/Pool 1	4	115167845143	107.26 GiB			Pool 1
+Hudson Lab Blood scRNA_GEX 2025-01-25 (Pool 2)	Blood		2025-01-25	blood_2025-01-25	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Jan2025 (250125)/GEX/Pool 2	4	101004472711	94.07 GiB			Pool 2
+Hudson Lab Blood scRNA_GEX 2025-01-25 (Pool 3)	Blood		2025-01-25	blood_2025-01-25	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Jan2025 (250125)/GEX/Pool 3	4	82472131104	76.81 GiB			Pool 3
+Hudson Lab Blood scRNA_TCR 2025-01-25 (Pool 1)	Blood		2025-01-25	blood_2025-01-25	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Jan2025 (250125)/TCRab/Pool 1	4	18485394427	17.22 GiB			Pool 1
+Hudson Lab Blood scRNA_TCR 2025-01-25 (Pool 2)	Blood		2025-01-25	blood_2025-01-25	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Jan2025 (250125)/TCRab/Pool 2	4	15196323187	14.15 GiB			Pool 2
+Hudson Lab Blood scRNA_TCR 2025-01-25 (Pool 3)	Blood		2025-01-25	blood_2025-01-25	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Jan2025 (250125)/TCRab/Pool 3	4	5824955107	5.42 GiB			Pool 3
+Hudson Lab Blood scRNA_TCRgd 2025-01-25 (Pool 1)	Blood		2025-01-25	blood_2025-01-25	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/Jan2025 (250125)/TCRgd/Pool 1	4	739602996	705.34 MiB			Pool 1
+Hudson Lab Blood scRNA_TCRgd 2025-01-25 (Pool 2)	Blood		2025-01-25	blood_2025-01-25	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/Jan2025 (250125)/TCRgd/Pool 2	4	845177047	806.02 MiB			Pool 2
+Hudson Lab Blood scRNA_TCRgd 2025-01-25 (Pool 3)	Blood		2025-01-25	blood_2025-01-25	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/Jan2025 (250125)/TCRgd/Pool 3	4	714322343	681.23 MiB			Pool 3
+Hudson Lab Blood scRNA_GEX 2025-04-09 (Pool 1)	Blood		2025-04-09	blood_2025-04-09	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Apr2025 (250409)/GEX/Pool 1	4	37180381868	34.63 GiB			Pool 1
+Hudson Lab Blood scRNA_GEX 2025-04-09 (Pool 2)	Blood		2025-04-09	blood_2025-04-09	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Apr2025 (250409)/GEX/Pool 2	4	139287184572	129.72 GiB			Pool 2
+Hudson Lab Blood scRNA_GEX 2025-04-09 (Pool 3)	Blood		2025-04-09	blood_2025-04-09	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Apr2025 (250409)/GEX/Pool 3	4	136438719895	127.07 GiB			Pool 3
+Hudson Lab Blood scRNA_GEX 2025-04-09 (Pool 4)	Blood		2025-04-09	blood_2025-04-09	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Apr2025 (250409)/GEX/Pool 4	4	130326321507	121.38 GiB			Pool 4
+Hudson Lab Blood scRNA_GEX 2025-04-09 (Pool 5)	Blood		2025-04-09	blood_2025-04-09	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Apr2025 (250409)/GEX/Pool 5	4	144267820951	134.36 GiB			Pool 5
+Hudson Lab Blood scRNA_TCR 2025-04-09 (Pool 1)	Blood		2025-04-09	blood_2025-04-09	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Apr2025 (250409)/TCRab/Pool 1	4	16245753768	15.13 GiB			Pool 1
+Hudson Lab Blood scRNA_TCR 2025-04-09 (Pool 2)	Blood		2025-04-09	blood_2025-04-09	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Apr2025 (250409)/TCRab/Pool 2	4	13119839605	12.22 GiB			Pool 2
+Hudson Lab Blood CITE 2025-05-01 (Pool1)	Blood		2025-05-01	blood_2025-05-01	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/May2025 (1P1Src044)/CITEseq/Pool1	2	18769228997	17.48 GiB			Pool1
+Hudson Lab Blood CITE 2025-05-01 (Pool2)	Blood		2025-05-01	blood_2025-05-01	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/May2025 (1P1Src044)/CITEseq/Pool2	2	23866559699	22.23 GiB			Pool2
+Hudson Lab Blood CITE 2025-05-01 (Pool3)	Blood		2025-05-01	blood_2025-05-01	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/May2025 (1P1Src044)/CITEseq/Pool3	2	27878025971	25.96 GiB			Pool3
+Hudson Lab Blood CITE 2025-05-01 (Pool4)	Blood		2025-05-01	blood_2025-05-01	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/May2025 (1P1Src044)/CITEseq/Pool4	2	26570425559	24.75 GiB			Pool4
+Hudson Lab Blood scRNA_GEX 2025-05-01 (Pool1)	Blood		2025-05-01	blood_2025-05-01	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/May2025 (1P1Src044)/GEX/Pool1	4	92960795426	86.58 GiB			Pool1
+Hudson Lab Blood scRNA_GEX 2025-05-01 (Pool2)	Blood		2025-05-01	blood_2025-05-01	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/May2025 (1P1Src044)/GEX/Pool2	4	91383915771	85.11 GiB			Pool2
+Hudson Lab Blood scRNA_GEX 2025-05-01 (Pool3)	Blood		2025-05-01	blood_2025-05-01	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/May2025 (1P1Src044)/GEX/Pool3	4	90927245951	84.68 GiB			Pool3
+Hudson Lab Blood scRNA_GEX 2025-05-01 (Pool4)	Blood		2025-05-01	blood_2025-05-01	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/May2025 (1P1Src044)/GEX/Pool4	4	98084741243	91.35 GiB			Pool4
+Hudson Lab Blood scRNA_TCR 2025-05-01 (Pool1)	Blood		2025-05-01	blood_2025-05-01	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/May2025 (1P1Src044)/TCRab/Pool1	2	18532431168	17.26 GiB			Pool1
+Hudson Lab Blood scRNA_TCR 2025-05-01 (Pool2)	Blood		2025-05-01	blood_2025-05-01	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/May2025 (1P1Src044)/TCRab/Pool2	2	18860711563	17.57 GiB			Pool2
+Hudson Lab Blood scRNA_TCR 2025-05-01 (Pool3)	Blood		2025-05-01	blood_2025-05-01	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/May2025 (1P1Src044)/TCRab/Pool3	2	19514188798	18.17 GiB			Pool3
+Hudson Lab Blood scRNA_TCR 2025-05-01 (Pool4)	Blood		2025-05-01	blood_2025-05-01	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/May2025 (1P1Src044)/TCRab/Pool4	2	19591271850	18.25 GiB			Pool4
+Hudson Lab Blood scRNA_TCRgd 2025-05-01 (Pool1)	Blood		2025-05-01	blood_2025-05-01	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/May2025 (1P1Src044)/TCRgd/Pool1	2	3316750340	3.09 GiB			Pool1
+Hudson Lab Blood scRNA_TCRgd 2025-05-01 (Pool2)	Blood		2025-05-01	blood_2025-05-01	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/May2025 (1P1Src044)/TCRgd/Pool2	2	2653486559	2.47 GiB			Pool2
+Hudson Lab Blood scRNA_TCRgd 2025-05-01 (Pool3)	Blood		2025-05-01	blood_2025-05-01	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/May2025 (1P1Src044)/TCRgd/Pool3	2	2267226930	2.11 GiB			Pool3
+Hudson Lab Blood scRNA_TCRgd 2025-05-01 (Pool4)	Blood		2025-05-01	blood_2025-05-01	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/May2025 (1P1Src044)/TCRgd/Pool4	2	3094767242	2.88 GiB			Pool4
+Hudson Lab Blood CITE 2025-06-26 (Pool1)	Blood		2025-06-26	blood_2025-06-26	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/June2025 (260625)/CITEseq/Pool1	2	20694848862	19.27 GiB			Pool1
+Hudson Lab Blood CITE 2025-06-26 (Pool2)	Blood		2025-06-26	blood_2025-06-26	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/June2025 (260625)/CITEseq/Pool2	2	23717313918	22.09 GiB			Pool2
+Hudson Lab Blood CITE 2025-06-26 (Pool3)	Blood		2025-06-26	blood_2025-06-26	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/June2025 (260625)/CITEseq/Pool3	2	23487814102	21.87 GiB			Pool3
+Hudson Lab Blood CITE 2025-06-26 (Pool4)	Blood		2025-06-26	blood_2025-06-26	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/June2025 (260625)/CITEseq/Pool4	2	25648081105	23.89 GiB			Pool4
+Hudson Lab Blood scRNA_GEX 2025-06-26 (Pool1)	Blood		2025-06-26	blood_2025-06-26	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/June2025 (260625)/GEX/Pool1	4	60236733163	56.10 GiB			Pool1
+Hudson Lab Blood scRNA_GEX 2025-06-26 (Pool2)	Blood		2025-06-26	blood_2025-06-26	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/June2025 (260625)/GEX/Pool2	4	61607430108	57.38 GiB			Pool2
+Hudson Lab Blood scRNA_GEX 2025-06-26 (Pool3)	Blood		2025-06-26	blood_2025-06-26	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/June2025 (260625)/GEX/Pool3	4	55818743545	51.99 GiB			Pool3
+Hudson Lab Blood scRNA_GEX 2025-06-26 (Pool4)	Blood		2025-06-26	blood_2025-06-26	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/June2025 (260625)/GEX/Pool4	4	56016952586	52.17 GiB			Pool4
+Hudson Lab Blood scRNA_TCR 2025-06-26 (Pool1)	Blood		2025-06-26	blood_2025-06-26	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/June2025 (260625)/TCRab/Pool1	2	19760729616	18.40 GiB			Pool1
+Hudson Lab Blood scRNA_TCR 2025-06-26 (Pool2)	Blood		2025-06-26	blood_2025-06-26	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/June2025 (260625)/TCRab/Pool2	2	19805452565	18.45 GiB			Pool2
+Hudson Lab Blood scRNA_TCR 2025-06-26 (Pool3)	Blood		2025-06-26	blood_2025-06-26	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/June2025 (260625)/TCRab/Pool3	2	22102920760	20.58 GiB			Pool3
+Hudson Lab Blood scRNA_TCR 2025-06-26 (Pool4)	Blood		2025-06-26	blood_2025-06-26	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/June2025 (260625)/TCRab/Pool4	2	20043207923	18.67 GiB			Pool4
+Hudson Lab Blood scRNA_TCRgd 2025-06-26 (Pool1)	Blood		2025-06-26	blood_2025-06-26	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/June2025 (260625)/TCRgd/Pool1	2	3140080946	2.92 GiB			Pool1
+Hudson Lab Blood scRNA_TCRgd 2025-06-26 (Pool2)	Blood		2025-06-26	blood_2025-06-26	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/June2025 (260625)/TCRgd/Pool2	2	2854244172	2.66 GiB			Pool2
+Hudson Lab Blood scRNA_TCRgd 2025-06-26 (Pool3)	Blood		2025-06-26	blood_2025-06-26	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/June2025 (260625)/TCRgd/Pool3	2	2644386867	2.46 GiB			Pool3
+Hudson Lab Blood scRNA_TCRgd 2025-06-26 (Pool4)	Blood		2025-06-26	blood_2025-06-26	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/June2025 (260625)/TCRgd/Pool4	2	2895234848	2.70 GiB			Pool4
+Hudson Lab Blood CITE 2025-07-24 (Pool1)	Blood		2025-07-24	blood_2025-07-24	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/July2025 (250724)/CITEseq/Pool1	2	26246049699	24.44 GiB			Pool1
+Hudson Lab Blood CITE 2025-07-24 (Pool2)	Blood		2025-07-24	blood_2025-07-24	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/July2025 (250724)/CITEseq/Pool2	2	25124146032	23.40 GiB			Pool2
+Hudson Lab Blood CITE 2025-07-24 (Pool3)	Blood		2025-07-24	blood_2025-07-24	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/July2025 (250724)/CITEseq/Pool3	2	21860079898	20.36 GiB			Pool3
+Hudson Lab Blood scRNA_GEX 2025-07-24 (Pool1)	Blood		2025-07-24	blood_2025-07-24	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/July2025 (250724)/GEX/Pool1	4	68607470130	63.90 GiB			Pool1
+Hudson Lab Blood scRNA_GEX 2025-07-24 (Pool2)	Blood		2025-07-24	blood_2025-07-24	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/July2025 (250724)/GEX/Pool2	4	61011872041	56.82 GiB			Pool2
+Hudson Lab Blood scRNA_GEX 2025-07-24 (Pool3)	Blood		2025-07-24	blood_2025-07-24	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/July2025 (250724)/GEX/Pool3	4	55257258445	51.46 GiB			Pool3
+Hudson Lab Blood scRNA_TCR 2025-07-24 (Pool1)	Blood		2025-07-24	blood_2025-07-24	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/July2025 (250724)/TCRab/Pool1	2	22143608836	20.62 GiB			Pool1
+Hudson Lab Blood scRNA_TCR 2025-07-24 (Pool2)	Blood		2025-07-24	blood_2025-07-24	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/July2025 (250724)/TCRab/Pool2	2	19468298879	18.13 GiB			Pool2
+Hudson Lab Blood scRNA_TCR 2025-07-24 (Pool3)	Blood		2025-07-24	blood_2025-07-24	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/July2025 (250724)/TCRab/Pool3	2	19260532299	17.94 GiB			Pool3
+Hudson Lab Blood scRNA_TCRgd 2025-07-24 (Pool1)	Blood		2025-07-24	blood_2025-07-24	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/July2025 (250724)/TCRgd/Pool1	2	3589122494	3.34 GiB			Pool1
+Hudson Lab Blood scRNA_TCRgd 2025-07-24 (Pool2)	Blood		2025-07-24	blood_2025-07-24	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/July2025 (250724)/TCRgd/Pool2	2	3310209830	3.08 GiB			Pool2
+Hudson Lab Blood scRNA_TCRgd 2025-07-24 (Pool3)	Blood		2025-07-24	blood_2025-07-24	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/July2025 (250724)/TCRgd/Pool3	2	3368986296	3.14 GiB			Pool3
+Hudson Lab Blood CITE 2025-08-21 (Pool1)	Blood		2025-08-21	blood_2025-08-21	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/Aug2025 (250821)/CITEseq/Pool1	2	24819448629	23.11 GiB			Pool1
+Hudson Lab Blood CITE 2025-08-21 (Pool2)	Blood		2025-08-21	blood_2025-08-21	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/Aug2025 (250821)/CITEseq/Pool2	2	25360428086	23.62 GiB			Pool2
+Hudson Lab Blood CITE 2025-08-21 (Pool3)	Blood		2025-08-21	blood_2025-08-21	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/Aug2025 (250821)/CITEseq/Pool3	2	25276608584	23.54 GiB			Pool3
+Hudson Lab Blood CITE 2025-08-21 (Pool4)	Blood		2025-08-21	blood_2025-08-21	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/Aug2025 (250821)/CITEseq/Pool4	2	25253577273	23.52 GiB			Pool4
+Hudson Lab Blood scRNA_GEX 2025-08-21 (Pool1)	Blood		2025-08-21	blood_2025-08-21	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Aug2025 (250821)/GEX/Pool1	4	71210400970	66.32 GiB			Pool1
+Hudson Lab Blood scRNA_GEX 2025-08-21 (Pool2)	Blood		2025-08-21	blood_2025-08-21	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Aug2025 (250821)/GEX/Pool2	4	71651916047	66.73 GiB			Pool2
+Hudson Lab Blood scRNA_GEX 2025-08-21 (Pool3)	Blood		2025-08-21	blood_2025-08-21	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Aug2025 (250821)/GEX/Pool3	4	73796139800	68.73 GiB			Pool3
+Hudson Lab Blood scRNA_GEX 2025-08-21 (Pool4)	Blood		2025-08-21	blood_2025-08-21	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Aug2025 (250821)/GEX/Pool4	4	69245512117	64.49 GiB			Pool4
+Hudson Lab Blood scRNA_TCR 2025-08-21	Blood		2025-08-21	blood_2025-08-21	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Aug2025 (250821)/TCRab	8	95121189713	88.59 GiB			
+Hudson Lab Blood scRNA_TCRgd 2025-08-21	Blood		2025-08-21	blood_2025-08-21	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/Aug2025 (250821)/TCRgd	8	11001632849	10.25 GiB			
+Hudson Lab Blood CITE 2025-09-22 (Pool1)	Blood		2025-09-22	blood_2025-09-22	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/Sept2025 (250922)/CITEseq/Pool1	2	24606951230	22.92 GiB			Pool1
+Hudson Lab Blood scRNA_GEX 2025-09-22 (Pool1)	Blood		2025-09-22	blood_2025-09-22	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Sept2025 (250922)/GEX/Pool1	4	45441319435	42.32 GiB			Pool1
+Hudson Lab Blood scRNA_TCR 2025-09-22 (Pool1)	Blood		2025-09-22	blood_2025-09-22	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Sept2025 (250922)/TCRab/Pool1	2	18736897109	17.45 GiB			Pool1
+Hudson Lab Blood scRNA_TCRgd 2025-09-22 (Pool1)	Blood		2025-09-22	blood_2025-09-22	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/Sept2025 (250922)/TCRgd/Pool1	2	2994367484	2.79 GiB			Pool1
+Hudson Lab Blood CITE 2025-11-06 (Pool1)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025/CITEseq/Pool1	2	4035826298	3.76 GiB			Pool1
+Hudson Lab Blood CITE 2025-11-06 (Pool2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025/CITEseq/Pool2	2	7548037680	7.03 GiB			Pool2
+Hudson Lab Blood CITE 2025-11-06 (capture1 v2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025v2/capture1/CITE	4	1101845150	1.03 GiB			capture1 v2
+Hudson Lab Blood CITE 2025-11-06 (capture2 v2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025v2/capture2/CITE	4	25943625261	24.16 GiB			capture2 v2
+Hudson Lab Blood CITE 2025-11-06 (capture3 v2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025v2/capture3/CITE	4	40427139712	37.65 GiB			capture3 v2
+Hudson Lab Blood CITE 2025-11-06 (capture4 v2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025v2/capture4/CITE	4	10149280258	9.45 GiB			capture4 v2
+Hudson Lab Blood scRNA_GEX 2025-11-06 (Pool1)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025/GEX/Pool1	2	208876631319	194.53 GiB			Pool1
+Hudson Lab Blood scRNA_GEX 2025-11-06 (Pool2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025/GEX/Pool2	2	204215940594	190.19 GiB			Pool2
+Hudson Lab Blood scRNA_GEX 2025-11-06 (capture1 v2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025v2/capture1/GEX	4	129741407540	120.83 GiB			capture1 v2
+Hudson Lab Blood scRNA_GEX 2025-11-06 (capture2 v2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025v2/capture2/GEX	4	91800412606	85.50 GiB			capture2 v2
+Hudson Lab Blood scRNA_GEX 2025-11-06 (capture3 v2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025v2/capture3/GEX	4	53757460381	50.07 GiB			capture3 v2
+Hudson Lab Blood scRNA_GEX 2025-11-06 (capture4 v2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025v2/capture4/GEX	4	99504521135	92.67 GiB			capture4 v2
+Hudson Lab Blood scRNA_TCR 2025-11-06 (Pool1)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025/TCRab/Pool1	2	34501799947	32.13 GiB			Pool1
+Hudson Lab Blood scRNA_TCR 2025-11-06 (Pool2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025/TCRab/Pool2	2	12054930367	11.23 GiB			Pool2
+Hudson Lab Blood scRNA_TCR 2025-11-06 (capture1 v2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025v2/capture1/TCRab	4	14122357909	13.15 GiB			capture1 v2
+Hudson Lab Blood scRNA_TCR 2025-11-06 (capture2 v2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025v2/capture2/TCRab	4	12811608075	11.93 GiB			capture2 v2
+Hudson Lab Blood scRNA_TCR 2025-11-06 (capture3 v2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025v2/capture3/TCRab	4	16205637717	15.09 GiB			capture3 v2
+Hudson Lab Blood scRNA_TCR 2025-11-06 (capture4 v2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025v2/capture4/TCRab	4	16886259362	15.73 GiB			capture4 v2
+Hudson Lab Blood scRNA_TCRgd 2025-11-06 (Pool1)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025/TCRgd/Pool1	2	3911818391	3.64 GiB			Pool1
+Hudson Lab Blood scRNA_TCRgd 2025-11-06 (Pool2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025/TCRgd/Pool2	2	7246848980	6.75 GiB			Pool2
+Hudson Lab Blood scRNA_TCRgd 2025-11-06 (capture1 v2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025v2/capture1/TCRgd	4	967595565	922.77 MiB			capture1 v2
+Hudson Lab Blood scRNA_TCRgd 2025-11-06 (capture2 v2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025v2/capture2/TCRgd	4	1171482976	1.09 GiB			capture2 v2
+Hudson Lab Blood scRNA_TCRgd 2025-11-06 (capture3 v2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025v2/capture3/TCRgd	4	1059609580	1010.52 MiB			capture3 v2
+Hudson Lab Blood scRNA_TCRgd 2025-11-06 (capture4 v2)	Blood		2025-11-06	blood_2025-11-06	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/Nov2025v2/capture4/TCRgd	4	510906467	487.24 MiB			capture4 v2
+Hudson Lab Blood CITE 2025-12-20 (capture1)	Blood		2025-12-20	blood_2025-12-20	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/Dec2025/capture1/CITE	4	10241996558	9.54 GiB			capture1
+Hudson Lab Blood CITE 2025-12-20 (capture2)	Blood		2025-12-20	blood_2025-12-20	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/Dec2025/capture2/CITE	4	35750567463	33.30 GiB			capture2
+Hudson Lab Blood CITE 2025-12-20 (capture3)	Blood		2025-12-20	blood_2025-12-20	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/Dec2025/capture3/CITE	4	8812237339	8.21 GiB			capture3
+Hudson Lab Blood CITE 2025-12-20 (capture4)	Blood		2025-12-20	blood_2025-12-20	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/Dec2025/capture4/CITE	4	35277388902	32.85 GiB			capture4
+Hudson Lab Blood scRNA_GEX 2025-12-20 (capture1)	Blood		2025-12-20	blood_2025-12-20	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Dec2025/capture1/GEX	4	75251838205	70.08 GiB			capture1
+Hudson Lab Blood scRNA_GEX 2025-12-20 (capture2)	Blood		2025-12-20	blood_2025-12-20	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Dec2025/capture2/GEX	4	34355305376	32.00 GiB			capture2
+Hudson Lab Blood scRNA_GEX 2025-12-20 (capture3)	Blood		2025-12-20	blood_2025-12-20	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Dec2025/capture3/GEX	4	86564218320	80.62 GiB			capture3
+Hudson Lab Blood scRNA_GEX 2025-12-20 (capture4)	Blood		2025-12-20	blood_2025-12-20	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Dec2025/capture4/GEX	4	74847395173	69.71 GiB			capture4
+Hudson Lab Blood scRNA_TCR 2025-12-20 (capture1)	Blood		2025-12-20	blood_2025-12-20	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Dec2025/capture1/TCRab	4	16295560500	15.18 GiB			capture1
+Hudson Lab Blood scRNA_TCR 2025-12-20 (capture2)	Blood		2025-12-20	blood_2025-12-20	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Dec2025/capture2/TCRab	4	13581331461	12.65 GiB			capture2
+Hudson Lab Blood scRNA_TCR 2025-12-20 (capture3)	Blood		2025-12-20	blood_2025-12-20	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Dec2025/capture3/TCRab	4	15701776716	14.62 GiB			capture3
+Hudson Lab Blood scRNA_TCR 2025-12-20 (capture4)	Blood		2025-12-20	blood_2025-12-20	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Dec2025/capture4/TCRab	4	5281676973	4.92 GiB			capture4
+Hudson Lab Blood scRNA_TCRgd 2025-12-20 (capture1)	Blood		2025-12-20	blood_2025-12-20	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/Dec2025/capture1/TCRgd	4	952516717	908.39 MiB			capture1
+Hudson Lab Blood scRNA_TCRgd 2025-12-20 (capture2)	Blood		2025-12-20	blood_2025-12-20	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/Dec2025/capture2/TCRgd	4	1077102182	1.00 GiB			capture2
+Hudson Lab Blood scRNA_TCRgd 2025-12-20 (capture3)	Blood		2025-12-20	blood_2025-12-20	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/Dec2025/capture3/TCRgd	4	1164137700	1.08 GiB			capture3
+Hudson Lab Blood scRNA_TCRgd 2025-12-20 (capture4)	Blood		2025-12-20	blood_2025-12-20	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/Dec2025/capture4/TCRgd	4	1226878053	1.14 GiB			capture4
+Hudson Lab Blood CITE 2026-01-20 (capture2)	Blood		2026-01-20	blood_2026-01-20	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/Jan2026/capture2/CITE	2	4855342193	4.52 GiB			capture2
+Hudson Lab Blood scRNA_GEX 2026-01-20 (capture1)	Blood		2026-01-20	blood_2026-01-20	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Jan2026/capture1/GEX	2	246640462543	229.70 GiB			capture1
+Hudson Lab Blood scRNA_GEX 2026-01-20 (capture2)	Blood		2026-01-20	blood_2026-01-20	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/Jan2026/capture2/GEX	2	213315035620	198.67 GiB			capture2
+Hudson Lab Blood scRNA_TCR 2026-01-20 (capture1)	Blood		2026-01-20	blood_2026-01-20	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Jan2026/capture1/TCR_ab	2	3424366943	3.19 GiB			capture1
+Hudson Lab Blood scRNA_TCR 2026-01-20 (capture2)	Blood		2026-01-20	blood_2026-01-20	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/Jan2026/capture2/TCR_ab	2	8831483740	8.22 GiB			capture2
+Hudson Lab Blood scRNA_TCRgd 2026-01-20 (capture1)	Blood		2026-01-20	blood_2026-01-20	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/Jan2026/capture1/TCR_gd	4	687543062	655.69 MiB			capture1
+Hudson Lab Blood scRNA_TCRgd 2026-01-20 (capture2)	Blood		2026-01-20	blood_2026-01-20	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/Jan2026/capture2/TCR_gd	2	145533470	138.79 MiB			capture2
+Hudson Lab Blood CITE 2026-02-13 (capture1, day 13)	Blood		2026-02-13	blood_2026-02-13	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-13_capture1/CITEseq	4	15612300293	14.54 GiB			capture1
+Hudson Lab Blood CITE 2026-02-13 (capture2, day 13)	Blood		2026-02-13	blood_2026-02-13	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-13_capture2/CITEseq	4	13257610913	12.35 GiB			capture2
+Hudson Lab Blood CITE 2026-02-13 (capture3, day 13)	Blood		2026-02-13	blood_2026-02-13	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-13_capture3/CITEseq	4	20173620886	18.79 GiB			capture3
+Hudson Lab Blood scRNA_GEX 2026-02-13 (capture1, day 13)	Blood		2026-02-13	blood_2026-02-13	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-13_capture1/GEX	4	86731475884	80.77 GiB			capture1
+Hudson Lab Blood scRNA_GEX 2026-02-13 (capture2, day 13)	Blood		2026-02-13	blood_2026-02-13	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-13_capture2/GEX	4	71493625687	66.58 GiB			capture2
+Hudson Lab Blood scRNA_GEX 2026-02-13 (capture3, day 13)	Blood		2026-02-13	blood_2026-02-13	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-13_capture3/GEX	4	38701783493	36.04 GiB			capture3
+Hudson Lab Blood scRNA_TCR 2026-02-13 (capture1, day 13)	Blood		2026-02-13	blood_2026-02-13	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-13_capture1/TCRab	4	28181564607	26.25 GiB			capture1
+Hudson Lab Blood scRNA_TCR 2026-02-13 (capture2, day 13)	Blood		2026-02-13	blood_2026-02-13	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-13_capture2/TCRab	4	28780789692	26.80 GiB			capture2
+Hudson Lab Blood scRNA_TCR 2026-02-13 (capture3, day 13)	Blood		2026-02-13	blood_2026-02-13	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-13_capture3/TCRab	4	32893468915	30.63 GiB			capture3
+Hudson Lab Blood scRNA_TCRgd 2026-02-13 (capture1, day 13)	Blood		2026-02-13	blood_2026-02-13	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-13_capture1/TCRgd	4	2074280477	1.93 GiB			capture1
+Hudson Lab Blood scRNA_TCRgd 2026-02-13 (capture2, day 13)	Blood		2026-02-13	blood_2026-02-13	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-13_capture2/TCRgd	4	1834464176	1.71 GiB			capture2
+Hudson Lab Blood scRNA_TCRgd 2026-02-13 (capture3, day 13)	Blood		2026-02-13	blood_2026-02-13	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-13_capture3/TCRgd	4	1331015820	1.24 GiB			capture3
+Hudson Lab Blood CITE 2026-02-25 (capture1, day 25)	Blood		2026-02-25	blood_2026-02-25	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-25_capture1/CITEseq	4	8164408128	7.60 GiB			capture1
+Hudson Lab Blood CITE 2026-02-25 (capture2, day 25)	Blood		2026-02-25	blood_2026-02-25	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-25_capture2/CITEseq	4	10248928287	9.55 GiB			capture2
+Hudson Lab Blood scRNA_GEX 2026-02-25 (capture1, day 25)	Blood		2026-02-25	blood_2026-02-25	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-25_capture1/GEX	4	75507872743	70.32 GiB			capture1
+Hudson Lab Blood scRNA_GEX 2026-02-25 (capture2, day 25)	Blood		2026-02-25	blood_2026-02-25	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-25_capture2/GEX	4	74757147654	69.62 GiB			capture2
+Hudson Lab Blood scRNA_TCR 2026-02-25 (capture1, day 25)	Blood		2026-02-25	blood_2026-02-25	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-25_capture1/TCRab	4	26571699586	24.75 GiB			capture1
+Hudson Lab Blood scRNA_TCR 2026-02-25 (capture2, day 25)	Blood		2026-02-25	blood_2026-02-25	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-25_capture2/TCRab	4	33374430567	31.08 GiB			capture2
+Hudson Lab Blood scRNA_TCRgd 2026-02-25 (capture1, day 25)	Blood		2026-02-25	blood_2026-02-25	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-25_capture1/TCRgd	4	912872593	870.58 MiB			capture1
+Hudson Lab Blood scRNA_TCRgd 2026-02-25 (capture2, day 25)	Blood		2026-02-25	blood_2026-02-25	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/2026-02-25_capture2/TCRgd	4	2828731794	2.63 GiB			capture2
+Hudson Lab Blood CITE 2026-03-09 (capture1, day 09)	Blood		2026-03-09	blood_2026-03-09	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-09_capture1/CITEseq	4	19260931900	17.94 GiB			capture1
+Hudson Lab Blood CITE 2026-03-09 (capture2, day 09)	Blood		2026-03-09	blood_2026-03-09	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-09_capture2/CITEseq	4	20792510357	19.36 GiB			capture2
+Hudson Lab Blood CITE 2026-03-09 (capture3, day 09)	Blood		2026-03-09	blood_2026-03-09	Hudson Lab	Kamil	CITE		hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-09_capture3/CITEseq	4	16167313702	15.06 GiB			capture3
+Hudson Lab Blood scRNA_GEX 2026-03-09 (capture1, day 09)	Blood		2026-03-09	blood_2026-03-09	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-09_capture1/GEX	4	33488955965	31.19 GiB			capture1
+Hudson Lab Blood scRNA_GEX 2026-03-09 (capture2, day 09)	Blood		2026-03-09	blood_2026-03-09	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-09_capture2/GEX	4	88787780412	82.69 GiB			capture2
+Hudson Lab Blood scRNA_GEX 2026-03-09 (capture3, day 09)	Blood		2026-03-09	blood_2026-03-09	Hudson Lab	Kamil	scRNA_GEX		hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-09_capture3/GEX	4	80193109237	74.69 GiB			capture3
+Hudson Lab Blood scRNA_TCR 2026-03-09 (capture1, day 09)	Blood		2026-03-09	blood_2026-03-09	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-09_capture1/TCRab	4	34632684186	32.25 GiB			capture1
+Hudson Lab Blood scRNA_TCR 2026-03-09 (capture2, day 09)	Blood		2026-03-09	blood_2026-03-09	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-09_capture2/TCRab	4	35428278757	33.00 GiB			capture2
+Hudson Lab Blood scRNA_TCR 2026-03-09 (capture3, day 09)	Blood		2026-03-09	blood_2026-03-09	Hudson Lab	Kamil	scRNA_TCR		hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-09_capture3/TCRab	4	12008724546	11.18 GiB			capture3
+Hudson Lab Blood scRNA_TCRgd 2026-03-09 (capture1, day 09)	Blood		2026-03-09	blood_2026-03-09	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-09_capture1/TCRgd	4	2879369473	2.68 GiB			capture1
+Hudson Lab Blood scRNA_TCRgd 2026-03-09 (capture2, day 09)	Blood		2026-03-09	blood_2026-03-09	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-09_capture2/TCRgd	4	2688218825	2.50 GiB			capture2
+Hudson Lab Blood scRNA_TCRgd 2026-03-09 (capture3, day 09)	Blood		2026-03-09	blood_2026-03-09	Hudson Lab	Kamil	scRNA_TCRgd		hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-09_capture3/TCRgd	4	2427594759	2.26 GiB			capture3
+Hudson Lab Tumor bulk RNA (Aug-tumor IFNg_neg)	Tumor				Hudson Lab	Kamil	bulk RNA		hudson_lab/peptide_expansion/data/Aug-tumor/IFNg_neg	2	1629909092	1.52 GiB			Peptide expansion: Aug-tumor, IFNg_neg
+Hudson Lab Tumor bulk RNA (Aug-tumor IFNg_pos)	Tumor				Hudson Lab	Kamil	bulk RNA		hudson_lab/peptide_expansion/data/Aug-tumor/IFNg_pos	2	1143087659	1.06 GiB			Peptide expansion: Aug-tumor, IFNg_pos
+Hudson Lab Tumor bulk RNA (HD-tumor IFNg_neg)	Tumor				Hudson Lab	Kamil	bulk RNA		hudson_lab/peptide_expansion/data/HD-tumor/IFNg_neg	2	1060036407	1010.93 MiB			Peptide expansion: HD-tumor, IFNg_neg
+Hudson Lab Tumor bulk RNA (HD-tumor IFNg_pos)	Tumor				Hudson Lab	Kamil	bulk RNA		hudson_lab/peptide_expansion/data/HD-tumor/IFNg_pos	2	1392074275	1.30 GiB			Peptide expansion: HD-tumor, IFNg_pos
+Hudson Lab Tumor bulk RNA (May-tumor IFNg_neg)	Tumor				Hudson Lab	Kamil	bulk RNA		hudson_lab/peptide_expansion/data/May-tumor/IFNg_neg	2	1513821950	1.41 GiB			Peptide expansion: May-tumor, IFNg_neg
+Hudson Lab Tumor bulk RNA (May-tumor IFNg_pos)	Tumor				Hudson Lab	Kamil	bulk RNA		hudson_lab/peptide_expansion/data/May-tumor/IFNg_pos	2	1293957240	1.21 GiB			Peptide expansion: May-tumor, IFNg_pos
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-24/capture1/CITEseq	4	63222567500	58.88 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-24/capture1/GEX	4	35452916922	33.02 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-24/capture1/TCRab	4	40564552983	37.78 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-24/capture1/TCRgd	4	3399890586	3.17 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-24/capture2/CITEseq	4	51857289182	48.30 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-24/capture2/GEX	4	34877060916	32.48 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-24/capture2/TCRab	4	40548261892	37.76 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-24/capture2/TCRgd	4	7429104851	6.92 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-24/capture3/CITEseq	4	74286946637	69.19 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-24/capture3/GEX	4	38995038351	36.32 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-24/capture3/TCRab	4	39689930090	36.96 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-24/capture3/TCRgd	4	4563526804	4.25 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-24/capture4/CITEseq	4	53661200414	49.98 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-24/capture4/GEX	4	40430570983	37.65 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-24/capture4/TCRab	4	12366665632	11.52 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-03-24/capture4/TCRgd	4	7130237344	6.64 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-16/capture1/CITEseq	2	1079662554	1.01 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-16/capture1/GEX	2	68918909056	64.19 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-16/capture1/TCRab	2	8968368982	8.35 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-16/capture1/TCRgd	2	940452162	896.89 MiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-16_run1/capture1/CITEseq	6	590282340	562.94 MiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-16_run1/capture1/GEX	6	113126828067	105.36 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-16_run1/capture1/TCRab	6	20621426958	19.21 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-16_run1/capture1/TCRgd	6	293599265	280.00 MiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-16_run1/capture2/CITEseq	6	19084672813	17.77 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-16_run1/capture2/GEX	6	88082924640	82.03 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-16_run1/capture2/TCRab	6	8031010499	7.48 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-16_run1/capture2/TCRgd	6	1037000197	988.96 MiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-30/capture1/CITEseq	2	47886828046	44.60 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-30/capture1/GEX	2	123228278111	114.77 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-30/capture1/TCRab	2	21564351161	20.08 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-30/capture1/TCRgd	2	4002283792	3.73 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-30_run1/capture1/CITEseq	6	27992134583	26.07 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-30_run1/capture1/GEX	6	42871911126	39.93 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-30_run1/capture1/TCRab	6	19239428321	17.92 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-30_run1/capture1/TCRgd	6	656694877	626.27 MiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-30_run1/capture2/CITEseq	6	10114411171	9.42 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-30_run1/capture2/GEX	6	96966329874	90.31 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-30_run1/capture2/TCRab	6	47919565479	44.63 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-04-30_run1/capture2/TCRgd	6	1155279993	1.08 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-05-20/capture1/CITEseq	6	10991076486	10.24 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-05-20/capture1/GEX	6	92703981726	86.34 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-05-20/capture1/TCRab	6	51962425269	48.39 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-05-20/capture1/TCRgd	6	627356641	598.29 MiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-05-20/capture2/CITEseq	6	29658616393	27.62 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-05-20/capture2/GEX	6	39395062228	36.69 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-05-20/capture2/TCRab	6	18064795309	16.82 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-05-20/capture2/TCRgd	6	858382512	818.62 MiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-05-20/capture3/CITEseq	6	8668768921	8.07 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-05-20/capture3/GEX	6	101562941744	94.59 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-05-20/capture3/TCRab	6	18045440048	16.81 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-05-20/capture3/TCRgd	6	499170171	476.05 MiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-06-16/capture1/CITEseq	6	32777170025	30.53 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-06-16/capture1/GEX	6	99500099978	92.67 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-06-16/capture1/TCRab	6	18141008815	16.90 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-06-16/capture1/TCRgd	6	854190445	814.62 MiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-06-16/capture2/CITEseq	6	32703543618	30.46 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-06-16/capture2/GEX	6	110519484565	102.93 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-06-16/capture2/TCRab	6	27734064866	25.83 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-06-16/capture2/TCRgd	6	379343565	361.77 MiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-06-16/capture3/CITEseq	6	22867565244	21.30 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-06-16/capture3/GEX	6	89201173211	83.08 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-06-16/capture3/TCRab	6	7357847369	6.85 GiB			
+Hudson Lab Blood	Blood				Hudson Lab	Kamil			hudson_lab/PBMC_scRNAseq/FASTQ/2026-06-16/capture3/TCRgd	6	790691297	754.06 MiB			
+Hudson Lab Blood bulk RNA (Aug-bys IFNg_neg)	Blood				Hudson Lab	Kamil	bulk RNA		hudson_lab/peptide_expansion/data/Aug-bys/IFNg_neg	2	1476587483	1.38 GiB			Peptide expansion: Aug-bys, IFNg_neg
+Hudson Lab Blood bulk RNA (Aug-bys IFNg_pos)	Blood				Hudson Lab	Kamil	bulk RNA		hudson_lab/peptide_expansion/data/Aug-bys/IFNg_pos	2	713341098	680.30 MiB			Peptide expansion: Aug-bys, IFNg_pos
+Hudson Lab Blood bulk RNA (HD-bys IFNg_neg)	Blood				Hudson Lab	Kamil	bulk RNA		hudson_lab/peptide_expansion/data/HD-bys/IFNg_neg	2	1241649394	1.16 GiB			Peptide expansion: HD-bys, IFNg_neg
+Hudson Lab Blood bulk RNA (HD-bys IFNg_pos)	Blood				Hudson Lab	Kamil	bulk RNA		hudson_lab/peptide_expansion/data/HD-bys/IFNg_pos	2	1834037338	1.71 GiB			Peptide expansion: HD-bys, IFNg_pos
+Hudson Lab Blood bulk RNA (May-bys IFNg_neg)	Blood				Hudson Lab	Kamil	bulk RNA		hudson_lab/peptide_expansion/data/May-bys/IFNg_neg	2	1462096167	1.36 GiB			Peptide expansion: May-bys, IFNg_neg
+Hudson Lab Blood bulk RNA (May-bys IFNg_pos)	Blood				Hudson Lab	Kamil	bulk RNA		hudson_lab/peptide_expansion/data/May-bys/IFNg_pos	2	1735402819	1.62 GiB			Peptide expansion: May-bys, IFNg_pos
+hudson_lab/PBMC_scRNAseq/EBV_tetramer_sort/FASTQ									hudson_lab/PBMC_scRNAseq/EBV_tetramer_sort/FASTQ	12	160727145032	149.69 GiB			
+ucsf/T1/IPISRC044_T1_sclrs_ONT/fastq_fail									ucsf/T1/IPISRC044_T1_sclrs_ONT/fastq_fail	97	15985577581	14.89 GiB			
+ucsf/T1/IPISRC044_T1_sclrs_ONT/fastq_pass									ucsf/T1/IPISRC044_T1_sclrs_ONT/fastq_pass	97	223398075228	208.06 GiB			
+ucsf/T2/IPISRC044_T2_sclrs_ONT/fastq_fail									ucsf/T2/IPISRC044_T2_sclrs_ONT/fastq_fail	97	17110021094	15.93 GiB			
+ucsf/T2/IPISRC044_T2_sclrs_ONT/fastq_pass									ucsf/T2/IPISRC044_T2_sclrs_ONT/fastq_pass	97	226587432501	211.03 GiB			
+ucsf/T3/IPISRC044_T3_sclrs_ONT/fastq_fail									ucsf/T3/IPISRC044_T3_sclrs_ONT/fastq_fail	97	17471114346	16.27 GiB			
+ucsf/T3/IPISRC044_T3_sclrs_ONT/fastq_pass									ucsf/T3/IPISRC044_T3_sclrs_ONT/fastq_pass	97	234568053243	218.46 GiB			
+vendor/bostongene/BG003082/RNASeq-tumor-A01231									vendor/bostongene/BG003082/RNASeq-tumor-A01231	4	11007830868	10.25 GiB			
+vendor/bostongene/BG003082/WES-normal-A01231									vendor/bostongene/BG003082/WES-normal-A01231	4	11678164961	10.88 GiB			
+vendor/bostongene/BG003082/WES-tumor-A01231									vendor/bostongene/BG003082/WES-tumor-A01231	4	22995318623	21.42 GiB			
+vendor/bostongene/BG009368/RNASeq-tumor-A01231									vendor/bostongene/BG009368/RNASeq-tumor-A01231	8	9240081148	8.61 GiB			
+vendor/bostongene/BG009368/WES-normal-A01231									vendor/bostongene/BG009368/WES-normal-A01231	4	11678164961	10.88 GiB			
+vendor/bostongene/BG009368/WES-tumor-A01231									vendor/bostongene/BG009368/WES-tumor-A01231	8	20080114801	18.70 GiB			
+vendor/cegat/P116686_1_S000048									vendor/cegat/P116686_1_S000048	2	11321968597	10.54 GiB			
+vendor/cegat/P116686_2_S000048									vendor/cegat/P116686_2_S000048	4	20299860094	18.91 GiB			
+vendor/natera/fastq									vendor/natera/fastq	8	474427430619	441.84 GiB			
+vendor/tempus/TL-24-5GQLV9WSXQ/DNA/FastQ									vendor/tempus/TL-24-5GQLV9WSXQ/DNA/FastQ	2	7916872819	7.37 GiB			
+vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ									vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ	4	24673362188	22.98 GiB			
+vendor/tempus/TL-24-ALMY2X4KMV/RNA/FastQ									vendor/tempus/TL-24-ALMY2X4KMV/RNA/FastQ	2	1377960976	1.28 GiB			
+vendor/tempus/TL-24-KCVBE1UI1P/RNA/FastQ									vendor/tempus/TL-24-KCVBE1UI1P/RNA/FastQ	2	1377960976	1.28 GiB			

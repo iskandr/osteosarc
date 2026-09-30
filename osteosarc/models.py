@@ -106,6 +106,12 @@ class File:
                 ("timepoint", "date", "assay", "platform", "tissue", "provider", "library")
                 if len(self.values(name)) > 1}
 
+    @property
+    def evidence_overlaps(self):
+        """Reviewed regional overlaps for this product; sample claims stay unchanged."""
+        from .provenance import evidence_overlaps
+        return evidence_overlaps(self.url)
+
 
 @dataclass(frozen=True)
 class Variant:
@@ -195,6 +201,22 @@ class Files(Collection):
     @cached_property
     def _names(self):
         return _NameIndex(self)
+
+    @property
+    def overlap_groups(self):
+        """Known overlapping evidence products in this selection."""
+        from .provenance import overlap_groups
+        return overlap_groups(self)
+
+    def require_no_known_overlaps(self):
+        """Raise if this selection would double-count a reviewed overlap group."""
+        from .provenance import require_no_known_overlaps
+        return require_no_known_overlaps(self)
+
+    def without_known_overlaps(self, *, prefer=()):
+        """Select one explicit preference per overlap group, recording exclusions."""
+        from .provenance import without_known_overlaps
+        return without_known_overlaps(self, prefer=prefer)
 
     def select(self, *, kind=None, format=None, prefix=None, contains=None, sample=None, timepoint=None,
                assay=None, platform=None, tissue=None, provider=None, library=None,

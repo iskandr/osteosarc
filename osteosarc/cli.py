@@ -225,6 +225,10 @@ def parser():
                            "your newest, which must list each BAM unchanged; or give them with --source")
     make.add_argument("--source", action="append", default=[], metavar="ID=LOCAL_BAM",
                       help="With --recipe: use a BAM you already have for one of its sources")
+    make.add_argument("--from", dest="from_bundle", metavar="BUNDLE",
+                      help="Subset an existing bundle, keeping its original headers and acquisition receipts")
+    make.add_argument("--member", action="append", metavar="PREFIX",
+                      help="With --from: keep members whose names start with this prefix; repeat for several")
     make.add_argument("--header-policy", choices=("full", "compact"), default="full",
                       help="compact keeps only the header lines the records need")
     make.add_argument("--unplaced-mates", action="store_true",
@@ -610,13 +614,36 @@ def test_data(args, cache):
     """test-data make, list, verify, export and check."""
     from pathlib import Path
 
-    from .bundles import export_bundle, generate_bundle, list_bundle, sources_to_read, verify_bundle
+    from .bundles import (
+        export_bundle,
+        generate_bundle,
+        list_bundle,
+        sources_to_read,
+        subset_bundle,
+        verify_bundle,
+    )
     from .fixtures import validate_recipe
     from .shared import bundle_folder, check_fixtures, read_json
     from .views import plural, table
     action = args.test_data_command
     if action == "make":
-        if args.recipe:
+        if args.member and not args.from_bundle:
+            raise ValueError("--member goes with --from")
+        if args.from_bundle:
+            if (args.recipe or args.source or args.sources or args.variant or args.sv or args.assay
+                    or args.platform or args.unplaced_mates or args.header_policy != "full"):
+                raise ValueError("--from preserves the existing bundle's selections and header policy; "
+                                 "use only --member and --size-budget")
+            if not args.member:
+                raise ValueError("--from requires at least one --member prefix")
+            root = bundle_folder(args.from_bundle, cache=cache)
+            available = list_bundle(root)
+            for prefix in args.member:
+                if not any(name.startswith(prefix) for name in available):
+                    raise ValueError(f"No bundle member starts with {prefix!r}")
+            names = [name for name in available if any(name.startswith(p) for p in args.member)]
+            manifest = subset_bundle(root, names, args.output, size_budget=args.size_budget)
+        elif args.recipe:
             if args.sources or args.variant or args.sv or args.assay or args.platform or args.unplaced_mates:
                 raise ValueError("--recipe makes the bundle from the recipe alone, which says how each BAM is read; "
                                  "drop the BAMs, --variant, --sv and --unplaced-mates")

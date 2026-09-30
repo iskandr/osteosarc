@@ -5,9 +5,28 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
-## Unreleased
+## 0.15.0 (2026-09-29)
 
+- `subset_bundle` and `test-data make --from` carve out members offline while
+  preserving original source headers, acquisition receipts and selection results (#90).
+- New `sv-regressions-v2` panel supplies the three Isovar fusions' retained sides;
+  newly requested fusion bundles use it. Published v1 panels and bundles stay unchanged (#96).
+- Historical retrieval cases have verified native coordinates, exact BAM contig names,
+  mitochondrial reference identity and a guard against incompatible merges (#99).
+- Reviewed Tempus evidence overlap is available on files and file selections, with
+  explicit preference required to exclude one product. Both original labels and
+  acquisition receipts remain intact; the true sample identity is still unresolved (#100).
 - Python 3.14 support: the tests run on Python 3.9 to 3.14.
+- Comprehensive vaccine/RNA test corpus: 51 vaccine-associated variants from the
+  union of membership sources, a complete per-BAM support matrix, four
+  DNA-supported SNVs with zero reported RNA alternate reads, a historical RNA
+  disagreement case, frameshifts and SV evidence. Its
+  openvax-v3 read specification is an unpublished candidate.
+- Shared read builds can checkpoint completed source selections and set their
+  supplementary-alignment depth and region limits explicitly in the spec.
+- Compact carry-forward preserves query positions for placed-unmapped records.
+  Comprehensive control audits verify source URLs and BAM/index checksums against
+  acquisition receipts; packaged RNA-support claims follow the actual recounts.
 
 ## 0.14.4 (2026-09-28)
 

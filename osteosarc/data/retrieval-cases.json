@@ -1,0 +1,4142 @@
+{
+  "acquisition": "osteosarc; current extraction receipts are in ../../provenance.json",
+  "assets": [
+    {
+      "bundle_path": "osteosarc/shared-v1/00-ABCF2-chr7-151218156-f30f618fb76a0e49.bam",
+      "filename": "00-ABCF2-chr7-151218156-f30f618fb76a0e49.bam",
+      "sha256": "5e95118af62ea8d000100a87d0c0ed0d571045f320d63375e58969bd4ff1fa63",
+      "size_bytes": 4179
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/00-ABCF2-chr7-151218156-f30f618fb76a0e49.bam.bai",
+      "filename": "00-ABCF2-chr7-151218156-f30f618fb76a0e49.bam.bai",
+      "sha256": "11d1472317a1d8dac7285f71b04a777337f76397a30226097100929fc1d628f2",
+      "size_bytes": 75480
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/01-ADGRF5-chr6-46856758-f30f618fb76a0e49.bam",
+      "filename": "01-ADGRF5-chr6-46856758-f30f618fb76a0e49.bam",
+      "sha256": "70b0cc5d88f6e83d7efa1bd2d651ea146c3f5716208adcf3ae874e1b2a77549e",
+      "size_bytes": 4109
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/01-ADGRF5-chr6-46856758-f30f618fb76a0e49.bam.bai",
+      "filename": "01-ADGRF5-chr6-46856758-f30f618fb76a0e49.bam.bai",
+      "sha256": "17706bfb94da50f54cecfeaa584931bdbe70fcfc37554c6b339e4d4cacea7e98",
+      "size_bytes": 24520
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/02-ATRX-chrX-77599465-1b66c15da594a3ef.bam",
+      "filename": "02-ATRX-chrX-77599465-1b66c15da594a3ef.bam",
+      "sha256": "1f32b1039121f81460489676a097811084158f8a871620bdee05cef9be93163b",
+      "size_bytes": 30638
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/02-ATRX-chrX-77599465-1b66c15da594a3ef.bam.bai",
+      "filename": "02-ATRX-chrX-77599465-1b66c15da594a3ef.bam.bai",
+      "sha256": "9a26b1d2bb372bcf0a54b851e3cf3efba3a2a363edb9056ffdf6784e5019b09b",
+      "size_bytes": 60208
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/03-BMP1-chr8-22192067-53f498a544883d51.bam",
+      "filename": "03-BMP1-chr8-22192067-53f498a544883d51.bam",
+      "sha256": "03239135fe4251ba6ea6bfe7f3615b0895c5af5adb33f81e9e75f85d6a8387af",
+      "size_bytes": 22089
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/03-BMP1-chr8-22192067-53f498a544883d51.bam.bai",
+      "filename": "03-BMP1-chr8-22192067-53f498a544883d51.bam.bai",
+      "sha256": "dd284ca8da481b9763312582fe2715daa754fbc63e4081950911910019db204b",
+      "size_bytes": 12480
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/04-BTD-chr3-15645183-1120a096937e29e1.bam",
+      "filename": "04-BTD-chr3-15645183-1120a096937e29e1.bam",
+      "sha256": "57a00dbc5b18fffd104c97a52af48ec26b6448db09dcd06ca7f639d5b889c0d4",
+      "size_bytes": 20001
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/04-BTD-chr3-15645183-1120a096937e29e1.bam.bai",
+      "filename": "04-BTD-chr3-15645183-1120a096937e29e1.bam.bai",
+      "sha256": "7c1a315c490949dd5f3b98821041daeea83e4247bc845958a11fd8dfa848257f",
+      "size_bytes": 9272
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/05-CD109-chr6-73818405-1120a096937e29e1.bam",
+      "filename": "05-CD109-chr6-73818405-1120a096937e29e1.bam",
+      "sha256": "1995cc0c5be05878c379c96bf5d08278182f1d276795c2e1d3ee369787563be6",
+      "size_bytes": 18895
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/05-CD109-chr6-73818405-1120a096937e29e1.bam.bai",
+      "filename": "05-CD109-chr6-73818405-1120a096937e29e1.bam.bai",
+      "sha256": "dd7435cdc001f53603389c59d361a8011eccaf774c77cc8fb7e492353a7dd49c",
+      "size_bytes": 37680
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/06-CDC40-chr6-110228838-1b66c15da594a3ef.bam",
+      "filename": "06-CDC40-chr6-110228838-1b66c15da594a3ef.bam",
+      "sha256": "3f099843c5fc18a88027853544d86b0acb08d2143bf0502cb8b0079b2bd5cf0b",
+      "size_bytes": 30693
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/06-CDC40-chr6-110228838-1b66c15da594a3ef.bam.bai",
+      "filename": "06-CDC40-chr6-110228838-1b66c15da594a3ef.bam.bai",
+      "sha256": "a92f48f6875aba6b9c9acc7a779cadf9e5f1ac267a409833f6bc750db6d9d3a5",
+      "size_bytes": 76136
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/07-CENPL-chr1-173811223-1120a096937e29e1.bam",
+      "filename": "07-CENPL-chr1-173811223-1120a096937e29e1.bam",
+      "sha256": "7edc8e087cd8d8fea90ca4704cc7ad1fb6eb8986ec76902b8028435513e2c2e6",
+      "size_bytes": 18549
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/07-CENPL-chr1-173811223-1120a096937e29e1.bam.bai",
+      "filename": "07-CENPL-chr1-173811223-1120a096937e29e1.bam.bai",
+      "sha256": "16dcbd0c726eaebb1b2169e27d9d44ed00dd512c377c46fa6d93030c55baf84e",
+      "size_bytes": 86512
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/08-CUL9-chr6-43186384-9b42d06ca2fa2370.bam",
+      "filename": "08-CUL9-chr6-43186384-9b42d06ca2fa2370.bam",
+      "sha256": "ae2f9a279c35284f7a4f95e881b9bb9faaf09e3cb56e5cf3d393db45519a1eda",
+      "size_bytes": 4041
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/08-CUL9-chr6-43186384-9b42d06ca2fa2370.bam.bai",
+      "filename": "08-CUL9-chr6-43186384-9b42d06ca2fa2370.bam.bai",
+      "sha256": "a7a06c0b6a368f8b01956db7ad585ffbf06c89d43d3c5b524715da29c9be3fc0",
+      "size_bytes": 22728
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/09-DIAPH1-chr5-141526090-1b66c15da594a3ef.bam",
+      "filename": "09-DIAPH1-chr5-141526090-1b66c15da594a3ef.bam",
+      "sha256": "d2fc738a726216419c72aa64bc6d38b0a64cc7073e1284fddfed41395ffbb967",
+      "size_bytes": 30539
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/09-DIAPH1-chr5-141526090-1b66c15da594a3ef.bam.bai",
+      "filename": "09-DIAPH1-chr5-141526090-1b66c15da594a3ef.bam.bai",
+      "sha256": "3f23d8236edc00824d3776b22e23fb15700d83f6dbf2241ad0c3ccce80e92944",
+      "size_bytes": 91424
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/10-DYNC1H1-chr14-101980529-53f498a544883d51.bam",
+      "filename": "10-DYNC1H1-chr14-101980529-53f498a544883d51.bam",
+      "sha256": "f9ce315a0bd72baeb5c1fdc1b01dd11e7d277351aaef48ea762746ce869d404f",
+      "size_bytes": 22026
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/10-DYNC1H1-chr14-101980529-53f498a544883d51.bam.bai",
+      "filename": "10-DYNC1H1-chr14-101980529-53f498a544883d51.bam.bai",
+      "sha256": "76a18195ef19229d9d9ab6e2685b97b356032c5e8eb9516d04c8a564a82ab564",
+      "size_bytes": 51432
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/11-DYNC1H1-chr14-102030200-1b66c15da594a3ef.bam",
+      "filename": "11-DYNC1H1-chr14-102030200-1b66c15da594a3ef.bam",
+      "sha256": "7e7849420e65256d2f460b66de191456ecd609912a2403ad30b7a5fe2b9f9c01",
+      "size_bytes": 30540
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/11-DYNC1H1-chr14-102030200-1b66c15da594a3ef.bam.bai",
+      "filename": "11-DYNC1H1-chr14-102030200-1b66c15da594a3ef.bam.bai",
+      "sha256": "7aa57cc28c2d6b9908d77af24642bf4ee93f1cb3541a997dcd4979a2dca547a4",
+      "size_bytes": 72136
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/12-EPG5-chr18-45925851-fbea0bf403520431.bam",
+      "filename": "12-EPG5-chr18-45925851-fbea0bf403520431.bam",
+      "sha256": "248c2c7b00f2ebf2b10142e51085bf8f7dab381c3252f3c8470334e501237b24",
+      "size_bytes": 4119
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/12-EPG5-chr18-45925851-fbea0bf403520431.bam.bai",
+      "filename": "12-EPG5-chr18-45925851-fbea0bf403520431.bam.bai",
+      "sha256": "c0ea77a5e7a75dd9d4fe4b5bd6ccdda9bfd1085323e0fec8e864922875f541d7",
+      "size_bytes": 24072
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/13-EXOC4-chr7-133274996-53f498a544883d51.bam",
+      "filename": "13-EXOC4-chr7-133274996-53f498a544883d51.bam",
+      "sha256": "0b573c6eb0737355240069462aaef1a61cdde64545f6a1b066cfcb8fc1cecaec",
+      "size_bytes": 20953
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/13-EXOC4-chr7-133274996-53f498a544883d51.bam.bai",
+      "filename": "13-EXOC4-chr7-133274996-53f498a544883d51.bam.bai",
+      "sha256": "811acf25e99d1709b8d356c23bdcc895cf106c23af54c04b65306be5d8e22ffb",
+      "size_bytes": 66720
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/14-F8-chrX-154930861-1b66c15da594a3ef.bam",
+      "filename": "14-F8-chrX-154930861-1b66c15da594a3ef.bam",
+      "sha256": "2400959610b25e46fd433dd1b71f4ac3c25e6db40f25c6f1e961c4069896d52a",
+      "size_bytes": 30519
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/14-F8-chrX-154930861-1b66c15da594a3ef.bam.bai",
+      "filename": "14-F8-chrX-154930861-1b66c15da594a3ef.bam.bai",
+      "sha256": "7b6c88d88036084b1b5cc1ae00eb8451759fd8c98c3b1c16823cb8cadbb7e755",
+      "size_bytes": 97968
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/15-FBXO33-chr14-39431722-47b695c1a686c058.bam",
+      "filename": "15-FBXO33-chr14-39431722-47b695c1a686c058.bam",
+      "sha256": "11df00d8c119a67f3698e832bb310c2368a6e97e1382b24d90c667aca35c5e0f",
+      "size_bytes": 4101
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/15-FBXO33-chr14-39431722-47b695c1a686c058.bam.bai",
+      "filename": "15-FBXO33-chr14-39431722-47b695c1a686c058.bam.bai",
+      "sha256": "60b4ffb92671c2db0c0d9fcb997b1e3f8a8629986c0488216b96f0322e92a248",
+      "size_bytes": 20896
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/16-GLIS3-chr9-3856149-1b66c15da594a3ef.bam",
+      "filename": "16-GLIS3-chr9-3856149-1b66c15da594a3ef.bam",
+      "sha256": "2ed78819b273df7491a4f01309ce813e38176335da64aef01e695a2f0557388b",
+      "size_bytes": 30553
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/16-GLIS3-chr9-3856149-1b66c15da594a3ef.bam.bai",
+      "filename": "16-GLIS3-chr9-3856149-1b66c15da594a3ef.bam.bai",
+      "sha256": "a16e55fc621d396770ec866fa204a369543707a4d9a5765577e84a4d2bc6657c",
+      "size_bytes": 24200
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/17-H1_2-chr6-26055824-1120a096937e29e1.bam",
+      "filename": "17-H1_2-chr6-26055824-1120a096937e29e1.bam",
+      "sha256": "e5301f92413343ccc84a91e2307da475cb36db386014dce7a4510b97f5596a2e",
+      "size_bytes": 18876
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/17-H1_2-chr6-26055824-1120a096937e29e1.bam.bai",
+      "filename": "17-H1_2-chr6-26055824-1120a096937e29e1.bam.bai",
+      "sha256": "addcaf7e2ec1b59537d05970faa52c05f09cb621cf7c33ca355990790444958a",
+      "size_bytes": 14360
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/18-KDM3B-chr5-138391529-fbea0bf403520431.bam",
+      "filename": "18-KDM3B-chr5-138391529-fbea0bf403520431.bam",
+      "sha256": "b7cb6a1356006dd51eefcfeffea16f223e2c1d03cc3c88d9afec3d9dbad9e6c6",
+      "size_bytes": 4077
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/18-KDM3B-chr5-138391529-fbea0bf403520431.bam.bai",
+      "filename": "18-KDM3B-chr5-138391529-fbea0bf403520431.bam.bai",
+      "sha256": "9d2196599cd682bc620107b9aeaef86b4935c8bac0c8d73bab6a8ca5d0b5f1a7",
+      "size_bytes": 69216
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/19-KIF1C-chr17-5007293-fbea0bf403520431.bam",
+      "filename": "19-KIF1C-chr17-5007293-fbea0bf403520431.bam",
+      "sha256": "473ebe692885952abf140b0d2451ba8d3f07516fbabf9763d07e375b9750bccc",
+      "size_bytes": 4179
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/19-KIF1C-chr17-5007293-fbea0bf403520431.bam.bai",
+      "filename": "19-KIF1C-chr17-5007293-fbea0bf403520431.bam.bai",
+      "sha256": "59ae1cad447e9faf69461b9eb2054bb8866b8ddbce11b700c9876ea223534a8f",
+      "size_bytes": 4088
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/20-KRT18-chr12-52951767-fbea0bf403520431.bam",
+      "filename": "20-KRT18-chr12-52951767-fbea0bf403520431.bam",
+      "sha256": "be700eb7154173fa88271134b287a004e97500947bbb247fd96a9f7b04b8d564",
+      "size_bytes": 4120
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/20-KRT18-chr12-52951767-fbea0bf403520431.bam.bai",
+      "filename": "20-KRT18-chr12-52951767-fbea0bf403520431.bam.bai",
+      "sha256": "7a307dd75cc8708b60aeada7f584203338415feafda0afd5778f487d6a637a26",
+      "size_bytes": 27496
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/21-MAP2-chr2-209694768-2bc1fc291308debb.bam",
+      "filename": "21-MAP2-chr2-209694768-2bc1fc291308debb.bam",
+      "sha256": "bd32cc8d2f2992c51480ce66c5117d055f252415edad121fcf5e932a8d09e476",
+      "size_bytes": 20219
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/21-MAP2-chr2-209694768-2bc1fc291308debb.bam.bai",
+      "filename": "21-MAP2-chr2-209694768-2bc1fc291308debb.bam.bai",
+      "sha256": "07b2dcd92a5898409a6a51648dd17442c8f1af0e6fca644ffa942497e8e2bde0",
+      "size_bytes": 104040
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/22-MT_ND5-chrM-12994-f30f618fb76a0e49.bam",
+      "filename": "22-MT_ND5-chrM-12994-f30f618fb76a0e49.bam",
+      "sha256": "75908a48a3b0b920e785605131e443a4e46ec5c76e54b54fe00e6f7a4ffcc14d",
+      "size_bytes": 4066
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/22-MT_ND5-chrM-12994-f30f618fb76a0e49.bam.bai",
+      "filename": "22-MT_ND5-chrM-12994-f30f618fb76a0e49.bam.bai",
+      "sha256": "a90e48ac391a906867edc5badcbad0d0c967dbbf88f28177c2851249765aa06d",
+      "size_bytes": 1648
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/23-MYO15B-chr17-75589953-7010dd389c50467d.bam",
+      "filename": "23-MYO15B-chr17-75589953-7010dd389c50467d.bam",
+      "sha256": "a4dee63562665f45b7d55b3f61e154471e03edf3bd2e4ec4e4cc82d58147b551",
+      "size_bytes": 21317
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/23-MYO15B-chr17-75589953-7010dd389c50467d.bam.bai",
+      "filename": "23-MYO15B-chr17-75589953-7010dd389c50467d.bam.bai",
+      "sha256": "c753531f4be13618d0c8480981f9982cefd59f9c29bef95a3f2b972e04675d85",
+      "size_bytes": 38544
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/24-MYO9A-chr15-71994488-f30f618fb76a0e49.bam",
+      "filename": "24-MYO9A-chr15-71994488-f30f618fb76a0e49.bam",
+      "sha256": "fe6b8bd82a638c2cf6cafedeeb1fabdc51268a0956d17f1eb46051f2f9fbc111",
+      "size_bytes": 4160
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/24-MYO9A-chr15-71994488-f30f618fb76a0e49.bam.bai",
+      "filename": "24-MYO9A-chr15-71994488-f30f618fb76a0e49.bam.bai",
+      "sha256": "b3fb4c5ba0c996377710e8f955bca823882280ce343ccf1f86f295c5bca0f417",
+      "size_bytes": 36800
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/25-NAV2-chr11-20080142-8fda918141cedf55.bam",
+      "filename": "25-NAV2-chr11-20080142-8fda918141cedf55.bam",
+      "sha256": "5847527405e623631a710e7a3139938bcf4f7338707308210e12362c209efd46",
+      "size_bytes": 4107
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/25-NAV2-chr11-20080142-8fda918141cedf55.bam.bai",
+      "filename": "25-NAV2-chr11-20080142-8fda918141cedf55.bam.bai",
+      "sha256": "14ae323cf04df4fefd6077a9639503079112772da924b888d9b58f8860bb910d",
+      "size_bytes": 11448
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/26-NME1-chr17-51154443-53f498a544883d51.bam",
+      "filename": "26-NME1-chr17-51154443-53f498a544883d51.bam",
+      "sha256": "8b032c149bc50019e0881e5e26c5e7a3280902da4bfb67de15d033e0afe1f282",
+      "size_bytes": 21562
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/26-NME1-chr17-51154443-53f498a544883d51.bam.bai",
+      "filename": "26-NME1-chr17-51154443-53f498a544883d51.bam.bai",
+      "sha256": "90f74add1c0851297c3f96fd9821d58b0e47fbeb2bedc384d710c8cb55fe15d4",
+      "size_bytes": 26616
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/27-NR2F2-chr15-96332299-f30f618fb76a0e49.bam",
+      "filename": "27-NR2F2-chr15-96332299-f30f618fb76a0e49.bam",
+      "sha256": "0cd6e398331c7d17ec70e7293f4e9976d2175e92971e84a8edb22063a234692a",
+      "size_bytes": 4082
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/27-NR2F2-chr15-96332299-f30f618fb76a0e49.bam.bai",
+      "filename": "27-NR2F2-chr15-96332299-f30f618fb76a0e49.bam.bai",
+      "sha256": "b831d59ed8e371cb675a6fdc611ecd366e7665af7e480a43f8c4afa555775113",
+      "size_bytes": 48680
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/28-NTF3-chr12-5494381-53f498a544883d51.bam",
+      "filename": "28-NTF3-chr12-5494381-53f498a544883d51.bam",
+      "sha256": "2516e276aee1152672d1a1143a5c0031dcaf5ec1ff6339b1885660886d855ed6",
+      "size_bytes": 21780
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/28-NTF3-chr12-5494381-53f498a544883d51.bam.bai",
+      "filename": "28-NTF3-chr12-5494381-53f498a544883d51.bam.bai",
+      "sha256": "7a2b26f87f32ef7cc956411fad157516f4088a70e04a822353ddcf708ff09c00",
+      "size_bytes": 4320
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/29-PIP5K1A-chr1-151242178-47b695c1a686c058.bam",
+      "filename": "29-PIP5K1A-chr1-151242178-47b695c1a686c058.bam",
+      "sha256": "4b256d74c53f10bc084521ab7293ca14e4e7acca9e7dbc2d920135686bf10f48",
+      "size_bytes": 4101
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/29-PIP5K1A-chr1-151242178-47b695c1a686c058.bam.bai",
+      "filename": "29-PIP5K1A-chr1-151242178-47b695c1a686c058.bam.bai",
+      "sha256": "f0df05651a85601faa6227fd7cd4acbedc848564b39307176a1b7b94d271e5fe",
+      "size_bytes": 75496
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/30-PRICKLE2-chr3-64198863-53f498a544883d51.bam",
+      "filename": "30-PRICKLE2-chr3-64198863-53f498a544883d51.bam",
+      "sha256": "def1d777d6b163791f5f9f2e33d7f69d6053b3a5f88e5415f1868baa4bd6aef1",
+      "size_bytes": 21221
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/30-PRICKLE2-chr3-64198863-53f498a544883d51.bam.bai",
+      "filename": "30-PRICKLE2-chr3-64198863-53f498a544883d51.bam.bai",
+      "sha256": "ce48902c256a0d626f22954e6b40000faa2a9eac4c2ac49c98a496bd728ca8cd",
+      "size_bytes": 33000
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/31-PTH1R-chr3-46898732-1b66c15da594a3ef.bam",
+      "filename": "31-PTH1R-chr3-46898732-1b66c15da594a3ef.bam",
+      "sha256": "27e213d75b83cc410d4d094a3dc69be8be2bd6b2bd33ff4214ad5a401ee23e66",
+      "size_bytes": 30600
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/31-PTH1R-chr3-46898732-1b66c15da594a3ef.bam.bai",
+      "filename": "31-PTH1R-chr3-46898732-1b66c15da594a3ef.bam.bai",
+      "sha256": "9a750e53e6cde73af2684a3386c3cb3c1fe5ea29ec97c6f457140b73d9c638d5",
+      "size_bytes": 45216
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/32-RNF213-chr17-80327830-1b66c15da594a3ef.bam",
+      "filename": "32-RNF213-chr17-80327830-1b66c15da594a3ef.bam",
+      "sha256": "8b6e6d3efc7b6a24ba15a0c297029cff9905f2de999158531d1bc32ded004f53",
+      "size_bytes": 30550
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/32-RNF213-chr17-80327830-1b66c15da594a3ef.bam.bai",
+      "filename": "32-RNF213-chr17-80327830-1b66c15da594a3ef.bam.bai",
+      "sha256": "c613cc0727563b7340861e4fa938b8ecbc6c514f480887a2027de3bc3e75fba1",
+      "size_bytes": 61576
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/33-ROBO2-chr3-77607853-1b66c15da594a3ef.bam",
+      "filename": "33-ROBO2-chr3-77607853-1b66c15da594a3ef.bam",
+      "sha256": "d1fadfee8fb2adff6998c3318239267464e4d646bbfbb75fa5b83d794bf1993e",
+      "size_bytes": 30571
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/33-ROBO2-chr3-77607853-1b66c15da594a3ef.bam.bai",
+      "filename": "33-ROBO2-chr3-77607853-1b66c15da594a3ef.bam.bai",
+      "sha256": "c6a8876a4b70d39de49c531d0e11eba7898139197185bf15fff0633802ee07e6",
+      "size_bytes": 60208
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/34-SLC25A12-chr2-171813470-fbea0bf403520431.bam",
+      "filename": "34-SLC25A12-chr2-171813470-fbea0bf403520431.bam",
+      "sha256": "4590fdab145f99917291205a17f0e1a9ff0f40c45513025a4fe2ec31f13b611b",
+      "size_bytes": 4078
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/34-SLC25A12-chr2-171813470-fbea0bf403520431.bam.bai",
+      "filename": "34-SLC25A12-chr2-171813470-fbea0bf403520431.bam.bai",
+      "sha256": "aedf17fb87f536401a871b48a50ba363e50b54e45f844bab772301a3b3b7103a",
+      "size_bytes": 85536
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/35-SMC5-chr9-70298024-1120a096937e29e1.bam",
+      "filename": "35-SMC5-chr9-70298024-1120a096937e29e1.bam",
+      "sha256": "b798bf1175052776bd2407941ba9736c1a24b774ed0d821815991bb94054dff4",
+      "size_bytes": 19082
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/35-SMC5-chr9-70298024-1120a096937e29e1.bam.bai",
+      "filename": "35-SMC5-chr9-70298024-1120a096937e29e1.bam.bai",
+      "sha256": "023691cadaad2e61dd1d132763e1ca0645902ecc6f9a3765f2e87f7ea5add167",
+      "size_bytes": 35960
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/36-TECPR1-chr7-98241127-8fda918141cedf55.bam",
+      "filename": "36-TECPR1-chr7-98241127-8fda918141cedf55.bam",
+      "sha256": "f876e646d351f8c520587147cea9a1c48800b5800bb77bbabaac2e5feed26d1b",
+      "size_bytes": 4078
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/36-TECPR1-chr7-98241127-8fda918141cedf55.bam.bai",
+      "filename": "36-TECPR1-chr7-98241127-8fda918141cedf55.bam.bai",
+      "sha256": "daa1f3f2403f9c73d031c3a58e5d399129723ccd3aed0a90ceb5bff7fd01c5bf",
+      "size_bytes": 49616
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/37-TMRO-chr9-97910412-1b66c15da594a3ef.bam",
+      "filename": "37-TMRO-chr9-97910412-1b66c15da594a3ef.bam",
+      "sha256": "95c2b7c2386a058830c2a6fa7e3285254bf9dbae584b8c9c513c50c1f16ba457",
+      "size_bytes": 30531
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/37-TMRO-chr9-97910412-1b66c15da594a3ef.bam.bai",
+      "filename": "37-TMRO-chr9-97910412-1b66c15da594a3ef.bam.bai",
+      "sha256": "4b47b3209e33cbe86fbb4e47528034ff8988b831136edbe76e92d56041622171",
+      "size_bytes": 70120
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/38-VPS13B-chr8-99861923-1b66c15da594a3ef.bam",
+      "filename": "38-VPS13B-chr8-99861923-1b66c15da594a3ef.bam",
+      "sha256": "9955c8fc7a999d6fbc9aee3ac817bb805537b34325a13f3e0d88794e5f402e30",
+      "size_bytes": 30599
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/38-VPS13B-chr8-99861923-1b66c15da594a3ef.bam.bai",
+      "filename": "38-VPS13B-chr8-99861923-1b66c15da594a3ef.bam.bai",
+      "sha256": "d8865780b82211c50979a820e1ca57c779f2e47c8fa24351a17340615aac144d",
+      "size_bytes": 71080
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/39-VPS72-chr1-151185547-1120a096937e29e1.bam",
+      "filename": "39-VPS72-chr1-151185547-1120a096937e29e1.bam",
+      "sha256": "c1d12a16977876b363273599b174690aee9461c12b81c6ec7800272b077fc036",
+      "size_bytes": 18564
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/39-VPS72-chr1-151185547-1120a096937e29e1.bam.bai",
+      "filename": "39-VPS72-chr1-151185547-1120a096937e29e1.bam.bai",
+      "sha256": "a5321b67dddecf4b85b42f4d495079b9226cfa783763c325c260908157a7ab0a",
+      "size_bytes": 75456
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/40-WWC1-chr5-168399513-1b66c15da594a3ef.bam",
+      "filename": "40-WWC1-chr5-168399513-1b66c15da594a3ef.bam",
+      "sha256": "df4a6f2af08657d1806a03103c779a099a1b40b20105e6c2cb41f52601ada758",
+      "size_bytes": 30543
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/40-WWC1-chr5-168399513-1b66c15da594a3ef.bam.bai",
+      "filename": "40-WWC1-chr5-168399513-1b66c15da594a3ef.bam.bai",
+      "sha256": "d9a5d4d63450fbd369f710edaec17ae1bdda05b3a2b1b6448a7fe29ea83ef3b2",
+      "size_bytes": 104544
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/41-ZNF436-chr1-23362762-1b66c15da594a3ef.bam",
+      "filename": "41-ZNF436-chr1-23362762-1b66c15da594a3ef.bam",
+      "sha256": "7fe252baf5f7cb3adee593568e0cee38bbe69624aa65c1590bd991f895e87c80",
+      "size_bytes": 30573
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/41-ZNF436-chr1-23362762-1b66c15da594a3ef.bam.bai",
+      "filename": "41-ZNF436-chr1-23362762-1b66c15da594a3ef.bam.bai",
+      "sha256": "5efc2899f71ba1453e1a69c60ea8f4dd4024c5ec833db8108cc16f448c15244d",
+      "size_bytes": 33720
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/42-ZNF674-chrX-46501045-1b66c15da594a3ef.bam",
+      "filename": "42-ZNF674-chrX-46501045-1b66c15da594a3ef.bam",
+      "sha256": "67e072f2d58327b9b67ba1a9e52747238d955ca91cafadf98ec61ca780c6ffdd",
+      "size_bytes": 30536
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/42-ZNF674-chrX-46501045-1b66c15da594a3ef.bam.bai",
+      "filename": "42-ZNF674-chrX-46501045-1b66c15da594a3ef.bam.bai",
+      "sha256": "c191603060e29820449ee6a5ee2888fdeb6f12f6f7485a3d3f9116246a61145d",
+      "size_bytes": 45024
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/43-ZNF764-chr16-30557995-1120a096937e29e1.bam",
+      "filename": "43-ZNF764-chr16-30557995-1120a096937e29e1.bam",
+      "sha256": "fb514cf844cc4e1275291ea4a3ecfe4dff47156dafae20079d6b2012f0c064eb",
+      "size_bytes": 18622
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/43-ZNF764-chr16-30557995-1120a096937e29e1.bam.bai",
+      "filename": "43-ZNF764-chr16-30557995-1120a096937e29e1.bam.bai",
+      "sha256": "2962d102fe432b171d58b02f5e57079a24791889d1a9183ad3fdb2b6fc07aad3",
+      "size_bytes": 16560
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/44-MT_ND5-chrM-12994-238f917202dd9997.bam",
+      "filename": "44-MT_ND5-chrM-12994-238f917202dd9997.bam",
+      "sha256": "510062c3cbe9df54cf4bb15cf96ee83cf9f4f79bde8df536b3e6ee639c42bcb5",
+      "size_bytes": 2055
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/44-MT_ND5-chrM-12994-238f917202dd9997.bam.bai",
+      "filename": "44-MT_ND5-chrM-12994-238f917202dd9997.bam.bai",
+      "sha256": "fd9875ef3646a2a6a3bcaf3277d2d7c2a240f3aaf93697aae78e8c756fe268b3",
+      "size_bytes": 760
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/45-MT_ND5-chrM-12994-fbeb5d8a415e4d18.bam",
+      "filename": "45-MT_ND5-chrM-12994-fbeb5d8a415e4d18.bam",
+      "sha256": "dbdecc9fd5fdc887667153005d300f22f0aaf55606a2d884164cc4e20d139ad2",
+      "size_bytes": 1257
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/45-MT_ND5-chrM-12994-fbeb5d8a415e4d18.bam.bai",
+      "filename": "45-MT_ND5-chrM-12994-fbeb5d8a415e4d18.bam.bai",
+      "sha256": "81752c733dcd56f9cbd040ee5314c1b1868a370f4f744453eb1f3c651c80c7e9",
+      "size_bytes": 288
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/46-MT_ND5-chrM-12994-7010dd389c50467d.bam",
+      "filename": "46-MT_ND5-chrM-12994-7010dd389c50467d.bam",
+      "sha256": "af986886b9dc1d0c5924d574b8da6f568de173c9becbc3f9517d695d97228f4a",
+      "size_bytes": 21315
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/46-MT_ND5-chrM-12994-7010dd389c50467d.bam.bai",
+      "filename": "46-MT_ND5-chrM-12994-7010dd389c50467d.bam.bai",
+      "sha256": "094517f7e0856f866ce13a64d60af430189553e237a17db4cc3ae24b6579517f",
+      "size_bytes": 1640
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/47-MT_ND5-chrM-12994-0066232879babe83.bam",
+      "filename": "47-MT_ND5-chrM-12994-0066232879babe83.bam",
+      "sha256": "66eebf813949d64f8522c1173d9a29a1b6beb0416117003ba0471c697c902a33",
+      "size_bytes": 3850
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/47-MT_ND5-chrM-12994-0066232879babe83.bam.bai",
+      "filename": "47-MT_ND5-chrM-12994-0066232879babe83.bam.bai",
+      "sha256": "bb121f7768ead1652c375f6e59b897589b0c9bbd8941b55d35b7850cd62a44e1",
+      "size_bytes": 1640
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/48-NR2F2-chr15-96332299-fbeb5d8a415e4d18.bam",
+      "filename": "48-NR2F2-chr15-96332299-fbeb5d8a415e4d18.bam",
+      "sha256": "b7fcdd4f5ed3c3f97de9e23c3e77fa10033c8a3b927ee75d4888520c99a5fcc9",
+      "size_bytes": 1255
+    },
+    {
+      "bundle_path": "osteosarc/shared-v1/48-NR2F2-chr15-96332299-fbeb5d8a415e4d18.bam.bai",
+      "filename": "48-NR2F2-chr15-96332299-fbeb5d8a415e4d18.bam.bai",
+      "sha256": "3facf5d7a5eb2f86eff9feb6b45b72145f196d69a64481c98a842379ad1139a7",
+      "size_bytes": 47584
+    }
+  ],
+  "cache_namespace": "openvax",
+  "cache_object_layout": "objects/sha256/{sha256}{original_suffixes}",
+  "cases": [
+    {
+      "bam": "00-ABCF2-chr7-151218156-f30f618fb76a0e49.bam",
+      "case_id": "00-ABCF2-chr7-151218156-f30f618fb76a0e49",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr7",
+        "pos": 151218156,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "16c085f81a650134624ce7675a576107bfdbac0783a05f11952382d7555d3cc5",
+        "source_receipt_sha256": "6dec36f21a037f16ff5b337b76c71b405d5c783d3011536f0e1b924866bdb066",
+        "source_region_sha256": "8c60781ff61622445c53a6d561660a9edbacfc22764048bcec28e7e175def2ca"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr7",
+        "coordinates": "one-based",
+        "pos": 151218156,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr7",
+        "end": 151218156,
+        "reference_length": null,
+        "start": 151218155
+      },
+      "reference": {
+        "dictionary_sha256": "04d5a351c0c1fa55212c1c3e24068badf755a1289fbdf4ed17a3bf8890b3611f",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 159345973,
+          "SN": "chr7"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 2,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "f30f618fb76a0e49",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr7",
+        "gene": "ABCF2",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 151218186,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 221,
+            "sha256": "afa73fbb385f2ec436bdb3802f31da52d1296aa4d656a0ee2c7a2e62b9c5f942",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr7&start=151218125&end=151218186"
+          },
+          "sequence": "GGGCCCTACCAGAGCCACTCGTGTGTCAAGGTCAATTCCAAATTCTAGATTATTGTAGATG",
+          "start": 151218125
+        },
+        "pos": 151218156,
+        "ref": "G",
+        "source_location": "chr7:151218156",
+        "source_protein_label": "\u2014",
+        "source_url": "https://osteosarc.com/variant/ABCF2-chr7-151218156/",
+        "vaccine_count": 1,
+        "variant_id": "ABCF2-chr7-151218156"
+      }
+    },
+    {
+      "bam": "01-ADGRF5-chr6-46856758-f30f618fb76a0e49.bam",
+      "case_id": "01-ADGRF5-chr6-46856758-f30f618fb76a0e49",
+      "catalogue_identity": {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "chrom": "chr6",
+        "pos": 46856758,
+        "ref": "T"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "3e0f566e83af48dd353a178c9a94e169fee1661c219a53b110c4f2d1bbcb0f3c",
+        "source_receipt_sha256": "6dec36f21a037f16ff5b337b76c71b405d5c783d3011536f0e1b924866bdb066",
+        "source_region_sha256": "8c60781ff61622445c53a6d561660a9edbacfc22764048bcec28e7e175def2ca"
+      },
+      "native_variant": {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "chrom": "chr6",
+        "coordinates": "one-based",
+        "pos": 46856758,
+        "ref": "T"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr6",
+        "end": 46856758,
+        "reference_length": null,
+        "start": 46856757
+      },
+      "reference": {
+        "dictionary_sha256": "04d5a351c0c1fa55212c1c3e24068badf755a1289fbdf4ed17a3bf8890b3611f",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 170805979,
+          "SN": "chr6"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 2,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "f30f618fb76a0e49",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam",
+      "variant": {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "chrom": "chr6",
+        "gene": "ADGRF5",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 46856788,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 219,
+            "sha256": "4841aa27f950f59cfb46f63b95013af2bbcb304074c34598c1e704792511ac39",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr6&start=46856727&end=46856788"
+          },
+          "sequence": "TGTGAAGACCATCTCGACAATGAAAACTTATTCAGCAAAGCTTCCTGTACCTGCATTGTTA",
+          "start": 46856727
+        },
+        "pos": 46856758,
+        "ref": "T",
+        "source_location": "chr6:46856758",
+        "source_protein_label": "p.Asn1279Ser",
+        "source_url": "https://osteosarc.com/variant/ADGRF5-chr6-46856758/",
+        "vaccine_count": 2,
+        "variant_id": "ADGRF5-chr6-46856758"
+      }
+    },
+    {
+      "bam": "02-ATRX-chrX-77599465-1b66c15da594a3ef.bam",
+      "case_id": "02-ATRX-chrX-77599465-1b66c15da594a3ef",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chrX",
+        "pos": 77599465,
+        "ref": "C"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "671de0f8e553706f059bc4742d779d6ffd8f058b2a3f652bd0a8533611a8b2b5",
+        "source_receipt_sha256": "ed45205f69a9df114a0eb1a86f775de3c8b3242340a581833d4fc1ef37a92819",
+        "source_region_sha256": "79da2651c583352e3e1f50987a01389a19798a90f005cbc2fde5ea802c28f378"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chrX",
+        "coordinates": "one-based",
+        "pos": 77599465,
+        "ref": "C"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chrX",
+        "end": 77599465,
+        "reference_length": null,
+        "start": 77599464
+      },
+      "reference": {
+        "dictionary_sha256": "e0b0ac4aadccc2a33d5e9a982085745a586cc574875b2551bb2d3862803db324",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 156040895,
+          "SN": "chrX"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 2,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1b66c15da594a3ef",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2022.12.16/RNA/2022.12.16.rna.bostongene/processed/2024.06.11.bostongene.align.tcga.protocol.dr32Aligned.sorted.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chrX",
+        "gene": "ATRX",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 77599495,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 219,
+            "sha256": "8faf7ecbbe97be7f7ddf53fc0b2079d5dda94e0f919ef43f53c46245ab20cbe6",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chrX&start=77599434&end=77599495"
+          },
+          "sequence": "AAGGATTGTTTCCTGTTTCATCCACATTTCCTTCACCACCTCCCCGAGATCTTGAATTCCA",
+          "start": 77599434
+        },
+        "pos": 77599465,
+        "ref": "C",
+        "source_location": "chrX:77599465",
+        "source_protein_label": "p.Gly1968Arg",
+        "source_url": "https://osteosarc.com/variant/ATRX-chrX-77599465/",
+        "vaccine_count": 1,
+        "variant_id": "ATRX-chrX-77599465"
+      }
+    },
+    {
+      "bam": "03-BMP1-chr8-22192067-53f498a544883d51.bam",
+      "case_id": "03-BMP1-chr8-22192067-53f498a544883d51",
+      "catalogue_identity": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr8",
+        "pos": 22192067,
+        "ref": "T"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "70b4b661e82d58d5f8f4a1b578ae19e9ad380c93a8f9ba634f4fd31d2162f2c4",
+        "source_receipt_sha256": "3cb6e1de84429b8a0611dc723b44e247e828c94f8b6eee67f3c8af0813e90beb",
+        "source_region_sha256": "e3c2139d0afed2800e75da677a6b3238de03d000c7899780b4a0d2c061274ede"
+      },
+      "native_variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr8",
+        "coordinates": "one-based",
+        "pos": 22192067,
+        "ref": "T"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr8",
+        "end": 22192067,
+        "reference_length": null,
+        "start": 22192066
+      },
+      "reference": {
+        "dictionary_sha256": "74d8a55146f406d696a5f4278e8950403e13cc4ad0792b41d62a51fe8e56920a",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 145138636,
+          "SN": "chr8"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "53f498a544883d51",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT.tagged.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr8",
+        "gene": "BMP1",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 22192097,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 219,
+            "sha256": "6d635cc746d40e84dff59a6176249540b3c2c028ad7a40a67a398b3ee4d60996",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr8&start=22192036&end=22192097"
+          },
+          "sequence": "CTGTTGCCCTAGATCATCCTGAACTTCACGTCCCTGGACCTGTACCGCAGCCGCCTGTGCT",
+          "start": 22192036
+        },
+        "pos": 22192067,
+        "ref": "T",
+        "source_location": "chr8:22192067",
+        "source_protein_label": "p.Ser366Thr",
+        "source_url": "https://osteosarc.com/variant/BMP1-chr8-22192067/",
+        "vaccine_count": 2,
+        "variant_id": "BMP1-chr8-22192067"
+      }
+    },
+    {
+      "bam": "04-BTD-chr3-15645183-1120a096937e29e1.bam",
+      "case_id": "04-BTD-chr3-15645183-1120a096937e29e1",
+      "catalogue_identity": {
+        "alt": "G",
+        "assembly": "GRCh38",
+        "chrom": "chr3",
+        "pos": 15645183,
+        "ref": "T"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "da7f235d9934bf6ad17e9ce0952c4a42ad5400770039a0cce8877b2d4c839078",
+        "source_receipt_sha256": "4d60946567542a5cf7dadf53287dd588f8c75862bbac3fd2e44023bfcb0e2d74",
+        "source_region_sha256": "eb0eebd5ac4736114873f20f3aea7ecda1b670195dd5fd1bd8c1e365e620064c"
+      },
+      "native_variant": {
+        "alt": "G",
+        "assembly": "GRCh38",
+        "chrom": "chr3",
+        "coordinates": "one-based",
+        "pos": 15645183,
+        "ref": "T"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr3",
+        "end": 15645183,
+        "reference_length": null,
+        "start": 15645182
+      },
+      "reference": {
+        "dictionary_sha256": "74d8a55146f406d696a5f4278e8950403e13cc4ad0792b41d62a51fe8e56920a",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 198295559,
+          "SN": "chr3"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1120a096937e29e1",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT.tagged.bam",
+      "variant": {
+        "alt": "G",
+        "assembly": "GRCh38",
+        "chrom": "chr3",
+        "gene": "BTD",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 15645213,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 219,
+            "sha256": "17f62bb240d4c20ed1fbcb775863451ab627782b4e7a05cf01cf9bd64e51a04b",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr3&start=15645152&end=15645213"
+          },
+          "sequence": "TTATCCAAAGAGCTGTATGCCCTGGGGGTCTTTGATGGGCTTCACACAGTACATGGCACTT",
+          "start": 15645152
+        },
+        "pos": 15645183,
+        "ref": "T",
+        "source_location": "chr3:15645183",
+        "source_protein_label": "p.Phe445Val",
+        "source_url": "https://osteosarc.com/variant/BTD-chr3-15645183/",
+        "vaccine_count": 3,
+        "variant_id": "BTD-chr3-15645183"
+      }
+    },
+    {
+      "bam": "05-CD109-chr6-73818405-1120a096937e29e1.bam",
+      "case_id": "05-CD109-chr6-73818405-1120a096937e29e1",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr6",
+        "pos": 73818405,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "e77bf07974ea1fdc5dcacfb08978e400bc2cb2b11d6488eeeeb1e68491da6657",
+        "source_receipt_sha256": "4d60946567542a5cf7dadf53287dd588f8c75862bbac3fd2e44023bfcb0e2d74",
+        "source_region_sha256": "eb0eebd5ac4736114873f20f3aea7ecda1b670195dd5fd1bd8c1e365e620064c"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr6",
+        "coordinates": "one-based",
+        "pos": 73818405,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr6",
+        "end": 73818405,
+        "reference_length": null,
+        "start": 73818404
+      },
+      "reference": {
+        "dictionary_sha256": "74d8a55146f406d696a5f4278e8950403e13cc4ad0792b41d62a51fe8e56920a",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 170805979,
+          "SN": "chr6"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1120a096937e29e1",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT.tagged.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr6",
+        "gene": "CD109",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 73818435,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 219,
+            "sha256": "96162359984bb5e8083092897637e058b26b4afadf7e9dabe520e3f835d25e85",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr6&start=73818374&end=73818435"
+          },
+          "sequence": "CTCTTTGATTTAGCTTTTCGGGCCCGGGTAGGAGTGGCATGGCTCTTATGGAAGTTAACCT",
+          "start": 73818374
+        },
+        "pos": 73818405,
+        "ref": "G",
+        "source_location": "chr6:73818405",
+        "source_protein_label": "p.Arg1310Met",
+        "source_url": "https://osteosarc.com/variant/CD109-chr6-73818405/",
+        "vaccine_count": 1,
+        "variant_id": "CD109-chr6-73818405"
+      }
+    },
+    {
+      "bam": "06-CDC40-chr6-110228838-1b66c15da594a3ef.bam",
+      "case_id": "06-CDC40-chr6-110228838-1b66c15da594a3ef",
+      "catalogue_identity": {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "chrom": "chr6",
+        "pos": 110228838,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "365a70cf3545ff14a4f40a4c70d947d610730ef1920c4066c5eccbf037b557e4",
+        "source_receipt_sha256": "ed45205f69a9df114a0eb1a86f775de3c8b3242340a581833d4fc1ef37a92819",
+        "source_region_sha256": "79da2651c583352e3e1f50987a01389a19798a90f005cbc2fde5ea802c28f378"
+      },
+      "native_variant": {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "chrom": "chr6",
+        "coordinates": "one-based",
+        "pos": 110228838,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr6",
+        "end": 110228838,
+        "reference_length": null,
+        "start": 110228837
+      },
+      "reference": {
+        "dictionary_sha256": "e0b0ac4aadccc2a33d5e9a982085745a586cc574875b2551bb2d3862803db324",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 170805979,
+          "SN": "chr6"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 2,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1b66c15da594a3ef",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2022.12.16/RNA/2022.12.16.rna.bostongene/processed/2024.06.11.bostongene.align.tcga.protocol.dr32Aligned.sorted.bam",
+      "variant": {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "chrom": "chr6",
+        "gene": "CDC40",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 110228868,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 221,
+            "sha256": "6f2f8faa4b84a6b05194de7e1ddcd88355371b9de1585fb2afc27307591b41b7",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr6&start=110228807&end=110228868"
+          },
+          "sequence": "ATACCTCATTTATTGAATTTACAGGAAAATGGCTAGCATGCCAATCAATGGACAACCAAAT",
+          "start": 110228807
+        },
+        "pos": 110228838,
+        "ref": "G",
+        "source_location": "chr6:110228838",
+        "source_protein_label": "p.Trp475Ser",
+        "source_url": "https://osteosarc.com/variant/CDC40-chr6-110228838/",
+        "vaccine_count": 2,
+        "variant_id": "CDC40-chr6-110228838"
+      }
+    },
+    {
+      "bam": "07-CENPL-chr1-173811223-1120a096937e29e1.bam",
+      "case_id": "07-CENPL-chr1-173811223-1120a096937e29e1",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr1",
+        "pos": 173811223,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "9b4f9489a35a3afbb317ef062147634df166c5c043471e4c8631ca2a439ff09a",
+        "source_receipt_sha256": "4d60946567542a5cf7dadf53287dd588f8c75862bbac3fd2e44023bfcb0e2d74",
+        "source_region_sha256": "eb0eebd5ac4736114873f20f3aea7ecda1b670195dd5fd1bd8c1e365e620064c"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr1",
+        "coordinates": "one-based",
+        "pos": 173811223,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr1",
+        "end": 173811223,
+        "reference_length": null,
+        "start": 173811222
+      },
+      "reference": {
+        "dictionary_sha256": "74d8a55146f406d696a5f4278e8950403e13cc4ad0792b41d62a51fe8e56920a",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 248956422,
+          "SN": "chr1"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1120a096937e29e1",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT.tagged.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr1",
+        "gene": "CENPL",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 173811253,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 221,
+            "sha256": "7d2b62e383e339a32853b6cb47881cc9f7dc76ba0dfd0bf0134e9b6d87a61952",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr1&start=173811192&end=173811253"
+          },
+          "sequence": "TTCCTGACCGATTCTAATCGTTTCTGCAGAGGAGTGGCACCTATAAAGTAATCTTCAGGTC",
+          "start": 173811192
+        },
+        "pos": 173811223,
+        "ref": "G",
+        "source_location": "chr1:173811223",
+        "source_protein_label": "p.Pro26His",
+        "source_url": "https://osteosarc.com/variant/CENPL-chr1-173811223/",
+        "vaccine_count": 1,
+        "variant_id": "CENPL-chr1-173811223"
+      }
+    },
+    {
+      "bam": "08-CUL9-chr6-43186384-9b42d06ca2fa2370.bam",
+      "case_id": "08-CUL9-chr6-43186384-9b42d06ca2fa2370",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr6",
+        "pos": 43186384,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "3b8df22babcf5136635b9033d10d557d45baa19efa1b4d4a356fb7a4477de96e",
+        "source_receipt_sha256": "75ccabe6e4228fcdd7b8f354703b8ed2753e1732db95237e1fb6d04a93232d32",
+        "source_region_sha256": "518608dfd9ab395fb3cb121832b28fba2ba29078bd3c08726957888e0d03119e"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr6",
+        "coordinates": "one-based",
+        "pos": 43186384,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr6",
+        "end": 43186384,
+        "reference_length": null,
+        "start": 43186383
+      },
+      "reference": {
+        "dictionary_sha256": "04d5a351c0c1fa55212c1c3e24068badf755a1289fbdf4ed17a3bf8890b3611f",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 170805979,
+          "SN": "chr6"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "9b42d06ca2fa2370",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/TL-24-KCVBE1UI1P/TL-24-KCVBE1UI1P.Aligned.sortedByCoord.out.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr6",
+        "gene": "CUL9",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 43186414,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 219,
+            "sha256": "d5aca6e6f01ffb0e3fdb98af2464f7492e262c63bd6c3b1be9608798ef856214",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr6&start=43186353&end=43186414"
+          },
+          "sequence": "CAGCCAGGGATGCGAGTGCGGATGCTGGATGATTATGAGGAGATCAGTGCTGGGGACGAGG",
+          "start": 43186353
+        },
+        "pos": 43186384,
+        "ref": "G",
+        "source_location": "chr6:43186384",
+        "source_protein_label": "p.Asp403Tyr",
+        "source_url": "https://osteosarc.com/variant/CUL9-chr6-43186384/",
+        "vaccine_count": 2,
+        "variant_id": "CUL9-chr6-43186384"
+      }
+    },
+    {
+      "bam": "09-DIAPH1-chr5-141526090-1b66c15da594a3ef.bam",
+      "case_id": "09-DIAPH1-chr5-141526090-1b66c15da594a3ef",
+      "catalogue_identity": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr5",
+        "pos": 141526090,
+        "ref": "C"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "37e0e652ba72e45dcc18412ee831aa4cfe8c9e368955719cc71e5e66b93cab3a",
+        "source_receipt_sha256": "ed45205f69a9df114a0eb1a86f775de3c8b3242340a581833d4fc1ef37a92819",
+        "source_region_sha256": "79da2651c583352e3e1f50987a01389a19798a90f005cbc2fde5ea802c28f378"
+      },
+      "native_variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr5",
+        "coordinates": "one-based",
+        "pos": 141526090,
+        "ref": "C"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr5",
+        "end": 141526090,
+        "reference_length": null,
+        "start": 141526089
+      },
+      "reference": {
+        "dictionary_sha256": "e0b0ac4aadccc2a33d5e9a982085745a586cc574875b2551bb2d3862803db324",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 181538259,
+          "SN": "chr5"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 2,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1b66c15da594a3ef",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2022.12.16/RNA/2022.12.16.rna.bostongene/processed/2024.06.11.bostongene.align.tcga.protocol.dr32Aligned.sorted.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr5",
+        "gene": "DIAPH1",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 141526120,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 221,
+            "sha256": "66cf731e0a70f5053fd807a418c1456ceb7d3df8efcc49aec392d29bf9191700",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr5&start=141526059&end=141526120"
+          },
+          "sequence": "CTCTCTCTTCTGCTGCTTCTCTAGCCGCTCCTTCTCTGCCTTCTCCTTGGCTAGTTTTGCT",
+          "start": 141526059
+        },
+        "pos": 141526090,
+        "ref": "C",
+        "source_location": "chr5:141526090",
+        "source_protein_label": "p.Lys1174Asn",
+        "source_url": "https://osteosarc.com/variant/DIAPH1-chr5-141526090/",
+        "vaccine_count": 1,
+        "variant_id": "DIAPH1-chr5-141526090"
+      }
+    },
+    {
+      "bam": "10-DYNC1H1-chr14-101980529-53f498a544883d51.bam",
+      "case_id": "10-DYNC1H1-chr14-101980529-53f498a544883d51",
+      "catalogue_identity": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr14",
+        "pos": 101980529,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "4f63dcf825ab6c64ac542a1172f036c259e1984a40d487b6c01fbd3456d45fee",
+        "source_receipt_sha256": "3cb6e1de84429b8a0611dc723b44e247e828c94f8b6eee67f3c8af0813e90beb",
+        "source_region_sha256": "e3c2139d0afed2800e75da677a6b3238de03d000c7899780b4a0d2c061274ede"
+      },
+      "native_variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr14",
+        "coordinates": "one-based",
+        "pos": 101980529,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr14",
+        "end": 101980529,
+        "reference_length": null,
+        "start": 101980528
+      },
+      "reference": {
+        "dictionary_sha256": "74d8a55146f406d696a5f4278e8950403e13cc4ad0792b41d62a51fe8e56920a",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 107043718,
+          "SN": "chr14"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "53f498a544883d51",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT.tagged.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr14",
+        "gene": "DYNC1H1",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 101980559,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 222,
+            "sha256": "f9f1d6627fac3c82e2e4e4835b9ee10bf21b0ae007ab1e7d98e93c1bdc3f7287",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr14&start=101980498&end=101980559"
+          },
+          "sequence": "TTGAAACATGGCAAGCGCTTCCATGCCACCGTCAGTTTTGACACTGACACAGGTAACAACT",
+          "start": 101980498
+        },
+        "pos": 101980529,
+        "ref": "G",
+        "source_location": "chr14:101980529",
+        "source_protein_label": "p.Val314Ile",
+        "source_url": "https://osteosarc.com/variant/DYNC1H1-chr14-101980529/",
+        "vaccine_count": 5,
+        "variant_id": "DYNC1H1-chr14-101980529"
+      }
+    },
+    {
+      "bam": "11-DYNC1H1-chr14-102030200-1b66c15da594a3ef.bam",
+      "case_id": "11-DYNC1H1-chr14-102030200-1b66c15da594a3ef",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr14",
+        "pos": 102030200,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "773631ead8abda3a89c4e673d04df167d958bc56ce0140656eeae2aa55ec9347",
+        "source_receipt_sha256": "ed45205f69a9df114a0eb1a86f775de3c8b3242340a581833d4fc1ef37a92819",
+        "source_region_sha256": "79da2651c583352e3e1f50987a01389a19798a90f005cbc2fde5ea802c28f378"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr14",
+        "coordinates": "one-based",
+        "pos": 102030200,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr14",
+        "end": 102030200,
+        "reference_length": null,
+        "start": 102030199
+      },
+      "reference": {
+        "dictionary_sha256": "e0b0ac4aadccc2a33d5e9a982085745a586cc574875b2551bb2d3862803db324",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 107043718,
+          "SN": "chr14"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1b66c15da594a3ef",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2022.12.16/RNA/2022.12.16.rna.bostongene/processed/2024.06.11.bostongene.align.tcga.protocol.dr32Aligned.sorted.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr14",
+        "gene": "DYNC1H1",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 102030230,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 222,
+            "sha256": "d19de824ae54c17b8e77ad53f2906c39da55d3b6f0ad6e5a6ffa57164a205117",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr14&start=102030169&end=102030230"
+          },
+          "sequence": "CCAAGAAATCCAGGAACAGCTGCATAAGCAGCAGGAGGTAATTGCAGACAAACAGATGAGT",
+          "start": 102030169
+        },
+        "pos": 102030200,
+        "ref": "G",
+        "source_location": "chr14:102030200",
+        "source_protein_label": "p.Gln3267His",
+        "source_url": "https://osteosarc.com/variant/DYNC1H1-chr14-102030200/",
+        "vaccine_count": 1,
+        "variant_id": "DYNC1H1-chr14-102030200"
+      }
+    },
+    {
+      "bam": "12-EPG5-chr18-45925851-fbea0bf403520431.bam",
+      "case_id": "12-EPG5-chr18-45925851-fbea0bf403520431",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr18",
+        "pos": 45925851,
+        "ref": "C"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "8e1dce95bdbe17410002e04d469c9fd4c1e7545dfa4a424231182c1e3b30f2e8",
+        "source_receipt_sha256": "fbe025821fd451564e74db573e5a25b1e096d8d4d3961624e7d9e479d835c593",
+        "source_region_sha256": "5bb135a407066e26e862aaeaffdda22cfbfe3667e09ab0bae376e014fc8592c8"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr18",
+        "coordinates": "one-based",
+        "pos": 45925851,
+        "ref": "C"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr18",
+        "end": 45925851,
+        "reference_length": null,
+        "start": 45925850
+      },
+      "reference": {
+        "dictionary_sha256": "04d5a351c0c1fa55212c1c3e24068badf755a1289fbdf4ed17a3bf8890b3611f",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 80373285,
+          "SN": "chr18"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 2,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "fbea0bf403520431",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr18",
+        "gene": "EPG5",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 45925881,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 220,
+            "sha256": "4d0576525bf1344d6262a98af63e079c92d300c4bfc4f32cf4c88dcc04b07c88",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr18&start=45925820&end=45925881"
+          },
+          "sequence": "ACCAATCCCGAATCACCGCTATCTCAGATGCAGAAGGTTGCCAAAGATACAAAGGCAGTTC",
+          "start": 45925820
+        },
+        "pos": 45925851,
+        "ref": "C",
+        "source_location": "chr18:45925851",
+        "source_protein_label": "p.Ala869Thr",
+        "source_url": "https://osteosarc.com/variant/EPG5-chr18-45925851/",
+        "vaccine_count": 3,
+        "variant_id": "EPG5-chr18-45925851"
+      }
+    },
+    {
+      "bam": "13-EXOC4-chr7-133274996-53f498a544883d51.bam",
+      "case_id": "13-EXOC4-chr7-133274996-53f498a544883d51",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr7",
+        "pos": 133274996,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "80a6b4fc12c7a44635abe13c3f551886a62ab39cce91a32dd0c824c2e97894b3",
+        "source_receipt_sha256": "3cb6e1de84429b8a0611dc723b44e247e828c94f8b6eee67f3c8af0813e90beb",
+        "source_region_sha256": "e3c2139d0afed2800e75da677a6b3238de03d000c7899780b4a0d2c061274ede"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr7",
+        "coordinates": "one-based",
+        "pos": 133274996,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr7",
+        "end": 133274996,
+        "reference_length": null,
+        "start": 133274995
+      },
+      "reference": {
+        "dictionary_sha256": "74d8a55146f406d696a5f4278e8950403e13cc4ad0792b41d62a51fe8e56920a",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 159345973,
+          "SN": "chr7"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "53f498a544883d51",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT.tagged.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr7",
+        "gene": "EXOC4",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 133275026,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 221,
+            "sha256": "97c89eac456b62241e7831fcc86c5aa569e6092b6c70be3e66badc5f663b5214",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr7&start=133274965&end=133275026"
+          },
+          "sequence": "TCTCTGCCTTCACCAGGACTCTGTCTACTAGTGACGATGTCGAAGACAGGGAAAATGAAAA",
+          "start": 133274965
+        },
+        "pos": 133274996,
+        "ref": "G",
+        "source_location": "chr7:133274996",
+        "source_protein_label": "p.Ser34Ile",
+        "source_url": "https://osteosarc.com/variant/EXOC4-chr7-133274996/",
+        "vaccine_count": 4,
+        "variant_id": "EXOC4-chr7-133274996"
+      }
+    },
+    {
+      "bam": "14-F8-chrX-154930861-1b66c15da594a3ef.bam",
+      "case_id": "14-F8-chrX-154930861-1b66c15da594a3ef",
+      "catalogue_identity": {
+        "alt": "G",
+        "assembly": "GRCh38",
+        "chrom": "chrX",
+        "pos": 154930861,
+        "ref": "T"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "6a3419e058b98c65ec5ca792ab51df8dc5c080fca7d5a1208e3dc5c26597fb8e",
+        "source_receipt_sha256": "ed45205f69a9df114a0eb1a86f775de3c8b3242340a581833d4fc1ef37a92819",
+        "source_region_sha256": "79da2651c583352e3e1f50987a01389a19798a90f005cbc2fde5ea802c28f378"
+      },
+      "native_variant": {
+        "alt": "G",
+        "assembly": "GRCh38",
+        "chrom": "chrX",
+        "coordinates": "one-based",
+        "pos": 154930861,
+        "ref": "T"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chrX",
+        "end": 154930861,
+        "reference_length": null,
+        "start": 154930860
+      },
+      "reference": {
+        "dictionary_sha256": "e0b0ac4aadccc2a33d5e9a982085745a586cc574875b2551bb2d3862803db324",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 156040895,
+          "SN": "chrX"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1b66c15da594a3ef",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2022.12.16/RNA/2022.12.16.rna.bostongene/processed/2024.06.11.bostongene.align.tcga.protocol.dr32Aligned.sorted.bam",
+      "variant": {
+        "alt": "G",
+        "assembly": "GRCh38",
+        "chrom": "chrX",
+        "gene": "F8",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 154930891,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 221,
+            "sha256": "8c24d56d68b349891b2c4a7cb89fefb00e2667034324565b47a30d49b9869863",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chrX&start=154930830&end=154930891"
+          },
+          "sequence": "CTGTTGACGATACATTTTTTCCCCATGAACTTTCTTGGCTATTCATTAAACCTGATTCTAA",
+          "start": 154930830
+        },
+        "pos": 154930861,
+        "ref": "T",
+        "source_location": "chrX:154930861",
+        "source_protein_label": "p.Ser977Arg",
+        "source_url": "https://osteosarc.com/variant/F8-chrX-154930861/",
+        "vaccine_count": 1,
+        "variant_id": "F8-chrX-154930861"
+      }
+    },
+    {
+      "bam": "15-FBXO33-chr14-39431722-47b695c1a686c058.bam",
+      "case_id": "15-FBXO33-chr14-39431722-47b695c1a686c058",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr14",
+        "pos": 39431722,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "90a6765b38f249af2d4da2506114a1c3d57dafd6b49340b0ce9869395d51310c",
+        "source_receipt_sha256": "f3f9429f9101a919f27d6981718492bf96ee0b5b8294b7e773ba896f931694b6",
+        "source_region_sha256": "66b18af31d3961ae74a71936e7fcfc66d508aecfd7c5f179c244ec1d10b8da15"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr14",
+        "coordinates": "one-based",
+        "pos": 39431722,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr14",
+        "end": 39431722,
+        "reference_length": null,
+        "start": 39431721
+      },
+      "reference": {
+        "dictionary_sha256": "04d5a351c0c1fa55212c1c3e24068badf755a1289fbdf4ed17a3bf8890b3611f",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 107043718,
+          "SN": "chr14"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "47b695c1a686c058",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/BG009368/BG009368.Aligned.sortedByCoord.out.md.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr14",
+        "gene": "FBXO33",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 39431752,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 220,
+            "sha256": "173545f69d9c5deb816908d6996b2ebead039e2f55af1db81c13b6f9f6131856",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr14&start=39431691&end=39431752"
+          },
+          "sequence": "TCCGTCCCCTGGGCCACCGCCGCTCAGATAGTTCTCGGCGGCGAATTCAACACGCAGCTCT",
+          "start": 39431691
+        },
+        "pos": 39431722,
+        "ref": "G",
+        "source_location": "chr14:39431722",
+        "source_protein_label": "p.Asn147Lys",
+        "source_url": "https://osteosarc.com/variant/FBXO33-chr14-39431722/",
+        "vaccine_count": 2,
+        "variant_id": "FBXO33-chr14-39431722"
+      }
+    },
+    {
+      "bam": "16-GLIS3-chr9-3856149-1b66c15da594a3ef.bam",
+      "case_id": "16-GLIS3-chr9-3856149-1b66c15da594a3ef",
+      "catalogue_identity": {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "chrom": "chr9",
+        "pos": 3856149,
+        "ref": "CTGATGTGG"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "d54e63a77cd4f9c2257e7002225dd3503bc7a8ba678c8e4c1dc87961b8f6ca3d",
+        "source_receipt_sha256": "ed45205f69a9df114a0eb1a86f775de3c8b3242340a581833d4fc1ef37a92819",
+        "source_region_sha256": "79da2651c583352e3e1f50987a01389a19798a90f005cbc2fde5ea802c28f378"
+      },
+      "native_variant": {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "chrom": "chr9",
+        "coordinates": "one-based",
+        "pos": 3856149,
+        "ref": "CTGATGTGG"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr9",
+        "end": 3856157,
+        "reference_length": null,
+        "start": 3856148
+      },
+      "reference": {
+        "dictionary_sha256": "e0b0ac4aadccc2a33d5e9a982085745a586cc574875b2551bb2d3862803db324",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 138394717,
+          "SN": "chr9"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1b66c15da594a3ef",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2022.12.16/RNA/2022.12.16.rna.bostongene/processed/2024.06.11.bostongene.align.tcga.protocol.dr32Aligned.sorted.bam",
+      "variant": {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "chrom": "chr9",
+        "gene": "GLIS3",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 3856187,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 225,
+            "sha256": "1e6933e2decd4bd2f6057527283a880b78d80afd4cb45fa650a5cb95d08fbc48",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr9&start=3856118&end=3856187"
+          },
+          "sequence": "ATTGAAGAAGGAGCTGGAACTCTCCGGGGGCTGATGTGGTGAGGAGATGGAGCAGAAGGTGCAAACCTG",
+          "start": 3856118
+        },
+        "pos": 3856149,
+        "ref": "CTGATGTGG",
+        "source_location": "chr9:3856149",
+        "source_protein_label": "p.Ser775fs",
+        "source_url": "https://osteosarc.com/variant/GLIS3-chr9-3856149/",
+        "vaccine_count": 1,
+        "variant_id": "GLIS3-chr9-3856149"
+      }
+    },
+    {
+      "bam": "17-H1_2-chr6-26055824-1120a096937e29e1.bam",
+      "case_id": "17-H1_2-chr6-26055824-1120a096937e29e1",
+      "catalogue_identity": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr6",
+        "pos": 26055824,
+        "ref": "ACCTTGGGCTTAGCGG"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "75ae2849a963572a615de3534c1e5f4b99d266752b1e710390153f3543737b9c",
+        "source_receipt_sha256": "4d60946567542a5cf7dadf53287dd588f8c75862bbac3fd2e44023bfcb0e2d74",
+        "source_region_sha256": "eb0eebd5ac4736114873f20f3aea7ecda1b670195dd5fd1bd8c1e365e620064c"
+      },
+      "native_variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr6",
+        "coordinates": "one-based",
+        "pos": 26055824,
+        "ref": "ACCTTGGGCTTAGCGG"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr6",
+        "end": 26055839,
+        "reference_length": null,
+        "start": 26055823
+      },
+      "reference": {
+        "dictionary_sha256": "74d8a55146f406d696a5f4278e8950403e13cc4ad0792b41d62a51fe8e56920a",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 170805979,
+          "SN": "chr6"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1120a096937e29e1",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT.tagged.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr6",
+        "gene": "H1-2",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 26055869,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 234,
+            "sha256": "a2d25ee0fe96a434409ee0a20a4ab6353f0cd490ff44243879bfdc9c85e1373b",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr6&start=26055793&end=26055869"
+          },
+          "sequence": "TTCTTGGGCGCCGCCTTCTTAGGCTTGACAACCTTGGGCTTAGCGGCCTTGGGCTTCACAGCCTTAGCAGCACTTT",
+          "start": 26055793
+        },
+        "pos": 26055824,
+        "ref": "ACCTTGGGCTTAGCGG",
+        "source_location": "chr6:26055824",
+        "source_protein_label": "p.Ala197_Lys201del",
+        "source_url": "https://osteosarc.com/variant/H1_2-chr6-26055824/",
+        "vaccine_count": 1,
+        "variant_id": "H1_2-chr6-26055824"
+      }
+    },
+    {
+      "bam": "18-KDM3B-chr5-138391529-fbea0bf403520431.bam",
+      "case_id": "18-KDM3B-chr5-138391529-fbea0bf403520431",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr5",
+        "pos": 138391529,
+        "ref": "C"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "b590d9d5a42b42739bbae8ca87e6fbd9857d9903a6524f4275845d94a0284315",
+        "source_receipt_sha256": "fbe025821fd451564e74db573e5a25b1e096d8d4d3961624e7d9e479d835c593",
+        "source_region_sha256": "5bb135a407066e26e862aaeaffdda22cfbfe3667e09ab0bae376e014fc8592c8"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr5",
+        "coordinates": "one-based",
+        "pos": 138391529,
+        "ref": "C"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr5",
+        "end": 138391529,
+        "reference_length": null,
+        "start": 138391528
+      },
+      "reference": {
+        "dictionary_sha256": "04d5a351c0c1fa55212c1c3e24068badf755a1289fbdf4ed17a3bf8890b3611f",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 181538259,
+          "SN": "chr5"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "fbea0bf403520431",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr5",
+        "gene": "KDM3B",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 138391559,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 221,
+            "sha256": "4495cab7e9727ce73a5e1ab8f4a60a48b41e97bed0b13e545406b049c2697c21",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr5&start=138391498&end=138391559"
+          },
+          "sequence": "TTACAGCCCCCCAAATTGTCCCGAGAAGAGCCTTCTAATCCTTTCCTGGCATTTGTGGAGA",
+          "start": 138391498
+        },
+        "pos": 138391529,
+        "ref": "C",
+        "source_location": "chr5:138391529",
+        "source_protein_label": "p.Pro633Ser",
+        "source_url": "https://osteosarc.com/variant/KDM3B-chr5-138391529/",
+        "vaccine_count": 3,
+        "variant_id": "KDM3B-chr5-138391529"
+      }
+    },
+    {
+      "bam": "19-KIF1C-chr17-5007293-fbea0bf403520431.bam",
+      "case_id": "19-KIF1C-chr17-5007293-fbea0bf403520431",
+      "catalogue_identity": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr17",
+        "pos": 5007293,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "0e92fd2e16f00ed555980035452595e72a81c973bf8a2718524d57d4ed4aa46f",
+        "source_receipt_sha256": "fbe025821fd451564e74db573e5a25b1e096d8d4d3961624e7d9e479d835c593",
+        "source_region_sha256": "5bb135a407066e26e862aaeaffdda22cfbfe3667e09ab0bae376e014fc8592c8"
+      },
+      "native_variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr17",
+        "coordinates": "one-based",
+        "pos": 5007293,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr17",
+        "end": 5007293,
+        "reference_length": null,
+        "start": 5007292
+      },
+      "reference": {
+        "dictionary_sha256": "04d5a351c0c1fa55212c1c3e24068badf755a1289fbdf4ed17a3bf8890b3611f",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 83257441,
+          "SN": "chr17"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 2,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "fbea0bf403520431",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr17",
+        "gene": "KIF1C",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 5007323,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 218,
+            "sha256": "d9255e223520deca72c485698f1291f37e70aed998a4503513d1511ec8df14c9",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr17&start=5007262&end=5007323"
+          },
+          "sequence": "GAGACAGAGAAGATTATAGCTGAGCTGAACGAGACATGGGAGGAGAAGCTACGCAAGACAG",
+          "start": 5007262
+        },
+        "pos": 5007293,
+        "ref": "G",
+        "source_location": "chr17:5007293",
+        "source_protein_label": "p.Glu456Lys",
+        "source_url": "https://osteosarc.com/variant/KIF1C-chr17-5007293/",
+        "vaccine_count": 3,
+        "variant_id": "KIF1C-chr17-5007293"
+      }
+    },
+    {
+      "bam": "20-KRT18-chr12-52951767-fbea0bf403520431.bam",
+      "case_id": "20-KRT18-chr12-52951767-fbea0bf403520431",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr12",
+        "pos": 52951767,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "2a780929ce5b0dd4fc191a1241498e57d9162648f1bbe4583f36cdefa01d79df",
+        "source_receipt_sha256": "fbe025821fd451564e74db573e5a25b1e096d8d4d3961624e7d9e479d835c593",
+        "source_region_sha256": "5bb135a407066e26e862aaeaffdda22cfbfe3667e09ab0bae376e014fc8592c8"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr12",
+        "coordinates": "one-based",
+        "pos": 52951767,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr12",
+        "end": 52951767,
+        "reference_length": null,
+        "start": 52951766
+      },
+      "reference": {
+        "dictionary_sha256": "04d5a351c0c1fa55212c1c3e24068badf755a1289fbdf4ed17a3bf8890b3611f",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 133275309,
+          "SN": "chr12"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 2,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "fbea0bf403520431",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr12",
+        "gene": "KRT18",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 52951797,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 220,
+            "sha256": "04062badf97a2de41fac209f9c905c4ccf30864d5dfadb4f85ab545d03235596",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr12&start=52951736&end=52951797"
+          },
+          "sequence": "GAGAGCACCACAGTGGTCACCACACAGTCTGCTGAGGTTGGAGCTGCTGAGACGACGCTCA",
+          "start": 52951736
+        },
+        "pos": 52951767,
+        "ref": "G",
+        "source_location": "chr12:52951767",
+        "source_protein_label": "p.Ala287Ser",
+        "source_url": "https://osteosarc.com/variant/KRT18-chr12-52951767/",
+        "vaccine_count": 1,
+        "variant_id": "KRT18-chr12-52951767"
+      }
+    },
+    {
+      "bam": "21-MAP2-chr2-209694768-2bc1fc291308debb.bam",
+      "case_id": "21-MAP2-chr2-209694768-2bc1fc291308debb",
+      "catalogue_identity": {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "chrom": "chr2",
+        "pos": 209694768,
+        "ref": "CCTGGGCTACTGTGTGTTCAATA"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "fcc9110bdd4741f351cad9086bab2fffd918c1aebdc5a1dccd4c0ad3eca0d2e9",
+        "source_receipt_sha256": "f86c55c088ad941104512bc91aa25c3e94520743a8821c6cc89323366e9d096a",
+        "source_region_sha256": "8ef655163d11c1d6354f02944d8e9503be33bd2ef0c3d764ab662709435dfaaa"
+      },
+      "native_variant": {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "chrom": "chr2",
+        "coordinates": "one-based",
+        "pos": 209694768,
+        "ref": "CCTGGGCTACTGTGTGTTCAATA"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr2",
+        "end": 209694790,
+        "reference_length": null,
+        "start": 209694767
+      },
+      "reference": {
+        "dictionary_sha256": "74d8a55146f406d696a5f4278e8950403e13cc4ad0792b41d62a51fe8e56920a",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 242193529,
+          "SN": "chr2"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "2bc1fc291308debb",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT_dedup/IPISRC044_T2_sclrs_ONT_dedup.bam",
+      "variant": {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "chrom": "chr2",
+        "gene": "MAP2",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 209694820,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 243,
+            "sha256": "4d098b9a04c70e6d81ee19685735f7415fbd50b8e7c92569aa783d59343e55bc",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr2&start=209694737&end=209694820"
+          },
+          "sequence": "CATTGTAAAAACGGACAGTCAGCTCGAAGACCTGGGCTACTGTGTGTTCAATAAGTACACAGTCCCATTGCCATCACCTGTTC",
+          "start": 209694737
+        },
+        "pos": 209694768,
+        "ref": "CCTGGGCTACTGTGTGTTCAATA",
+        "source_location": "chr2:209694768",
+        "source_protein_label": "p.Leu867fs",
+        "source_url": "https://osteosarc.com/variant/MAP2-chr2-209694768/",
+        "vaccine_count": 3,
+        "variant_id": "MAP2-chr2-209694768"
+      }
+    },
+    {
+      "bam": "22-MT_ND5-chrM-12994-f30f618fb76a0e49.bam",
+      "case_id": "22-MT_ND5-chrM-12994-f30f618fb76a0e49",
+      "catalogue_identity": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chrM",
+        "pos": 12994,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "complete expanded locus",
+        "selection_row_sha256": "5fb1d3dc9abc02c670f1b7b6dfbe42274b24164738b8a04acc9e2f208ec3dc24",
+        "source_receipt_sha256": "6dec36f21a037f16ff5b337b76c71b405d5c783d3011536f0e1b924866bdb066",
+        "source_region_sha256": "8c60781ff61622445c53a6d561660a9edbacfc22764048bcec28e7e175def2ca"
+      },
+      "native_variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chrM",
+        "coordinates": "one-based",
+        "pos": 12994,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chrM",
+        "end": 12994,
+        "reference_length": 16569,
+        "start": 12993
+      },
+      "reference": {
+        "dictionary_sha256": "04d5a351c0c1fa55212c1c3e24068badf755a1289fbdf4ed17a3bf8890b3611f",
+        "mitochondrial_reference": "rCRS",
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 16569,
+          "SN": "chrM"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "f30f618fb76a0e49",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chrM",
+        "gene": "MT-ND5",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 13024,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 213,
+            "sha256": "f36b6b5a1172d89c0f2b801232b8c1993b280019e4f9035acf006562bc92f38c",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chrM&start=12963&end=13024"
+          },
+          "sequence": "CTCACCCCACTACTAGGCCTCCTCCTAGCAGCAGCAGGCAAATCAGCCCAATTAGGTCTCC",
+          "start": 12963
+        },
+        "pos": 12994,
+        "ref": "G",
+        "source_location": "chrM:12994",
+        "source_protein_label": "p.Ala220Thr",
+        "source_url": "https://osteosarc.com/variant/MT_ND5-chrM-12994/",
+        "vaccine_count": 1,
+        "variant_id": "MT_ND5-chrM-12994"
+      }
+    },
+    {
+      "bam": "23-MYO15B-chr17-75589953-7010dd389c50467d.bam",
+      "case_id": "23-MYO15B-chr17-75589953-7010dd389c50467d",
+      "catalogue_identity": {
+        "alt": "G",
+        "assembly": "GRCh38",
+        "chrom": "chr17",
+        "pos": 75589953,
+        "ref": "GC"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "5214a9678f90a7ccb0efdf90c94f9ec5476bb7ba3569a4d995b17b0123f2516b",
+        "source_receipt_sha256": "ecdd7f46a717fd76b016de877cb015142e64d237b81e25ba7fb697a28e32676a",
+        "source_region_sha256": "8abef7f0013d238bd68340fefdc19230c03f1dd0d8849a34c2c794ae030a6dcf"
+      },
+      "native_variant": {
+        "alt": "G",
+        "assembly": "GRCh38",
+        "chrom": "chr17",
+        "coordinates": "one-based",
+        "pos": 75589953,
+        "ref": "GC"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr17",
+        "end": 75589954,
+        "reference_length": null,
+        "start": 75589952
+      },
+      "reference": {
+        "dictionary_sha256": "74d8a55146f406d696a5f4278e8950403e13cc4ad0792b41d62a51fe8e56920a",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 83257441,
+          "SN": "chr17"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "7010dd389c50467d",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT_dedup/IPISRC044_T1_sclrs_ONT_dedup.bam",
+      "variant": {
+        "alt": "G",
+        "assembly": "GRCh38",
+        "chrom": "chr17",
+        "gene": "MYO15B",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 75589984,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 221,
+            "sha256": "623c14e4de067e1e02c15fbd51adc47a98936d45e785580be2e9b33fc55efc21",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr17&start=75589922&end=75589984"
+          },
+          "sequence": "TGAGGCGGAGTTGGAGACCCTCAATGACGAGCCCCCGGTGCGCTGGGCGCAGGGCTCAGGCC",
+          "start": 75589922
+        },
+        "pos": 75589953,
+        "ref": "GC",
+        "source_location": "chr17:75589953",
+        "source_protein_label": "fs",
+        "source_url": "https://osteosarc.com/variant/MYO15B-chr17-75589953/",
+        "vaccine_count": 2,
+        "variant_id": "MYO15B-chr17-75589953"
+      }
+    },
+    {
+      "bam": "24-MYO9A-chr15-71994488-f30f618fb76a0e49.bam",
+      "case_id": "24-MYO9A-chr15-71994488-f30f618fb76a0e49",
+      "catalogue_identity": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr15",
+        "pos": 71994488,
+        "ref": "T"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "1b5269bbef196950511d0a167859b2ca65389ae13967efa9bcb3e95846e133ee",
+        "source_receipt_sha256": "6dec36f21a037f16ff5b337b76c71b405d5c783d3011536f0e1b924866bdb066",
+        "source_region_sha256": "8c60781ff61622445c53a6d561660a9edbacfc22764048bcec28e7e175def2ca"
+      },
+      "native_variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr15",
+        "coordinates": "one-based",
+        "pos": 71994488,
+        "ref": "T"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr15",
+        "end": 71994488,
+        "reference_length": null,
+        "start": 71994487
+      },
+      "reference": {
+        "dictionary_sha256": "04d5a351c0c1fa55212c1c3e24068badf755a1289fbdf4ed17a3bf8890b3611f",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 101991189,
+          "SN": "chr15"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 2,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "f30f618fb76a0e49",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr15",
+        "gene": "MYO9A",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 71994518,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 220,
+            "sha256": "dfac41e3fd1a9ba86ecb71d4ab268d902cef1b76fb801df4896bb6d2a9677235",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr15&start=71994457&end=71994518"
+          },
+          "sequence": "TATATCATTACCTTGGTATTATGCTCTAAATCTTTACTATTCAGAAGTGCATGATTAATTC",
+          "start": 71994457
+        },
+        "pos": 71994488,
+        "ref": "T",
+        "source_location": "chr15:71994488",
+        "source_protein_label": "p.Asp523Val",
+        "source_url": "https://osteosarc.com/variant/MYO9A-chr15-71994488/",
+        "vaccine_count": 2,
+        "variant_id": "MYO9A-chr15-71994488"
+      }
+    },
+    {
+      "bam": "25-NAV2-chr11-20080142-8fda918141cedf55.bam",
+      "case_id": "25-NAV2-chr11-20080142-8fda918141cedf55",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr11",
+        "pos": 20080142,
+        "ref": "C"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "04fba71c808c0542778af73fced521308a99dfa09a092b5701374a224990a692",
+        "source_receipt_sha256": "b940e9530429f936e84934ce89bebbebf95d6f1ab99c8af59039ce0809954a32",
+        "source_region_sha256": "3fe0a4d9d47532b9469c114a7c915521659116d4468f3973ec1c6c1e2f350836"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr11",
+        "coordinates": "one-based",
+        "pos": 20080142,
+        "ref": "C"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr11",
+        "end": 20080142,
+        "reference_length": null,
+        "start": 20080141
+      },
+      "reference": {
+        "dictionary_sha256": "04d5a351c0c1fa55212c1c3e24068badf755a1289fbdf4ed17a3bf8890b3611f",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 135086622,
+          "SN": "chr11"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 2,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "8fda918141cedf55",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/SARC0277/SARC0277.Aligned.sortedByCoord.out.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr11",
+        "gene": "NAV2",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 20080172,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 220,
+            "sha256": "ac0b38c89d6ffa9d3f60394c5e29814d2ffb167a90d0e4dfa603e41a9ed25038",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr11&start=20080111&end=20080172"
+          },
+          "sequence": "CCTCAGACAGCGTCTCCAGCATCAACAGTGCCACCAGCCACTCCAGCGTGGGCAGCAACAT",
+          "start": 20080111
+        },
+        "pos": 20080142,
+        "ref": "C",
+        "source_location": "chr11:20080142",
+        "source_protein_label": "p.Ala1809Val",
+        "source_url": "https://osteosarc.com/variant/NAV2-chr11-20080142/",
+        "vaccine_count": 1,
+        "variant_id": "NAV2-chr11-20080142"
+      }
+    },
+    {
+      "bam": "26-NME1-chr17-51154443-53f498a544883d51.bam",
+      "case_id": "26-NME1-chr17-51154443-53f498a544883d51",
+      "catalogue_identity": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr17",
+        "pos": 51154443,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "17448010d62548e49839b7ca208d2732be991b1e9392a2f1ccda1bcdf2db8745",
+        "source_receipt_sha256": "3cb6e1de84429b8a0611dc723b44e247e828c94f8b6eee67f3c8af0813e90beb",
+        "source_region_sha256": "e3c2139d0afed2800e75da677a6b3238de03d000c7899780b4a0d2c061274ede"
+      },
+      "native_variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr17",
+        "coordinates": "one-based",
+        "pos": 51154443,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr17",
+        "end": 51154443,
+        "reference_length": null,
+        "start": 51154442
+      },
+      "reference": {
+        "dictionary_sha256": "74d8a55146f406d696a5f4278e8950403e13cc4ad0792b41d62a51fe8e56920a",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 83257441,
+          "SN": "chr17"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "53f498a544883d51",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT.tagged.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr17",
+        "gene": "NME1",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 51154473,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 220,
+            "sha256": "08580db1a73042c10a45eded09bfa61f7da551ebf1ff55c4465520d3d529e79e",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr17&start=51154412&end=51154473"
+          },
+          "sequence": "GAGGGGCCTCCTATCTCAAGCTGTGATACAGGGTAGGTCATGAGCGCAGTCTTCTGTAAAA",
+          "start": 51154412
+        },
+        "pos": 51154443,
+        "ref": "G",
+        "source_location": "chr17:51154443",
+        "source_protein_label": "p.Gly24Arg",
+        "source_url": "https://osteosarc.com/variant/NME1-chr17-51154443/",
+        "vaccine_count": 1,
+        "variant_id": "NME1-chr17-51154443"
+      }
+    },
+    {
+      "bam": "27-NR2F2-chr15-96332299-f30f618fb76a0e49.bam",
+      "case_id": "27-NR2F2-chr15-96332299-f30f618fb76a0e49",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr15",
+        "pos": 96332299,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "c36352d9a9de4f8e5a3d32dd1813b6e7fc4ed8f065a736245d4d5c0dfd32ab69",
+        "source_receipt_sha256": "6dec36f21a037f16ff5b337b76c71b405d5c783d3011536f0e1b924866bdb066",
+        "source_region_sha256": "8c60781ff61622445c53a6d561660a9edbacfc22764048bcec28e7e175def2ca"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr15",
+        "coordinates": "one-based",
+        "pos": 96332299,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr15",
+        "end": 96332299,
+        "reference_length": null,
+        "start": 96332298
+      },
+      "reference": {
+        "dictionary_sha256": "04d5a351c0c1fa55212c1c3e24068badf755a1289fbdf4ed17a3bf8890b3611f",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 101991189,
+          "SN": "chr15"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 2,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "f30f618fb76a0e49",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr15",
+        "gene": "NR2F2",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 96332329,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 220,
+            "sha256": "13d91e07828b8169eed764c0164f50a2d19dc12869c611353ca2792fb771465f",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr15&start=96332268&end=96332329"
+          },
+          "sequence": "CGGCGGCCGGTGGCCAGGGCGGCCCTGGCGGCCCGGGTAGCGACAAGCAGCAGCAGCAGCA",
+          "start": 96332268
+        },
+        "pos": 96332299,
+        "ref": "G",
+        "source_location": "chr15:96332299",
+        "source_protein_label": "p.Gly65Val",
+        "source_url": "https://osteosarc.com/variant/NR2F2-chr15-96332299/",
+        "vaccine_count": 3,
+        "variant_id": "NR2F2-chr15-96332299"
+      }
+    },
+    {
+      "bam": "28-NTF3-chr12-5494381-53f498a544883d51.bam",
+      "case_id": "28-NTF3-chr12-5494381-53f498a544883d51",
+      "catalogue_identity": {
+        "alt": "G",
+        "assembly": "GRCh38",
+        "chrom": "chr12",
+        "pos": 5494381,
+        "ref": "A"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "ae07e376b4d49964b8b6cd602a1b96e0399e781fbdf224eef8254ef1afeba429",
+        "source_receipt_sha256": "3cb6e1de84429b8a0611dc723b44e247e828c94f8b6eee67f3c8af0813e90beb",
+        "source_region_sha256": "e3c2139d0afed2800e75da677a6b3238de03d000c7899780b4a0d2c061274ede"
+      },
+      "native_variant": {
+        "alt": "G",
+        "assembly": "GRCh38",
+        "chrom": "chr12",
+        "coordinates": "one-based",
+        "pos": 5494381,
+        "ref": "A"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr12",
+        "end": 5494381,
+        "reference_length": null,
+        "start": 5494380
+      },
+      "reference": {
+        "dictionary_sha256": "74d8a55146f406d696a5f4278e8950403e13cc4ad0792b41d62a51fe8e56920a",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 133275309,
+          "SN": "chr12"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "53f498a544883d51",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT.tagged.bam",
+      "variant": {
+        "alt": "G",
+        "assembly": "GRCh38",
+        "chrom": "chr12",
+        "gene": "NTF3",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 5494411,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 218,
+            "sha256": "4cca357f71eb8a871ffc63fc9dfd3507596e645803fbecade0ee12ca40bdd316",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr12&start=5494350&end=5494411"
+          },
+          "sequence": "ACAAGCTCTCCAAGCAGATGGTGGACGTTAAGGAAAATTACCAGAGCACCCTGCCCAAAGC",
+          "start": 5494350
+        },
+        "pos": 5494381,
+        "ref": "A",
+        "source_location": "chr12:5494381",
+        "source_protein_label": "p.Lys69Ser",
+        "source_url": "https://osteosarc.com/variant/NTF3-chr12-5494381/",
+        "vaccine_count": 1,
+        "variant_id": "NTF3-chr12-5494381"
+      }
+    },
+    {
+      "bam": "29-PIP5K1A-chr1-151242178-47b695c1a686c058.bam",
+      "case_id": "29-PIP5K1A-chr1-151242178-47b695c1a686c058",
+      "catalogue_identity": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr1",
+        "pos": 151242178,
+        "ref": "AG"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "ad560e1173a6e422b5ba5fe7dcfc5d541402c61b1991f4f160c5b00c21c03204",
+        "source_receipt_sha256": "f3f9429f9101a919f27d6981718492bf96ee0b5b8294b7e773ba896f931694b6",
+        "source_region_sha256": "66b18af31d3961ae74a71936e7fcfc66d508aecfd7c5f179c244ec1d10b8da15"
+      },
+      "native_variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr1",
+        "coordinates": "one-based",
+        "pos": 151242178,
+        "ref": "AG"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr1",
+        "end": 151242179,
+        "reference_length": null,
+        "start": 151242177
+      },
+      "reference": {
+        "dictionary_sha256": "04d5a351c0c1fa55212c1c3e24068badf755a1289fbdf4ed17a3bf8890b3611f",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 248956422,
+          "SN": "chr1"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "47b695c1a686c058",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/BG009368/BG009368.Aligned.sortedByCoord.out.md.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr1",
+        "gene": "PIP5K1A",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 151242209,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 222,
+            "sha256": "afb69812dce63ec6829968ea811341370518bab627cc7af44c3952af6f865818",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr1&start=151242147&end=151242209"
+          },
+          "sequence": "TCGGTCTGGCTCATCTTTCTCTCGGCGAGCAGGCTCCAGTGGCAACTCCTGCATTACTTACC",
+          "start": 151242147
+        },
+        "pos": 151242178,
+        "ref": "AG",
+        "source_location": "chr1:151242178",
+        "source_protein_label": "p.Gly474fs",
+        "source_url": "https://osteosarc.com/variant/PIP5K1A-chr1-151242178/",
+        "vaccine_count": 3,
+        "variant_id": "PIP5K1A-chr1-151242178"
+      }
+    },
+    {
+      "bam": "30-PRICKLE2-chr3-64198863-53f498a544883d51.bam",
+      "case_id": "30-PRICKLE2-chr3-64198863-53f498a544883d51",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr3",
+        "pos": 64198863,
+        "ref": "C"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "6f098dd0098d906535d8fd5ff8583fd9afc69b8dfe7fd37919a6e462cf149700",
+        "source_receipt_sha256": "3cb6e1de84429b8a0611dc723b44e247e828c94f8b6eee67f3c8af0813e90beb",
+        "source_region_sha256": "e3c2139d0afed2800e75da677a6b3238de03d000c7899780b4a0d2c061274ede"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr3",
+        "coordinates": "one-based",
+        "pos": 64198863,
+        "ref": "C"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr3",
+        "end": 64198863,
+        "reference_length": null,
+        "start": 64198862
+      },
+      "reference": {
+        "dictionary_sha256": "74d8a55146f406d696a5f4278e8950403e13cc4ad0792b41d62a51fe8e56920a",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 198295559,
+          "SN": "chr3"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "53f498a544883d51",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT.tagged.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr3",
+        "gene": "PRICKLE2",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 64198893,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 219,
+            "sha256": "0be2d26cb46912157e399330317732da9e4bd8f0da356da249886bd7375bf38c",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr3&start=64198832&end=64198893"
+          },
+          "sequence": "CAGCCTGAGTCATCATCTGAGGTCGAGTTCCTCTGAAAGTCAAACATGAGTTTGCTGATGG",
+          "start": 64198832
+        },
+        "pos": 64198863,
+        "ref": "C",
+        "source_location": "chr3:64198863",
+        "source_protein_label": "p.Arg22Lys",
+        "source_url": "https://osteosarc.com/variant/PRICKLE2-chr3-64198863/",
+        "vaccine_count": 1,
+        "variant_id": "PRICKLE2-chr3-64198863"
+      }
+    },
+    {
+      "bam": "31-PTH1R-chr3-46898732-1b66c15da594a3ef.bam",
+      "case_id": "31-PTH1R-chr3-46898732-1b66c15da594a3ef",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr3",
+        "pos": 46898732,
+        "ref": "A"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "f5ab571d34c43d1f36c9dbcc9a1a39e1acfe0edc8d1dbbdfc0cf7b55596b6052",
+        "source_receipt_sha256": "ed45205f69a9df114a0eb1a86f775de3c8b3242340a581833d4fc1ef37a92819",
+        "source_region_sha256": "79da2651c583352e3e1f50987a01389a19798a90f005cbc2fde5ea802c28f378"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr3",
+        "coordinates": "one-based",
+        "pos": 46898732,
+        "ref": "A"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr3",
+        "end": 46898732,
+        "reference_length": null,
+        "start": 46898731
+      },
+      "reference": {
+        "dictionary_sha256": "e0b0ac4aadccc2a33d5e9a982085745a586cc574875b2551bb2d3862803db324",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 198295559,
+          "SN": "chr3"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 2,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1b66c15da594a3ef",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2022.12.16/RNA/2022.12.16.rna.bostongene/processed/2024.06.11.bostongene.align.tcga.protocol.dr32Aligned.sorted.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr3",
+        "gene": "PTH1R",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 46898762,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 219,
+            "sha256": "76e1c7e5c03e9d8aa5fdcdc58d6bfd0acb49aee61fe1db90fa9b2d922f284702",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr3&start=46898701&end=46898762"
+          },
+          "sequence": "TTCCTGTCCTTCATGCTGCGCGCCGTGAGCATCTTCGTCAAGGACGCTGTGCTCTACTCTG",
+          "start": 46898701
+        },
+        "pos": 46898732,
+        "ref": "A",
+        "source_location": "chr3:46898732",
+        "source_protein_label": "p.Ile237Phe",
+        "source_url": "https://osteosarc.com/variant/PTH1R-chr3-46898732/",
+        "vaccine_count": 1,
+        "variant_id": "PTH1R-chr3-46898732"
+      }
+    },
+    {
+      "bam": "32-RNF213-chr17-80327830-1b66c15da594a3ef.bam",
+      "case_id": "32-RNF213-chr17-80327830-1b66c15da594a3ef",
+      "catalogue_identity": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr17",
+        "pos": 80327830,
+        "ref": "ATAC"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "3f25b30bd5e2fe8981fd6a662743f6dfc19acfea34497b7d67ef595c852d313c",
+        "source_receipt_sha256": "ed45205f69a9df114a0eb1a86f775de3c8b3242340a581833d4fc1ef37a92819",
+        "source_region_sha256": "79da2651c583352e3e1f50987a01389a19798a90f005cbc2fde5ea802c28f378"
+      },
+      "native_variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr17",
+        "coordinates": "one-based",
+        "pos": 80327830,
+        "ref": "ATAC"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr17",
+        "end": 80327833,
+        "reference_length": null,
+        "start": 80327829
+      },
+      "reference": {
+        "dictionary_sha256": "e0b0ac4aadccc2a33d5e9a982085745a586cc574875b2551bb2d3862803db324",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 83257441,
+          "SN": "chr17"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1b66c15da594a3ef",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2022.12.16/RNA/2022.12.16.rna.bostongene/processed/2024.06.11.bostongene.align.tcga.protocol.dr32Aligned.sorted.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr17",
+        "gene": "RNF213",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 80327863,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 223,
+            "sha256": "c411d1b466e5eae165f2749c1c0af753a95e6a13e387a818d4364d852c4ca5b4",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr17&start=80327799&end=80327863"
+          },
+          "sequence": "TTCTTCATCTATTCAGGAACCGACGAGAAAATACTAGCAAATGTCACAGAGGATGCCAAGAGGC",
+          "start": 80327799
+        },
+        "pos": 80327830,
+        "ref": "ATAC",
+        "source_location": "chr17:80327830",
+        "source_protein_label": "p.Ile1070Ile (del Leu)",
+        "source_url": "https://osteosarc.com/variant/RNF213-chr17-80327830/",
+        "vaccine_count": 1,
+        "variant_id": "RNF213-chr17-80327830"
+      }
+    },
+    {
+      "bam": "33-ROBO2-chr3-77607853-1b66c15da594a3ef.bam",
+      "case_id": "33-ROBO2-chr3-77607853-1b66c15da594a3ef",
+      "catalogue_identity": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr3",
+        "pos": 77607853,
+        "ref": "C"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "9aac431596890dec8745bf0d2034b72257814afb0395468e77c5b3d24550820c",
+        "source_receipt_sha256": "ed45205f69a9df114a0eb1a86f775de3c8b3242340a581833d4fc1ef37a92819",
+        "source_region_sha256": "79da2651c583352e3e1f50987a01389a19798a90f005cbc2fde5ea802c28f378"
+      },
+      "native_variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr3",
+        "coordinates": "one-based",
+        "pos": 77607853,
+        "ref": "C"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr3",
+        "end": 77607853,
+        "reference_length": null,
+        "start": 77607852
+      },
+      "reference": {
+        "dictionary_sha256": "e0b0ac4aadccc2a33d5e9a982085745a586cc574875b2551bb2d3862803db324",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 198295559,
+          "SN": "chr3"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1b66c15da594a3ef",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2022.12.16/RNA/2022.12.16.rna.bostongene/processed/2024.06.11.bostongene.align.tcga.protocol.dr32Aligned.sorted.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr3",
+        "gene": "ROBO2",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 77607883,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 219,
+            "sha256": "1e42a16d04c03a8f53946bd240925b5c6b7737b53160ed25b3582442fd4d50e2",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr3&start=77607822&end=77607883"
+          },
+          "sequence": "AAATAAAAACTCTTCTAAACCACAGAAAAACAATGGATCCACTTGGGCCAATGTCCCTCTA",
+          "start": 77607822
+        },
+        "pos": 77607853,
+        "ref": "C",
+        "source_location": "chr3:77607853",
+        "source_protein_label": "p.Asn1080Lys",
+        "source_url": "https://osteosarc.com/variant/ROBO2-chr3-77607853/",
+        "vaccine_count": 1,
+        "variant_id": "ROBO2-chr3-77607853"
+      }
+    },
+    {
+      "bam": "34-SLC25A12-chr2-171813470-fbea0bf403520431.bam",
+      "case_id": "34-SLC25A12-chr2-171813470-fbea0bf403520431",
+      "catalogue_identity": {
+        "alt": "G",
+        "assembly": "GRCh38",
+        "chrom": "chr2",
+        "pos": 171813470,
+        "ref": "A"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "7b5b7f00194dcd05d417afc08787f3d2b37b6ecb17750dd37bafa1dca3ee2b95",
+        "source_receipt_sha256": "fbe025821fd451564e74db573e5a25b1e096d8d4d3961624e7d9e479d835c593",
+        "source_region_sha256": "5bb135a407066e26e862aaeaffdda22cfbfe3667e09ab0bae376e014fc8592c8"
+      },
+      "native_variant": {
+        "alt": "G",
+        "assembly": "GRCh38",
+        "chrom": "chr2",
+        "coordinates": "one-based",
+        "pos": 171813470,
+        "ref": "A"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr2",
+        "end": 171813470,
+        "reference_length": null,
+        "start": 171813469
+      },
+      "reference": {
+        "dictionary_sha256": "04d5a351c0c1fa55212c1c3e24068badf755a1289fbdf4ed17a3bf8890b3611f",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 242193529,
+          "SN": "chr2"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "fbea0bf403520431",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.bam",
+      "variant": {
+        "alt": "G",
+        "assembly": "GRCh38",
+        "chrom": "chr2",
+        "gene": "SLC25A12",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 171813500,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 221,
+            "sha256": "b449821cea8625dc7d80d7aff0d68649c4d5bb87ba0618e010b8367ae5619c0b",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr2&start=171813439&end=171813500"
+          },
+          "sequence": "TGGTTTTGCATTCGGGTCTTCACCAGATCTATAGGATACACTGCAGTGGCTCCCACAGCTA",
+          "start": 171813439
+        },
+        "pos": 171813470,
+        "ref": "A",
+        "source_location": "chr2:171813470",
+        "source_protein_label": "p.Ile347Thr",
+        "source_url": "https://osteosarc.com/variant/SLC25A12-chr2-171813470/",
+        "vaccine_count": 4,
+        "variant_id": "SLC25A12-chr2-171813470"
+      }
+    },
+    {
+      "bam": "35-SMC5-chr9-70298024-1120a096937e29e1.bam",
+      "case_id": "35-SMC5-chr9-70298024-1120a096937e29e1",
+      "catalogue_identity": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr9",
+        "pos": 70298024,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "4e54b57114b87c869295328e3525c65759e5bbf888c4254e5e1ba63dc6a7a3d1",
+        "source_receipt_sha256": "4d60946567542a5cf7dadf53287dd588f8c75862bbac3fd2e44023bfcb0e2d74",
+        "source_region_sha256": "eb0eebd5ac4736114873f20f3aea7ecda1b670195dd5fd1bd8c1e365e620064c"
+      },
+      "native_variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr9",
+        "coordinates": "one-based",
+        "pos": 70298024,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr9",
+        "end": 70298024,
+        "reference_length": null,
+        "start": 70298023
+      },
+      "reference": {
+        "dictionary_sha256": "74d8a55146f406d696a5f4278e8950403e13cc4ad0792b41d62a51fe8e56920a",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 138394717,
+          "SN": "chr9"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1120a096937e29e1",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT.tagged.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chr9",
+        "gene": "SMC5",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 70298054,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 219,
+            "sha256": "eb06be23ed9702974b2343b4512c44ef6863f01282a2c7c9bf37923741b3a554",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr9&start=70297993&end=70298054"
+          },
+          "sequence": "TAAAGCAAAATGAAGAGCTTGACCGACAGAGGAGAATAGGTAATACCCGCAAAATGATAGA",
+          "start": 70297993
+        },
+        "pos": 70298024,
+        "ref": "G",
+        "source_location": "chr9:70298024",
+        "source_protein_label": "p.Arg371Lys",
+        "source_url": "https://osteosarc.com/variant/SMC5-chr9-70298024/",
+        "vaccine_count": 1,
+        "variant_id": "SMC5-chr9-70298024"
+      }
+    },
+    {
+      "bam": "36-TECPR1-chr7-98241127-8fda918141cedf55.bam",
+      "case_id": "36-TECPR1-chr7-98241127-8fda918141cedf55",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr7",
+        "pos": 98241127,
+        "ref": "TG"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "87d3cbc477a55930e3c237d00ae653c8e0af6bd0c5f000d51661727d856b2501",
+        "source_receipt_sha256": "b940e9530429f936e84934ce89bebbebf95d6f1ab99c8af59039ce0809954a32",
+        "source_region_sha256": "3fe0a4d9d47532b9469c114a7c915521659116d4468f3973ec1c6c1e2f350836"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr7",
+        "coordinates": "one-based",
+        "pos": 98241127,
+        "ref": "TG"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr7",
+        "end": 98241128,
+        "reference_length": null,
+        "start": 98241126
+      },
+      "reference": {
+        "dictionary_sha256": "04d5a351c0c1fa55212c1c3e24068badf755a1289fbdf4ed17a3bf8890b3611f",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 159345973,
+          "SN": "chr7"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "8fda918141cedf55",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/reprocessed/SARC0277/SARC0277.Aligned.sortedByCoord.out.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr7",
+        "gene": "TECPR1",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 98241158,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 220,
+            "sha256": "e054af6eb5e8b8ebc96a8a08513e89f473b2e0583b5fc470d6dae841d31942c7",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr7&start=98241096&end=98241158"
+          },
+          "sequence": "CCCGGACCAGGGCCTGTCCCTCCCAGAGTGTGGCCCACAGGAGGTCGTGGGGCCCACAGCTG",
+          "start": 98241096
+        },
+        "pos": 98241127,
+        "ref": "TG",
+        "source_location": "chr7:98241127",
+        "source_protein_label": "p.Thr259fs",
+        "source_url": "https://osteosarc.com/variant/TECPR1-chr7-98241127/",
+        "vaccine_count": 4,
+        "variant_id": "TECPR1-chr7-98241127"
+      }
+    },
+    {
+      "bam": "37-TMRO-chr9-97910412-1b66c15da594a3ef.bam",
+      "case_id": "37-TMRO-chr9-97910412-1b66c15da594a3ef",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr9",
+        "pos": 97910412,
+        "ref": "C"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "39aabcf7b3d70eb84c4ee9183e621b0419b5ddbf51e90b6221ec8f3e38d82f16",
+        "source_receipt_sha256": "ed45205f69a9df114a0eb1a86f775de3c8b3242340a581833d4fc1ef37a92819",
+        "source_region_sha256": "79da2651c583352e3e1f50987a01389a19798a90f005cbc2fde5ea802c28f378"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr9",
+        "coordinates": "one-based",
+        "pos": 97910412,
+        "ref": "C"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr9",
+        "end": 97910412,
+        "reference_length": null,
+        "start": 97910411
+      },
+      "reference": {
+        "dictionary_sha256": "e0b0ac4aadccc2a33d5e9a982085745a586cc574875b2551bb2d3862803db324",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 138394717,
+          "SN": "chr9"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1b66c15da594a3ef",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2022.12.16/RNA/2022.12.16.rna.bostongene/processed/2024.06.11.bostongene.align.tcga.protocol.dr32Aligned.sorted.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr9",
+        "gene": "TMRO",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 97910442,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 219,
+            "sha256": "e15d2f95ee709df85e2b487acc03e20723337ed2d97da505ea0c48c2053dbada",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr9&start=97910381&end=97910442"
+          },
+          "sequence": "GTGCTATGGTGGGGTTGTGGCTCATCACACCCTGAGAGCTGTCGCTGGTCACAGCTGTCAG",
+          "start": 97910381
+        },
+        "pos": 97910412,
+        "ref": "C",
+        "source_location": "chr9:97910412",
+        "source_protein_label": "p.Gly205Glu",
+        "source_url": "https://osteosarc.com/variant/TMRO-chr9-97910412/",
+        "vaccine_count": 1,
+        "variant_id": "TMRO-chr9-97910412"
+      }
+    },
+    {
+      "bam": "38-VPS13B-chr8-99861923-1b66c15da594a3ef.bam",
+      "case_id": "38-VPS13B-chr8-99861923-1b66c15da594a3ef",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr8",
+        "pos": 99861923,
+        "ref": "C"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "5bc5b239dc6ec868f9d6c7c471a90572ad6890fc2c093bb4b8d7277dc3b4796a",
+        "source_receipt_sha256": "ed45205f69a9df114a0eb1a86f775de3c8b3242340a581833d4fc1ef37a92819",
+        "source_region_sha256": "79da2651c583352e3e1f50987a01389a19798a90f005cbc2fde5ea802c28f378"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr8",
+        "coordinates": "one-based",
+        "pos": 99861923,
+        "ref": "C"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr8",
+        "end": 99861923,
+        "reference_length": null,
+        "start": 99861922
+      },
+      "reference": {
+        "dictionary_sha256": "e0b0ac4aadccc2a33d5e9a982085745a586cc574875b2551bb2d3862803db324",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 145138636,
+          "SN": "chr8"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 2,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1b66c15da594a3ef",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2022.12.16/RNA/2022.12.16.rna.bostongene/processed/2024.06.11.bostongene.align.tcga.protocol.dr32Aligned.sorted.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr8",
+        "gene": "VPS13B",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 99861953,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 219,
+            "sha256": "7cfed7df2f71be43a150907ca9384ae50ab22eae9587268bfd256dde2e717aaa",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr8&start=99861892&end=99861953"
+          },
+          "sequence": "GCCTGGGCGAGGGGCTTCGACAGGGCCTGTCCCGGCTGGGCATCAGCCTGCTTGGTAAGGG",
+          "start": 99861892
+        },
+        "pos": 99861923,
+        "ref": "C",
+        "source_location": "chr8:99861923",
+        "source_protein_label": "p.Ser3756Phe",
+        "source_url": "https://osteosarc.com/variant/VPS13B-chr8-99861923/",
+        "vaccine_count": 5,
+        "variant_id": "VPS13B-chr8-99861923"
+      }
+    },
+    {
+      "bam": "39-VPS72-chr1-151185547-1120a096937e29e1.bam",
+      "case_id": "39-VPS72-chr1-151185547-1120a096937e29e1",
+      "catalogue_identity": {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "chrom": "chr1",
+        "pos": 151185547,
+        "ref": "T"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "34ba1d9f51452f6f01f938530b1e17bb50a1546347d3e27ef2e5b119a815e54e",
+        "source_receipt_sha256": "4d60946567542a5cf7dadf53287dd588f8c75862bbac3fd2e44023bfcb0e2d74",
+        "source_region_sha256": "eb0eebd5ac4736114873f20f3aea7ecda1b670195dd5fd1bd8c1e365e620064c"
+      },
+      "native_variant": {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "chrom": "chr1",
+        "coordinates": "one-based",
+        "pos": 151185547,
+        "ref": "T"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr1",
+        "end": 151185547,
+        "reference_length": null,
+        "start": 151185546
+      },
+      "reference": {
+        "dictionary_sha256": "74d8a55146f406d696a5f4278e8950403e13cc4ad0792b41d62a51fe8e56920a",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 248956422,
+          "SN": "chr1"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1120a096937e29e1",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT.tagged.bam",
+      "variant": {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "chrom": "chr1",
+        "gene": "VPS72",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 151185577,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 221,
+            "sha256": "71a1c30ac450054288ce616eafeb8fb7fa4ab618aa7400c1eb2f24c5ea60dc8f",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr1&start=151185516&end=151185577"
+          },
+          "sequence": "TCATCTTGTAGTTCTAATGGCAGTAGTGCCTTCTCTTCTCGCGCCTTCTGAGAGCTACCAG",
+          "start": 151185516
+        },
+        "pos": 151185547,
+        "ref": "T",
+        "source_location": "chr1:151185547",
+        "source_protein_label": "p.Lys115Arg",
+        "source_url": "https://osteosarc.com/variant/VPS72-chr1-151185547/",
+        "vaccine_count": 1,
+        "variant_id": "VPS72-chr1-151185547"
+      }
+    },
+    {
+      "bam": "40-WWC1-chr5-168399513-1b66c15da594a3ef.bam",
+      "case_id": "40-WWC1-chr5-168399513-1b66c15da594a3ef",
+      "catalogue_identity": {
+        "alt": "G",
+        "assembly": "GRCh38",
+        "chrom": "chr5",
+        "pos": 168399513,
+        "ref": "T"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "189a161ee968c25ddbbf013c7639b6b1d17596df09c52d224bade0f60c4bc669",
+        "source_receipt_sha256": "ed45205f69a9df114a0eb1a86f775de3c8b3242340a581833d4fc1ef37a92819",
+        "source_region_sha256": "79da2651c583352e3e1f50987a01389a19798a90f005cbc2fde5ea802c28f378"
+      },
+      "native_variant": {
+        "alt": "G",
+        "assembly": "GRCh38",
+        "chrom": "chr5",
+        "coordinates": "one-based",
+        "pos": 168399513,
+        "ref": "T"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr5",
+        "end": 168399513,
+        "reference_length": null,
+        "start": 168399512
+      },
+      "reference": {
+        "dictionary_sha256": "e0b0ac4aadccc2a33d5e9a982085745a586cc574875b2551bb2d3862803db324",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 181538259,
+          "SN": "chr5"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1b66c15da594a3ef",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2022.12.16/RNA/2022.12.16.rna.bostongene/processed/2024.06.11.bostongene.align.tcga.protocol.dr32Aligned.sorted.bam",
+      "variant": {
+        "alt": "G",
+        "assembly": "GRCh38",
+        "chrom": "chr5",
+        "gene": "WWC1",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 168399543,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 221,
+            "sha256": "715d3806a47ada81c7d4ec4a96c1c1cfa79c72e7aecef1d4ad3d14f19965e1ef",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr5&start=168399482&end=168399543"
+          },
+          "sequence": "TCCAGGTCAACAAGCTGAAGAGAGAGATGGTTCACCTCCAGCACGAGCTGCAGTTCAAAGA",
+          "start": 168399482
+        },
+        "pos": 168399513,
+        "ref": "T",
+        "source_location": "chr5:168399513",
+        "source_protein_label": "p.Val179Gly",
+        "source_url": "https://osteosarc.com/variant/WWC1-chr5-168399513/",
+        "vaccine_count": 1,
+        "variant_id": "WWC1-chr5-168399513"
+      }
+    },
+    {
+      "bam": "41-ZNF436-chr1-23362762-1b66c15da594a3ef.bam",
+      "case_id": "41-ZNF436-chr1-23362762-1b66c15da594a3ef",
+      "catalogue_identity": {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "chrom": "chr1",
+        "pos": 23362762,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "72cfdb710227e4929b8e2d3edb267216c90c8a50049c851a21e00ab3bd45ce4a",
+        "source_receipt_sha256": "ed45205f69a9df114a0eb1a86f775de3c8b3242340a581833d4fc1ef37a92819",
+        "source_region_sha256": "79da2651c583352e3e1f50987a01389a19798a90f005cbc2fde5ea802c28f378"
+      },
+      "native_variant": {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "chrom": "chr1",
+        "coordinates": "one-based",
+        "pos": 23362762,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr1",
+        "end": 23362762,
+        "reference_length": null,
+        "start": 23362761
+      },
+      "reference": {
+        "dictionary_sha256": "e0b0ac4aadccc2a33d5e9a982085745a586cc574875b2551bb2d3862803db324",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 248956422,
+          "SN": "chr1"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1b66c15da594a3ef",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2022.12.16/RNA/2022.12.16.rna.bostongene/processed/2024.06.11.bostongene.align.tcga.protocol.dr32Aligned.sorted.bam",
+      "variant": {
+        "alt": "C",
+        "assembly": "GRCh38",
+        "chrom": "chr1",
+        "gene": "ZNF436",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 23362792,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 219,
+            "sha256": "07fdb7e85cdd07f899651fec269ca8a53c96488b5dc9fce3308775c9b24018ba",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr1&start=23362731&end=23362792"
+          },
+          "sequence": "GTGTGGATTGTCTGATGCTGAATCAGGTGAGAACTTCTTCCAAAACTTTTCCCACACTCGT",
+          "start": 23362731
+        },
+        "pos": 23362762,
+        "ref": "G",
+        "source_location": "chr1:23362762",
+        "source_protein_label": "p.Ser207Cys",
+        "source_url": "https://osteosarc.com/variant/ZNF436-chr1-23362762/",
+        "vaccine_count": 2,
+        "variant_id": "ZNF436-chr1-23362762"
+      }
+    },
+    {
+      "bam": "42-ZNF674-chrX-46501045-1b66c15da594a3ef.bam",
+      "case_id": "42-ZNF674-chrX-46501045-1b66c15da594a3ef",
+      "catalogue_identity": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chrX",
+        "pos": 46501045,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "fbc296acea0525c6bf47a7552b67db61cd86ee383ebf61e38e41c4e6daa37766",
+        "source_receipt_sha256": "ed45205f69a9df114a0eb1a86f775de3c8b3242340a581833d4fc1ef37a92819",
+        "source_region_sha256": "79da2651c583352e3e1f50987a01389a19798a90f005cbc2fde5ea802c28f378"
+      },
+      "native_variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chrX",
+        "coordinates": "one-based",
+        "pos": 46501045,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chrX",
+        "end": 46501045,
+        "reference_length": null,
+        "start": 46501044
+      },
+      "reference": {
+        "dictionary_sha256": "e0b0ac4aadccc2a33d5e9a982085745a586cc574875b2551bb2d3862803db324",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 156040895,
+          "SN": "chrX"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1b66c15da594a3ef",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/genomics/genomics-bulk/2022.12.16/RNA/2022.12.16.rna.bostongene/processed/2024.06.11.bostongene.align.tcga.protocol.dr32Aligned.sorted.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chrX",
+        "gene": "ZNF674",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 46501075,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 219,
+            "sha256": "b037066aaf863812f54724ae2af11a0772f340fad6d74b005eee5337393bb49d",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chrX&start=46501014&end=46501075"
+          },
+          "sequence": "CAGGTTGAGCTTTATGAAGATTATAATGGAGGCATACTTTCCAATATGCCTTACATCCATC",
+          "start": 46501014
+        },
+        "pos": 46501045,
+        "ref": "G",
+        "source_location": "chrX:46501045",
+        "source_protein_label": "p.Leu182Phe",
+        "source_url": "https://osteosarc.com/variant/ZNF674-chrX-46501045/",
+        "vaccine_count": 1,
+        "variant_id": "ZNF674-chrX-46501045"
+      }
+    },
+    {
+      "bam": "43-ZNF764-chr16-30557995-1120a096937e29e1.bam",
+      "case_id": "43-ZNF764-chr16-30557995-1120a096937e29e1",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr16",
+        "pos": 30557995,
+        "ref": "C"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": "3ac19b7aa48e1d12feb41404f7d5c2a57a84ee13310406c883075d3f2e3284d1",
+        "source_receipt_sha256": "4d60946567542a5cf7dadf53287dd588f8c75862bbac3fd2e44023bfcb0e2d74",
+        "source_region_sha256": "eb0eebd5ac4736114873f20f3aea7ecda1b670195dd5fd1bd8c1e365e620064c"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr16",
+        "coordinates": "one-based",
+        "pos": 30557995,
+        "ref": "C"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chr16",
+        "end": 30557995,
+        "reference_length": null,
+        "start": 30557994
+      },
+      "reference": {
+        "dictionary_sha256": "74d8a55146f406d696a5f4278e8950403e13cc4ad0792b41d62a51fe8e56920a",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 90338345,
+          "SN": "chr16"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "1120a096937e29e1",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT/IPISRC044_T2_sclrs_ONT.tagged.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr16",
+        "gene": "ZNF764",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 30558025,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 220,
+            "sha256": "d2e8ba2a62cd6ee14f55e933660ec36acc3941536d8bef802e987a86e7cdf701",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chr16&start=30557964&end=30558025"
+          },
+          "sequence": "GGCGAGCAGGTGGGGCTCTCACCGAGAGCGCTCAGGTGGCCGTAGGTCTCCCGCATCACGT",
+          "start": 30557964
+        },
+        "pos": 30557995,
+        "ref": "C",
+        "source_location": "chr16:30557995",
+        "source_protein_label": "p.Ser63Asn",
+        "source_url": "https://osteosarc.com/variant/ZNF764-chr16-30557995/",
+        "vaccine_count": 1,
+        "variant_id": "ZNF764-chr16-30557995"
+      }
+    },
+    {
+      "bam": "44-MT_ND5-chrM-12994-238f917202dd9997.bam",
+      "case_id": "44-MT_ND5-chrM-12994-238f917202dd9997",
+      "catalogue_identity": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chrM",
+        "pos": 12994,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": null,
+        "source_receipt_sha256": "681adc14fb73f60564ed8b59616f72f5f0add573c23b3a22f0867df9ad3be861",
+        "source_region_sha256": "bf1166ecd0a642c301191ff19675b4412fb3f12d11da171353f6d2c624829d49"
+      },
+      "native_variant": {
+        "alt": "A",
+        "assembly": "GRCh37",
+        "chrom": "MT",
+        "coordinates": "one-based",
+        "pos": 12994,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh37",
+        "contig": "MT",
+        "end": 12994,
+        "reference_length": 16569,
+        "start": 12993
+      },
+      "reference": {
+        "dictionary_sha256": "9ba2f9111e9295daeeb307200b47f69ae34e41e7178c644063846086acb654a1",
+        "mitochondrial_reference": "rCRS",
+        "nuclear_assembly": "GRCh37",
+        "sequence": {
+          "LN": 16569,
+          "SN": "MT"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "238f917202dd9997",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/rna-seq/tempus/TL-24-ALMY2X4KMV/RNA/TL-24-ALMY2X4KMV_T_sorted.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh37",
+        "chrom": "chrM",
+        "coordinate_mapping": {
+          "method": "rCRS MT, not UCSC hg19 chrM",
+          "reference_length": 16569
+        },
+        "gene": "MT-ND5",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 13024,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 213,
+            "sha256": "f36b6b5a1172d89c0f2b801232b8c1993b280019e4f9035acf006562bc92f38c",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chrM&start=12963&end=13024"
+          },
+          "sequence": "CTCACCCCACTACTAGGCCTCCTCCTAGCAGCAGCAGGCAAATCAGCCCAATTAGGTCTCC",
+          "start": 12963
+        },
+        "original_identity": {
+          "alt": "A",
+          "assembly": "GRCh38",
+          "chrom": "chrM",
+          "pos": 12994,
+          "ref": "G"
+        },
+        "pos": 12994,
+        "ref": "G",
+        "source_location": "chrM:12994",
+        "source_protein_label": "p.Ala220Thr",
+        "source_url": "https://osteosarc.com/variant/MT_ND5-chrM-12994/",
+        "vaccine_count": 1,
+        "variant_id": "MT_ND5-chrM-12994"
+      }
+    },
+    {
+      "bam": "45-MT_ND5-chrM-12994-fbeb5d8a415e4d18.bam",
+      "case_id": "45-MT_ND5-chrM-12994-fbeb5d8a415e4d18",
+      "catalogue_identity": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chrM",
+        "pos": 12994,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": null,
+        "source_receipt_sha256": "771bc1d14258b99f336f6ce18a58528fe5831130a25b0c04a4903da8fafe0ac6",
+        "source_region_sha256": "7066148b3a84af932d23ca18097a279fd7ddb40c2aaaeb4bb6a9341c12d227ef"
+      },
+      "native_variant": {
+        "alt": "A",
+        "assembly": "GRCh37",
+        "chrom": "chrM",
+        "coordinates": "one-based",
+        "pos": 12995,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh37",
+        "contig": "chrM",
+        "end": 12995,
+        "reference_length": 16571,
+        "start": 12994
+      },
+      "reference": {
+        "dictionary_sha256": "a5f39d7840f60d9213611cf7a79de5d6c0d825b6c54292f0dcc3e1695000811a",
+        "mitochondrial_reference": "UCSC-hg19-chrM",
+        "nuclear_assembly": "GRCh37",
+        "sequence": {
+          "LN": 16571,
+          "SN": "chrM"
+        },
+        "validation_genome": "hg19"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "fbeb5d8a415e4d18",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/cegat/P116686_2_S000048/P116686_3.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh37",
+        "chrom": "chrM",
+        "coordinate_mapping": {
+          "chain_id": "2406",
+          "chrom": "chrM",
+          "end": 12995,
+          "start": 12994,
+          "strand": "+"
+        },
+        "gene": "MT-ND5",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 13025,
+          "genome": "hg19",
+          "receipt": {
+            "bytes": 213,
+            "sha256": "644822d1d8988e2adde299255f7a1edfbb90fc515305d50dde42a37459355b26",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg19&chrom=chrM&start=12964&end=13025"
+          },
+          "sequence": "CTCACCCCACTACTAGGCCTCCTCCTAGCAGCAGCAGGCAAATCAGCCCAATTAGGTCTCC",
+          "start": 12964
+        },
+        "original_identity": {
+          "alt": "A",
+          "assembly": "GRCh38",
+          "chrom": "chrM",
+          "pos": 12994,
+          "ref": "G"
+        },
+        "pos": 12995,
+        "ref": "G",
+        "source_location": "chrM:12994",
+        "source_protein_label": "p.Ala220Thr",
+        "source_url": "https://osteosarc.com/variant/MT_ND5-chrM-12994/",
+        "vaccine_count": 1,
+        "variant_id": "MT_ND5-chrM-12994"
+      }
+    },
+    {
+      "bam": "46-MT_ND5-chrM-12994-7010dd389c50467d.bam",
+      "case_id": "46-MT_ND5-chrM-12994-7010dd389c50467d",
+      "catalogue_identity": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chrM",
+        "pos": 12994,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": null,
+        "source_receipt_sha256": "ecdd7f46a717fd76b016de877cb015142e64d237b81e25ba7fb697a28e32676a",
+        "source_region_sha256": "8abef7f0013d238bd68340fefdc19230c03f1dd0d8849a34c2c794ae030a6dcf"
+      },
+      "native_variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chrM",
+        "coordinates": "one-based",
+        "pos": 12994,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chrM",
+        "end": 12994,
+        "reference_length": 16569,
+        "start": 12993
+      },
+      "reference": {
+        "dictionary_sha256": "74d8a55146f406d696a5f4278e8950403e13cc4ad0792b41d62a51fe8e56920a",
+        "mitochondrial_reference": "rCRS",
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 16569,
+          "SN": "chrM"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "7010dd389c50467d",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/ONT/IPISRC044_ONT_upload/IPISRC044_ONT/processed/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT/IPISRC044_T1_sclrs_ONT_dedup/IPISRC044_T1_sclrs_ONT_dedup.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chrM",
+        "gene": "MT-ND5",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 13024,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 213,
+            "sha256": "f36b6b5a1172d89c0f2b801232b8c1993b280019e4f9035acf006562bc92f38c",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chrM&start=12963&end=13024"
+          },
+          "sequence": "CTCACCCCACTACTAGGCCTCCTCCTAGCAGCAGCAGGCAAATCAGCCCAATTAGGTCTCC",
+          "start": 12963
+        },
+        "pos": 12994,
+        "ref": "G",
+        "source_location": "chrM:12994",
+        "source_protein_label": "p.Ala220Thr",
+        "source_url": "https://osteosarc.com/variant/MT_ND5-chrM-12994/",
+        "vaccine_count": 1,
+        "variant_id": "MT_ND5-chrM-12994"
+      }
+    },
+    {
+      "bam": "47-MT_ND5-chrM-12994-0066232879babe83.bam",
+      "case_id": "47-MT_ND5-chrM-12994-0066232879babe83",
+      "catalogue_identity": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chrM",
+        "pos": 12994,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": null,
+        "source_receipt_sha256": "7ef5077008c4b5a0076e2f0beae74db392c3214eaf7a38a5116f8437141d1695",
+        "source_region_sha256": "64420d3daab9ebe2f416d546ca162841be632a6b930499f68591517707b7788d"
+      },
+      "native_variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chrM",
+        "coordinates": "one-based",
+        "pos": 12994,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh38",
+        "contig": "chrM",
+        "end": 12994,
+        "reference_length": 16569,
+        "start": 12993
+      },
+      "reference": {
+        "dictionary_sha256": "74d8a55146f406d696a5f4278e8950403e13cc4ad0792b41d62a51fe8e56920a",
+        "mitochondrial_reference": "rCRS",
+        "nuclear_assembly": "GRCh38",
+        "sequence": {
+          "LN": 16569,
+          "SN": "chrM"
+        },
+        "validation_genome": "hg38"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "0066232879babe83",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/pacbio/IPISRC044_T1_sclrs_live_pbmm2_mapped.bam",
+      "variant": {
+        "alt": "A",
+        "assembly": "GRCh38",
+        "chrom": "chrM",
+        "gene": "MT-ND5",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 13024,
+          "genome": "hg38",
+          "receipt": {
+            "bytes": 213,
+            "sha256": "f36b6b5a1172d89c0f2b801232b8c1993b280019e4f9035acf006562bc92f38c",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg38&chrom=chrM&start=12963&end=13024"
+          },
+          "sequence": "CTCACCCCACTACTAGGCCTCCTCCTAGCAGCAGCAGGCAAATCAGCCCAATTAGGTCTCC",
+          "start": 12963
+        },
+        "pos": 12994,
+        "ref": "G",
+        "source_location": "chrM:12994",
+        "source_protein_label": "p.Ala220Thr",
+        "source_url": "https://osteosarc.com/variant/MT_ND5-chrM-12994/",
+        "vaccine_count": 1,
+        "variant_id": "MT_ND5-chrM-12994"
+      }
+    },
+    {
+      "bam": "48-NR2F2-chr15-96332299-fbeb5d8a415e4d18.bam",
+      "case_id": "48-NR2F2-chr15-96332299-fbeb5d8a415e4d18",
+      "catalogue_identity": {
+        "alt": "T",
+        "assembly": "GRCh38",
+        "chrom": "chr15",
+        "pos": 96332299,
+        "ref": "G"
+      },
+      "historical_selection": {
+        "selection": "allele-balanced hash-selected names plus up to 32 protein-supporting names",
+        "selection_row_sha256": null,
+        "source_receipt_sha256": "771bc1d14258b99f336f6ce18a58528fe5831130a25b0c04a4903da8fafe0ac6",
+        "source_region_sha256": "7066148b3a84af932d23ca18097a279fd7ddb40c2aaaeb4bb6a9341c12d227ef"
+      },
+      "native_variant": {
+        "alt": "T",
+        "assembly": "GRCh37",
+        "chrom": "chr15",
+        "coordinates": "one-based",
+        "pos": 96875528,
+        "ref": "G"
+      },
+      "query_region": {
+        "assembly": "GRCh37",
+        "contig": "chr15",
+        "end": 96875528,
+        "reference_length": null,
+        "start": 96875527
+      },
+      "reference": {
+        "dictionary_sha256": "a5f39d7840f60d9213611cf7a79de5d6c0d825b6c54292f0dcc3e1695000811a",
+        "mitochondrial_reference": null,
+        "nuclear_assembly": "GRCh37",
+        "sequence": {
+          "LN": 102531392,
+          "SN": "chr15"
+        },
+        "validation_genome": "hg19"
+      },
+      "selected_record_count": 1,
+      "selection": "One reviewed template for indexed retrieval; NTF3 retains compound AG>GT evidence",
+      "source_id": "fbeb5d8a415e4d18",
+      "source_url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/cegat/P116686_2_S000048/P116686_3.bam",
+      "variant": {
+        "alt": "T",
+        "assembly": "GRCh37",
+        "chrom": "chr15",
+        "coordinate_mapping": {
+          "chain_id": "16",
+          "chrom": "chr15",
+          "end": 96875528,
+          "start": 96875527,
+          "strand": "+"
+        },
+        "gene": "NR2F2",
+        "genomic_validation": {
+          "allele_offset": 30,
+          "end": 96875558,
+          "genome": "hg19",
+          "receipt": {
+            "bytes": 220,
+            "sha256": "1c930cf48c5e8f56d9a0baa0d8b22b9691cd4e4d4bc038dc952526a789e269f4",
+            "url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg19&chrom=chr15&start=96875497&end=96875558"
+          },
+          "sequence": "CGGCGGCCGGTGGCCAGGGCGGCCCTGGCGGCCCGGGTAGCGACAAGCAGCAGCAGCAGCA",
+          "start": 96875497
+        },
+        "original_identity": {
+          "alt": "T",
+          "assembly": "GRCh38",
+          "chrom": "chr15",
+          "pos": 96332299,
+          "ref": "G"
+        },
+        "pos": 96875528,
+        "ref": "G",
+        "source_location": "chr15:96332299",
+        "source_protein_label": "p.Gly65Val",
+        "source_url": "https://osteosarc.com/variant/NR2F2-chr15-96332299/",
+        "vaccine_count": 3,
+        "variant_id": "NR2F2-chr15-96332299"
+      }
+    }
+  ],
+  "data_version": "native-retrieval-v1",
+  "dataset": "osteosarc",
+  "historical_import": {
+    "commit": "0cad5b275c852263a1c77722aa463fe5568b2c76",
+    "generator_path": "tests/data/osteosarc/expansion/fixtures.py",
+    "manifest_sha256": "d656e10c4c2a859e9d7a108e2df68a7bed04189074ae185cba2f1aaddd958e86",
+    "manifest_url": "https://raw.githubusercontent.com/openvax/isovar/0cad5b275c852263a1c77722aa463fe5568b2c76/tests/data/osteosarc/expansion/corpus/manifest.json",
+    "repository": "https://github.com/openvax/isovar"
+  },
+  "interpretation": "Deliberately selected regression reads, not full-source coverage, independent platform samples, somatic truth or validated vaccine targets.",
+  "license_source": "https://registry.opendata.aws/sid-osteosarc/",
+  "merge_policy": "Check reference dictionaries before merging; query native coordinates, never variant_id.",
+  "original_vaccine_loci": 44,
+  "parent": {
+    "archive_sha256": "6b2d5877d3065d3ca9bdc3cccedb50c7c533d1a5d7237fdbb4fe92b5e2340146",
+    "data_version": "minimal-vaccine-rna-v2",
+    "manifest_content_sha256": "905afa11690e9d971052bea2d50167d6fa98528da059cd39c59a78c9cfa66861",
+    "member_sha256": "570d271ccf6d5f7c12b82af4524a9bc07a5518714975941adeabf74df53ed3ce",
+    "path": "vaxrank/data/sid-test-data.zip::osteosarc/shared-v1/manifest.json",
+    "repository": "https://github.com/openvax/vaxrank",
+    "revision": "0565cf15754fa3ac45b82fa5fc7fd5ddfbe06cfa"
+  },
+  "schema_version": 1,
+  "scope": "49 indexed-retrieval cases; one explicit template per case; not coverage or VAF",
+  "source_data_license": "CC0-1.0",
+  "species": "Homo sapiens",
+  "taxon_id": 9606
+}
