@@ -978,6 +978,31 @@ class Dataset:
                     size_budget=size_budget, header_policy=header_policy, log=log)
         return Path(to)
 
+    def _read_index(self, file, options):
+        """Use the same pinned/local index for extraction and count-only queries."""
+        from .reads import require_samtools
+        if options.get("index") is None and file.index_urls:
+            offline = Cache(self.cache.root, offline=True, timeout=self.cache.timeout)
+            try:
+                index_path = self._download(file.index_urls[0], cache=offline)
+            except OfflineError:
+                if self.cache.offline:
+                    raise
+                require_samtools(fetch_pairs=options.get("fetch_pairs", False),
+                                 unplaced_mates=options.get("unplaced_mates", True), filters=options.get("filters"))
+                index_path = self.download(file.index_urls[0])
+            options["index"] = str(index_path)
+
+    def count_reads(self, file, regions, **kwargs):
+        """Count bounded indexed regions without retaining BAMs; see count_reads."""
+        from .reads import count_reads
+        regions = tuple(regions)
+        if not regions or not all(isinstance(r, Region) for r in regions):
+            raise CoordinateError("Provide a nonempty sequence of Region objects")
+        file = file if isinstance(file, File) else self.file(file)
+        self._read_index(file, kwargs)
+        return count_reads(file, regions, cache=self.cache, snapshot_id=self.id, **kwargs)
+
     def extract_reads(self, file, regions=None, *, variants=None, padding=0, to=None, name=None, **kwargs):
         """Stream just the reads in some regions, or around variants, into a small indexed BAM.
 
@@ -988,7 +1013,7 @@ class Dataset:
         asked for, such as BG003082.MAP2-chr2-209694768.bam. Other options:
         see osteosarc.extract_reads.
         """
-        from .reads import ReadSubset, extract_reads, require_samtools
+        from .reads import ReadSubset, extract_reads
         if variants is not None:
             if regions is not None:
                 raise ValueError("Supply either regions or variants, not both")
@@ -1000,19 +1025,7 @@ class Dataset:
         if not regions or not all(isinstance(r, Region) for r in regions):
             raise CoordinateError("Provide a nonempty sequence of regions or ready variants")
         file = file if isinstance(file, File) else self.file(file)
-        if kwargs.get("index") is None and file.index_urls:
-            # Try the pinned/local index first so cached reads work without
-            # SAMtools. Check capabilities before an index needs downloading.
-            offline = Cache(self.cache.root, offline=True, timeout=self.cache.timeout)
-            try:
-                index_path = self._download(file.index_urls[0], cache=offline)
-            except OfflineError:
-                if self.cache.offline:
-                    raise
-                require_samtools(fetch_pairs=kwargs.get("fetch_pairs", False),
-                                 unplaced_mates=kwargs.get("unplaced_mates", True), filters=kwargs.get("filters"))
-                index_path = self.download(file.index_urls[0])
-            kwargs["index"] = str(index_path)
+        self._read_index(file, kwargs)
         subset = extract_reads(file, regions, cache=self.cache, snapshot_id=self.id, **kwargs)
         if to is None:
             return subset

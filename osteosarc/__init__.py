@@ -46,9 +46,11 @@ from .parsing import (
     parse_variants,  # noqa: F401
 )
 from .reads import (  # noqa: F401
+    ReadCount,
     ReadFilter,
     ReadSubset,
     assembly_from_header,
+    count_reads,
     extract_reads,
     inspect_alignment,
 )
