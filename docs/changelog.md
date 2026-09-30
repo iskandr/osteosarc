@@ -5,7 +5,7 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
-## Unreleased
+## 0.15.0 (2026-09-29)
 
 - `subset_bundle` and `test-data make --from` carve out members offline while
   preserving original source headers, acquisition receipts and selection results (#90).
