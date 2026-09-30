@@ -5,6 +5,13 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## Unreleased
+
+- Supplementary-depth probes stream record counts and cache small receipts instead
+  of entire BAM extracts. Existing verified probes and overflow results are reused;
+  the depth cap and selected fixture records are unchanged. Reused BAM counts are
+  checked against their original records, including compact acquisition receipts.
+
 ## 0.15.4
 
 - Bounded extraction reads BAM pipes without constructing a pysam AlignmentFile

@@ -172,6 +172,9 @@ The comprehensive selection permits up to 2,000 supplementary regions per source
 Supplementary-alignment retrieval permits up to 1,000,000 records per queried
 region; MAPQ-zero/invalid SA entries, absent contigs and over-limit regions are
 excluded and reported by the acquisition log.
+Depth probes stream counts without storing a BAM. Their receipts, limits and
+source-identity checks remain cached, and verified extracts from earlier attempts
+can supply the same counts. This reduces disk use without changing selection.
 
 Read fixtures are deliberately balanced and capped, and are **unsuitable for
 abundance or VAF estimation**. Use the published support matrix or pre-sampling

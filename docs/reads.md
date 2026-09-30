@@ -1,5 +1,12 @@
 # Reads
 
+For a depth check without retaining a BAM, use
+`data.count_reads(file, regions, max_records=1_000_000)`. The result has
+`records` and an acquisition `receipt`. It counts records in the indexed region
+union, including original duplicates, and does not fetch mates. Exceeding the cap
+raises `RecordLimitError`; complete counts and overflow results are cached for
+offline reuse. The standalone equivalent is `osteosarc.count_reads(...)`.
+
 Copy just the reads you need out of the remote BAMs into small local BAMs: test
 data for a unit test in seconds, without downloading any BAM whole. You need
 SAMtools 1.21 or newer on your PATH; reopening reads you already fetched
