@@ -788,7 +788,7 @@ def build_shared_recipe(spec, dataset, *, required=(), log=print, workers=6, req
         for contig, start, end in elsewhere:
             region = Region(contig, start, end, assembly, lengths[contig] if contig in MITOCHONDRIA else None)
             try:  # a region in a pileup (a repeat that draws millions of reads) costs more than it's worth
-                dataset.extract_reads(plan["file"], [region], max_records=split_depth)
+                dataset.count_reads(plan["file"], [region], max_records=split_depth)
                 added.append(region)
             except RecordLimitError:
                 crowded += 1

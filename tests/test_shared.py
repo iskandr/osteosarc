@@ -518,7 +518,7 @@ def test_kept_templates_keep_their_split_alignments_when_the_spec_asks(dataset, 
     import shutil
 
     import osteosarc.shared as shared
-    from osteosarc import extract_reads, generate_bundle, inspect_alignment
+    from osteosarc import count_reads, extract_reads, generate_bundle, inspect_alignment
     from osteosarc.records import record_multiset
     from osteosarc.shared import build_shared_recipe, bundle_spec
     if shutil.which("samtools") is None:
@@ -529,12 +529,18 @@ def test_kept_templates_keep_their_split_alignments_when_the_spec_asks(dataset, 
     monkeypatch.setattr(dataset, "extract_reads", lambda file, regions, **kw: extract_reads(
         str(local), regions, cache=dataset.cache, fetch_pairs=kw.get("fetch_pairs", False),
         unplaced_mates=kw.get("unplaced_mates", True), max_records=kw.get("max_records")))
+    monkeypatch.setattr(dataset, "count_reads", lambda file, regions, **kw: count_reads(
+        str(local), regions, cache=dataset.cache, max_records=kw.get("max_records")))
     key = "rna-seq/reprocessed/BG003082/BG003082.Aligned.sortedByCoord.out.md.bam"
     spec = bundle_spec(dataset, "split", variants=["DYNC1H1-chr14-101980529"], files=[key])
     plain = build_shared_recipe(spec, dataset, required={}, log=lambda text: None)
     spec["selection"]["supplementary"] = True
     logged = []
     split = build_shared_recipe(spec, dataset, required={}, log=logged.append)
+    with monkeypatch.context() as context:
+        context.setattr(dataset, "count_reads", dataset.extract_reads)
+        legacy = build_shared_recipe(spec, dataset, required={}, log=lambda text: None)
+    assert split == legacy  # counting-only changes storage, not the frozen recipe
     (source,) = split["sources"].values()
     assert split["selection"]["supplementary"] and "supplementary" not in plain["selection"]
     # The region reaches the alignment's first base, which is enough to read it, so a rebuild reads it too.
