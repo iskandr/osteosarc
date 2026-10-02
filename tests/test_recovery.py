@@ -96,6 +96,73 @@ def test_seed_limits_checked_before_extraction(split_bam, tmp_path, monkeypatch,
         extract_reads(split_bam, iter(regions), cache=tmp_path / "cache", recovery=policy)
 
 
+def test_partner_batches_keep_later_available_records_after_timeout(split_bam, tmp_path, monkeypatch):
+    import subprocess
+
+    import osteosarc.recovery as recovery
+
+    original = recovery.extract_reads
+    queried = []
+
+    def interrupted(source, regions, **kwargs):
+        regions = list(regions)
+        if regions[0].contig == "chr2":
+            assert len(regions) == 1
+            assert kwargs["timeout"] == 7
+            queried.append(regions[0].start)
+            if regions[0].start == 700:
+                raise subprocess.TimeoutExpired("samtools", 7)
+        else:
+            assert kwargs["timeout"] == 30  # The seed timeout is unchanged.
+        return original(source, regions, **kwargs)
+
+    monkeypatch.setattr(recovery, "extract_reads", interrupted)
+    policy = RecoveryPolicy(partner_batch_size=1, partner_timeout=7, on_timeout="incomplete")
+    result = extract_reads(split_bam, [Region("chr1", 100, 150, "GRCh38")], cache=tmp_path / "cache",
+                           recovery=policy, timeout=30)
+    assert queried == [500, 700, 800, 900]
+    assert result.receipt["status"] == "incomplete"
+    assert result.receipt["records"] == 7  # Both split pieces and the late mate survive.
+    assert not (record_multiset(result.path) - record_multiset(split_bam))
+    assert result.receipt["partner_queries"] == 4
+    failure, = result.receipt["failed_queries"]
+    assert len(failure["leads"]) == 1 and failure["timeout_seconds"] == 7
+    assert not any(row["contig"] == "chr2" and row["start"] == 700 for row in result.receipt["visited_intervals"])
+    assert Counter(result.receipt["unresolved"].values()) == {
+        "partner query timed out": 1, "missing partner or conflicting alignment fields": 1}
+    monkeypatch.setattr(recovery, "extract_reads", original)
+    resumed = extract_reads(split_bam, [Region("chr1", 100, 150, "GRCh38")], cache=tmp_path / "cache",
+                            recovery=policy, timeout=30)
+    assert resumed.receipt["status"] == "bounded"
+    assert "failed_queries" not in resumed.receipt
+    assert record_multiset(resumed.path) == record_multiset(result.path)
+
+
+def test_unset_batch_options_keep_existing_request_identity(split_bam, tmp_path):
+    result = extract_reads(split_bam, [Region("chr1", 100, 150, "GRCh38")], cache=tmp_path / "cache",
+                           recovery=RecoveryPolicy())
+    assert result.receipt["request"]["recovery"] == dict(
+        mates=True, supplementary=True, max_rounds=4, max_intervals=128,
+        max_bases=1_000_000, max_records=100_000)
+
+
+def test_partner_query_budget_keeps_progress_and_reports_skipped_leads(split_bam, tmp_path):
+    result = extract_reads(split_bam, [Region("chr1", 100, 150, "GRCh38")], cache=tmp_path / "cache",
+                           recovery=RecoveryPolicy(partner_batch_size=1, max_partner_queries=1))
+    assert result.receipt["status"] == "truncated"
+    assert result.receipt["partner_queries"] == 1
+    assert result.receipt["records"] == 6
+    assert result.receipt["limits"] == ["max_partner_queries"]
+    assert set(result.receipt["unresolved"].values()) == {"max_partner_queries"}
+
+
+@pytest.mark.parametrize("field", ["partner_batch_size", "max_partner_queries", "partner_timeout"])
+@pytest.mark.parametrize("value", [0, -1, True, 1.5, "1"])
+def test_partner_query_options_reject_invalid_limits(field, value):
+    with pytest.raises(ValueError, match=field):
+        RecoveryPolicy(**{field: value})
+
+
 def test_later_lead_reuses_candidate_in_visited_window(split_bam, tmp_path):
     path = tmp_path / "recursive.bam"
     with pysam.AlignmentFile(split_bam) as original:
