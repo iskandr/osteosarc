@@ -45,6 +45,7 @@ from .parsing import (
     Table,
     parse_variants,  # noqa: F401
 )
+from .read_receipts import read_receipt_files  # noqa: F401
 from .reads import (  # noqa: F401
     ReadFilter,
     ReadSubset,
@@ -57,7 +58,7 @@ from .shared import bundle_file, check_fixtures, fetch_bundle
 from .sv_candidates import load_sv_candidates
 from .timeline import Event, Timeline
 
-__version__ = "0.15.1"
+__version__ = "0.15.2"
 
 # The public API. A few other helpers are importable from here because the OpenVax
 # libraries use them (digest, parse_variants, inspect_alignment, ...); everything

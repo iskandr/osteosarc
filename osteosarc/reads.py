@@ -27,6 +27,7 @@ from .cache import (
 )
 from .errors import CoordinateError, IntegrityError, OfflineError, OsteosarcError, RecordLimitError
 from .models import File, Region
+from .read_receipts import query_names_asset, read_read_receipt, write_read_receipt
 
 ASSEMBLY_LENGTHS = {
     "GRCh38": {"1": 248956422, "2": 242193529, "3": 198295559, "X": 156040895},
@@ -134,6 +135,11 @@ class ReadSubset:
     path: Path
     index_path: Path
     receipt: dict
+
+    @property
+    def receipt_path(self):
+        """On-disk provenance; use read_receipt_files to pin its shared assets."""
+        return self.path.parent / "receipt.json"
 
     def open(self):
         """Return a pysam AlignmentFile context manager for this indexed subset."""
@@ -318,7 +324,7 @@ def _verified_receipt(directory, request):
     path = directory / "receipt.json"
     if not path.exists():
         return None
-    receipt = json.loads(path.read_text())
+    receipt = read_read_receipt(path, directory.parent.parent)
     if receipt["request"] != request:
         raise IntegrityError("Request differs from its cached receipt")
     for filename, expected in receipt["files"].items():
@@ -483,7 +489,7 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
         cached = _cached_subset(directory, request)
         if cached is not None:
             return cached
-        if over_limit.exists() and json.loads(over_limit.read_text()).get("request") == request:
+        if over_limit.exists() and read_read_receipt(over_limit, cache.workspace).get("request") == request:
             raise RecordLimitError("Acquisition exceeds record limit")
         if remote and cache.offline:
             raise OfflineError("Regional reads are not cached")
@@ -519,8 +525,7 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
                 barcodes = work / "barcodes.txt"
                 barcodes.write_text("\n".join(sorted(set(filters.barcodes))) + "\n")
             if filters.query_names:
-                names = work / "query-names.txt"
-                names.write_text("\n".join(filters.query_names) + "\n")
+                names = query_names_asset(filters.query_names, cache.workspace)
 
             def left():
                 return max(1, deadline - time.monotonic())
@@ -590,7 +595,7 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
                 except OsteosarcError:
                     unchanged = False
                 if unchanged:
-                    write_json(over_limit, dict(request=request, max_records=max_records))
+                    write_read_receipt(over_limit, dict(request=request, max_records=max_records), cache.workspace)
                 raise
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
                 if remote:  # samtools may have failed because the object changed: say so if it did
@@ -632,7 +637,7 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
                            # This follows samtools 1.21's --fetch-pairs (samtools_version).
                            **{name: _recorded_command(c, work, cache) for name, c in commands.items()},
                            scope=scope)
-            write_json(work / "receipt.json", receipt)
+            write_read_receipt(work / "receipt.json", receipt, cache.workspace)
             # Only a complete directory becomes visible. No receipt means no cache hit.
             share(work)
             os.replace(work, directory)

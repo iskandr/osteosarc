@@ -8,9 +8,10 @@ import tempfile
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass, replace
 
-from .cache import Cache, digest, file_lock, stable_id, write_json
+from .cache import Cache, digest, file_lock, stable_id
 from .errors import CoordinateError, IntegrityError, OsteosarcError, RecordLimitError
 from .models import Region
+from .read_receipts import write_read_receipt
 from .reads import ReadFilter, _cached_subset, extract_reads, inspect_alignment, resolve_regions
 from .records import read_records, record_multiset, split_alignments
 
@@ -342,6 +343,6 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
                 receipt["partner_queries"] = partner_queries
             if failed_queries:
                 receipt["failed_queries"] = failed_queries
-            write_json(work / "receipt.json", receipt)
+            write_read_receipt(work / "receipt.json", receipt, cache.workspace)
             os.replace(work, directory)
         return _cached_subset(directory, request)
