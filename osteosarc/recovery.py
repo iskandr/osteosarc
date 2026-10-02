@@ -27,6 +27,12 @@ class RecoveryPolicy:
     matched when a later partner query times out, instead of failing. The
     result's receipt has status "incomplete" and names the failed query; it is
     stored apart from complete results, so the next call retries the query.
+
+    partner_batch_size splits each recovery round into deterministic regional
+    queries. With incomplete-on-timeout, later batches still run. Optional
+    max_partner_queries counts every partner query (including timed-out ones),
+    and partner_timeout overrides only partner-query seconds, not the seed.
+    None preserves the existing query strategy and request identity.
     """
 
     mates: bool = True
@@ -36,6 +42,9 @@ class RecoveryPolicy:
     max_bases: int = 1_000_000
     max_records: int = 100_000
     on_timeout: str = "fail"
+    partner_batch_size: int | None = None
+    max_partner_queries: int | None = None
+    partner_timeout: int | None = None
 
     def __post_init__(self):
         if self.on_timeout not in ("fail", "incomplete"):
@@ -46,6 +55,10 @@ class RecoveryPolicy:
         for name in ("max_rounds", "max_intervals", "max_bases", "max_records"):
             if type(getattr(self, name)) is not int or getattr(self, name) < 1:
                 raise ValueError(f"{name} must be a positive integer")
+        for name in ("partner_batch_size", "max_partner_queries", "partner_timeout"):
+            value = getattr(self, name)
+            if value is not None and (type(value) is not int or value < 1):
+                raise ValueError(f"{name} must be a positive integer or None")
 
 
 def _leads(record, policy):
@@ -118,9 +131,11 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
     if len(resolved) > policy.max_intervals or sum(r.end - r.start for r in resolved) > policy.max_bases:
         raise IntegrityError("Seed acquisition exceeds recovery interval/base limit")
     seed = extract_reads(source, regions, cache=cache, max_records=policy.max_records, **kwargs)
+    # Unset new controls retain existing default request/cache identities.
+    recovery_parameters = {k: v for k, v in asdict(policy).items() if k != "on_timeout" and v is not None}
     request = dict(schema_version=2, operation="recover_reads", seed=seed.receipt["request"],
                    seed_files=seed.receipt["files"],
-                   recovery={k: v for k, v in asdict(policy).items() if k != "on_timeout"})
+                   recovery=recovery_parameters)
     directory = cache.workspace / "derived" / stable_id(request)
     with file_lock(cache.workspace / "locks" / (directory.name + ".lock")):
         if cached := _cached_subset(directory, request):
@@ -136,6 +151,8 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
             kwargs.get("filters") or ReadFilter(),
             query_names=tuple(sorted({r.read.query_name for r in seed_records
                                       if r.read.query_name not in (None, "*")}))))
+        if policy.partner_timeout is not None:
+            partner_kwargs["timeout"] = policy.partner_timeout
         counts = Counter(r.digest for r in seed_records)
         records = {r.digest: r for r in seed_records}
         # An earlier query can contain a partner whose pointer is discovered later.
@@ -172,7 +189,7 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
                     receipt["request"]["reference_sha256"], receipt["request"]["reference_index_sha256"],
                     (receipt.get("index_receipt") or {}).get("sha256")]
 
-        round_number = 1
+        round_number, partner_queries = 1, 0
         while True:
             leads = {}
             for key in sorted(records.keys() - handled_records):
@@ -229,32 +246,48 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
             handled_leads.update(pending)
             if not intervals:
                 continue
-            partner_regions = [Region(c, start, end, assembly, lengths[c]) for c, start, end in sorted(intervals)]
-            try:
-                subset = extract_reads(source, partner_regions, cache=cache, max_records=policy.max_records,
-                                       **partner_kwargs)
-            except (subprocess.TimeoutExpired, OsteosarcError) as error:
-                if policy.on_timeout != "incomplete" or not _timed_out(error):
-                    raise
-                # Nothing from the failed query is kept; its leads stay unresolved.
-                waiting = sorted(i for i in pending if i not in unresolved)
-                for identity in waiting:
-                    unresolved[identity] = "partner query timed out"
-                failed_queries.append(dict(round=round_number, error="timeout",
-                                           timeout_seconds=kwargs.get("timeout", 600),
-                                           regions=[asdict(r) for r in partner_regions], leads=waiting))
-                break
-            if source_identity(subset.receipt) != source_identity(seed.receipt):
-                raise IntegrityError("Alignment/header/index changed across recovery acquisitions")
-            receipts.append(subset.receipt)
-            queried.update(intervals)
-            bases += len(intervals)
-            visited.extend(dict(asdict(r), round=round_number) for r in partner_regions)
-            fetched = list(read_records(subset.path))
-            candidate_counts |= Counter(r.digest for r in fetched)
-            if sum(candidate_counts.values()) > policy.max_records:
-                raise RecordLimitError("Acquired candidates exceed recovery record limit")
-            add_candidates(fetched)
+            by_interval = defaultdict(list)
+            for identity, lead in pending.items():
+                by_interval[lead["contig"], lead["start"], lead["start"] + 1].append(identity)
+            intervals.sort()
+            batch_size = policy.partner_batch_size or len(intervals)
+            timed_out = set()
+            for offset in range(0, len(intervals), batch_size):
+                batch = intervals[offset:offset + batch_size]
+                if policy.max_partner_queries is not None and partner_queries >= policy.max_partner_queries:
+                    limits.add("max_partner_queries")
+                    for interval in intervals[offset:]:
+                        for identity in by_interval[interval]:
+                            unresolved[identity] = "max_partner_queries"
+                    break
+                partner_regions = [Region(c, start, end, assembly, lengths[c]) for c, start, end in batch]
+                partner_queries += 1
+                try:
+                    subset = extract_reads(source, partner_regions, cache=cache, max_records=policy.max_records,
+                                           **partner_kwargs)
+                except (subprocess.TimeoutExpired, OsteosarcError) as error:
+                    if policy.on_timeout != "incomplete" or not _timed_out(error):
+                        raise
+                    # A timeout says nothing about another batch or absence.
+                    waiting = sorted(i for interval in batch for i in by_interval[interval])
+                    timed_out.update(waiting)
+                    for identity in waiting:
+                        unresolved[identity] = "partner query timed out"
+                    failed_queries.append(dict(round=round_number, error="timeout",
+                                               timeout_seconds=partner_kwargs.get("timeout", 600),
+                                               regions=[asdict(r) for r in partner_regions], leads=waiting))
+                    continue
+                if source_identity(subset.receipt) != source_identity(seed.receipt):
+                    raise IntegrityError("Alignment/header/index changed across recovery acquisitions")
+                receipts.append(subset.receipt)
+                queried.update(batch)
+                bases += len(batch)
+                visited.extend(dict(asdict(r), round=round_number) for r in partner_regions)
+                fetched = list(read_records(subset.path))
+                candidate_counts |= Counter(r.digest for r in fetched)
+                if sum(candidate_counts.values()) > policy.max_records:
+                    raise RecordLimitError("Acquired candidates exceed recovery record limit")
+                add_candidates(fetched)
             found = Counter()
             found_records = {}
             for identity, lead in pending.items():
@@ -268,7 +301,7 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
                     unresolved.pop(identity, None)
                     if len(multiplicities) > 1:
                         problems[identity] = dict(lead=identity, reason="multiple matching placements")
-                else:
+                elif identity not in timed_out:
                     unresolved.setdefault(identity, "missing partner or conflicting alignment fields")
             if sum((counts | found).values()) > policy.max_records:
                 raise RecordLimitError("Retained records exceed recovery record limit")
@@ -305,6 +338,8 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
                            observations=list(problems.values()), repeated_or_cyclic_leads=sorted(repeated),
                            limits=sorted(limits), reasons={k: sorted(v) for k, v in sorted(reasons.items())},
                            pysam_version=pysam.__version__)
+            if policy.partner_batch_size is not None or policy.max_partner_queries is not None:
+                receipt["partner_queries"] = partner_queries
             if failed_queries:
                 receipt["failed_queries"] = failed_queries
             write_json(work / "receipt.json", receipt)

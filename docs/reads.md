@@ -102,6 +102,15 @@ result truncated, and too many records is an error. With
 `RecoveryPolicy(on_timeout="incomplete")`, a query that times out gives what was
 found so far, marked incomplete, and the next call retries it.
 
+For large seed regions, `partner_batch_size=256` divides partner locations into
+separate indexed queries. With `on_timeout="incomplete"`, a slow batch is marked
+missing while later batches continue; successfully retrieved partners survive.
+`max_partner_queries=64` caps the number of attempted partner queries, including
+timeouts, and `partner_timeout=30` sets their timeout in seconds independently of
+seed extraction. These optional limits leave the default request strategy and
+cache identities unchanged. The receipt records failed batches, visited regions
+and exhausted limits; a failed query never establishes absence.
+
 ## Genome builds
 
 ```python
