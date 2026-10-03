@@ -111,6 +111,15 @@ seed extraction. These optional limits leave the default request strategy and
 cache identities unchanged. The receipt records failed batches, visited regions
 and exhausted limits; a failed query never establishes absence.
 
+Ordinary seed context is streamed rather than retained as alignment objects in
+memory. All seed records still survive, with their exact stored values and
+multiplicities. Only names with an outgoing mate/SA pointer enter partner
+queries; partners already present in the seed can satisfy those pointers even
+without pointers of their own. An unchanged recovered BAM shares the cached
+seed file. Counts and per-record provenance still consume memory proportional to
+the number of distinct records. Recovery requests use schema 3, so earlier
+recovery derivatives remain intact and are not reused for the changed queries.
+
 ## Genome builds
 
 ```python
