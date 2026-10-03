@@ -7,6 +7,8 @@ import subprocess
 import tempfile
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass, replace
+from heapq import merge
+from itertools import groupby
 
 from .cache import Cache, digest, file_lock, stable_id
 from .errors import CoordinateError, IntegrityError, OsteosarcError, RecordLimitError
@@ -105,6 +107,47 @@ def _timed_out(error):
         isinstance(error, OsteosarcError) and isinstance(error.__cause__, requests.Timeout))
 
 
+def _seed_context(path, policy):
+    """Keep alignment objects only for templates participating in recovery.
+
+    Counts still cover every context record. A second pass includes partners
+    already in the seed even when those records have no outgoing pointers.
+    """
+    counts, records, names = Counter(), {}, set()
+    for record in read_records(path):
+        counts[record.digest] += 1
+        outgoing, issues = _leads(record, policy)
+        if outgoing:
+            names.add(record.read.query_name)
+        if outgoing or issues:
+            records[record.digest] = record
+    if names:
+        for record in read_records(path, keep=lambda r: r.query_name in names):
+            records[record.digest] = record
+    return counts, records, names
+
+
+def _output_records(seed_path, seed_counts, counts, records, contig_count):
+    """Merge all original context with added partners, without loading the seed."""
+    def position(record):
+        read = record.read
+        return (read.reference_id if read.reference_id >= 0 else contig_count,
+                read.reference_start)
+
+    def order(record):
+        return (*position(record), record.digest)
+
+    def seed_records():
+        # Indexed extraction is coordinate sorted; stabilize ties by identity.
+        for _, group in groupby(read_records(seed_path), key=position):
+            yield from sorted(group, key=lambda r: r.digest)
+
+    extra_counts = counts - seed_counts
+    extra_records = (records[key] for key in sorted(extra_counts, key=lambda k: order(records[k]))
+                     for _ in range(extra_counts[key]))
+    yield from merge(seed_records(), extra_records, key=order)
+
+
 def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
     """Extend extract_reads with bounded, source/RG/segment-scoped partner recovery.
 
@@ -112,7 +155,7 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
     cap, missing sequence and repeated/cyclic pointer in its receipt. A changed
     source/index fails rather than mixing acquisitions. Cache hits resume only
     verified complete intermediates. Seed record overflow fails explicitly.
-    Partner windows select all seed QNAMEs before applying the record cap;
+    Partner windows select pointer-bearing seed QNAMEs before applying the record cap;
     source/RG/segment/placement matching still determines retained partners.
     A partner-query timeout fails unless policy.on_timeout is "incomplete".
     """
@@ -134,7 +177,7 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
     seed = extract_reads(source, regions, cache=cache, max_records=policy.max_records, **kwargs)
     # Unset new controls retain existing default request/cache identities.
     recovery_parameters = {k: v for k, v in asdict(policy).items() if k != "on_timeout" and v is not None}
-    request = dict(schema_version=2, operation="recover_reads", seed=seed.receipt["request"],
+    request = dict(schema_version=3, operation="recover_reads", seed=seed.receipt["request"],
                    seed_files=seed.receipt["files"],
                    recovery=recovery_parameters)
     directory = cache.workspace / "derived" / stable_id(request)
@@ -144,18 +187,16 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
         with seed.open() as bam:
             header = bam.header.to_dict()
         lengths = {s["SN"]: s["LN"] for s in header["SQ"]}
-        seed_records = list(read_records(seed.path))
-        # Every recursively recovered mate/SA partner has a seed QNAME. Include
-        # all seed names in every round so later leads can reuse a visited window.
+        seed_counts, records, names = _seed_context(seed.path, policy)
+        # Every recursively recovered partner has a pointer-bearing seed QNAME.
+        # Include all such names in every round so later leads can reuse a window.
         # Exact RG/segment/placement matching below remains authoritative.
         partner_kwargs = dict(kwargs, filters=replace(
             kwargs.get("filters") or ReadFilter(),
-            query_names=tuple(sorted({r.read.query_name for r in seed_records
-                                      if r.read.query_name not in (None, "*")}))))
+            query_names=tuple(sorted(names))))
         if policy.partner_timeout is not None:
             partner_kwargs["timeout"] = policy.partner_timeout
-        counts = Counter(r.digest for r in seed_records)
-        records = {r.digest: r for r in seed_records}
+        counts = seed_counts.copy()
         # An earlier query can contain a partner whose pointer is discovered later.
         # Keep bounded candidates even when they are not selected for the output.
         candidates, candidate_counts = defaultdict(dict), counts.copy()
@@ -170,8 +211,10 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
             key = ((lead["rg"], lead["qname"]), lead["segment"], lead["contig"], lead["start"], lead["reverse"])
             return [r for r in candidates.get(key, {}).values() if _matches(r, lead)]
 
-        add_candidates(seed_records)
-        reasons = {key: {"seed/context region"} for key in records}
+        add_candidates(records.values())
+        # Ordinary context shares one immutable reason instead of millions of sets.
+        seed_reason = frozenset(("seed/context region",))
+        reasons = dict.fromkeys(seed_counts, seed_reason)
         visited = [dict(r, round=0) for r in seed.receipt["resolved_regions"]]
         bases = sum(r["end"] - r["start"] for r in visited)
         if len(visited) > policy.max_intervals or bases > policy.max_bases or sum(counts.values()) > policy.max_records:
@@ -215,7 +258,8 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
                     for r in matches:
                         records[r.digest] = r
                         counts[r.digest] = candidate_counts[r.digest]
-                        reasons.setdefault(r.digest, set()).add("paired mate" if lead["kind"] == "mate" else "SA-linked partner")
+                        reasons[r.digest] = reasons.get(r.digest, frozenset()) | {
+                            "paired mate" if lead["kind"] == "mate" else "SA-linked partner"}
                     handled_leads.add(identity)
                     if len(matches) > 1:
                         problems[identity] = dict(lead=identity, reason="multiple matching placements")
@@ -298,7 +342,8 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
                     found |= multiplicities  # union, not sum across overlapping pointers
                     found_records.update((r.digest, r) for r in matches)
                     for r in matches:
-                        reasons.setdefault(r.digest, set()).add("paired mate" if lead["kind"] == "mate" else "SA-linked partner")
+                        reasons[r.digest] = reasons.get(r.digest, frozenset()) | {
+                            "paired mate" if lead["kind"] == "mate" else "SA-linked partner"}
                     unresolved.pop(identity, None)
                     if len(multiplicities) > 1:
                         problems[identity] = dict(lead=identity, reason="multiple matching placements")
@@ -321,16 +366,18 @@ def recover_reads(source, regions, *, policy=None, cache=None, **kwargs):
             from pathlib import Path
             work = Path(temporary)
             output = work / "reads.bam"
-            ordered = sorted(records, key=lambda k: (
-                records[k].read.reference_id if records[k].read.reference_id >= 0 else len(lengths),
-                records[k].read.reference_start, k))
-            with pysam.AlignmentFile(output, "wb", header=header) as out:
-                for key in ordered:
-                    for _ in range(counts[key]):
-                        out.write(records[key].read)
-            if record_multiset(output) != counts:
-                raise IntegrityError("Recovery changed original BAM records")
-            pysam.index(str(output))
+            if counts == seed_counts:
+                # Both files live in this cache. Unchanged context need not be
+                # decoded, recompressed, or stored a second time.
+                os.link(seed.path, output)
+                os.link(seed.index_path, work / "reads.bam.bai")
+            else:
+                with pysam.AlignmentFile(output, "wb", header=header) as out:
+                    for record in _output_records(seed.path, seed_counts, counts, records, len(lengths)):
+                        out.write(record.read)
+                if record_multiset(output) != counts:
+                    raise IntegrityError("Recovery changed original BAM records")
+                pysam.index(str(output))
             receipt = dict(request=request, files={name: digest(work / name) for name in ("reads.bam", "reads.bam.bai")},
                            records=sum(counts.values()), scope="bounded_mate_SA_context", complete_template=False,
                            status="incomplete" if failed_queries else "truncated" if limits else "bounded",

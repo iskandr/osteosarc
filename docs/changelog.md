@@ -5,6 +5,21 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.15.3
+
+- Stream ordinary seed context during mate/SA recovery instead of retaining every
+  alignment and unrelated query name in memory (#109). Every original seed
+  record, duplicate and diagnostic survives. Unchanged recovered BAMs share the
+  seed cache file; changed outputs are checked against the full record multiset.
+- Partner queries select pointer-bearing seed names in every round, retaining
+  candidates for later recursive links. The changed query scope uses recovery
+  request schema 3; prior cache entries remain intact.
+
+## 0.15.2
+
+- Store repeated query-name filters as verified shared assets and pin upstream
+  acquisition receipts without copying their full contents (#107).
+
 ## 0.15.1
 
 - Optional bounded batches for mate/SA recovery preserve available partners

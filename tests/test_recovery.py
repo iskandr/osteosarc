@@ -77,6 +77,71 @@ def test_cap_is_distinct_from_empty_and_cache_reuse_needs_no_commands(split_bam,
     assert extract_reads(split_bam, regions, cache=cache, recovery=policy).receipt == result.receipt
 
 
+def test_dense_context_streams_without_losing_original_records(split_bam, tmp_path):
+    from osteosarc.recovery import _seed_context
+
+    path = tmp_path / "dense-context.bam"
+    with pysam.AlignmentFile(split_bam) as bam:
+        header = bam.header
+    with pysam.AlignmentFile(path, "wb", header=header) as out:
+        for i in range(5000):
+            read = pysam.AlignedSegment(header)
+            read.query_name = "context-%d" % i
+            read.reference_id, read.reference_start = 0, 100 + i
+            read.cigarstring, read.query_sequence = "10M", "ACGTACGTAA"
+            read.query_qualities = None if i % 2 else [30] * 10
+            read.flag = 16 if i % 2 else 0
+            read.set_tag("CB", "cell-%d" % i)
+            out.write(read)
+            if i % 100 == 0:
+                out.write(read)
+    pysam.index(str(path))
+    policy = RecoveryPolicy()
+    counts, active, names = _seed_context(path, policy)
+    assert counts == record_multiset(path)
+    assert not active and not names
+    result = extract_reads(path, [Region("chr1", 0, 10000, "GRCh38")],
+                           cache=tmp_path / "cache", recovery=policy)
+    assert record_multiset(result.path) == counts
+    assert result.receipt["records"] == 5050
+    assert len(result.receipt["reasons"]) == 5000
+    assert all(value == ["seed/context region"] for value in result.receipt["reasons"].values())
+    assert not result.receipt["requested_leads"] and not result.receipt["observations"]
+
+
+def test_seed_partner_without_pointer_and_missing_sequence_survive(split_bam, tmp_path):
+    from osteosarc.recovery import _seed_context
+
+    path = tmp_path / "seed-partner.bam"
+    with pysam.AlignmentFile(split_bam) as bam:
+        seed = next(bam)
+        header = bam.header
+    seed.flag = 0
+    seed.set_tag("SA", "chr1,201,+,10M,60,0;")
+    partner = pysam.AlignedSegment.fromstring(seed.to_string(), header)
+    partner.reference_start, partner.flag = 200, 2048
+    partner.set_tag("SA", None)
+    missing = pysam.AlignedSegment.fromstring(partner.to_string(), header)
+    missing.query_name, missing.reference_start, missing.query_sequence = "missing", 300, None
+    with pysam.AlignmentFile(path, "wb", header=header) as out:
+        out.write(seed)
+        out.write(partner)
+        out.write(partner)
+        out.write(missing)
+    pysam.index(str(path))
+    counts, active, names = _seed_context(path, RecoveryPolicy())
+    assert names == {"split"}
+    assert len(active) == 3 and sum(counts.values()) == 4
+    result = extract_reads(path, [Region("chr1", 0, 400, "GRCh38")],
+                           cache=tmp_path / "cache", recovery=RecoveryPolicy())
+    assert record_multiset(result.path) == counts
+    assert len(result.receipt["acquisition"]) == 1
+    assert not result.receipt["unresolved"]
+    assert any(row["reason"] == "missing SEQ" for row in result.receipt["observations"])
+    assert sum("SA-linked partner" in reasons for reasons in result.receipt["reasons"].values()) == 1
+    assert sum(reasons == ["seed/context region"] for reasons in result.receipt["reasons"].values()) == 2
+
+
 def test_record_limit_fails_instead_of_publishing_partial_success(split_bam, tmp_path):
     from osteosarc import RecordLimitError
     with pytest.raises(RecordLimitError, match="limit"):
@@ -316,7 +381,7 @@ def test_dense_partner_window_filters_names_before_cap(split_bam, tmp_path, wron
     assert not result.receipt["limits"]
     assert not (record_multiset(result.path) - record_multiset(path))
     filters = result.receipt["acquisition"][1]["request"]["filters"]
-    assert filters["query_names"] == ["context", "split"]
+    assert filters["query_names"] == ["split"]
     assert filters["min_mapq"] == 20 and filters["barcodes"] == ["shared-cell"]
 
 
