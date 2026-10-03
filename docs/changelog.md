@@ -5,6 +5,14 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## 0.15.4
+
+- Bounded extraction reads BAM pipes without constructing a pysam AlignmentFile
+  on a nonseekable stream (#106). A timeout partway through the header retains its
+  timeout and stderr without a secondary `Illegal seek` destructor error.
+  Original header and record blocks are copied without changing stored values;
+  overflow, truncation and producer failure still prevent cache publication.
+
 ## 0.15.3
 
 - Stream ordinary seed context during mate/SA recovery instead of retaining every

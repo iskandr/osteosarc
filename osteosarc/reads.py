@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import gzip
 import json
 import os
 import re
+import struct
 import subprocess
 import tempfile
 import time
@@ -28,6 +30,7 @@ from .cache import (
 from .errors import CoordinateError, IntegrityError, OfflineError, OsteosarcError, RecordLimitError
 from .models import File, Region
 from .read_receipts import query_names_asset, read_read_receipt, write_read_receipt
+from .records import _read
 
 ASSEMBLY_LENGTHS = {
     "GRCh38": {"1": 248956422, "2": 242193529, "3": 198295559, "X": 156040895},
@@ -254,26 +257,56 @@ def _run_bounded(command, output, max_records, timeout):
         timer.daemon = True
         timer.start()
         try:
-            with pysam.AlignmentFile(process.stdout, "rb") as bam:
-                with pysam.AlignmentFile(output, "wb", template=bam) as out:
-                    for count, read in enumerate(bam, 1):
-                        if count > max_records:
-                            raise RecordLimitError("Acquisition exceeds record limit")
-                        out.write(read)
+            # AlignmentFile can raise an unraisable seek error when a timeout
+            # interrupts its constructor on a pipe. Read BAM framing forwards
+            # only and copy stored blocks, preserving all original record bytes.
+            with gzip.GzipFile(fileobj=process.stdout, mode="rb") as bam, pysam.BGZFile(output, "wb") as out:
+                def copy_integer():
+                    value = _read(bam, 4)
+                    out.write(value)
+                    number, = struct.unpack("<i", value)
+                    if number < 0:
+                        raise IntegrityError("Negative BAM header length")
+                    return number
+
+                magic = _read(bam, 4)
+                if magic != b"BAM\x01":
+                    raise IntegrityError("Expected BAM output from samtools")
+                out.write(magic)
+                out.write(_read(bam, copy_integer()))
+                for _ in range(copy_integer()):
+                    out.write(_read(bam, copy_integer()))
+                    copy_integer()
+                count = 0
+                while size := bam.read(4):
+                    if len(size) != 4:
+                        raise IntegrityError("Truncated BAM block size")
+                    length, = struct.unpack("<i", size)
+                    if length < 32:
+                        raise IntegrityError("Invalid BAM core length")
+                    block = _read(bam, length)
+                    count += 1
+                    if count > max_records:
+                        raise RecordLimitError("Acquisition exceeds record limit")
+                    out.write(size)
+                    out.write(block)
             returncode = process.wait()
             if returncode:
                 stderr.seek(0)
                 raise subprocess.CalledProcessError(returncode, command, stderr=stderr.read())
         except Exception as error:
-            if not isinstance(error, (IntegrityError, subprocess.CalledProcessError)):
+            if not isinstance(error, (RecordLimitError, subprocess.CalledProcessError)):
                 # Reap early command failures before choosing the error to report.
                 # The timer still bounds a process blocked after malformed output.
                 process.wait()
             if expired.is_set():
-                raise subprocess.TimeoutExpired(command, timeout) from error
-            if process.poll() not in (None, 0) and not isinstance(error, (IntegrityError, subprocess.CalledProcessError)):
+                stderr.seek(0)
+                raise subprocess.TimeoutExpired(command, timeout, stderr=stderr.read()) from error
+            if process.poll() not in (None, 0) and not isinstance(error, (RecordLimitError, subprocess.CalledProcessError)):
                 stderr.seek(0)
                 raise subprocess.CalledProcessError(process.returncode, command, stderr=stderr.read()) from error
+            if isinstance(error, (EOFError, gzip.BadGzipFile)):
+                raise IntegrityError("Truncated or invalid compressed BAM output") from error
             raise
         finally:
             timer.cancel()
@@ -282,7 +315,8 @@ def _run_bounded(command, output, max_records, timeout):
             process.wait()
             process.stdout.close()
         if expired.is_set():
-            raise subprocess.TimeoutExpired(command, timeout)
+            stderr.seek(0)
+            raise subprocess.TimeoutExpired(command, timeout, stderr=stderr.read())
     return command
 
 
