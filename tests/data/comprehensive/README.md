@@ -90,6 +90,11 @@ The read audit also verifies preservation of every selected historical NR2F2
 record and identifies the current library members containing them. Its seven
 historical ALT templates use the original, unfiltered classifier; they are not
 claimed to pass the independent MAPQ/NH/base-quality policy below.
+An offline recount on 2026-10-05 of the original unsampled GRCh37 extract found
+81 overlapping records: 79 failed the MAPQ-255/NH policy and two had MAPQ below
+20. No templates passed those filters, so that recount supplies no high-quality
+reference or alternate evidence. It does not invalidate the seven historical
+unfiltered ALT templates or turn NR2F2 into a negative control.
 
 The read audit independently recounts these loci from **full regional extracts
 before fixture sampling**. It collapses RG/QNAME templates, excludes duplicate,

@@ -168,6 +168,25 @@ def test_counts_reject_incorrect_legacy_record_metadata(bam, tmp_path, records):
         count_reads(bam, regions, cache=Cache(cache.root, offline=True), max_records=6)
 
 
+@pytest.mark.parametrize("content", ['{"records": true}', '{"records": -1}', '{}', '[]', 'invalid'])
+def test_count_cache_rejects_malformed_record_data(bam, tmp_path, content):
+    import json
+
+    from osteosarc import count_reads
+    from osteosarc.cache import digest
+    cache = Cache(tmp_path / "cache")
+    regions = [Region("chr1", 100, 160, "GRCh38")]
+    count_reads(bam, regions, cache=cache)
+    receipt_path, = (cache.workspace / "derived").glob("*/receipt.json")
+    count_path = receipt_path.parent / "count.json"
+    count_path.write_text(content)
+    receipt = json.loads(receipt_path.read_text())
+    receipt["files"]["count.json"] = digest(count_path)
+    receipt_path.write_text(json.dumps(receipt))
+    with pytest.raises(IntegrityError, match="cached regional count|count differs"):
+        count_reads(bam, regions, cache=Cache(cache.root, offline=True))
+
+
 @pytest.mark.parametrize("unpinned", ["reads.bam", "reads.bam.bai"])
 def test_counts_require_legacy_bam_and_index_integrity_pins(bam, tmp_path, unpinned):
     import json

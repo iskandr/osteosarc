@@ -1,0 +1,1118 @@
+{
+  "verified": "2026-10-05",
+  "corrections": {
+    "tempus-grch37-counts": {
+      "versions": [
+        [
+          {
+            "source": "vafs",
+            "match": {
+              "bam_file": {
+                "glob": "*TL-24-5GQLV9WSXQ*"
+              }
+            },
+            "expect": {},
+            "set": {},
+            "absent": true
+          },
+          {
+            "source": "bams",
+            "match": {
+              "url": {
+                "glob": "*TL-24-5GQLV9WSXQ*"
+              }
+            },
+            "expect": {},
+            "set": {},
+            "absent": true
+          },
+          {
+            "source": "bam_metadata",
+            "match": {
+              "s3_path": "vendor/tempus/TL-24-5GQLV9WSXQ/DNA/TL-24-5GQLV9WSXQ_T.sorted.bam"
+            },
+            "expect": {
+              "provider": "Tempus",
+              "assay": "Panel",
+              "timepoint": "T0",
+              "tissue": "Tumor"
+            },
+            "set": {},
+            "absent": false
+          },
+          {
+            "source": "vafs",
+            "match": {
+              "variant_id": "PDZRN4-chr12-41572809"
+            },
+            "expect": {},
+            "set": {},
+            "absent": false
+          }
+        ]
+      ],
+      "summary_suffix": " The 2026-10-05 metadata identifies this product as a T0 targeted panel; its invalid count rows remain removed."
+    },
+    "gene-symbol-TRMO": {
+      "versions": [
+        [
+          {
+            "source": "source_variants",
+            "match": {
+              "id": "TMRO-chr9-97910412"
+            },
+            "absent": true
+          },
+          {
+            "source": "variant_index",
+            "match": {
+              "id": "TMRO-chr9-97910412"
+            },
+            "absent": true
+          },
+          {
+            "source": "vafs",
+            "match": {
+              "variant_id": "TMRO-chr9-97910412"
+            },
+            "absent": true
+          },
+          {
+            "source": "source_variants",
+            "match": {
+              "id": "TRMO-chr9-97910412"
+            },
+            "expect": {
+              "gene": "TRMO",
+              "chr": "chr9",
+              "pos": 97910412,
+              "ref": "C",
+              "alt": "T",
+              "genomic_location": "chr9:97910412"
+            },
+            "set": {
+              "gene": "TRMO"
+            }
+          },
+          {
+            "source": "variant_index",
+            "match": {
+              "id": "TRMO-chr9-97910412"
+            },
+            "expect": {
+              "gene": "TRMO",
+              "location": "chr9:97910412"
+            }
+          },
+          {
+            "source": "vafs",
+            "match": {
+              "variant_id": "TRMO-chr9-97910412"
+            },
+            "expect": {
+              "gene": "TRMO",
+              "chrom": "chr9",
+              "pos": "97910412",
+              "ref": "C",
+              "alt": "T"
+            }
+          }
+        ]
+      ],
+      "summary_suffix": " The 2026-10-05 sources consistently rename the ID to TRMO-chr9-97910412."
+    },
+    "allele-DCHS2-chr4-154322488": {
+      "versions": [
+        [
+          {
+            "source": "source_variants",
+            "match": {
+              "id": "DCHS2-chr4-154322488"
+            },
+            "absent": true
+          },
+          {
+            "source": "variant_index",
+            "match": {
+              "id": "DCHS2-chr4-154322488"
+            },
+            "absent": true
+          },
+          {
+            "source": "vafs",
+            "match": {
+              "variant_id": "DCHS2-chr4-154322488"
+            },
+            "absent": true
+          },
+          {
+            "source": "source_variants",
+            "match": {
+              "id": "DCHS2-chr4-154323273"
+            },
+            "expect": {
+              "gene": "DCHS2",
+              "chr": "chr4",
+              "pos": 154323273,
+              "ref": "GTTTTTTGCACGACTGCTTCCCAAATGCTGTTTTTCCCTTCAGAGGCATAGGTCTAGCTGCC",
+              "alt": "TTTGCACGACTGCTTCCCAAATGCTGTTTTTCCCTACCGAGGCATATGTCTAGCTGCCAA",
+              "genomic_location": "chr4:154323273"
+            },
+            "set": {
+              "chr": "chr4",
+              "pos": 154323273,
+              "ref": "GTTTTTTGCACGACTGCTTCCCAAATGCTGTTTTTCCCTTCAGAGGCATAGGTCTAGCTGCC",
+              "alt": "TTTGCACGACTGCTTCCCAAATGCTGTTTTTCCCTACCGAGGCATATGTCTAGCTGCCAA"
+            }
+          },
+          {
+            "source": "variant_index",
+            "match": {
+              "id": "DCHS2-chr4-154323273"
+            },
+            "expect": {
+              "gene": "DCHS2",
+              "location": "chr4:154323273"
+            }
+          },
+          {
+            "source": "vafs",
+            "match": {
+              "variant_id": "DCHS2-chr4-154323273"
+            },
+            "expect": {
+              "gene": "DCHS2",
+              "chrom": "chr4",
+              "pos": "154323273",
+              "ref": "GTTTTTTGCACGACTGCTTCCCAAATGCTGTTTTTCCCTTCAGAGGCATAGGTCTAGCTGCC",
+              "alt": "TTTGCACGACTGCTTCCCAAATGCTGTTTTTCCCTACCGAGGCATATGTCTAGCTGCCAA",
+              "status": "unsupported",
+              "ref_reads": "",
+              "alt_reads": "",
+              "other_reads": "",
+              "total_reads": "",
+              "vaf": ""
+            },
+            "set": {
+              "ref_reads": "",
+              "alt_reads": "",
+              "other_reads": "",
+              "total_reads": "",
+              "vaf": ""
+            }
+          }
+        ]
+      ],
+      "summary_suffix": " The 2026-10-05 sources publish the verified literal allele and mark every count unsupported and missing; those missing values remain missing."
+    },
+    "allele-GAPVD1-chr9-125299105": {
+      "versions": [
+        [
+          {
+            "source": "source_variants",
+            "match": {
+              "id": "GAPVD1-chr9-125299105"
+            },
+            "absent": true
+          },
+          {
+            "source": "variant_index",
+            "match": {
+              "id": "GAPVD1-chr9-125299105"
+            },
+            "absent": true
+          },
+          {
+            "source": "vafs",
+            "match": {
+              "variant_id": "GAPVD1-chr9-125299105"
+            },
+            "absent": true
+          },
+          {
+            "source": "source_variants",
+            "match": {
+              "id": "GAPVD1-chr9-125301980"
+            },
+            "expect": {
+              "gene": "GAPVD1",
+              "chr": "chr9",
+              "pos": 125301980,
+              "ref": "TAGTGC",
+              "alt": "ATTGG",
+              "genomic_location": "chr9:125301980"
+            },
+            "set": {
+              "chr": "chr9",
+              "pos": 125301980,
+              "ref": "TAGTGC",
+              "alt": "ATTGG"
+            }
+          },
+          {
+            "source": "variant_index",
+            "match": {
+              "id": "GAPVD1-chr9-125301980"
+            },
+            "expect": {
+              "gene": "GAPVD1",
+              "location": "chr9:125301980"
+            }
+          },
+          {
+            "source": "vafs",
+            "match": {
+              "variant_id": "GAPVD1-chr9-125301980"
+            },
+            "expect": {
+              "gene": "GAPVD1",
+              "chrom": "chr9",
+              "pos": "125301980",
+              "ref": "TAGTGC",
+              "alt": "ATTGG",
+              "status": "unsupported",
+              "ref_reads": "",
+              "alt_reads": "",
+              "other_reads": "",
+              "total_reads": "",
+              "vaf": ""
+            },
+            "set": {
+              "ref_reads": "",
+              "alt_reads": "",
+              "other_reads": "",
+              "total_reads": "",
+              "vaf": ""
+            }
+          }
+        ]
+      ],
+      "summary_suffix": " The 2026-10-05 sources publish the verified literal allele and mark every count unsupported and missing; those missing values remain missing."
+    },
+    "allele-MAP2-chr2-209694768": {
+      "versions": [
+        [
+          {
+            "source": "source_variants",
+            "match": {
+              "id": "MAP2-chr2-209694768"
+            },
+            "expect": {
+              "gene": "MAP2",
+              "chr": "chr2",
+              "pos": 209694768,
+              "ref": "CCTGGGCTACTGTGTGTTCAATAAGTACACAGT",
+              "alt": "CAGGG",
+              "genomic_location": "chr2:209694768",
+              "genomic_change_on_cdna": "c.2599_2630delinsAGGG"
+            },
+            "set": {
+              "chr": "chr2",
+              "pos": 209694768,
+              "ref": "CCTGGGCTACTGTGTGTTCAATAAGTACACAGT",
+              "alt": "CAGGG"
+            }
+          },
+          {
+            "source": "vafs",
+            "match": {
+              "variant_id": "MAP2-chr2-209694768"
+            },
+            "expect": {
+              "chrom": "chr2",
+              "pos": "209694768",
+              "ref": "CCTGGGCTACTGTGTGTTCAATAAGTACACAGT",
+              "alt": "CAGGG"
+            }
+          }
+        ]
+      ],
+      "summary_suffix": " The 2026-10-05 sources publish this same complex allele as delins; its source type and updated counts are preserved."
+    },
+    "map2-split-representations": {
+      "versions": [
+        [
+          {
+            "source": "source_variants",
+            "match": {
+              "id": "MAP2-chr2-209694769"
+            },
+            "absent": true
+          },
+          {
+            "source": "variant_index",
+            "match": {
+              "id": "MAP2-chr2-209694769"
+            },
+            "absent": true
+          },
+          {
+            "source": "vafs",
+            "match": {
+              "variant_id": "MAP2-chr2-209694769"
+            },
+            "absent": true
+          },
+          {
+            "source": "source_variants",
+            "match": {
+              "id": "MAP2-chr2-209694772"
+            },
+            "absent": true
+          },
+          {
+            "source": "variant_index",
+            "match": {
+              "id": "MAP2-chr2-209694772"
+            },
+            "absent": true
+          },
+          {
+            "source": "vafs",
+            "match": {
+              "variant_id": "MAP2-chr2-209694772"
+            },
+            "absent": true
+          },
+          {
+            "source": "source_variants",
+            "match": {
+              "id": "MAP2-chr2-209694768"
+            },
+            "expect": {
+              "gene": "MAP2",
+              "chr": "chr2",
+              "pos": 209694768,
+              "ref": "CCTGGGCTACTGTGTGTTCAATAAGTACACAGT",
+              "alt": "CAGGG",
+              "genomic_location": "chr2:209694768"
+            }
+          }
+        ]
+      ],
+      "summary_suffix": " The 2026-10-05 sources remove both split entries and retain the verified complex event."
+    },
+    "fam157a-withdrawn-protein": {
+      "versions": [
+        [
+          {
+            "source": "source_variants",
+            "match": {
+              "id": "FAM157A-p_W70_Q71ins_14"
+            },
+            "expect": {
+              "gene": "FAM157A",
+              "chr": "chr3",
+              "pos": 198153259,
+              "ref": "G",
+              "alt": "GGCGGCGGCGGCGGCAGCAGCAGCAGCAGCAGCAGCAGCAGCA",
+              "genomic_location": "chr3:198153259",
+              "refseq_id": "NM_001145248",
+              "note": "Tempus pindel GRCh37 3:197880130 G>G+42 (5/39 tumor reads, 0/30 normal), lifted to GRCh38 chr3:198153259. The site is the germline-polymorphic CAG repeat rs56683636, where the patient's normal DNA is heterozygous for 6-bp and 9-bp deletions, so this is a low-confidence Tempus-only call; the allele is not countable by the site pileup. Protein caveat: NCBI has suppressed NM_001145248.1 (support for the transcript but not for the protein) and now annotates FAM157A as non-coding (NR_146164.1, whose exon 1 contains this insertion), so p.W70_Q71ins(14) derives from a retired protein model and is not supported by current annotation."
+            },
+            "set": {
+              "note": "Tempus pindel GRCh37 3:197880130 G>G+42 (5/39 tumor reads, 0/30 normal), lifted to GRCh38 chr3:198153259. The site is the germline-polymorphic CAG repeat rs56683636, where the patient's normal DNA is heterozygous for 6-bp and 9-bp deletions, so this is a low-confidence Tempus-only call; the allele is not countable by the site pileup. Protein caveat: NCBI has suppressed NM_001145248.1 (support for the transcript but not for the protein) and now annotates FAM157A as non-coding (NR_146164.1, whose exon 1 contains this insertion), so p.W70_Q71ins(14) derives from a retired protein model and is not supported by current annotation."
+            }
+          },
+          {
+            "source": "variant_index",
+            "match": {
+              "id": "FAM157A-p_W70_Q71ins_14"
+            }
+          }
+        ]
+      ],
+      "summary_suffix": " The expanded 2026-10-05 note retains the withdrawn-protein caveat and identifies the low-confidence repeat call."
+    },
+    "ush2a-transposed-duplicate": {
+      "versions": [
+        [
+          {
+            "source": "source_variants",
+            "match": {
+              "id": "USH2A-chr1-215560752"
+            },
+            "expect": {},
+            "set": {},
+            "absent": true
+          },
+          {
+            "source": "variant_index",
+            "match": {
+              "id": "USH2A-chr1-215560752"
+            },
+            "expect": {},
+            "set": {},
+            "absent": true
+          },
+          {
+            "source": "vafs",
+            "match": {
+              "variant_id": "USH2A-chr1-215560752"
+            },
+            "expect": {},
+            "set": {},
+            "absent": true
+          },
+          {
+            "source": "source_variants",
+            "match": {
+              "id": "USH2A-chr1-215650752"
+            },
+            "expect": {
+              "gene": "USH2A",
+              "chr": "chr1",
+              "pos": 215650752,
+              "ref": "C",
+              "alt": "A",
+              "genomic_change_on_cdna": "c.14183G>T",
+              "refseq_id": "NM_206933",
+              "protein_change": "p.Cys4728Phe",
+              "genomic_location": "chr1:215650752",
+              "genomic_ref_context": "ACATGGTGCAGAACC"
+            },
+            "set": {
+              "genomic_location": "chr1:215650752",
+              "genomic_ref_context": "ACATGGTGCAGAACC",
+              "upstream_merge": {
+                "retired_id": "USH2A-chr1-215560752",
+                "retained_id": "USH2A-chr1-215650752",
+                "evidence": "https://gitlab.com/slowkow/osteosarc.com/-/commit/bc138897b77323f595acffa46cbfce5c45720a1d",
+                "original_source_identity": "confirmed",
+                "identity_basis": "chr1:215560752 lies outside USH2A (chr1:215621576-216423448), so it cannot encode p.Cys4728Phe"
+              }
+            },
+            "absent": false
+          },
+          {
+            "source": "variant_index",
+            "match": {
+              "id": "USH2A-chr1-215650752"
+            },
+            "expect": {
+              "gene": "USH2A",
+              "location": "chr1:215650752",
+              "protein_label": "p.Cys4728Phe"
+            },
+            "set": {},
+            "absent": false
+          },
+          {
+            "source": "vafs",
+            "match": {
+              "variant_id": "USH2A-chr1-215650752"
+            },
+            "expect": {
+              "gene": "USH2A",
+              "chrom": "chr1",
+              "pos": "215650752",
+              "ref": "C",
+              "alt": "A"
+            },
+            "set": {},
+            "absent": false
+          }
+        ]
+      ],
+      "summary_suffix": " The 2026-10-05 source also fixes the retained location and context; the retired-ID relationship is still attached."
+    },
+    "allele-FAM157A-p_W70_Q71ins_14": {
+      "versions": [
+        [
+          {
+            "source": "source_variants",
+            "match": {
+              "id": "FAM157A-p_W70_Q71ins_14"
+            },
+            "expect": {
+              "gene": "FAM157A",
+              "chr": "chr3",
+              "pos": 198153259,
+              "ref": "G",
+              "alt": "GGCGGCGGCGGCGGCAGCAGCAGCAGCAGCAGCAGCAGCAGCA",
+              "genomic_change_on_cdna": "c.211_212ins(42)",
+              "refseq_id": "NM_001145248",
+              "protein_change": "p.Trp70_Gln71ins(14)",
+              "genomic_location": "chr3:198153259"
+            },
+            "set": {
+              "allele_resolution": {
+                "status": "resolved",
+                "source_allele": {
+                  "assembly": "GRCh37",
+                  "chrom": "chr3",
+                  "pos": 197880130,
+                  "ref": "G",
+                  "alt": "GGCGGCGGCGGCGGCAGCAGCAGCAGCAGCAGCAGCAGCAGCA"
+                },
+                "allele": {
+                  "assembly": "GRCh38",
+                  "chrom": "chr3",
+                  "pos": 198153259,
+                  "ref": "G",
+                  "alt": "GGCGGCGGCGGCGGCAGCAGCAGCAGCAGCAGCAGCAGCAGCA"
+                },
+                "source": {
+                  "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/tempus/TL-24-ALMY2X4KMV/DNA/TL-24-ALMY2X4KMV.soma.pindel.vcf",
+                  "sha256": "f3b39c22454ed0269b9e163e1f09f406bc2c1a57c48735233915901e6dc58090"
+                },
+                "references": [
+                  {
+                    "accession": "NC_000003.11",
+                    "start": 197879630,
+                    "end": 197880630,
+                    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000003.11&seq_start=197879630&seq_stop=197880630&rettype=fasta&retmode=text",
+                    "sha256": "f308a720abf846c7be3fe9f9e433eafd40d3b622306c063750f05998f8b56353"
+                  },
+                  {
+                    "accession": "NC_000003.12",
+                    "start": 198152759,
+                    "end": 198153759,
+                    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000003.12&seq_start=198152759&seq_stop=198153759&rettype=fasta&retmode=text",
+                    "sha256": "bf700b25dc5b4cdfbf0f4bce7e09aae159926ae08d5cabad734dc081e6305115"
+                  }
+                ],
+                "mapping": {
+                  "url": "https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz",
+                  "sha256": "5c0598e500ceb5a78c73086929e8ef993aec309bcafb595139b53d440b125a1d",
+                  "coordinates": "0-based half-open",
+                  "blocks": [
+                    {
+                      "chain_id": "3",
+                      "source": [
+                        "chr3",
+                        197879629,
+                        197880630
+                      ],
+                      "target": [
+                        "chr3",
+                        198152758,
+                        198153759
+                      ],
+                      "strand": "+"
+                    }
+                  ]
+                },
+                "normalization": {
+                  "representation": "leftmost anchored allele in the checked reference window",
+                  "equivalent_positions_grch38": [
+                    198153259,
+                    198153260,
+                    198153261
+                  ],
+                  "identical_reference_windows": true
+                },
+                "transcript": "NM_001145248.1",
+                "source_hgvs_c": "c.211_212insGGCGGCGGCGGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGC",
+                "summary": "The public Tempus Pindel call supplies the 42-base insertion. Its REF and flanking sequence match both assemblies.",
+                "protein_interpretation": {
+                  "status": "withdrawn_protein_model",
+                  "transcript": "NM_001145248.1",
+                  "current_transcript": "NR_146164.1",
+                  "source": {
+                    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=gene&id=728262&retmode=xml",
+                    "sha256": "a6ed3ce8173d5fafe94a01960d1b35bf2eab3f59ccaf4413c0a0665873842378"
+                  },
+                  "reason": "NCBI supports the transcript but not the protein; FAM157A is now annotated as ncRNA."
+                },
+                "caveats": [
+                  "Genomic readiness does not establish a protein-coding insertion or a neoantigen.",
+                  "No read-count rows are published for this catalogue entry."
+                ]
+              },
+              "chr": "chr3",
+              "pos": 198153259,
+              "ref": "G",
+              "alt": "GGCGGCGGCGGCGGCAGCAGCAGCAGCAGCAGCAGCAGCAGCA",
+              "variant_type": "insertion",
+              "genomic_location": "chr3:198153259"
+            }
+          },
+          {
+            "source": "variant_index",
+            "match": {
+              "id": "FAM157A-p_W70_Q71ins_14"
+            },
+            "expect": {
+              "gene": "FAM157A",
+              "location": "chr3:198153259",
+              "protein_label": "p.Trp70_Gln71ins(14)"
+            },
+            "set": {
+              "location": "chr3:198153259"
+            }
+          },
+          {
+            "source": "vafs",
+            "match": {
+              "variant_id": "FAM157A-p_W70_Q71ins_14"
+            },
+            "expect": {
+              "chrom": "chr3",
+              "pos": "198153259",
+              "ref": "G",
+              "alt": "GGCGGCGGCGGCGGCAGCAGCAGCAGCAGCAGCAGCAGCAGCA"
+            }
+          }
+        ]
+      ],
+      "summary_suffix": " The 2026-10-05 source supplies this verified allele; the reviewed acquisition and reference evidence remains attached without replacing its count rows."
+    },
+    "allele-COL3A1-Splice": {
+      "versions": [
+        [
+          {
+            "source": "source_variants",
+            "match": {
+              "id": "COL3A1-Splice"
+            },
+            "expect": {
+              "gene": "COL3A1",
+              "chr": "chr2",
+              "pos": 189010889,
+              "ref": "CGGTAGGAAACATTTTTCTCAATATAGGTCATAAAGCAGTCAGCATTTTAGTTTAATCATGCAAATTATTTTGAATAGAATAAATAAAATTAATAGGATGAAATAAAGATAGCATTTGGTATGAATTACATACATTGCATCTACTGATTCATTGCAGGGAATGTTAAATGCAACAAAATGGATCTTAGCCTCCAGATGAAAACCAGTTGAAATAAAAGCATTTAAAATTTAAATCCATAATGCAAACTTTATCAGATAATTGGGATAGTTACTATATGTTTTGAATAATACCTGTCACATTAACTCAGTTTGAAATATCTGTTTTTTAAAATTTTAAAGGTTAACTTCAAATCTCTCATTTGTTATTGTTATTTGTGAACAAAGGGAAAACTCACTTCTAATATTAGCGAATTTCATTGTGAGAGACCTATCCTCTTTTTAATAAACCATTTATAAACCTGTTAGCAATGGCCGGAACCAGGCCTCCTGAGGATGCACTGGTCTATAGCAATTGCCCTGCTGCATTTACTAAGAATCCTTACAAGGCATTTGTTTAAGAATATTGTTTATCAACTAAGAAGATTACAGCTTTGAAGTAGAGCAGGTCTCATATACATGAATAATAACATGGCACGATGAATGCTTCTTTAGAGTAAAAAGGTTTTCTTTAACTTGTTAAGTCAGAGTTGTCTAAGTAATTGTAATGTCATGATCATGTACATTTTGTCCTTTTTTACA",
+              "alt": "C",
+              "genomic_change_on_cdna": "c.4254+1_4255-1del",
+              "refseq_id": "NM_000090",
+              "protein_change": "Splice",
+              "genomic_location": "chr2:189010889"
+            },
+            "set": {
+              "allele_resolution": {
+                "status": "resolved",
+                "source_allele": {
+                  "assembly": "GRCh37",
+                  "chrom": "chr2",
+                  "pos": 189875615,
+                  "ref": "CGGTAGGAAACATTTTTCTCAATATAGGTCATAAAGCAGTCAGCATTTTAGTTTAATCATGCAAATTATTTTGAATAGAATAAATAAAATTAATAGGATGAAATAAAGATAGCATTTGGTATGAATTACATACATTGCATCTACTGATTCATTGCAGGGAATGTTAAATGCAACAAAATGGATCTTAGCCTCCAGATGAAAACCAGTTGAAATAAAAGCATTTAAAATTTAAATCCATAATGCAAACTTTATCAGATAATTGGGATAGTTACTATATGTTTTGAATAATACCTGTCACATTAACTCAGTTTGAAATATCTGTTTTTTAAAATTTTAAAGGTTAACTTCAAATCTCTCATTTGTTATTGTTATTTGTGAACAAAGGGAAAACTCACTTCTAATATTAGCGAATTTCATTGTGAGAGACCTATCCTCTTTTTAATAAACCATTTATAAACCTGTTAGCAATGGCCGGAACCAGGCCTCCTGAGGATGCACTGGTCTATAGCAATTGCCCTGCTGCATTTACTAAGAATCCTTACAAGGCATTTGTTTAAGAATATTGTTTATCAACTAAGAAGATTACAGCTTTGAAGTAGAGCAGGTCTCATATACATGAATAATAACATGGCACGATGAATGCTTCTTTAGAGTAAAAAGGTTTTCTTTAACTTGTTAAGTCAGAGTTGTCTAAGTAATTGTAATGTCATGATCATGTACATTTTGTCCTTTTTTACA",
+                  "alt": "C"
+                },
+                "allele": {
+                  "assembly": "GRCh38",
+                  "chrom": "chr2",
+                  "pos": 189010889,
+                  "ref": "CGGTAGGAAACATTTTTCTCAATATAGGTCATAAAGCAGTCAGCATTTTAGTTTAATCATGCAAATTATTTTGAATAGAATAAATAAAATTAATAGGATGAAATAAAGATAGCATTTGGTATGAATTACATACATTGCATCTACTGATTCATTGCAGGGAATGTTAAATGCAACAAAATGGATCTTAGCCTCCAGATGAAAACCAGTTGAAATAAAAGCATTTAAAATTTAAATCCATAATGCAAACTTTATCAGATAATTGGGATAGTTACTATATGTTTTGAATAATACCTGTCACATTAACTCAGTTTGAAATATCTGTTTTTTAAAATTTTAAAGGTTAACTTCAAATCTCTCATTTGTTATTGTTATTTGTGAACAAAGGGAAAACTCACTTCTAATATTAGCGAATTTCATTGTGAGAGACCTATCCTCTTTTTAATAAACCATTTATAAACCTGTTAGCAATGGCCGGAACCAGGCCTCCTGAGGATGCACTGGTCTATAGCAATTGCCCTGCTGCATTTACTAAGAATCCTTACAAGGCATTTGTTTAAGAATATTGTTTATCAACTAAGAAGATTACAGCTTTGAAGTAGAGCAGGTCTCATATACATGAATAATAACATGGCACGATGAATGCTTCTTTAGAGTAAAAAGGTTTTCTTTAACTTGTTAAGTCAGAGTTGTCTAAGTAATTGTAATGTCATGATCATGTACATTTTGTCCTTTTTTACA",
+                  "alt": "C"
+                },
+                "source": {
+                  "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/tempus/TL-24-ALMY2X4KMV/DNA/TL-24-ALMY2X4KMV.soma.pindel.vcf",
+                  "sha256": "f3b39c22454ed0269b9e163e1f09f406bc2c1a57c48735233915901e6dc58090"
+                },
+                "references": [
+                  {
+                    "accession": "NC_000002.11",
+                    "start": 189875115,
+                    "end": 189876852,
+                    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000002.11&seq_start=189875115&seq_stop=189876852&rettype=fasta&retmode=text",
+                    "sha256": "66ccf5a5c3ff62c3f01a20c4de6e92a95ed636b65aae220972a7e8934f5a50a6"
+                  },
+                  {
+                    "accession": "NC_000002.12",
+                    "start": 189010389,
+                    "end": 189012126,
+                    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000002.12&seq_start=189010389&seq_stop=189012126&rettype=fasta&retmode=text",
+                    "sha256": "ba0cca8c5f8ff532111a5f1cf324a1acb722c8162b1139f3fbb4545ceaa30472"
+                  }
+                ],
+                "mapping": {
+                  "url": "https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz",
+                  "sha256": "5c0598e500ceb5a78c73086929e8ef993aec309bcafb595139b53d440b125a1d",
+                  "coordinates": "0-based half-open",
+                  "blocks": [
+                    {
+                      "chain_id": "1",
+                      "source": [
+                        "chr2",
+                        189875114,
+                        189876852
+                      ],
+                      "target": [
+                        "chr2",
+                        189010388,
+                        189012126
+                      ],
+                      "strand": "+"
+                    }
+                  ]
+                },
+                "normalization": {
+                  "representation": "leftmost anchored allele in the checked reference window",
+                  "equivalent_positions_grch38": [
+                    189010889,
+                    189010890
+                  ],
+                  "identical_reference_windows": true
+                },
+                "transcript": "NM_000090.3",
+                "source_hgvs_c": "c.4254+1_4255-1del",
+                "summary": "The public Tempus Pindel call matches the catalogue transcript and c.4254+1_4255-1del annotation: a 737-base intronic deletion. Its full REF and flanking sequence match both assemblies.",
+                "caveats": [
+                  "The original Natera report is not public; the allele is supported by the independent public Tempus call.",
+                  "No read-count rows are published for this catalogue entry."
+                ]
+              },
+              "chr": "chr2",
+              "pos": 189010889,
+              "ref": "CGGTAGGAAACATTTTTCTCAATATAGGTCATAAAGCAGTCAGCATTTTAGTTTAATCATGCAAATTATTTTGAATAGAATAAATAAAATTAATAGGATGAAATAAAGATAGCATTTGGTATGAATTACATACATTGCATCTACTGATTCATTGCAGGGAATGTTAAATGCAACAAAATGGATCTTAGCCTCCAGATGAAAACCAGTTGAAATAAAAGCATTTAAAATTTAAATCCATAATGCAAACTTTATCAGATAATTGGGATAGTTACTATATGTTTTGAATAATACCTGTCACATTAACTCAGTTTGAAATATCTGTTTTTTAAAATTTTAAAGGTTAACTTCAAATCTCTCATTTGTTATTGTTATTTGTGAACAAAGGGAAAACTCACTTCTAATATTAGCGAATTTCATTGTGAGAGACCTATCCTCTTTTTAATAAACCATTTATAAACCTGTTAGCAATGGCCGGAACCAGGCCTCCTGAGGATGCACTGGTCTATAGCAATTGCCCTGCTGCATTTACTAAGAATCCTTACAAGGCATTTGTTTAAGAATATTGTTTATCAACTAAGAAGATTACAGCTTTGAAGTAGAGCAGGTCTCATATACATGAATAATAACATGGCACGATGAATGCTTCTTTAGAGTAAAAAGGTTTTCTTTAACTTGTTAAGTCAGAGTTGTCTAAGTAATTGTAATGTCATGATCATGTACATTTTGTCCTTTTTTACA",
+              "alt": "C",
+              "variant_type": "deletion",
+              "genomic_location": "chr2:189010889"
+            }
+          },
+          {
+            "source": "variant_index",
+            "match": {
+              "id": "COL3A1-Splice"
+            },
+            "expect": {
+              "gene": "COL3A1",
+              "location": "chr2:189010889",
+              "protein_label": "Splice"
+            },
+            "set": {
+              "location": "chr2:189010889"
+            }
+          },
+          {
+            "source": "vafs",
+            "match": {
+              "variant_id": "COL3A1-Splice"
+            },
+            "expect": {
+              "chrom": "chr2",
+              "pos": "189010889",
+              "ref": "CGGTAGGAAACATTTTTCTCAATATAGGTCATAAAGCAGTCAGCATTTTAGTTTAATCATGCAAATTATTTTGAATAGAATAAATAAAATTAATAGGATGAAATAAAGATAGCATTTGGTATGAATTACATACATTGCATCTACTGATTCATTGCAGGGAATGTTAAATGCAACAAAATGGATCTTAGCCTCCAGATGAAAACCAGTTGAAATAAAAGCATTTAAAATTTAAATCCATAATGCAAACTTTATCAGATAATTGGGATAGTTACTATATGTTTTGAATAATACCTGTCACATTAACTCAGTTTGAAATATCTGTTTTTTAAAATTTTAAAGGTTAACTTCAAATCTCTCATTTGTTATTGTTATTTGTGAACAAAGGGAAAACTCACTTCTAATATTAGCGAATTTCATTGTGAGAGACCTATCCTCTTTTTAATAAACCATTTATAAACCTGTTAGCAATGGCCGGAACCAGGCCTCCTGAGGATGCACTGGTCTATAGCAATTGCCCTGCTGCATTTACTAAGAATCCTTACAAGGCATTTGTTTAAGAATATTGTTTATCAACTAAGAAGATTACAGCTTTGAAGTAGAGCAGGTCTCATATACATGAATAATAACATGGCACGATGAATGCTTCTTTAGAGTAAAAAGGTTTTCTTTAACTTGTTAAGTCAGAGTTGTCTAAGTAATTGTAATGTCATGATCATGTACATTTTGTCCTTTTTTACA",
+              "alt": "C"
+            }
+          }
+        ]
+      ],
+      "summary_suffix": " The 2026-10-05 source supplies this verified allele; the reviewed acquisition and reference evidence remains attached without replacing its count rows."
+    },
+    "otud4-source-unavailable": {
+      "versions": [
+        [
+          {
+            "source": "source_variants",
+            "match": {
+              "id": "OTUD4-p_A153del"
+            },
+            "expect": {
+              "gene": "OTUD4",
+              "chr": "chr4",
+              "pos": 145155970,
+              "ref": "TCAG",
+              "alt": "T",
+              "genomic_change_on_cdna": "c.458_460del",
+              "refseq_id": "NM_001102653",
+              "protein_change": "p.Ala153del",
+              "genomic_location": "chr4:145155970"
+            },
+            "set": {
+              "allele_resolution": {
+                "status": "resolved",
+                "summary": "A public CeGaT normal-DNA call supplies the matching literal OTUD4 allele and transcript annotation. This does not verify the original Natera call or establish somatic status.",
+                "allele": {
+                  "assembly": "GRCh38",
+                  "chrom": "chr4",
+                  "pos": 145155970,
+                  "ref": "TCAG",
+                  "alt": "T"
+                },
+                "source_allele": {
+                  "assembly": "GRCh37",
+                  "chrom": "chr4",
+                  "pos": 146077122,
+                  "ref": "TCAG",
+                  "alt": "T"
+                },
+                "source": {
+                  "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/cegat/P116686_1_S000048/P116686_1_indels.vcf",
+                  "sha256": "4e37a807db95fdc82b36e0512f8bc3f58a021bdd8268d3e59fde5fd9a8d29683"
+                },
+                "annotation_source": {
+                  "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/cegat/P116686_1_S000048/P116686_1_indels.annotated.tsv",
+                  "sha256": "18650e9b0cd000a8c7b58b3a562f7a621a8d61ff9c9deb389428ba542d99215e"
+                },
+                "source_filter": "FP/HET",
+                "source_counts": {
+                  "alt": 7,
+                  "ref": 316,
+                  "depth": 323
+                },
+                "transcript": "NM_001102653.1",
+                "source_hgvs_c": "c.458_460delCTG",
+                "source_hgvs_p": "p.A153del",
+                "references": [
+                  {
+                    "accession": "NC_000004.11",
+                    "start": 146076622,
+                    "end": 146077622,
+                    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000004.11&seq_start=146076622&seq_stop=146077622&rettype=fasta&retmode=text",
+                    "sha256": "564dd3888f5ae4ed9b5248cc8ab41c52d18b1e90c12cbe15f2999698a923d999"
+                  },
+                  {
+                    "accession": "NC_000004.12",
+                    "start": 145155470,
+                    "end": 145156470,
+                    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000004.12&seq_start=145155470&seq_stop=145156470&rettype=fasta&retmode=text",
+                    "sha256": "7563c0185bb92d5e129b4c679741b0a686d0b7d61e49ae87124edbde96be8e78"
+                  }
+                ],
+                "mapping": {
+                  "url": "https://rest.ensembl.org/map/human/GRCh37/4:146077122..146077125:1/GRCh38?content-type=application/json",
+                  "sha256": "e72fb653a74d8a092177dc6ad85135b40028e9187b7e90e0888f378ffc0b5087",
+                  "mappings": [
+                    {
+                      "original": {
+                        "end": 146077125,
+                        "strand": 1,
+                        "start": 146077122,
+                        "coord_system": "chromosome",
+                        "assembly": "GRCh37",
+                        "seq_region_name": "4"
+                      },
+                      "mapped": {
+                        "start": 145155970,
+                        "end": 145155973,
+                        "strand": 1,
+                        "assembly": "GRCh38",
+                        "seq_region_name": "4",
+                        "coord_system": "chromosome"
+                      }
+                    }
+                  ]
+                },
+                "original_natera_report": "unavailable",
+                "somatic_status": "not_established",
+                "source_tissue": "blood",
+                "source_metadata": {
+                  "url": "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/scripts/data/bam-metadata-consolidated.tsv",
+                  "sha256": "cb620face7a055283818eea668a18695d12dc280e0ca7666cb637d37938da2ef",
+                  "display_name": "T0 CeGaT Blood WES 2022-12 (P116686_1 vendor)",
+                  "source_bam": "vendor/cegat/P116686_1_S000048/P116686_1.bam"
+                }
+              }
+            }
+          },
+          {
+            "source": "variant_index",
+            "match": {
+              "id": "OTUD4-p_A153del"
+            },
+            "expect": {
+              "gene": "OTUD4",
+              "location": "chr4:145155970",
+              "protein_label": "p.Ala153del"
+            }
+          },
+          {
+            "source": "vafs",
+            "match": {
+              "variant_id": "OTUD4-p_A153del"
+            },
+            "expect": {
+              "chrom": "chr4",
+              "pos": "145155970",
+              "ref": "TCAG",
+              "alt": "T"
+            }
+          }
+        ]
+      ],
+      "summary_suffix": " On 2026-10-05, a matching public CeGaT normal-DNA call (FP/HET, 7/323) and RefSeq/assembly mapping verify the newly published literal allele. The original Natera report remains unavailable and somatic status is not established."
+    },
+    "specimen-T1-site": {
+      "versions": [
+        [
+          {
+            "source": "specimens",
+            "match": {
+              "sample_id": "T1_tumor"
+            },
+            "expect": {
+              "collection_site": "UCLA",
+              "tissue_source": "Recurrent tumor biopsy (CT-guided, T4-T5)"
+            },
+            "set": {
+              "collection_site": "UCLA",
+              "tissue_source": "Recurrent tumor biopsy (CT-guided, T4-T5)"
+            }
+          }
+        ]
+      ],
+      "summary_suffix": " The 2026-10-05 registry uses the corrected site and procedure, with additional anatomical detail; the published dates are preserved."
+    },
+    "specimen-T3-site": {
+      "versions": [
+        [
+          {
+            "source": "specimens",
+            "match": {
+              "sample_id": "T3_tumor"
+            },
+            "expect": {
+              "collection_site": "MSKCC",
+              "tissue_source": "Tumor resection (T4-T5)"
+            },
+            "set": {
+              "collection_site": "MSKCC",
+              "tissue_source": "Tumor resection (T4-T5)"
+            }
+          },
+          {
+            "source": "specimens",
+            "match": {
+              "sample_id": "T3_tumor_CD45neg"
+            },
+            "expect": {
+              "collection_site": "MSKCC"
+            },
+            "set": {
+              "collection_site": "MSKCC"
+            }
+          }
+        ]
+      ],
+      "summary_suffix": " The 2026-10-05 registry uses the corrected site and procedure, with additional anatomical detail; the published dates are preserved."
+    },
+    "tempus-file-labels": {
+      "versions": [
+        [
+          {
+            "source": "bam_metadata",
+            "match": {
+              "s3_path": "vendor/tempus/TL-24-ALMY2X4KMV/DNA/TL-24-ALMY2X4KMV_T.sorted.bam"
+            },
+            "expect": {
+              "provider": "Tempus",
+              "assay": "WES",
+              "tissue": "Tumor",
+              "timepoint": "T0",
+              "sample_date": "2022-12",
+              "display_name": "T0 Tempus Tumor WES 2022-12 (TL-24-ALMY2X4KMV vendor)"
+            },
+            "set": {
+              "timepoint": "T0"
+            }
+          },
+          {
+            "source": "bam_metadata",
+            "match": {
+              "s3_path": "vendor/tempus/TL-24-ALMY2X4KMV/DNA/TL-24-ALMY2X4KMV_N.sorted.bam"
+            },
+            "expect": {
+              "provider": "Tempus",
+              "assay": "WES",
+              "tissue": "Blood",
+              "timepoint": "",
+              "sample_date": "2024-09-21",
+              "display_name": "Tempus Blood WES 2024-09-21 (TL-24-ALMY2X4KMV vendor)"
+            },
+            "set": {
+              "timepoint": ""
+            }
+          },
+          {
+            "source": "bam_metadata",
+            "match": {
+              "s3_path": "vendor/tempus/TL-24-ALMY2X4KMV/RNA/TL-24-ALMY2X4KMV_T_sorted.bam"
+            },
+            "expect": {
+              "provider": "Tempus",
+              "assay": "RNA",
+              "tissue": "Tumor",
+              "timepoint": "T0",
+              "sample_date": "2022-12",
+              "display_name": "T0 Tempus Tumor RNA 2022-12 (TL-24-ALMY2X4KMV vendor)"
+            },
+            "set": {
+              "timepoint": "T0"
+            }
+          },
+          {
+            "source": "bam_metadata",
+            "match": {
+              "s3_path": "vendor/tempus/TL-24-KCVBE1UI1P/RNA/TL-24-KCVBE1UI1P_T_sorted.bam"
+            },
+            "expect": {
+              "provider": "Tempus",
+              "assay": "RNA",
+              "tissue": "Tumor",
+              "timepoint": "T0",
+              "sample_date": "2022-12",
+              "display_name": "T0 Tempus Tumor RNA 2022-12 (TL-24-KCVBE1UI1P vendor)"
+            },
+            "set": {
+              "timepoint": "T0"
+            }
+          },
+          {
+            "source": "bam_metadata",
+            "match": {
+              "s3_path": {
+                "glob": "vendor/tempus/TL-24-ALMY2X4KMV/*"
+              },
+              "tissue": "Tumor"
+            },
+            "expect": {
+              "timepoint": "T0"
+            }
+          },
+          {
+            "source": "bam_metadata",
+            "match": {
+              "s3_path": {
+                "glob": "vendor/tempus/TL-24-KCVBE1UI1P/*"
+              },
+              "tissue": "Tumor"
+            },
+            "expect": {
+              "timepoint": "T0"
+            }
+          }
+        ]
+      ],
+      "summary_suffix": " The reviewed 2026-10-05 metadata now labels these tumor products T0 and leaves the later normal draw without a tumor timepoint. These published labels are retained; the overlapping RNA products still are not independent evidence."
+    },
+    "reyagel-end-date": {
+      "versions": [
+        [
+          {
+            "source": "events_sheet",
+            "match": {
+              "Title": "ReyaGel",
+              "Start date": "06/15/2026"
+            },
+            "expect": {
+              "End date": "07/14/2026"
+            },
+            "set": {
+              "End date": "07/14/2026"
+            }
+          },
+          {
+            "source": "events",
+            "match": {
+              "title": "ReyaGel",
+              "date": "2026-06-15"
+            },
+            "expect": {
+              "end_date": "2026-07-14"
+            }
+          }
+        ]
+      ],
+      "summary_suffix": " The 2026-10-05 sheet explicitly supplies the year and the published event includes 2026-07-14."
+    }
+  },
+  "evidence": [
+    "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/scripts/data/bam-metadata-consolidated.tsv",
+    "https://osteosarc.com/data/events.json",
+    "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/scripts/timeline/timeline.csv",
+    "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/src/data/variants.json",
+    "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/scripts/data/samples-consolidated.tsv",
+    "https://osteosarc.com/variants/variant_vafs_long.tsv",
+    "https://osteosarc.com/variants/"
+  ]
+}

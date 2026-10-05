@@ -11,6 +11,10 @@ snapshot (by name or download date) for reproducible analyses. Full release note
   of entire BAM extracts. Existing verified probes and overflow results are reused;
   the depth cap and selected fixture records are unchanged. Reused BAM counts are
   checked against their original records, including compact acquisition receipts.
+- Recognize the reviewed 2026-10-05 upstream allele, ID, specimen and timeline
+  corrections while preserving historical snapshots and future drift checks.
+  A public CeGaT normal-DNA call supplies OTUD4's newly published literal allele;
+  the original Natera report and somatic status remain unverified.
 
 ## 0.15.4
 

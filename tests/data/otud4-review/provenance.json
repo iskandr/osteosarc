@@ -1,0 +1,38 @@
+{
+  "cegat-normal-indels.vcf": {
+    "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/cegat/P116686_1_S000048/P116686_1_indels.vcf",
+    "sha256": "4e37a807db95fdc82b36e0512f8bc3f58a021bdd8268d3e59fde5fd9a8d29683",
+    "fixture_sha256": "199d8011e4c5974590545f8328d07a62a5260157aecb6f5689f3d575debeec68",
+    "selection": "OTUD4 chr4:146077122 call rows"
+  },
+  "cegat-normal-indels.annotated.tsv": {
+    "url": "https://sid-sijbrandij-osteosarc-dataset.s3.us-west-2.amazonaws.com/vendor/cegat/P116686_1_S000048/P116686_1_indels.annotated.tsv",
+    "sha256": "18650e9b0cd000a8c7b58b3a562f7a621a8d61ff9c9deb389428ba542d99215e",
+    "fixture_sha256": "8493a851d6d0a2fac2daf00c77e49090cde68b339f53b6cd7ffc9133c4332d2d",
+    "selection": "OTUD4 chr4:146077122 call rows"
+  },
+  "NC_000004.11.fasta": {
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000004.11&seq_start=146076622&seq_stop=146077622&rettype=fasta&retmode=text",
+    "sha256": "564dd3888f5ae4ed9b5248cc8ab41c52d18b1e90c12cbe15f2999698a923d999",
+    "fixture_sha256": "564dd3888f5ae4ed9b5248cc8ab41c52d18b1e90c12cbe15f2999698a923d999",
+    "selection": "whole reference window"
+  },
+  "NC_000004.12.fasta": {
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_000004.12&seq_start=145155470&seq_stop=145156470&rettype=fasta&retmode=text",
+    "sha256": "7563c0185bb92d5e129b4c679741b0a686d0b7d61e49ae87124edbde96be8e78",
+    "fixture_sha256": "7563c0185bb92d5e129b4c679741b0a686d0b7d61e49ae87124edbde96be8e78",
+    "selection": "whole reference window"
+  },
+  "mapping.json": {
+    "url": "https://rest.ensembl.org/map/human/GRCh37/4:146077122..146077125:1/GRCh38?content-type=application/json",
+    "sha256": "e72fb653a74d8a092177dc6ad85135b40028e9187b7e90e0888f378ffc0b5087",
+    "fixture_sha256": "e72fb653a74d8a092177dc6ad85135b40028e9187b7e90e0888f378ffc0b5087",
+    "selection": "whole mapping response"
+  },
+  "source-label.json": {
+    "url": "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/scripts/data/bam-metadata-consolidated.tsv",
+    "sha256": "cb620face7a055283818eea668a18695d12dc280e0ca7666cb637d37938da2ef",
+    "fixture_sha256": "74f566322b537d63e5e08ff0cc803b5132ac68daf220cc48f253d0948e6a1179",
+    "selection": "CeGaT P116686_1 source metadata row"
+  }
+}
