@@ -19,6 +19,7 @@ from urllib.parse import urlsplit
 from .cache import (
     ATTEMPTS,
     Cache,
+    _check_inventory_time,
     digest,
     file_identity,
     file_lock,
@@ -361,6 +362,10 @@ def _verified_receipt(directory, request):
     receipt = read_read_receipt(path, directory.parent.parent)
     if receipt["request"] != request:
         raise IntegrityError("Request differs from its cached receipt")
+    remote = receipt.get("remote_identity")
+    if remote is not None:
+        _check_inventory_time(request.get("source_modified"), remote.get("last-modified"),
+                              source=request["source"])
     for filename, expected in receipt["files"].items():
         if (Path(filename).name != filename or not (directory / filename).is_file()
                 or digest(directory / filename) != expected):
@@ -390,7 +395,7 @@ def inspect_alignment(source, *, cache=None, snapshot_id=None, timeout=600):
     """Inspect and cache a BAM/CRAM header without requiring an index.
 
     Accepts the same sources as extract_reads. Remote headers are pinned on
-    first inspection for a snapshot, checked against inventory size, and reused
+    first inspection for a snapshot, checked against inventory size and time, and reused
     offline. This establishes assembly from contig lengths, not viewer labels.
     Extraction rejects a remote object that changed since header inspection.
     """
@@ -413,6 +418,8 @@ def inspect_alignment(source, *, cache=None, snapshot_id=None, timeout=600):
             if before and file and file.size is not None and before["content-length"] is not None:
                 if int(before["content-length"]) != file.size:
                     raise IntegrityError("Remote alignment size differs from the pinned inventory")
+            inventory_modification = _check_inventory_time(
+                request["source_modified"], before.get("last-modified"), source=location) if remote else None
             identity = None if remote else file_identity(location)
             command = ["samtools", "view", "--no-PG", "-H", location]
             header_text = _run(command, timeout).stdout.decode()
@@ -425,6 +432,7 @@ def inspect_alignment(source, *, cache=None, snapshot_id=None, timeout=600):
                 work = Path(temporary)
                 (work / "header.sam").write_text(header_text)
                 receipt = dict(request=request, files={"header.sam": digest(work / "header.sam")},
+                               inventory_modification=inventory_modification,
                                remote_identity=before, command=_recorded_command(command, work, cache),
                                samtools_version=_samtools_version())
                 write_json(work / "receipt.json", receipt)
@@ -542,6 +550,8 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
             if before and file and file.size is not None and before["content-length"] is not None:
                 if int(before["content-length"]) != file.size:
                     raise IntegrityError("Remote alignment size differs from the pinned inventory")
+            inventory_modification = _check_inventory_time(
+                request["source_modified"], before.get("last-modified"), source=location) if remote else None
             if remote and before != info.receipt["remote_identity"]:
                 raise IntegrityError("Remote alignment changed since header inspection; use a new snapshot")
             index_receipt = None
@@ -660,6 +670,7 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
             files = {name: digest(work / name) for name in ("reads.bam", "reads.bam.bai", "header.sam", "regions.bed",
                                                             "mates.bed", "templates.txt") if (work / name).exists()}
             receipt = dict(request=request, files=files, records=count,
+                           inventory_modification=inventory_modification,
                            resolved_regions=[asdict(r) for r in resolved],
                            remote_identity=before,
                            header_receipt=info.receipt,
