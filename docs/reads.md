@@ -141,6 +141,21 @@ checksums, header, tool versions and read count. Osteosarc checks a remote BAM's
 HTTP headers before and after reading, to catch a file that changed mid-read.
 `osteosarc downloads` lists every extract with its local path.
 
+When the source is a `File` from a snapshot, header inspection and regional
+extraction also compare its inventory size and numeric modification timestamp
+with the server's headers. A date mismatch raises `IntegrityError` before
+reading the alignment or fetching its index. Cached headers and subsets are
+checked against their recorded source dates too, including older receipts,
+without network access or rewriting the saved provenance.
+
+New receipts record `inventory_modification`: `matched` means both dates were
+available and agree within the existing one-second tolerance. HTTP dates have
+second precision ([RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.2)).
+`inventory_timestamp_unavailable` or `last_modified_unavailable` means that date
+check could not be performed; other source identity and byte checks still run.
+Malformed server dates fail when a numeric inventory timestamp is present.
+An arbitrary URL without a snapshot timestamp has no inventory date to verify.
+
 ## Local BAMs
 
 The same extraction works on any local indexed BAM:

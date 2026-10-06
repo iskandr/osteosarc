@@ -9,12 +9,12 @@ import re
 import warnings
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
-from email.utils import parsedate_to_datetime
 from functools import cached_property
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
 
 from .cache import Cache, Receipt, file_lock, place, stable_id, write_json
+from .cache import _check_inventory_time as _inventory_time_status
 from .catalog import (
     BUCKET,
     SNAPSHOT_SOURCES,
@@ -49,14 +49,7 @@ from .saved import forget, load_or_build
 
 def _check_inventory_time(file, receipt):
     """Refuse bytes newer (or older) than the object this snapshot's inventory listed."""
-    if not isinstance(file.modified, (int, float)) or not receipt.last_modified:
-        return
-    served = parsedate_to_datetime(receipt.last_modified).timestamp()
-    if abs(served - file.modified) > 1:
-        raise IntegrityError(
-            f"{file.key} was modified at {receipt.last_modified}, not at the time this snapshot's "
-            f"inventory lists ({datetime.fromtimestamp(file.modified, timezone.utc).isoformat()}); "
-            "create a new snapshot to use the current object")
+    return _inventory_time_status(file.modified, receipt.last_modified, source=file.key)
 
 
 GUIDE = """What's here:

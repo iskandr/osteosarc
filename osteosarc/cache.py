@@ -15,6 +15,7 @@ from __future__ import annotations
 import fcntl
 import hashlib
 import json
+import math
 import os
 import random
 import secrets
@@ -25,6 +26,7 @@ import time
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
@@ -35,6 +37,33 @@ from .errors import IntegrityError, OfflineError, OsteosarcError
 
 #: Tries at an identity check (an HTTP HEAD) that meets a passing failure (_transient).
 ATTEMPTS = 5
+
+
+def _check_inventory_time(modified, last_modified, *, source):
+    """Compare available inventory/HTTP dates and explicitly identify missing evidence."""
+    if type(modified) not in (int, float):
+        return "inventory_timestamp_unavailable"
+    try:
+        finite = math.isfinite(modified)
+    except OverflowError:
+        finite = False
+    if not finite:
+        raise IntegrityError(f"Invalid inventory modification timestamp for {source}: {modified!r}")
+    if not last_modified:
+        return "last_modified_unavailable"
+    try:
+        served = parsedate_to_datetime(last_modified)
+        # HTTP's obsolete asctime format has no timezone, but still means UTC.
+        if served.tzinfo is None:
+            served = served.replace(tzinfo=timezone.utc)
+        served = served.timestamp()
+    except (TypeError, ValueError, OverflowError, AttributeError) as error:
+        raise IntegrityError(f"Invalid Last-Modified date for {source}: {last_modified!r}") from error
+    if abs(served - modified) > 1:
+        raise IntegrityError(
+            f"{source} was modified at {last_modified}, not at the time this snapshot's "
+            f"inventory lists ({modified}); create a new snapshot to use the current object")
+    return "matched"
 
 
 def _transient(error):
