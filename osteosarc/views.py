@@ -6,11 +6,13 @@ Python session show the same thing.
 
 from __future__ import annotations
 
+import shlex
 import shutil
 import textwrap
 from collections import Counter, defaultdict
 from pathlib import PurePosixPath
 
+from .catalog import fastq_prefix, matches_fastq
 from .curation import ASSAY_NAMES, ASSAYS, normalize_provider
 from .errors import OsteosarcError
 from .urls import BUCKET, S3_BUCKET
@@ -167,8 +169,8 @@ def samples_view(samples, *, width=None, footer=None):
              f"{len(samples)} samples: " + ", ".join(f"{n} {t}" for t, n in tissues))
     rows = [dict(sample=s.id, timepoint=s.timepoint or "", date=s.date, where=s.site,
                  sequencing=sequencing_text(s.sequencing) or "none recorded", BAMs=len(s.bams),
-                 **{"FASTQ folders": len(s.fastq_folders)}) for s in samples]
-    shown = table(rows, ("sample", "timepoint", "date", "where", "sequencing", "BAMs", "FASTQ folders"),
+                 **{"FASTQ locations": len(s.fastq_folders)}) for s in samples]
+    shown = table(rows, ("sample", "timepoint", "date", "where", "sequencing", "BAMs", "FASTQ locations"),
                   width=width, wrap=True)
     footer = footer if footer is not None else hints([
         ('data.samples["T1_tumor"]', "one sample's files, with how to get them"),
@@ -183,30 +185,25 @@ LIBRARIES = {"scRNA_GEX": "gene expression", "scRNA": "gene expression", "Tumor 
 
 
 def _fastq_folders(sample, files):
-    """One row per FASTQ folder: its assay and platform (the names file filters use),
-    library, provider, and files and bytes in the bucket."""
+    """One row per published FASTQ location, counting only matching raw reads."""
     labels = {}
     for row in sample.details.get("fastqs", ()):
         labels.setdefault(row["folder"], (row.get("assay") or "", row.get("provider") or ""))
-    counts, sizes = Counter(), Counter()
-    if files is not None:
-        folders = set(sample.fastq_folders)
-        for file in files:
-            parts = file.key.split("/")
-            for depth in range(len(parts) - 1, 0, -1):
-                folder = "/".join(parts[:depth])
-                if folder in folders:
-                    counts[folder] += 1
-                    sizes[folder] += file.size or 0
-                    break
+    reads = [f for f in files or () if f.kind == "reads"]
     rows = []
     for folder in sample.fastq_folders:
         label, provider = labels.get(folder, ("", ""))
         assay, platform = ASSAYS.get(label, (label, None))
+        matched = [f for f in reads if matches_fastq(f.key, folder)]
+        prefix = fastq_prefix(folder)
+        directory = not matched or all(f.key.startswith(prefix + "/") for f in matched)
         rows.append(dict(assay=assay, platform=platform or "", library=LIBRARIES.get(label, ""),
                          provider=normalize_provider(provider) if provider else "",
-                         files=counts[folder] if files is not None else "",
-                         size=size_text(sizes[folder]), folder=folder + "/"))
+                         files=len(matched) if files is not None else "",
+                         size=size_text(sum(f.size or 0 for f in matched)),
+                         folder=prefix + ("/" if directory else ""),
+                         published_location=folder, directory=directory,
+                         keys=tuple(f.key for f in matched)))
     order = {name: i for i, name in enumerate(ASSAY_NAMES)}
     kinds = {name: i for i, name in enumerate(dict.fromkeys(LIBRARIES.values()))}
     return sorted(rows, key=lambda r: (order.get(r["assay"], len(order)), r["assay"],
@@ -250,7 +247,7 @@ def sample_files_view(sample, data, *, width=None, local=None):
     folders = _fastq_folders(sample, data.files.select(sample=sample.id))
     lines.append("")
     if folders:
-        lines.append(f"FASTQ folders, raw reads ({len(folders)}):")
+        lines.append(f"FASTQ locations, raw reads ({len(folders)}; folders or filename prefixes):")
         lines.append(table(folders, ("assay", "platform", "library", "provider", "files", "size", "folder"),
                            width=width, fixed=("folder", "library"), drop_empty=True))
     else:
@@ -303,12 +300,21 @@ def get_data_hints(data, bams, folders, *, python=False):
                       f"the whole BAM ({bam['size'] or 'size unknown'})"
                       + (" and its index" if bam["indexed"] else "") + ", into this folder"))
     if folders:
-        folder = folders[0]["folder"]
+        location = folders[0]
+        folder = location["folder"]
         lines.append((f'data.files.select(prefix="{folder}")' if python else f"osteosarc files --prefix {folder}",
-                      "the files in a FASTQ folder"))
+                      "files under this FASTQ location"))
         if data._download_header.get("download_base", BUCKET) == BUCKET:  # not for a mirror
-            lines.append((f"aws s3 cp --recursive --no-sign-request {S3_BUCKET}{folder} "
-                          f"{PurePosixPath(folder).name}/", "a whole folder, with the AWS CLI (in a shell)"))
+            if location.get("directory", folder.endswith("/")):
+                lines.append((f"aws s3 cp --recursive --no-sign-request {shlex.quote(S3_BUCKET + folder)} "
+                              f"{shlex.quote(PurePosixPath(folder).name + '/')}",
+                              "a whole folder, with the AWS CLI (in a shell)"))
+            elif location["keys"]:
+                parent = str(PurePosixPath(folder).parent) + "/"
+                includes = " ".join("--include " + shlex.quote(key[len(parent):]) for key in location["keys"])
+                lines.append((f"aws s3 cp --recursive --no-sign-request {shlex.quote(S3_BUCKET + parent)} "
+                              f"./ --exclude '*' {includes}",
+                              "only this location's FASTQs, with the AWS CLI (in a shell)"))
     if not lines:
         return "  (no files)"
     return "\n".join(f"  {command}\n      {what}" for command, what in lines)

@@ -7,6 +7,13 @@ snapshot (by name or download date) for reproducible analyses. Full release note
 
 ## Unreleased
 
+- Link FASTQs from published filename prefixes and the Tempus tumor/normal row
+  aliases, count only raw-read files, and generate working download commands.
+  FASTQ library metadata supplies assay/provider filters even for shared folders
+  such as CeGaT RNA delivered inside a WES directory.
+  Refresh the sample guide against all 31 samples in the October 7 metadata.
+  Data-page provider notes and mixed DNA/RNA analysis directories no longer
+  introduce false assay or provider conflicts.
 - Supplementary-depth probes stream record counts and cache small receipts instead
   of entire BAM extracts. Existing verified probes and overflow results are reused;
   the depth cap and selected fixture records are unchanged. Reused BAM counts are

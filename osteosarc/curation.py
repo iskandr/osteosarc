@@ -81,6 +81,15 @@ LABEL_ASSAYS = {"CITE": "cite-seq"}
 PROVIDERS = ("BostonGene", "CeGaT", "Hudson Lab", "Natera", "Personalis", "Tempus", "UCLA", "UCSF")
 PROVIDER_ALIASES = {"Boston Gene": "BostonGene"}
 
+# The consolidated FASTQ table uses these two specimen labels inside a shared
+# directory. Its notes explicitly describe /T and /N as row keys, not folders.
+# Keep the source values; use the full accession and tissue token for discovery.
+FASTQ_PREFIX_ALIASES = {
+    f"vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/{tissue}":
+    f"vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/TL-24-ALMY2X4KMV_{tissue}_"
+    for tissue in ("T", "N")
+}
+
 #: "T1-organoid" is timepoint T1; the organoid specimen is recorded as tissue.
 TIMEPOINT_ALIASES = {"T1-organoid": "T1"}
 
@@ -122,6 +131,10 @@ def check_filter(name, value, present=frozenset):
 
 
 def normalize_provider(value):
+    # Data-page cells append delivery or processing notes to a known provider.
+    name = (value or "").split(" (", 1)[0]
+    if name in PROVIDERS or name in PROVIDER_ALIASES:
+        value = name
     value = PROVIDER_ALIASES.get(value, value)
     return value or None
 

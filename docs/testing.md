@@ -60,15 +60,27 @@ On 2026-09-18 this returned 3,788 reads, and reopened the same result offline.
 
 ## Last checked
 
-On a snapshot downloaded 2026-09-25 (UTC):
+On a snapshot downloaded 2026-10-07 (UTC), using the site's bucket inventory
+generated 2026-10-01:
 
 | Check | Result |
 | --- | --- |
-| Files | 395,541, including 843 alignments and 323 VCF or BCF files |
-| Variants | 181 on the variants page: 179 ready, 1 with a placeholder allele, 1 with none |
-| Corrections | 35: 30 applied, 5 already fixed on the site, none stale |
+| Files | 397,038 bucket objects; 397,043 catalogue entries including site tables; 913 alignments and 357 VCF or BCF files |
+| Variants | 183 on the variants page: 182 ready, 1 with a placeholder allele |
+| Corrections | 35: 13 applied, 22 already fixed on the site, none stale |
 | Unknown labels | None |
-| Timeline and samples | 790 events and 21 samples |
+| Timeline and samples | 807 events and 31 samples (24 blood, 5 tumor/fractions, 2 organoids) |
+
+The sample audit checks every registered BAM and FASTQ location, including the
+eleven entries represented as filename prefixes or Tempus row aliases rather
+than directories. The current tumor dates and collection sites agree with the
+timepoint summary. Regression excerpts and original source receipts are in
+`tests/data/sample-locations-2026-10-07.json`; older fixtures remain unchanged.
+Live S3 listings matched the inventory for all 317 FASTQ locations, and HEAD
+requests matched the sizes and modification dates of all 94 sample BAMs. One
+published FASTQ-table count differs: `rna-seq/tempus/TL-24-ALMY2X4KMV/RNA` lists
+two compressed FASTQs (1,238,829,178 bytes), but also contains `2022_R1.fastq`.
+The inventory and sample view retain all three files (4,470,300,364 bytes).
 
 The 2026-09-18 snapshot, from before the site renamed five variants and merged two
 USH2A entries, still applies all 35 corrections to its 182 entries. Every allele

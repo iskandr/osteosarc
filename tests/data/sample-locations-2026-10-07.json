@@ -1,0 +1,1082 @@
+{
+  "accessed": "2026-10-07",
+  "selection": "Complete FASTQ rows for eleven filename-prefix and Tempus alias locations, their parent-directory inventory entries, and the complete sample registry. Parsed source excerpts; original values retained.",
+  "receipts": {
+    "fastqs": {
+      "etag": "\"ddcf14af8eeb0138c561edfa83ba653a\"",
+      "filename": "fastqs-consolidated.tsv",
+      "last_modified": null,
+      "md5": null,
+      "retrieved_at": "2026-10-07T16:17:10.649983+00:00",
+      "sha256": "4e7aed516e48f448262370eb23103603f10cae69296c920a2e60e6727c10b762",
+      "size": 75106,
+      "url": "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/scripts/data/fastqs-consolidated.tsv"
+    },
+    "bucket": {
+      "etag": "\"dlx77r2uc9hdqnr7f\"",
+      "filename": "bucket_listing.json",
+      "last_modified": "Mon, 05 Oct 2026 20:48:31 GMT",
+      "md5": null,
+      "retrieved_at": "2026-10-07T16:17:03.063456+00:00",
+      "sha256": "3567118cd3e3ee6dd5533916da86079e40028427db92ba150c8ee7ee1d0d8d12",
+      "size": 44778363,
+      "url": "https://osteosarc.com/bucket_listing.json"
+    },
+    "specimens": {
+      "etag": "\"65a4a32376236a8d4dbee439f79fd8ed\"",
+      "filename": "samples-consolidated.tsv",
+      "last_modified": null,
+      "md5": null,
+      "retrieved_at": "2026-10-07T16:17:09.335541+00:00",
+      "sha256": "245e78a7ff1bd9f9713cd1e356c24cc803c2f3d0cfdce88da6e043791547029d",
+      "size": 17386,
+      "url": "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/scripts/data/samples-consolidated.tsv"
+    },
+    "data_page": {
+      "etag": null,
+      "filename": "data",
+      "last_modified": "Mon, 05 Oct 2026 20:48:40 GMT",
+      "md5": null,
+      "retrieved_at": "2026-10-07T16:17:07.335081+00:00",
+      "sha256": "6f6b1bd9f3603ed3ed00b4582bd0792e752f9992f30f4baeacf7856f4b174866",
+      "size": 131895,
+      "url": "https://osteosarc.com/data/"
+    }
+  },
+  "fastqs": [
+    {
+      "display_name": "T0 CeGaT Tumor RNA 2022-12 (P116686_3 vendor)",
+      "tissue": "Tumor",
+      "timepoint": "T0",
+      "sample_date": "2022-12",
+      "sample_id": "T0_tumor",
+      "provider": "CeGaT",
+      "analyst": "",
+      "assay": "RNA",
+      "b2_folder": "",
+      "s3_folder": "vendor/cegat/P116686_2_S000048/P116686_3",
+      "file_count": "2",
+      "total_size_bytes": "7210584452",
+      "total_size_human": "6.72 GiB",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "CeGaT tumor RNA (STAR 2.7.3a, hg19). Sequenced 2023-03-22 on the T0 material collected 2022-12-16. Files live under P116686_2_S000048/ despite the P116686_3 sample id."
+    },
+    {
+      "display_name": "T0 CeGaT Tumor WES 2022-12 (P116686_2 vendor)",
+      "tissue": "Tumor",
+      "timepoint": "T0",
+      "sample_date": "2022-12",
+      "sample_id": "T0_tumor",
+      "provider": "CeGaT",
+      "analyst": "",
+      "assay": "WES",
+      "b2_folder": "",
+      "s3_folder": "vendor/cegat/P116686_2_S000048/P116686_2",
+      "file_count": "2",
+      "total_size_bytes": "13089275642",
+      "total_size_human": "12.19 GiB",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "CeGaT tumor DNA (exome kit S000048, hg19). Sequenced 2023-03-22 on the T0 material collected 2022-12-16. Ships _somatic.tsv; source data for the CeGaT neoantigen vaccine."
+    },
+    {
+      "display_name": "T0 Natera Tumor WES 2022-12 (Ashion I006353-01D-01L)",
+      "tissue": "Tumor",
+      "timepoint": "T0",
+      "sample_date": "2022-12",
+      "sample_id": "T0_tumor",
+      "provider": "Natera",
+      "analyst": "",
+      "assay": "WES",
+      "b2_folder": "",
+      "s3_folder": "vendor/natera/fastq/28578842.1-2-FXG_C069-018634_WF00085349_I006353-01D-01L_TumorDNA",
+      "file_count": "2",
+      "total_size_bytes": "29164818628",
+      "total_size_human": "27.16 GiB",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Natera/Ashion hybrid-capture tumour DNA (WES-like; @RG CN:ASHION, LB I006353-01D-01L, SM ..._TumorDNA). Case 9759206 (Altera WES) or 8592254 (Signatera WES): the delivery does not say which. GRCh37 hs37d5, contigs 1, 2, ... (no chr prefix). Not as delivered: FASTQ regenerated in this project from vendor/natera/28578842.1-2-FXG_C069-018634_WF00085349_I006353-01D-01L_TumorDNA.bam (samtools collate + fastq; secondary and supplementary alignments dropped, duplicates kept), 258,112,616 read pairs. Natera delivered no FASTQ."
+    },
+    {
+      "display_name": "T0 Tempus Tumor WES 2022-12 (TL-24-ALMY2X4KMV vendor)",
+      "tissue": "Tumor",
+      "timepoint": "T0",
+      "sample_date": "2022-12",
+      "sample_id": "T0_tumor",
+      "provider": "Tempus",
+      "analyst": "",
+      "assay": "WES",
+      "b2_folder": "",
+      "s3_folder": "vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/T",
+      "file_count": "2",
+      "total_size_bytes": "15470759019",
+      "total_size_human": "14.41 GiB",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Tempus xE whole exome, tumour; GRCh37. Byte-identical to the catalog copy under rna-seq/tempus/TL-24-ALMY2X4KMV/WES/. Tumor and normal share one FastQ/ directory, so the row key appends /T."
+    },
+    {
+      "display_name": "T0 Natera Tumor WGS 2022-12 (case 17849104 0198480a, tumour inferred)",
+      "tissue": "Tumor",
+      "timepoint": "T0",
+      "sample_date": "2022-12",
+      "sample_id": "T0_tumor",
+      "provider": "Natera",
+      "analyst": "",
+      "assay": "WGS",
+      "b2_folder": "",
+      "s3_folder": "vendor/natera/fastq/0198480a-d9d5-7fe4-baed-4d696baf665b",
+      "file_count": "2",
+      "total_size_bytes": "317798412631",
+      "total_size_human": "295.97 GiB",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Natera WGS, case 17849104; GRCh37 hs37d5, contigs chr1, chr2, ... Tumour is INFERRED, not vendor-confirmed: the BAM's @RG SM is only its UUID; at heterozygous sites only 8% of allele fractions sit near 0.5 (they pile up at 0.20-0.25), and it is ~123x deep against ~45x for the 0196b23b normal, on a separate flowcell. Confirm before somatic use. Not as delivered: FASTQ regenerated in this project from vendor/natera/0198480a-d9d5-7fe4-baed-4d696baf665b.bam (samtools collate + fastq; secondary and supplementary alignments dropped, duplicates kept), 1,447,357,058 read pairs. Natera delivered no FASTQ."
+    },
+    {
+      "display_name": "T0 CeGaT Blood WES 2022-12 (P116686_1 vendor)",
+      "tissue": "Blood",
+      "timepoint": "T0",
+      "sample_date": "2022-12",
+      "sample_id": "T0_blood",
+      "provider": "CeGaT",
+      "analyst": "",
+      "assay": "WES",
+      "b2_folder": "",
+      "s3_folder": "vendor/cegat/P116686_1_S000048/P116686_1",
+      "file_count": "2",
+      "total_size_bytes": "11321968597",
+      "total_size_human": "10.54 GiB",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "CeGaT normal DNA (exome kit S000048, hg19, chrY PAR masked). Sequenced 2023-03-22 on the T0 material collected 2022-12-16. Source data for the CeGaT peptide neoantigen vaccine."
+    },
+    {
+      "display_name": "T0 Natera Blood WES 2022-12 (Ashion i005199-01D-01L)",
+      "tissue": "Blood",
+      "timepoint": "T0",
+      "sample_date": "2022-12",
+      "sample_id": "T0_blood",
+      "provider": "Natera",
+      "analyst": "",
+      "assay": "WES",
+      "b2_folder": "",
+      "s3_folder": "vendor/natera/fastq/28578183.3-2-BXE_C069-018634_WF00085349_i005199-01D-01L_GermlineDNA",
+      "file_count": "2",
+      "total_size_bytes": "14016415816",
+      "total_size_human": "13.05 GiB",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Natera/Ashion hybrid-capture germline DNA (WES-like; @RG CN:ASHION, LB i005199-01D-01L, SM ..._GermlineDNA), the normal for the Ashion tumour; its source and draw date are not recorded, so it is filed with T0_blood. Case 9759206 (Altera WES) or 8592254 (Signatera WES): the delivery does not say which. GRCh37 hs37d5, contigs 1, 2, ... (no chr prefix). Not as delivered: FASTQ regenerated in this project from vendor/natera/28578183.3-2-BXE_C069-018634_WF00085349_i005199-01D-01L_GermlineDNA.bam (samtools collate + fastq; secondary and supplementary alignments dropped, duplicates kept), 123,411,122 read pairs. Natera delivered no FASTQ."
+    },
+    {
+      "display_name": "T0 Natera Blood WGS 2022-12 (case 17849104 0196b23b, normal inferred)",
+      "tissue": "Blood",
+      "timepoint": "T0",
+      "sample_date": "2022-12",
+      "sample_id": "T0_blood",
+      "provider": "Natera",
+      "analyst": "",
+      "assay": "WGS",
+      "b2_folder": "",
+      "s3_folder": "vendor/natera/fastq/0196b23b-c139-7fb0-91ff-65f19670d743",
+      "file_count": "2",
+      "total_size_bytes": "113447783544",
+      "total_size_human": "105.66 GiB",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Natera WGS, case 17849104: the germline normal, INFERRED, not vendor-confirmed (the BAM's @RG SM is only its UUID; allele fractions at heterozygous sites peak at 0.45-0.50, ~45x). Whether it is blood or adjacent normal tissue, and when it was collected, is not recorded; filed with T0_blood. GRCh37 hs37d5, contigs chr1, chr2, ... Confirm before somatic use. Not as delivered: FASTQ regenerated in this project from vendor/natera/0196b23b-c139-7fb0-91ff-65f19670d743.bam (samtools collate + fastq; secondary and supplementary alignments dropped, duplicates kept), 494,239,896 read pairs. Natera delivered no FASTQ."
+    },
+    {
+      "display_name": "T1 UCLA Tumor RNA 2024-06 (SARC0277-100K vendor)",
+      "tissue": "Tumor",
+      "timepoint": "T1",
+      "sample_date": "2024-06",
+      "sample_id": "T1_tumor",
+      "provider": "UCLA",
+      "analyst": "",
+      "assay": "RNA",
+      "b2_folder": "",
+      "s3_folder": "vendor/ucla/SARC0277-T1-2024/SARC0277-100K",
+      "file_count": "2",
+      "total_size_bytes": "9044024289",
+      "total_size_human": "8.42 GiB",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "UCLA T1 tumour RNA-seq from the 2024-06-06 CT-guided biopsy (PREMOST SARC0277; same UCLA sample name and flowcell lane 227V5CLT4:6 as the T1 WGS). The patient (somalier run 5; 0.7% foreign alleles). Untrimmed 2x150: trim adapters before aligning. Reprocessed as rna-seq/reprocessed/SARC0277_T1/."
+    },
+    {
+      "display_name": "T2 UCLA Organoid WGS 2025-01 (SARC0277_3 ORGANOID vendor)",
+      "tissue": "Organoid",
+      "timepoint": "T2",
+      "sample_date": "2025-01",
+      "sample_id": "T2_organoid",
+      "provider": "UCLA",
+      "analyst": "",
+      "assay": "WGS",
+      "b2_folder": "",
+      "s3_folder": "vendor/ucla/SARC0277-T2-2025/16-SARC0277_3_ORGANOID_DNA",
+      "file_count": "2",
+      "total_size_bytes": "237273707752",
+      "total_size_human": "220.98 GiB",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "UCLA T2 organoid WGS (organoid of the 2025-01-28 T2 biopsy SARC0277_3; library dated 02-02-25). The patient (somalier IBS0 0; PURPLE contamination 0). About 1.3% mouse reads (culture matrix), adapter dimers and poly-G tails: trim and remove mouse reads before variant calling."
+    },
+    {
+      "display_name": "Tempus Blood WES 2024-09-21 (TL-24-ALMY2X4KMV vendor)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "sample_date": "2024-09-21",
+      "sample_id": "blood_2024-09-21",
+      "provider": "Tempus",
+      "analyst": "",
+      "assay": "WES",
+      "b2_folder": "",
+      "s3_folder": "vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/N",
+      "file_count": "2",
+      "total_size_bytes": "9202603169",
+      "total_size_human": "8.57 GiB",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Germline normal for the Tempus xE/xT tests of the T0 tumour; blood drawn 2024-09-21. GRCh37. Byte-identical to the catalog copy under rna-seq/tempus/TL-24-ALMY2X4KMV/WES/. Tumor and normal share one FastQ/ directory, so the row key appends /N."
+    }
+  ],
+  "bucket": [
+    [
+      "vendor/cegat/P116686_1_S000048/P116686_1.1.fastq.gz",
+      5570909383,
+      1784584087
+    ],
+    [
+      "vendor/cegat/P116686_1_S000048/P116686_1.2.fastq.gz",
+      5751059214,
+      1784584168
+    ],
+    [
+      "vendor/cegat/P116686_1_S000048/P116686_1.bai",
+      7056368,
+      1784584305
+    ],
+    [
+      "vendor/cegat/P116686_1_S000048/P116686_1.bam",
+      10108589764,
+      1784584305
+    ],
+    [
+      "vendor/cegat/P116686_1_S000048/P116686_1_cnvs.tsv",
+      102888,
+      1784584305
+    ],
+    [
+      "vendor/cegat/P116686_1_S000048/P116686_1_indels.annotated.tsv",
+      7789915,
+      1784584305
+    ],
+    [
+      "vendor/cegat/P116686_1_S000048/P116686_1_indels.vcf",
+      1387823,
+      1784584306
+    ],
+    [
+      "vendor/cegat/P116686_1_S000048/P116686_1_snvs.annotated.tsv",
+      18428794,
+      1784584306
+    ],
+    [
+      "vendor/cegat/P116686_1_S000048/P116686_1_snvs.vcf",
+      3936796,
+      1784584307
+    ],
+    [
+      "vendor/cegat/P116686_1_S000048/P116686_1_snvs_indels.annotated.tsv",
+      26218543,
+      1784584307
+    ],
+    [
+      "vendor/cegat/P116686_1_S000048/P116686_1_snvs_indels.vcf",
+      5323765,
+      1784584312
+    ],
+    [
+      "vendor/cegat/P116686_1_S000048/P116686_1_versions.txt",
+      265,
+      1784584313
+    ],
+    [
+      "vendor/cegat/P116686_1_S000048/S000048_hg19_targets.bed",
+      8759608,
+      1784584314
+    ],
+    [
+      "vendor/cegat/P116686_2_S000048/P116686_2.1.fastq.gz",
+      6401770586,
+      1784584317
+    ],
+    [
+      "vendor/cegat/P116686_2_S000048/P116686_2.2.fastq.gz",
+      6687505056,
+      1784584319
+    ],
+    [
+      "vendor/cegat/P116686_2_S000048/P116686_2.bai",
+      7150296,
+      1784584389
+    ],
+    [
+      "vendor/cegat/P116686_2_S000048/P116686_2.bam",
+      12018624310,
+      1784584390
+    ],
+    [
+      "vendor/cegat/P116686_2_S000048/P116686_2_cnvs.tsv",
+      1629973,
+      1784584632
+    ],
+    [
+      "vendor/cegat/P116686_2_S000048/P116686_2_indels.annotated.tsv",
+      6748887,
+      1784584632
+    ],
+    [
+      "vendor/cegat/P116686_2_S000048/P116686_2_indels.vcf",
+      1218335,
+      1784584633
+    ],
+    [
+      "vendor/cegat/P116686_2_S000048/P116686_2_snvs.annotated.tsv",
+      18397314,
+      1784584634
+    ],
+    [
+      "vendor/cegat/P116686_2_S000048/P116686_2_snvs.vcf",
+      3924486,
+      1784584639
+    ],
+    [
+      "vendor/cegat/P116686_2_S000048/P116686_2_snvs_indels.annotated.tsv",
+      25146035,
+      1784584640
+    ],
+    [
+      "vendor/cegat/P116686_2_S000048/P116686_2_snvs_indels.vcf",
+      5141967,
+      1784584645
+    ],
+    [
+      "vendor/cegat/P116686_2_S000048/P116686_2_somatic.tsv",
+      215311,
+      1784584646
+    ],
+    [
+      "vendor/cegat/P116686_2_S000048/P116686_2_versions.txt",
+      265,
+      1784584647
+    ],
+    [
+      "vendor/cegat/P116686_2_S000048/P116686_3.1.fastq.gz",
+      3641438230,
+      1784584648
+    ],
+    [
+      "vendor/cegat/P116686_2_S000048/P116686_3.2.fastq.gz",
+      3569146222,
+      1784585146
+    ],
+    [
+      "vendor/cegat/P116686_2_S000048/P116686_3.bai",
+      7515296,
+      1784585192
+    ],
+    [
+      "vendor/cegat/P116686_2_S000048/P116686_3.bam",
+      7823924680,
+      1784585192
+    ],
+    [
+      "vendor/cegat/P116686_2_S000048/S000048_hg19_targets.bed",
+      8759608,
+      1784585243
+    ],
+    [
+      "vendor/natera/fastq/0196b23b-c139-7fb0-91ff-65f19670d743_R1.fastq.gz",
+      56574211354,
+      1785600471
+    ],
+    [
+      "vendor/natera/fastq/0196b23b-c139-7fb0-91ff-65f19670d743_R2.fastq.gz",
+      56873572190,
+      1785600471
+    ],
+    [
+      "vendor/natera/fastq/0198480a-d9d5-7fe4-baed-4d696baf665b_R1.fastq.gz",
+      159125815454,
+      1785601069
+    ],
+    [
+      "vendor/natera/fastq/0198480a-d9d5-7fe4-baed-4d696baf665b_R2.fastq.gz",
+      158672597177,
+      1785601636
+    ],
+    [
+      "vendor/natera/fastq/28578183.3-2-BXE_C069-018634_WF00085349_i005199-01D-01L_GermlineDNA_R1.fastq.gz",
+      6903663785,
+      1785604082
+    ],
+    [
+      "vendor/natera/fastq/28578183.3-2-BXE_C069-018634_WF00085349_i005199-01D-01L_GermlineDNA_R2.fastq.gz",
+      7112752031,
+      1785604098
+    ],
+    [
+      "vendor/natera/fastq/28578842.1-2-FXG_C069-018634_WF00085349_I006353-01D-01L_TumorDNA_R1.fastq.gz",
+      14335194230,
+      1785604525
+    ],
+    [
+      "vendor/natera/fastq/28578842.1-2-FXG_C069-018634_WF00085349_I006353-01D-01L_TumorDNA_R2.fastq.gz",
+      14829624398,
+      1785604560
+    ],
+    [
+      "vendor/natera/fastq/readcounts.tsv",
+      328,
+      1785605427
+    ],
+    [
+      "vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/TL-24-ALMY2X4KMV.tar.gz",
+      24680194141,
+      1784586025
+    ],
+    [
+      "vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/TL-24-ALMY2X4KMV.tar.gz.md5",
+      58,
+      1784586025
+    ],
+    [
+      "vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/TL-24-ALMY2X4KMV_N_DSQ2_1.fastq.gz",
+      4491858339,
+      1784586026
+    ],
+    [
+      "vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/TL-24-ALMY2X4KMV_N_DSQ2_1.fastq.gz.seqkit-stats.tsv",
+      337,
+      1784586511
+    ],
+    [
+      "vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/TL-24-ALMY2X4KMV_N_DSQ2_2.fastq.gz",
+      4710744830,
+      1784586512
+    ],
+    [
+      "vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/TL-24-ALMY2X4KMV_N_DSQ2_2.fastq.gz.seqkit-stats.tsv",
+      337,
+      1784586575
+    ],
+    [
+      "vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/TL-24-ALMY2X4KMV_T_DSQ2_1.fastq.gz",
+      7693459651,
+      1784586576
+    ],
+    [
+      "vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/TL-24-ALMY2X4KMV_T_DSQ2_1.fastq.gz.seqkit-stats.tsv",
+      338,
+      1784586648
+    ],
+    [
+      "vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/TL-24-ALMY2X4KMV_T_DSQ2_2.fastq.gz",
+      7777299368,
+      1784586648
+    ],
+    [
+      "vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/TL-24-ALMY2X4KMV_T_DSQ2_2.fastq.gz.seqkit-stats.tsv",
+      339,
+      1784586674
+    ],
+    [
+      "vendor/ucla/SARC0277-T1-2024/SARC0277-100K-DNA-RNA_S1_L006_R1_001.fastq.gz",
+      4535659300,
+      1790352617
+    ],
+    [
+      "vendor/ucla/SARC0277-T1-2024/SARC0277-100K-DNA-RNA_S1_L006_R2_001.fastq.gz",
+      4508364989,
+      1790352616
+    ],
+    [
+      "vendor/ucla/SARC0277-T1-2024/SARC0277-ORGANOID-DNA-RNA_S2_L006_R1_001.fastq.gz",
+      4936758213,
+      1790352617
+    ],
+    [
+      "vendor/ucla/SARC0277-T1-2024/SARC0277-ORGANOID-DNA-RNA_S2_L006_R2_001.fastq.gz",
+      4780370521,
+      1790352617
+    ],
+    [
+      "vendor/ucla/SARC0277-T2-2025/16-SARC0277_3_ORGANOID_DNA_02-02-25_S17_L006_R1_001.fastq.gz",
+      118389471680,
+      1790352617
+    ],
+    [
+      "vendor/ucla/SARC0277-T2-2025/16-SARC0277_3_ORGANOID_DNA_02-02-25_S17_L006_R2_001.fastq.gz",
+      118884236072,
+      1790352690
+    ],
+    [
+      "vendor/ucla/SARC0277-T2-2025/49_SARC0277_3-organoid-RNA-02-02-25_S133_L007_R1_001.fastq.gz",
+      3905871836,
+      1790356698
+    ],
+    [
+      "vendor/ucla/SARC0277-T2-2025/49_SARC0277_3-organoid-RNA-02-02-25_S133_L007_R2_001.fastq.gz",
+      4009037618,
+      1790356513
+    ]
+  ],
+  "specimens": [
+    {
+      "sample_id": "T0_tumor",
+      "display_name": "T0 Tumor 2022-12 (diagnosis resection)",
+      "tissue": "Tumor",
+      "timepoint": "T0",
+      "collection_date": "2022-12-16",
+      "collection_site": "UCSF",
+      "tissue_source": "Primary tumor resection",
+      "vendors_involved": "BostonGene; CeGaT; Personalis; Tempus",
+      "assays_run": "Panel; RNA; WES; WGS",
+      "bam_count": "17",
+      "bam_display_names": "T0 Personalis Tumor DRAGEN; T0 Personalis Tumor WGS 2022-12; T0 Personalis Tumor oncoanalyser; T0 BostonGene Tumor WES 2022-12; T0 BostonGene Tumor WES 2022-12 (BG003082 vendor); T0 CeGaT Tumor WES 2022-12 (P116686_2 vendor); T0 Tempus Tumor WES 2022-12 (TL-24-ALMY2X4KMV vendor); T0 Tempus Tumor Panel 2022-12 (TL-24-5GQLV9WSXQ xT 648-gene vendor); T0 BostonGene Tumor RNA 2022-12 (BG003082 reprocessed); T0 BostonGene Tumor RNA 2022-12 (BG003082 vendor); T0 BostonGene Tumor RNA oncoanalyser; T0 CeGaT Tumor RNA 2022-12 (P116686_3 reprocessed); T0 CeGaT Tumor RNA 2022-12 (P116686_3 vendor); T0 Personalis Tumor RNA 2022-12 (DRF-PEN28653_WTS reprocessed); T0 Tempus Tumor RNA 2022-12 (TL-24-ALMY2X4KMV vendor); T0 Tempus Tumor RNA 2022-12 (TL-24-KCVBE1UI1P reprocessed); T0 Tempus Tumor RNA 2022-12 (TL-24-KCVBE1UI1P vendor)",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Initial diagnosis; assayed by BostonGene (WES, RNA), Personalis (WGS; WES and WTS re-delivered 2026-08 as DRF-PEN28653, replacing the first Personalis RNA library, which was another person's) and CeGaT (WES, RNA; sequenced 2023-03-22); also Tempus xT/xE/xR on block S22-38225 B12 (tested 2024-09/10)"
+    },
+    {
+      "sample_id": "T0_blood",
+      "display_name": "T0 Blood 2022-12 (germline normal)",
+      "tissue": "Blood",
+      "timepoint": "T0",
+      "collection_date": "2022-12-16",
+      "collection_site": "UCSF",
+      "tissue_source": "Whole blood",
+      "vendors_involved": "BostonGene; CeGaT",
+      "assays_run": "WES",
+      "bam_count": "5",
+      "bam_display_names": "T0 BostonGene Blood WES 2022-12; T0 BostonGene Blood WES 2022-12 (BG003082 vendor); T0 BostonGene Blood WES 2022-12 (BG009368 re-delivery, Sarek 2024 run); T0 BostonGene Blood WES 2022-12 (BG009368 vendor, re-delivered T0 normal); T0 CeGaT Blood WES 2022-12 (P116686_1 vendor)",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Germline reference for variant calling. Composite of separate draws per the vendor reports: BostonGene normal whole blood collected 2023-01-27 (re-delivered with the 2024 BG009368 order). The Personalis normal (collected 2024-06-11) is blood_2024-06-11"
+    },
+    {
+      "sample_id": "T1_tumor",
+      "display_name": "T1 Tumor 2024-06 (recurrence biopsy)",
+      "tissue": "Tumor",
+      "timepoint": "T1",
+      "collection_date": "2024-06-06",
+      "collection_site": "UCLA",
+      "tissue_source": "Recurrent tumor biopsy (CT-guided, T4-T5)",
+      "vendors_involved": "BostonGene; UCLA; UCSF",
+      "assays_run": "PacBio; RNA; WES; WGS; scRNA; scRNA_ONT",
+      "bam_count": "12",
+      "bam_display_names": "T1 UCLA Tumor DRAGEN; T1 UCLA Tumor WGS 2024-06; T1 UCLA Tumor oncoanalyser; T1 BostonGene Tumor WES 2024-06; T1 BostonGene Tumor WES 2024-06 (BG009368 vendor); T1 BostonGene Tumor RNA 2024-06 (BG009368 reprocessed); T1 BostonGene Tumor RNA 2024-06 (BG009368 vendor); T1 BostonGene Tumor RNA oncoanalyser; T1 UCLA Tumor RNA 2024-06 (SARC0277_T1 reprocessed); T1 UCSF Tumor scRNA 2024-06 (Kamil CellRanger); T1 UCSF Tumor PacBio 2024-06; T1 UCSF Tumor ONT 2024-06",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Recurrence; BostonGene (WES, RNA) + UCLA (WGS, RNA) + UCSF scRNA/ONT/PacBio. UCLA WGS/organoid and UCLA RNA (SARC0277-100K, reprocessed as SARC0277_T1) from the 2024-06-06 CT-guided biopsy (PREMOST SARC0277); BostonGene BG009368 WES/RNA from the 2024-06-11 CT-guided biopsy (UCLA SSU-24-07964); source procedure of the UCSF scRNA/ONT/PacBio unconfirmed (timeline says 2024-06-06; a UCSF CT biopsy on 2024-05-10 also exists)"
+    },
+    {
+      "sample_id": "T1_blood",
+      "display_name": "T1 Blood 2024-06 (germline normal)",
+      "tissue": "Blood",
+      "timepoint": "T1",
+      "collection_date": "2024-06-06",
+      "collection_site": "UCLA",
+      "tissue_source": "Whole blood",
+      "vendors_involved": "UCLA",
+      "assays_run": "WGS",
+      "bam_count": "7",
+      "bam_display_names": "T1 UCLA Blood DRAGEN; T1 UCLA Blood DRAGEN (T2 pair); T1 UCLA Blood DRAGEN (organoid pair); T1 UCLA Blood WGS 2024-06; UCLA Blood oncoanalyser; UCLA Blood oncoanalyser (T1 organoid pair); UCLA Blood oncoanalyser (T2 pair)",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Composite: UCLA WGS normal drawn 2024-06-06 (T1 WGS Normal coverage ~60x; the DRAGEN T2-pair and organoid-pair normals and the oncoanalyser T2-pair and T1-organoid-pair normals are re-alignments of this same library). The BostonGene WES normal is the reused 2023-01-27 draw (see T0_blood), the Personalis normal (drawn 2024-06-11) is blood_2024-06-11 and the Tempus normal is blood_2024-09-21"
+    },
+    {
+      "sample_id": "T1_organoid",
+      "display_name": "T1 Organoid 2024-06",
+      "tissue": "Organoid",
+      "timepoint": "T1",
+      "collection_date": "2024-06-06",
+      "collection_site": "UCLA",
+      "tissue_source": "Patient-derived organoid from T1 tumor (PREMOST, Soragni lab, UCLA)",
+      "vendors_involved": "UCLA",
+      "assays_run": "WGS",
+      "bam_count": "3",
+      "bam_display_names": "T1 organoid Tumor DRAGEN; T1 organoid Tumor oncoanalyser; T1 UCLA Organoid WGS 2024-06",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "WGS only; from the 2024-06-06 biopsy. Sarek-processed by Jeremiah/Alfredo; also DRAGEN and oncoanalyser re-alignments"
+    },
+    {
+      "sample_id": "T2_tumor",
+      "display_name": "T2 Tumor 2025-01 (biopsy)",
+      "tissue": "Tumor",
+      "timepoint": "T2",
+      "collection_date": "2025-01-28",
+      "collection_site": "UCLA",
+      "tissue_source": "Tumor biopsy (CT-guided, T4-T5)",
+      "vendors_involved": "UCLA; UCSF",
+      "assays_run": "RNA; WGS; scRNA; scRNA_ONT",
+      "bam_count": "8",
+      "bam_display_names": "T2 UCLA Tumor DRAGEN; T2 UCLA Tumor WGS 2025-01; T2 UCLA Tumor oncoanalyser; T2 UCLA Tumor RNA 2025-01 (SARC0277 reprocessed); T2 UCLA Tumor RNA 2025-01 (protocol-aligned); T2 UCLA Tumor RNA oncoanalyser; T2 UCSF Tumor scRNA 2025-01 (Kamil CellRanger); T2 UCSF Tumor ONT 2025-01",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "UCLA WGS (cleaned, 130.97x coverage); UCLA RNA; UCSF scRNA/ONT run on the UCLA specimen. The bucket folder genomics-bulk/2025.01.06 is a delivery label, not the collection date"
+    },
+    {
+      "sample_id": "T2_organoid",
+      "display_name": "T2 Organoid 2025-01",
+      "tissue": "Organoid",
+      "timepoint": "T2",
+      "collection_date": "2025-01-28",
+      "collection_site": "UCLA",
+      "tissue_source": "Patient-derived organoid from T2 tumor (PREMOST, UCLA)",
+      "vendors_involved": "UCLA",
+      "assays_run": "WGS",
+      "bam_count": "1",
+      "bam_display_names": "T2 UCLA Organoid oncoanalyser",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "From the 2025-01-28 biopsy (UCLA SARC0277_3). UCLA WGS delivered 2026-09 (library dated 02-02-25): the patient, with ~1.3% mouse reads. Its RNA-seq from the same delivery is about a quarter another person's and is excluded"
+    },
+    {
+      "sample_id": "T3_tumor",
+      "display_name": "T3 Tumor 2025-04 (resection)",
+      "tissue": "Tumor",
+      "timepoint": "T3",
+      "collection_date": "2025-04-17",
+      "collection_site": "MSKCC",
+      "tissue_source": "Tumor resection (T4-T5)",
+      "vendors_involved": "UCSF",
+      "assays_run": "scRNA; scRNA_ONT",
+      "bam_count": "2",
+      "bam_display_names": "T3 UCSF Tumor scRNA 2025-04 (Kamil CellRanger); T3 UCSF Tumor ONT 2025-04",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "No bulk DNA/RNA; scRNA + ONT only (processed at UCSF)"
+    },
+    {
+      "sample_id": "T3_tumor_CD45neg",
+      "display_name": "T3 Tumor 2025-04 (CD45- enriched)",
+      "tissue": "Tumor",
+      "timepoint": "T3",
+      "collection_date": "2025-04-17",
+      "collection_site": "MSKCC",
+      "tissue_source": "CD45-negative enriched fraction of T3 tumor",
+      "vendors_involved": "UCSF",
+      "assays_run": "scRNA",
+      "bam_count": "1",
+      "bam_display_names": "T3 UCSF Tumor scRNA 2025-04 (CD45neg)",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Sorted fraction of same biological sample as T3_tumor"
+    },
+    {
+      "sample_id": "blood_2024-06-11",
+      "display_name": "T1 Blood 2024-06-11 (Personalis germline normal)",
+      "tissue": "Blood",
+      "timepoint": "T1",
+      "collection_date": "2024-06-11",
+      "collection_site": "",
+      "tissue_source": "Whole blood",
+      "vendors_involved": "Personalis",
+      "assays_run": "WGS",
+      "bam_count": "3",
+      "bam_display_names": "T1 Personalis Blood DRAGEN; T1 Personalis Blood WGS 2024-06; T1 Personalis Blood oncoanalyser",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Matched germline normal for the Personalis tests of the T0 tumour: NeXT Personal WGS (normal PSNLDx240603252) and NeXT Dx (accession PEN28653; its WES normal re-delivered 2026-08 as DRF-PEN28653); drawn 2024-06-11, received by Personalis 2024-06-12 (NeXT Dx report PEN28653). Filed as T1: the same day as the BostonGene T1 biopsy and five days after the UCLA T1 draw (T1_blood). Draw site not documented"
+    },
+    {
+      "sample_id": "blood_2024-09-21",
+      "display_name": "Blood 2024-09-21 (Tempus germline normal)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2024-09-21",
+      "collection_site": "",
+      "tissue_source": "Whole blood",
+      "vendors_involved": "Tempus",
+      "assays_run": "WES",
+      "bam_count": "1",
+      "bam_display_names": "Tempus Blood WES 2024-09-21 (TL-24-ALMY2X4KMV vendor)",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Matched germline normal for the Tempus xE/xT tests (TL-24-ALMY2X4KMV, TL-24-5GQLV9WSXQ) of the T0 tumour; drawn 2024-09-21, received by Tempus 2024-09-23 (Tempus reports). Draw site not documented"
+    },
+    {
+      "sample_id": "blood_2025-01-25",
+      "display_name": "Longitudinal Blood 2025-01-25 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2025-01-25",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "Hudson Lab",
+      "assays_run": "scRNA",
+      "bam_count": "3",
+      "bam_display_names": "Hudson Lab Blood scRNA 2025-01 (Pool 1); Hudson Lab Blood scRNA 2025-01 (Pool 2); Hudson Lab Blood scRNA 2025-01 (Pool 3)",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab scRNA-seq (GEX), 3 pools; Draw site not documented; PBMCs cryopreserved by Pathfinder Oncology and shipped to the Hudson Lab (Baylor)"
+    },
+    {
+      "sample_id": "blood_2025-04-09",
+      "display_name": "Longitudinal Blood 2025-04-09 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2025-04-09",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "Hudson Lab",
+      "assays_run": "scRNA",
+      "bam_count": "5",
+      "bam_display_names": "Hudson Lab Blood scRNA 2025-04 (Pool 1); Hudson Lab Blood scRNA 2025-04 (Pool 2); Hudson Lab Blood scRNA 2025-04 (Pool 3); Hudson Lab Blood scRNA 2025-04 (Pool 4); Hudson Lab Blood scRNA 2025-04 (Pool 5)",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab scRNA-seq (GEX), 5 pools; Draw site not documented; PBMCs cryopreserved by Pathfinder Oncology and shipped to the Hudson Lab (Baylor)"
+    },
+    {
+      "sample_id": "blood_2025-05-01",
+      "display_name": "Longitudinal Blood 2025-05-01 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2025-05-01",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "Hudson Lab",
+      "assays_run": "CITE",
+      "bam_count": "4",
+      "bam_display_names": "Hudson Lab Blood CITE 2025-05 (Pool 1); Hudson Lab Blood CITE 2025-05 (Pool 2); Hudson Lab Blood CITE 2025-05 (Pool 3); Hudson Lab Blood CITE 2025-05 (Pool 4)",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab CITE-seq, 4 pools; Draw site not documented; PBMCs cryopreserved at UCSF and shipped to the Hudson Lab (Baylor); 2025-05-01 is a hand-entered date override (no day in the run folder); draw likely 2025-05-06 per flow workbook (SRC044-B4)/MRD/labs (unconfirmed)"
+    },
+    {
+      "sample_id": "blood_2025-06-26",
+      "display_name": "Longitudinal Blood 2025-06-26 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2025-06-26",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "Hudson Lab",
+      "assays_run": "CITE",
+      "bam_count": "4",
+      "bam_display_names": "Hudson Lab Blood CITE 2025-06 (Pool 1); Hudson Lab Blood CITE 2025-06 (Pool 2); Hudson Lab Blood CITE 2025-06 (Pool 3); Hudson Lab Blood CITE 2025-06 (Pool 4)",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab CITE-seq, 4 pools; Draw site not documented; whole blood shipped to the Hudson Lab (Baylor), which isolated the PBMCs; run token 260625 = processing/capture date; draw likely 2025-06-25 per MRD/labs/timeline (flow workbook says 2025-06-24) (unconfirmed)"
+    },
+    {
+      "sample_id": "blood_2025-07-24",
+      "display_name": "Longitudinal Blood 2025-07-24 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2025-07-24",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "Hudson Lab",
+      "assays_run": "CITE",
+      "bam_count": "3",
+      "bam_display_names": "Hudson Lab Blood CITE 2025-07 (Pool 1); Hudson Lab Blood CITE 2025-07 (Pool 2); Hudson Lab Blood CITE 2025-07 (Pool 3)",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab CITE-seq, 3 pools; Draw site not documented; whole blood shipped to the Hudson Lab (Baylor), which isolated the PBMCs; run token 250724 = processing/capture date; draw likely 2025-07-22 per flow workbook/MRD/labs (unconfirmed)"
+    },
+    {
+      "sample_id": "blood_2025-08-21",
+      "display_name": "Longitudinal Blood 2025-08-21 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2025-08-21",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "Hudson Lab",
+      "assays_run": "CITE",
+      "bam_count": "4",
+      "bam_display_names": "Hudson Lab Blood CITE 2025-08 (Pool 1); Hudson Lab Blood CITE 2025-08 (Pool 2); Hudson Lab Blood CITE 2025-08 (Pool 3); Hudson Lab Blood CITE 2025-08 (Pool 4)",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab CITE-seq, 4 pools; Draw site not documented; whole blood shipped to the Hudson Lab (Baylor), which isolated the PBMCs; run token 250821 = processing/capture date; draw likely 2025-08-20 per flow workbook/MRD/labs (unconfirmed)"
+    },
+    {
+      "sample_id": "blood_2025-09-22",
+      "display_name": "Longitudinal Blood 2025-09-22 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2025-09-22",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "Hudson Lab",
+      "assays_run": "CITE",
+      "bam_count": "1",
+      "bam_display_names": "Hudson Lab Blood CITE 2025-09",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab CITE-seq, 1 pool; Draw site not documented; whole blood shipped to the Hudson Lab (Baylor), which isolated the PBMCs; run token 250922 = processing/capture date; draw likely 2025-09-18 per flow workbook/MRD/labs (unconfirmed)"
+    },
+    {
+      "sample_id": "blood_2025-11-06",
+      "display_name": "Longitudinal Blood 2025-11-06 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2025-11-06",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "Hudson Lab",
+      "assays_run": "CITE",
+      "bam_count": "6",
+      "bam_display_names": "Hudson Lab Blood CITE 2025-11 (Pool 1); Hudson Lab Blood CITE 2025-11 (Pool 2); Hudson Lab Blood CITE 2025-11 (capture1); Hudson Lab Blood CITE 2025-11 (capture2); Hudson Lab Blood CITE 2025-11 (capture3); Hudson Lab Blood CITE 2025-11 (capture4)",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab CITE-seq; covers both Nov2025 and Nov2025v2 capture sets; Draw site not documented; whole blood shipped to the Hudson Lab (Baylor), which isolated the PBMCs; 2025-11-06 is a hand-entered date override; draw likely 2025-11-05 per flow workbook/MRD/labs (unconfirmed)"
+    },
+    {
+      "sample_id": "blood_2025-12-20",
+      "display_name": "Longitudinal Blood 2025-12-20 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2025-12-20",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "Hudson Lab",
+      "assays_run": "CITE",
+      "bam_count": "4",
+      "bam_display_names": "Hudson Lab Blood CITE 2025-12 (capture1); Hudson Lab Blood CITE 2025-12 (capture2); Hudson Lab Blood CITE 2025-12 (capture3); Hudson Lab Blood CITE 2025-12 (capture4)",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab CITE-seq, 4 captures; Draw site not documented; shipping format not documented (the Hudson report covers draws through 2025-11, which were shipped as whole blood from June 2025); 2025-12-20 is a hand-entered date override; the flow workbook dates the December draw 2025-12-29 and no lab draw is recorded on 2025-12-20 (unconfirmed)"
+    },
+    {
+      "sample_id": "blood_2026-01-20",
+      "display_name": "Longitudinal Blood 2026-01-20 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2026-01-20",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "",
+      "assays_run": "",
+      "bam_count": "0",
+      "bam_display_names": "",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab scRNA-seq, 2 captures (capture1: GEX+TCR plus a shallow antibody-capture library; capture2: GEX+CITE+TCR); Draw site not documented; shipping format not documented (the Hudson report covers draws through 2025-11, which were shipped as whole blood from June 2025); 2026-01-20 is a hand-entered date override; draw likely 2026-01-23 per flow workbook/labs (unconfirmed); Cell Ranger BAMs exist under hudson_lab/PBMC_scRNAseq/cellranger/ (not catalogued)"
+    },
+    {
+      "sample_id": "blood_2026-02-13",
+      "display_name": "Longitudinal Blood 2026-02-13 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2026-02-13",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "",
+      "assays_run": "",
+      "bam_count": "0",
+      "bam_display_names": "",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab scRNA-seq, 3 captures \u00d7 GEX+CITE+TCRab+TCRgd; Draw site not documented; shipping format not documented (the Hudson report covers draws through 2025-11, which were shipped as whole blood from June 2025); Cell Ranger BAMs exist under hudson_lab/PBMC_scRNAseq/cellranger/ (not catalogued)"
+    },
+    {
+      "sample_id": "blood_2026-02-25",
+      "display_name": "Longitudinal Blood 2026-02-25 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2026-02-25",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "",
+      "assays_run": "",
+      "bam_count": "0",
+      "bam_display_names": "",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab scRNA-seq, 2 captures \u00d7 GEX+CITE+TCRab+TCRgd; Draw site not documented; shipping format not documented (the Hudson report covers draws through 2025-11, which were shipped as whole blood from June 2025); capture folder date; draw likely 2026-02-23 per flow workbook/labs (unconfirmed); Cell Ranger BAMs exist under hudson_lab/PBMC_scRNAseq/cellranger/ (not catalogued)"
+    },
+    {
+      "sample_id": "blood_2026-03-09",
+      "display_name": "Longitudinal Blood 2026-03-09 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2026-03-09",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "",
+      "assays_run": "",
+      "bam_count": "0",
+      "bam_display_names": "",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab scRNA-seq, 3 captures \u00d7 GEX+CITE+TCRab+TCRgd; Draw site not documented; shipping format not documented (the Hudson report covers draws through 2025-11, which were shipped as whole blood from June 2025); Cell Ranger BAMs exist under hudson_lab/PBMC_scRNAseq/cellranger/ (not catalogued)"
+    },
+    {
+      "sample_id": "blood_2026-03-24",
+      "display_name": "Longitudinal Blood 2026-03-24 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2026-03-24",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "",
+      "assays_run": "",
+      "bam_count": "0",
+      "bam_display_names": "",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab scRNA-seq, 4 captures \u00d7 GEX+CITE+TCRab+TCRgd; Draw site not documented; shipping format not documented (the Hudson report covers draws through 2025-11, which were shipped as whole blood from June 2025); collection_date is the Hudson folder date, taken as the draw date (inferred, owner decision 2026-10-02; awaiting Hudson Lab confirmation, beads osteosarc_com-azw.15); Cell Ranger BAMs exist under hudson_lab/PBMC_scRNAseq/cellranger/ (not catalogued)"
+    },
+    {
+      "sample_id": "blood_2026-04-16",
+      "display_name": "Longitudinal Blood 2026-04-16 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2026-04-16",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "",
+      "assays_run": "",
+      "bam_count": "0",
+      "bam_display_names": "",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab scRNA-seq: a first run (2026-04-16/capture1) and a re-run (2026-04-16_run1, 2 captures), each \u00d7 GEX+CITE+TCRab+TCRgd; the scRNA-seq analysis uses only the re-run (the first run gave 2,013 cells, the re-run 16,686); Draw site not documented; shipping format not documented (the Hudson report covers draws through 2025-11, which were shipped as whole blood from June 2025); collection_date is the Hudson folder date, taken as the draw date (inferred, owner decision 2026-10-02; awaiting Hudson Lab confirmation, beads osteosarc_com-azw.15); Cell Ranger BAMs exist under hudson_lab/PBMC_scRNAseq/cellranger/ (not catalogued)"
+    },
+    {
+      "sample_id": "blood_2026-04-30",
+      "display_name": "Longitudinal Blood 2026-04-30 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2026-04-30",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "",
+      "assays_run": "",
+      "bam_count": "0",
+      "bam_display_names": "",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab scRNA-seq: a first run (2026-04-30/capture1) and a re-run (2026-04-30_run1, 2 captures), each \u00d7 GEX+CITE+TCRab+TCRgd; the scRNA-seq analysis uses only the re-run (the first run gave 13,443 cells, the re-run 18,089); Draw site not documented; shipping format not documented (the Hudson report covers draws through 2025-11, which were shipped as whole blood from June 2025); collection_date is the Hudson folder date, taken as the draw date (inferred, owner decision 2026-10-02; awaiting Hudson Lab confirmation, beads osteosarc_com-azw.15); Cell Ranger BAMs exist under hudson_lab/PBMC_scRNAseq/cellranger/ (not catalogued)"
+    },
+    {
+      "sample_id": "blood_2026-05-20",
+      "display_name": "Longitudinal Blood 2026-05-20 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2026-05-20",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "",
+      "assays_run": "",
+      "bam_count": "0",
+      "bam_display_names": "",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab scRNA-seq, 3 captures \u00d7 GEX+CITE+TCRab+TCRgd; Draw site not documented; shipping format not documented (the Hudson report covers draws through 2025-11, which were shipped as whole blood from June 2025); collection_date is the Hudson folder date, taken as the draw date (inferred, owner decision 2026-10-02; awaiting Hudson Lab confirmation, beads osteosarc_com-azw.15); Cell Ranger BAMs exist under hudson_lab/PBMC_scRNAseq/cellranger/ (not catalogued)"
+    },
+    {
+      "sample_id": "blood_2026-06-16",
+      "display_name": "Longitudinal Blood 2026-06-16 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2026-06-16",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "",
+      "assays_run": "",
+      "bam_count": "0",
+      "bam_display_names": "",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab scRNA-seq, 3 captures \u00d7 GEX+CITE+TCRab+TCRgd; Draw site not documented; shipping format not documented (the Hudson report covers draws through 2025-11, which were shipped as whole blood from June 2025); collection_date is the Hudson folder date, taken as the draw date (inferred, owner decision 2026-10-02; awaiting Hudson Lab confirmation, beads osteosarc_com-azw.15); Cell Ranger BAMs exist under hudson_lab/PBMC_scRNAseq/cellranger/ (not catalogued)"
+    },
+    {
+      "sample_id": "blood_2026-06-22",
+      "display_name": "Longitudinal Blood 2026-06-22 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2026-06-22",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "",
+      "assays_run": "",
+      "bam_count": "0",
+      "bam_display_names": "",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab scRNA-seq, 3 captures \u00d7 GEX+CITE+TCRab+TCRgd; Draw site not documented; shipping format not documented (the Hudson report covers draws through 2025-11, which were shipped as whole blood from June 2025); collection_date is the Hudson folder date, taken as the draw date (inferred, owner decision 2026-10-02; awaiting Hudson Lab confirmation, beads osteosarc_com-azw.15); Cell Ranger BAMs exist under hudson_lab/PBMC_scRNAseq/cellranger/ (not catalogued)"
+    },
+    {
+      "sample_id": "blood_2026-07-01",
+      "display_name": "Longitudinal Blood 2026-07-01 (PBMC)",
+      "tissue": "Blood",
+      "timepoint": "",
+      "collection_date": "2026-07-01",
+      "collection_site": "",
+      "tissue_source": "PBMC from whole blood",
+      "vendors_involved": "",
+      "assays_run": "",
+      "bam_count": "0",
+      "bam_display_names": "",
+      "is_primary": "",
+      "is_superseded_by": "",
+      "notes": "Hudson Lab scRNA-seq, 3 captures \u00d7 GEX+CITE+TCRab+TCRgd; Draw site not documented; shipping format not documented (the Hudson report covers draws through 2025-11, which were shipped as whole blood from June 2025); collection_date is the Hudson folder date, taken as the draw date (inferred, owner decision 2026-10-02; awaiting Hudson Lab confirmation, beads osteosarc_com-azw.15); Cell Ranger BAMs exist under hudson_lab/PBMC_scRNAseq/cellranger/ (not catalogued)"
+    }
+  ],
+  "data_rows": [
+    {
+      "context": "Bulk DNA Sequencing / Variant Calling (WGS)",
+      "row": {
+        "Timepoint": "Dec 2022 (T0)",
+        "Pipeline": "oncoanalyser 2.3.0 (2026-09 re-run)",
+        "Callers": "AMBER, COBALT, ESVEE, LILAC, LINX, PAVE, PURPLE, SAGE; RNA (BostonGene BG003082): Isofox, NEO, CUPPA",
+        "Bucket Path": "kamil/oncoanalyser/2026-09/IPISRC044_T0_personalis",
+        "Size": "13.3 GB",
+        "Files": "500"
+      }
+    },
+    {
+      "context": "Bulk DNA Sequencing / Whole Exome Sequencing (WES) \u2014 FASTQ",
+      "row": {
+        "Timepoint": "Dec 2022 (T0)",
+        "Provider": "Tempus (xT 648-gene panel, not WES; GRCh37)",
+        "Tissue": "Tumor",
+        "Bucket Path": "rna-seq/tempus/TL-24-5GQLV9WSXQ/wes",
+        "Size": "12.6 GB",
+        "Files": "7"
+      }
+    },
+    {
+      "context": "Bulk DNA Sequencing / Whole Exome Sequencing (WES) \u2014 BAM",
+      "row": {
+        "Timepoint": "Dec 2022 (T0)",
+        "Provider": "Boston Gene (T0 normal re-delivered with BG009368; 2024 Sarek run)",
+        "Tissue": "Normal (Blood)",
+        "Bucket Path": "genomics/genomics-duplicates/sarek24_bostongene/alignment/preprocessing/recalibrated/normal_bg24/normal_bg24.recal.bam",
+        "Size": "11.9 GB",
+        "Files": "1"
+      }
+    },
+    {
+      "context": "Bulk DNA Sequencing / Whole Exome Sequencing (WES) \u2014 BAM",
+      "row": {
+        "Timepoint": "Dec 2022 (T0)",
+        "Provider": "Tempus (xT 648-gene panel, not WES; GRCh37)",
+        "Tissue": "Tumor",
+        "Bucket Path": "rna-seq/tempus/TL-24-5GQLV9WSXQ/wes/TL-24-5GQLV9WSXQ_T.sorted.bam",
+        "Size": "4.7 GB",
+        "Files": "1"
+      }
+    }
+  ]
+}

@@ -22,6 +22,7 @@ from .catalog import (
     TIMELINE_SOURCES,
     build_files,
     data_page_rows,
+    matches_fastq,
     object_key,
     parse_data_paths,
 )
@@ -493,6 +494,12 @@ class Dataset:
                 parts = file.key.split("/")
                 for depth in range(1, len(parts)):
                     found.extend(folders.get("/".join(parts[:depth]), ()))
+                if file.format == "fastq":
+                    locations = [folder for folder in folders if matches_fastq(file.key, folder)]
+                    for location in locations:
+                        found.extend(folders[location])
+                    if locations:
+                        file.metadata["fastq_locations"] = tuple(locations)
             if found:
                 file.metadata["samples"] = tuple(dict.fromkeys(found))
 
@@ -619,7 +626,8 @@ class Dataset:
         tables = {name: (self.manifest["sources"].get(name, {}).get("url", url), format)
                   for name, (url, format) in TABLE_SOURCES.items()}
         files = build_files(listing, bams, metadata, self.vafs,
-                            parse_data_paths(read_text(self.source_path("data_page"))), tables=tables)
+                            parse_data_paths(read_text(self.source_path("data_page"))), tables=tables,
+                            fastqs=self.curation.records("fastqs")[0] or ())
         touched = {}
         base = listing.get("download_base", BUCKET)
         for i, ids in bucket_touched.items():
