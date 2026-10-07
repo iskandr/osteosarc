@@ -303,7 +303,8 @@ class Sample:
 
     sequencing lists (assay, platform) pairs from the site's sample registry
     and from the sample's FASTQ folders. bams are file keys; fastq_folders are
-    bucket folders. missing_bams are BAMs the registry names but the bucket
+    published bucket folders or filename prefixes (including source aliases).
+    missing_bams are BAMs the registry names but the bucket
     doesn't have.
     """
 

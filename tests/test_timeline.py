@@ -116,7 +116,7 @@ def test_one_sample_shows_its_files_and_how_to_get_them(dataset):
     shell, python = sample_view(t1, dataset), sample_view(t1, dataset, python=True)
     assert shell.startswith("T1_tumor: ") and "Corrected by specimen-T1-site" in shell
     assert "BAMs, aligned reads (1)" in shell and t1.bams[0] in shell
-    assert "FASTQ folders, raw reads" in shell and t1.fastq_folders[0] + "/" in shell
+    assert "FASTQ locations, raw reads" in shell and t1.fastq_folders[0] + "/" in shell
     assert f"osteosarc download {t1.bams[0]} --to ." in shell and "aws s3 cp --recursive --no-sign-request" in shell
     assert f'data.download("{t1.bams[0]}", to=".")' in python and "osteosarc download" not in python
     assert repr(t1) == python
@@ -216,7 +216,7 @@ def test_sample_overview_shows_filter_names_and_filters_by_assay(dataset, capsys
         "rna-seq, scrna-seq, cite-seq, New label"
     text = repr(dataset.samples.select(timepoint="T1", tissue="tumor"))
     assert "T1_tumor" in text and "T0_tumor" not in text and "T1_blood" not in text
-    assert "sequencing" in text and "FASTQ folders" in text
+    assert "sequencing" in text and "FASTQ locations" in text
     t1 = dataset.samples["T1_tumor"]
     assert sequencing_text(t1.sequencing) in repr(dataset.samples)
     assert repr(dataset.samples.select(timepoint="missing")) == "(no matching samples)"

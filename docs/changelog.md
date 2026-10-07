@@ -5,6 +5,24 @@ your version with `osteosarc --version`. Pin both the package version and your
 snapshot (by name or download date) for reproducible analyses. Full release notes are on
 [GitHub](https://github.com/iskandr/osteosarc/releases).
 
+## Unreleased
+
+- Link FASTQs from published filename prefixes and the Tempus tumor/normal row
+  aliases, count only raw-read files, and generate working download commands.
+  FASTQ library metadata supplies assay/provider filters even for shared folders
+  such as CeGaT RNA delivered inside a WES directory.
+  Refresh the sample guide against all 31 samples in the October 7 metadata.
+  Data-page provider notes and mixed DNA/RNA analysis directories no longer
+  introduce false assay or provider conflicts.
+- Supplementary-depth probes stream record counts and cache small receipts instead
+  of entire BAM extracts. Existing verified probes and overflow results are reused;
+  the depth cap and selected fixture records are unchanged. Reused BAM counts are
+  checked against their original records, including compact acquisition receipts.
+- Recognize the reviewed 2026-10-05 upstream allele, ID, specimen and timeline
+  corrections while preserving historical snapshots and future drift checks.
+  A public CeGaT normal-DNA call supplies OTUD4's newly published literal allele;
+  the original Natera report and somatic status remain unverified.
+
 ## 0.15.4
 
 - Bounded extraction reads BAM pipes without constructing a pysam AlignmentFile

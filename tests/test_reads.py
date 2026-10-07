@@ -87,6 +87,173 @@ def test_cached_header_reuse_and_corruption(bam, tmp_path, monkeypatch):
         inspect_alignment(bam, cache=cache)
 
 
+@pytest.mark.parametrize("limit", [None, 6])
+def test_regional_counts_preserve_multiplicity_without_storing_bams(bam, tmp_path, limit):
+    from osteosarc import count_reads
+    cache = Cache(tmp_path / "cache", offline=True)
+    regions = [Region("1", 100, 140, "GRCh38"), Region("chr1", 115, 160, "GRCh38")]
+    count = count_reads(bam, regions, cache=cache, max_records=limit)
+    assert count.records == 6  # overlapping regions count once; identical records remain twice
+    assert count.receipt["scope"] == "regional_record_count"
+    assert count.receipt["request"]["operation"] == "count_reads"
+    assert "count.json" in count.receipt["files"]
+    assert not list((cache.workspace / "derived").rglob("*.bam*"))
+    assert count_reads(bam, regions, cache=cache, filters=ReadFilter(exclude_flags=256 | 1024 | 2048)).records == 3
+    assert count_reads(bam, [Region("chr2", 10, 20, "GRCh38")], cache=cache).records == 0
+    with pytest.raises(CoordinateError):
+        count_reads(bam, [], cache=cache)
+
+
+def test_count_cache_and_overflow_are_reusable_and_verified(bam, tmp_path, monkeypatch):
+    import json
+
+    import osteosarc.reads as reads
+    from osteosarc import RecordLimitError, count_reads
+    cache = Cache(tmp_path / "cache")
+    regions = [Region("chr1", 100, 160, "GRCh38")]
+    count = count_reads(bam, regions, cache=cache, max_records=6)
+    with pytest.raises(RecordLimitError):
+        count_reads(bam, regions, cache=cache, max_records=5)
+    assert not list((cache.workspace / "derived").rglob("*.bam*"))
+    monkeypatch.setattr(reads, "_run_bounded", lambda *a: pytest.fail("repeated the count query"))
+    offline = Cache(cache.root, offline=True)
+    assert count_reads(bam, regions, cache=offline, max_records=6) == count
+    with pytest.raises(RecordLimitError):
+        count_reads(bam, regions, cache=offline, max_records=5)
+    receipt_path, = (cache.workspace / "derived").glob("*/receipt.json")
+    receipt = json.loads(receipt_path.read_text())
+    receipt["records"] += 1
+    receipt_path.write_text(json.dumps(receipt))
+    with pytest.raises(IntegrityError, match="count differs"):
+        count_reads(bam, regions, cache=offline, max_records=6)
+
+
+def test_counts_reuse_older_extractions_and_overflow_results(bam, tmp_path, monkeypatch):
+    import osteosarc.reads as reads
+    from osteosarc import RecordLimitError, count_reads
+    cache = Cache(tmp_path / "cache")
+    regions = [Region("chr1", 100, 160, "GRCh38")]
+    subset = extract_reads(bam, regions, cache=cache, max_records=6)
+    with pytest.raises(RecordLimitError):
+        extract_reads(bam, regions, cache=cache, max_records=5)
+    monkeypatch.setattr(reads, "_run_bounded", lambda *a: pytest.fail("repeated the old probe"))
+    monkeypatch.setattr(reads, "_run", lambda *a: pytest.fail("started a process for cached reads"))
+    count = count_reads(bam, regions, cache=Cache(cache.root, offline=True), max_records=6)
+    assert count.records == 6 and count.receipt == subset.receipt
+    with pytest.raises(RecordLimitError):
+        count_reads(bam, regions, cache=cache, max_records=5)
+    assert len(list((cache.workspace / "derived").glob("*/receipt.json"))) == 1
+
+
+def test_dataset_counts_share_extraction_identity(bam, dataset):
+    from osteosarc import File
+    file = File("local", "source.bam", str(bam), "alignment", "bam")
+    regions = [Region("chr1", 100, 160, "GRCh38")]
+    subset = dataset.extract_reads(file, regions, max_records=6)
+    count = dataset.count_reads(file, regions, max_records=6)
+    assert count.records == 6 and count.receipt == subset.receipt
+
+
+@pytest.mark.parametrize("records", [5, 7, -1, True, "6", None])
+def test_counts_reject_incorrect_legacy_record_metadata(bam, tmp_path, records):
+    import json
+
+    from osteosarc import count_reads
+    cache = Cache(tmp_path / "cache")
+    regions = [Region("chr1", 100, 160, "GRCh38")]
+    subset = extract_reads(bam, regions, cache=cache, max_records=6)
+    receipt = dict(subset.receipt, records=records)
+    subset.receipt_path.write_text(json.dumps(receipt))
+    with pytest.raises(IntegrityError, match="BAM count differs"):
+        count_reads(bam, regions, cache=Cache(cache.root, offline=True), max_records=6)
+
+
+@pytest.mark.parametrize("content", ['{"records": true}', '{"records": -1}', '{}', '[]', 'invalid'])
+def test_count_cache_rejects_malformed_record_data(bam, tmp_path, content):
+    import json
+
+    from osteosarc import count_reads
+    from osteosarc.cache import digest
+    cache = Cache(tmp_path / "cache")
+    regions = [Region("chr1", 100, 160, "GRCh38")]
+    count_reads(bam, regions, cache=cache)
+    receipt_path, = (cache.workspace / "derived").glob("*/receipt.json")
+    count_path = receipt_path.parent / "count.json"
+    count_path.write_text(content)
+    receipt = json.loads(receipt_path.read_text())
+    receipt["files"]["count.json"] = digest(count_path)
+    receipt_path.write_text(json.dumps(receipt))
+    with pytest.raises(IntegrityError, match="cached regional count|count differs"):
+        count_reads(bam, regions, cache=Cache(cache.root, offline=True))
+
+
+@pytest.mark.parametrize("unpinned", ["reads.bam", "reads.bam.bai"])
+def test_counts_require_legacy_bam_and_index_integrity_pins(bam, tmp_path, unpinned):
+    import json
+
+    from osteosarc import count_reads
+    cache = Cache(tmp_path / "cache")
+    regions = [Region("chr1", 100, 160, "GRCh38")]
+    subset = extract_reads(bam, regions, cache=cache, max_records=6)
+    receipt = subset.receipt
+    del receipt["files"][unpinned]
+    subset.receipt_path.write_text(json.dumps(receipt))
+    with pytest.raises(IntegrityError, match="missing from its receipt"):
+        count_reads(bam, regions, cache=Cache(cache.root, offline=True), max_records=6)
+
+
+@pytest.mark.parametrize("legacy", [False, True])
+def test_counts_reuse_compact_receipts_and_overflow_offline(bam, tmp_path, monkeypatch, legacy):
+    import osteosarc.reads as reads
+    from osteosarc import RecordLimitError, count_reads
+    from osteosarc.read_receipts import compact_read_cache
+    cache = Cache(tmp_path / "cache")
+    regions = [Region("chr1", 100, 160, "GRCh38")]
+    filters = ReadFilter(query_names=("repeated", "supplementary"))
+    acquire = extract_reads if legacy else count_reads
+    acquire(bam, regions, cache=cache, filters=filters, max_records=4)
+    with pytest.raises(RecordLimitError):
+        acquire(bam, regions, cache=cache, filters=filters, max_records=3)
+    compact_read_cache(cache)
+    monkeypatch.setattr(reads, "_run", lambda *a: pytest.fail("cached query started SAMtools"))
+    monkeypatch.setattr(reads, "_run_bounded", lambda *a: pytest.fail("cached query acquired records"))
+    offline = Cache(cache.root, offline=True)
+    count = count_reads(bam, regions, cache=offline, filters=filters, max_records=4)
+    assert count.records == 4
+    with pytest.raises(RecordLimitError):
+        count_reads(bam, regions, cache=offline, filters=filters, max_records=3)
+    asset, = (cache.workspace / "query-names").glob("*.txt")
+    asset.write_text("changed\n")
+    with pytest.raises(IntegrityError, match="query-name asset"):
+        count_reads(bam, regions, cache=offline, filters=filters, max_records=4)
+
+
+@pytest.mark.parametrize("limit", [5, 6])
+def test_count_queries_do_not_cache_results_from_changed_remote_sources(bam, tmp_path, monkeypatch, limit):
+    import osteosarc.reads as reads
+    from osteosarc import RecordLimitError, count_reads
+    url = "https://example.test/alignment.bam"
+    identity = {"etag": '"original"', "content-length": str(bam.stat().st_size), "last-modified": None}
+    run, bounded = reads._run, reads._run_bounded
+    monkeypatch.setattr(reads, "_remote_identity", lambda *a, **kw: dict(identity))
+    monkeypatch.setattr(reads, "_run", lambda command, timeout: run(
+        [str(bam) if c == url else c for c in command], timeout))
+
+    def changed(command, output, maximum, timeout):
+        try:
+            return bounded([str(bam) if c == url else c for c in command], output, maximum, timeout)
+        finally:
+            identity["etag"] = '"replacement"'
+
+    monkeypatch.setattr(reads, "_run_bounded", changed)
+    cache = Cache(tmp_path / "cache")
+    with pytest.raises(RecordLimitError if limit == 5 else IntegrityError):
+        count_reads(url, [Region("chr1", 100, 160, "GRCh38")], cache=cache,
+                    index=str(bam) + ".bai", snapshot_id="snapshot", max_records=limit)
+    assert not list((cache.workspace / "derived").glob("*/receipt.json"))
+    assert not list((cache.workspace / "derived").glob("*.over-limit.json"))
+
+
 def test_remote_extraction_refuses_changed_header_source(bam, tmp_path, monkeypatch):
     import subprocess
 

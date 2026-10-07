@@ -21,19 +21,21 @@ overlap is known, not proof of independence.
 The published FASTQ catalogue already identifies KCVBE1UI1P as a duplicate delivery
 of ALMY2X4KMV RNA. Corresponding mate objects also have matching lengths and multipart
 ETags (server metadata, not whole-file SHA-256 hashes). The overlap registry preserves
-that source receipt and the object metadata. The existing `tempus-file-labels`
-curation disputes the published T1 timepoint: several observations point to T0, but
-do not establish the specimen conclusively. Resolving that still requires specimen
-documentation; neither the alias nor this audit silently changes the timepoint.
+that source receipt and the object metadata. The reviewed October metadata now
+labels the Tempus tumor products T0 and records the matched normal separately as
+`blood_2024-09-21`. Historical snapshots retain the `tempus-file-labels` warning.
+The updated labels do not make the overlapping RNA products independent; the
+specimen-provenance investigation remains open.
 
 ## Catalogue
 
 - **Samples** are what was collected: tumor biopsies and resections at time points T0
-  to T3, an organoid grown from the T1 tumor, and blood draws.
+  to T3, organoids grown from the T1 and T2 tumors, and blood draws.
 - **Files** are what's in the public S3 bucket: aligned reads (BAMs), raw reads
   (FASTQs), variant calls, expression tables, scans and more, nearly 400,000 in all.
 
-Each sample has BAMs and FASTQ folders. Most files belong to no sample: imaging,
+Each sample lists its BAMs and FASTQ locations. A location can be a directory or
+a filename prefix. Most files belong to no sample: imaging,
 pathology slides, analyses and references. The examples open your most recent
 snapshot; see [get started](index.md#get-started).
 
@@ -57,23 +59,27 @@ data.samples.select(timepoint="T0", tissue="tumor")
 data.samples.select(assay="scrna-seq", platform="ont")
 ```
 
-The single-cell Oxford Nanopore samples in the 2026-09-25 snapshot:
+The single-cell Oxford Nanopore samples in the 2026-10-07 snapshot:
 
 ```text
 3 tumor samples
 
-sample    timepoint  date        where  sequencing                               BAMs  FASTQ folders
---------  ---------  ----------  -----  ---------------------------------------  ----  -------------
-T1_tumor  T1         2024-06-06  UCLA   rna-seq, wes, wgs, scrna-seq (ont,       14    14
-                                        pacbio)
-T2_tumor  T2         2025-01-28  UCLA   rna-seq, wgs, scrna-seq (ont), cite-seq  8     7
-T3_tumor  T3         2025-04-17  MSKCC  scrna-seq (ont), cite-seq                2     5
+sample    timepoint  date        where  sequencing                                  BAMs  FASTQ locations
+--------  ---------  ----------  -----  ------------------------------------------  ----  ---------------
+T1_tumor  T1         2024-06-06  UCLA   rna-seq, wes, wgs, scrna-seq (ont, pacbio)  12    10
+T2_tumor  T2         2025-01-28  UCLA   rna-seq, wgs, scrna-seq (ont), cite-seq     8     7
+T3_tumor  T3         2025-04-17  MSKCC  scrna-seq (ont), cite-seq                   2     5
 ```
 
 One sequencing run can have several BAMs, such as a vendor's and a reprocessed one.
 `data.samples["T1_tumor"]` shows one sample: where it came from, each BAM with its
 assay, provider, size and whether you've downloaded it, each FASTQ folder with its
-library, file count and size, and the calls that fetch them.
+library, FASTQ-only file count and size, and the calls that fetch them. Filename
+prefixes include the CeGaT, regenerated Natera and UCLA deliveries. The Tempus
+`DNA/FastQ/T` and `DNA/FastQ/N` row labels resolve to the full tumor and normal
+filename prefixes within their shared directory; they are not actual folders.
+`sample.fastq_folders` retains these published location labels, while the displayed
+locations and download commands use the resolved prefixes.
 
 ### What the fields mean
 
@@ -86,8 +92,14 @@ library, file count and size, and the calls that fetch them.
 | Platform | ont | The sequencing technology, when the site says |
 | Provider | BostonGene | Who produced the data |
 
-T0_tumor is the primary tumor resection on 2022-12-16, and T0_blood is blood from
-the same visit. T1_tumor and T1_organoid share a time point but not a tissue.
+T0_tumor is the primary tumor resection on 2022-12-16. T0_blood is a historical
+grouping of normal products, not proof that all blood was drawn that day: its
+current notes identify the BostonGene draw as 2023-01-27, while Natera normal
+collection details remain unconfirmed. The Personalis normal is recorded separately
+as blood_2024-06-11. T1_tumor and T1_organoid share a time point but not a tissue.
+T2_organoid comes from the 2025-01-28 UCLA biopsy; only its WGS is assigned to the
+sample because the delivered RNA contains substantial contamination from another
+person. The WGS notes also flag mouse reads and required preprocessing.
 T3_tumor_CD45neg is a CD45-negative fraction of T3_tumor. Later blood draws are
 named by date, such as blood_2025-06-26, and have no time point. A snapshot's date
 is when you downloaded the website's metadata, not a collection date.
@@ -107,9 +119,15 @@ and its corrections name the [fixes](corrections.md) that changed it.
 ### Where sequencing comes from
 
 A sample's sequencing combines the site's sample registry with its FASTQ table,
-which records each folder's assay. The four 2026 blood draws have nothing in the
-registry, but their FASTQ folders show single-cell gene expression, T-cell receptor
+which records each location's assay. The eleven 2026 blood entries in the October 7
+snapshot have no assays in the registry, but their FASTQ folders show single-cell
+gene expression, T-cell receptor
 and CITE-seq libraries.
+
+The FASTQ table also supplies each matched file's assay and provider for file
+filters. Its library-specific labels take precedence over a broader data-page
+directory, such as CeGaT RNA delivered inside a WES folder; conflicting claims
+about an exact file remain visible.
 
 The site's labels map to osteosarc's names like this; using a site label as a filter
 gives an error that names the right one:
@@ -119,6 +137,7 @@ gives an error that names the right one:
 | RNA, bulk RNA | rna-seq | | Bulk RNA sequencing |
 | WES | wes | | Whole-exome DNA sequencing |
 | WGS | wgs | | Whole-genome DNA sequencing |
+| Panel | panel | | Targeted DNA panel (Tempus xT) |
 | scRNA, scRNA_GEX | scrna-seq | gene expression | Single-cell RNA sequencing |
 | scRNA_TCR, scRNA_TCRgd, scRNA_BCR | scrna-seq | αβ TCR, γδ TCR, BCR | T- and B-cell receptor libraries from the same cells |
 | scRNA_ONT | scrna-seq, platform ont | long reads | Single-cell Oxford Nanopore RNA sequencing |

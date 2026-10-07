@@ -10,6 +10,7 @@ from urllib.parse import quote, unquote, urlsplit
 from .cache import stable_id
 from .curation import (
     ASSAYS,
+    FASTQ_PREFIX_ALIASES,
     label_assay,
     label_claims,
     normalize_provider,
@@ -109,7 +110,7 @@ def object_key(value, base=BUCKET):
     return value
 
 
-def build_files(listing, bams, metadata, vafs, path_claims=(), *, tables=None):
+def build_files(listing, bams, metadata, vafs, path_claims=(), *, tables=None, fastqs=()):
     """Retain every listed object, enriching exact paths before basename matches.
 
     Basename joins are used only when unique among alignment objects. Path
@@ -159,13 +160,25 @@ def build_files(listing, bams, metadata, vafs, path_claims=(), *, tables=None):
     by_path = defaultdict(list)
     for prefix, claim in path_claims:
         by_path[prefix.rstrip("/")].append(claim)
+    fastq_rows = [(object_key(row["s3_folder"], base), row) for row in fastqs if row.get("s3_folder")]
     files = []
     for key, object_metadata in objects.items():
         kind, format = file_type(key)
         info = dict(extra.get(key, {}))
         records = list(claims.get(key, ()))
+        if kind == "reads":
+            for location, row in fastq_rows:
+                if matches_fastq(key, location):
+                    assay, platform = ASSAYS.get(row.get("assay"), (None, None))
+                    by_path[key].append(SampleClaim(
+                        "fastqs", row.get("display_name", ""), normalize_timepoint(row.get("timepoint")),
+                        row.get("sample_date") or None, assay, platform,
+                        normalize_tissue(row.get("tissue")), normalize_provider(row.get("provider"))))
+                    info.setdefault("fastq_rows", []).append(dict(row))
         # The most specific data-page path wins: a file's own row overrides the
         # row for its directory, which can also hold other assays' files.
+        # A matched FASTQ library row likewise names the actual read files and
+        # overrides a broader directory's assay (e.g. CeGaT RNA filed under WES).
         parts = key.split("/")
         for depth in range(len(parts), 0, -1):
             if "/".join(parts[:depth]) in by_path:
@@ -232,7 +245,9 @@ def parse_data_paths(html):
     result = []
     for context, values in data_page_rows(html):
         title = context.lower()
-        assay = ("wgs" if "whole genome" in title or re.search(r"\bwgs\b", title) else
+        assay = (None if "variant calling" in title else
+                 "panel" if "panel" in values.get("Provider", "").lower() else
+                 "wgs" if "whole genome" in title or re.search(r"\bwgs\b", title) else
                  "wes" if "whole exome" in title or re.search(r"\bwes\b", title) else
                  "scrna-seq" if any(x in title for x in ("single cell", "single-cell")) else
                  "rna-seq" if "bulk rna" in title else None)
@@ -247,3 +262,26 @@ def parse_data_paths(html):
             assay=assay, platform=platform, tissue=tissue,
             provider=normalize_provider(values.get("Provider")))))
     return tuple(result)
+
+
+def fastq_prefix(location):
+    """Effective bucket prefix; retain the published location separately."""
+    location = location.rstrip("/")
+    return FASTQ_PREFIX_ALIASES.get(location, location)
+
+
+def matches_fastq(key, location):
+    """Match a FASTQ directory, exact file or filename prefix, never sidecars.
+
+    A filename prefix ends at a separator so P116686_1 cannot claim P116686_10.
+    This interprets published locations only; it does not infer sample identity.
+    """
+    if file_type(key) != ("reads", "fastq"):
+        return False
+    prefix = fastq_prefix(location)
+    if not prefix or not key.startswith(prefix):
+        return False
+    tail = key[len(prefix):]
+    if not tail or tail.startswith("/"):
+        return True
+    return "/" not in tail and (prefix.endswith(("_", "-", ".")) or tail[0] in "_.-")

@@ -56,10 +56,10 @@ ASSAYS = {"RNA": ("rna-seq", None), "WGS": ("wgs", None), "WES": ("wes", None),
           # libraries from the same single-cell captures, and bulk RNA.
           "scRNA_GEX": ("scrna-seq", None), "scRNA_TCR": ("scrna-seq", None),
           "scRNA_TCRgd": ("scrna-seq", None), "scRNA_BCR": ("scrna-seq", None),
-          "bulk RNA": ("rna-seq", None)}
+          "bulk RNA": ("rna-seq", None), "Panel": ("panel", None)}
 
 #: Filter values for file metadata, in display order.
-ASSAY_NAMES = ("rna-seq", "wes", "wgs", "scrna-seq", "cite-seq")
+ASSAY_NAMES = ("rna-seq", "wes", "wgs", "scrna-seq", "cite-seq", "panel")
 PLATFORM_NAMES = ("illumina", "ont", "pacbio")
 TISSUE_NAMES = ("tumor", "blood", "organoid")
 
@@ -81,6 +81,15 @@ LABEL_ASSAYS = {"CITE": "cite-seq"}
 PROVIDERS = ("BostonGene", "CeGaT", "Hudson Lab", "Natera", "Personalis", "Tempus", "UCLA", "UCSF")
 PROVIDER_ALIASES = {"Boston Gene": "BostonGene"}
 
+# The consolidated FASTQ table uses these two specimen labels inside a shared
+# directory. Its notes explicitly describe /T and /N as row keys, not folders.
+# Keep the source values; use the full accession and tissue token for discovery.
+FASTQ_PREFIX_ALIASES = {
+    f"vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/{tissue}":
+    f"vendor/tempus/TL-24-ALMY2X4KMV/DNA/FastQ/TL-24-ALMY2X4KMV_{tissue}_"
+    for tissue in ("T", "N")
+}
+
 #: "T1-organoid" is timepoint T1; the organoid specimen is recorded as tissue.
 TIMEPOINT_ALIASES = {"T1-organoid": "T1"}
 
@@ -89,7 +98,10 @@ TIMEPOINT_ALIASES = {"T1-organoid": "T1"}
 #: A composite "Tumor + Normal" row stays unresolved rather than guessed.
 TISSUES = {"tumor": "tumor", "blood": "blood", "normal": "blood", "normal (blood)": "blood",
            "blood normal": "blood", "blood/normal": "blood", "organoid": "organoid",
-           "tumor + normal": None}
+           "tumor + normal": None, "blood normal (drawn 2024-06-11)": "blood",
+           "normal (blood, drawn 2024-06-11)": "blood", "normal (blood, drawn 2024-09-21)": "blood",
+           "organoid (read 1)": "organoid", "organoid (read 2)": "organoid",
+           "tumor + blood (drawn 2024-09-21)": None}
 
 #: Detection and vaccine keys present when the curation below was written.
 #: New keys are not errors, but they are reported as possible upstream drift.
@@ -119,6 +131,10 @@ def check_filter(name, value, present=frozenset):
 
 
 def normalize_provider(value):
+    # Data-page cells append delivery or processing notes to a known provider.
+    name = (value or "").split(" (", 1)[0]
+    if name in PROVIDERS or name in PROVIDER_ALIASES:
+        value = name
     value = PROVIDER_ALIASES.get(value, value)
     return value or None
 
@@ -963,10 +979,38 @@ CORRECTIONS = (
     Correction(
         "natera-alleles-unavailable",
         "COL3A1 (splice) and OTUD4 (p.Ala153del) come from the Natera 2022 report, which is not "
-        "public. An independent public Tempus call now resolves COL3A1; OTUD4 remains unavailable.",
+        "public. Independent public calls resolve COL3A1 and, for the reviewed 2026-10-05 "
+        "layout, a matching OTUD4 allele. These calls do not verify the original Natera report "
+        "or establish somatic status.",
         (Change("variant_index", {"id": "COL3A1-Splice"}),
          Change("variant_index", {"id": "OTUD4-p_A153del"})),
         evidence=(_SITE_REPO + "scripts/variants/source_data/SS%20neoantigen%20_%20mutations%20-%20Mutations.tsv",
                   _BUCKET + "vendor/natera/manifest.tsv"),
         verified="2026-09-18"),
 )
+
+
+def _reviewed_revisions(corrections):
+    """Accept evidence-reviewed layouts while retaining all historical drift guards."""
+    review = json.loads(files("osteosarc").joinpath("data/curation-revisions.json").read_text())
+    result = []
+    for correction in corrections:
+        revision = review["corrections"].get(correction.id)
+        if revision is not None:
+            versions = []
+            for version in revision["versions"]:
+                changes = []
+                for specification in version:
+                    match = {key: glob(value["glob"]) if isinstance(value, dict) else value
+                             for key, value in specification["match"].items()}
+                    changes.append(Change(**dict(specification, match=match)))
+                versions.append(tuple(changes))
+            correction = replace(
+                correction, alternatives=(*correction.alternatives, *versions),
+                summary=correction.summary + revision["summary_suffix"], verified=review["verified"],
+                evidence=tuple(dict.fromkeys((*correction.evidence, *review["evidence"]))))
+        result.append(correction)
+    return tuple(result)
+
+
+CORRECTIONS = _reviewed_revisions(CORRECTIONS)

@@ -6,7 +6,15 @@ from threading import Thread
 
 import pytest
 
-from osteosarc import Cache, File, IntegrityError, RecoveryPolicy, Region, extract_reads
+from osteosarc import (
+    Cache,
+    File,
+    IntegrityError,
+    RecoveryPolicy,
+    Region,
+    count_reads,
+    extract_reads,
+)
 from osteosarc.cache import _check_inventory_time, stable_id, write_json
 from osteosarc.read_receipts import write_read_receipt
 from osteosarc.reads import inspect_alignment
@@ -59,13 +67,15 @@ def acquire(operation, source, bam, cache):
     if operation == "inspect":
         return inspect_alignment(source, cache=cache, snapshot_id="frozen")
     kwargs = dict(cache=cache, index=str(bam) + ".bai", snapshot_id="frozen", max_records=6)
+    if operation == "count":
+        return count_reads(source, REGIONS, **kwargs)
     if operation == "recover":
         kwargs.pop("max_records")
         kwargs["recovery"] = RecoveryPolicy(max_rounds=1, max_records=100)
     return extract_reads(source, REGIONS, **kwargs)
 
 
-@pytest.mark.parametrize("operation", ["inspect", "extract", "recover"])
+@pytest.mark.parametrize("operation", ["inspect", "extract", "recover", "count"])
 @pytest.mark.parametrize("offset", [-86400, 86400])
 def test_remote_inventory_date_mismatch_fails_before_reading(remote_bam, tmp_path, operation, offset):
     source, bam, state = remote_bam
@@ -117,16 +127,17 @@ def test_invalid_server_date_is_an_integrity_error(remote_bam, tmp_path):
     assert not list(cache.workspace.rglob("receipt.json"))
 
 
-@pytest.mark.parametrize("operation", ["inspect", "extract"])
+@pytest.mark.parametrize("operation", ["inspect", "extract", "count", "legacy_count"])
 @pytest.mark.parametrize("legacy", [False, True])
 def test_offline_cached_date_mismatch_is_rejected(remote_bam, tmp_path, monkeypatch, operation, legacy):
     import osteosarc.reads as reads
 
     source, bam, state = remote_bam
     cache = Cache(tmp_path / "cache")
-    result = acquire(operation, source, bam, cache)
+    result = acquire("extract" if operation == "legacy_count" else operation, source, bam, cache)
     receipt = result.receipt
-    directory = result.path.parent
+    directory = (cache.workspace / "derived" / stable_id(receipt["request"])
+                 if operation == "count" else result.path.parent)
     # Model a result accepted by the old implementation under a mismatched inventory.
     receipt["request"]["source_modified"] += 86400
     if legacy:
@@ -139,7 +150,21 @@ def test_offline_cached_date_mismatch_is_rejected(remote_bam, tmp_path, monkeypa
     monkeypatch.setattr(reads, "_remote_identity", lambda *a, **k: pytest.fail("offline HTTP access"))
     monkeypatch.setattr(reads, "_run", lambda *a, **k: pytest.fail("offline SAMtools execution"))
     with pytest.raises(IntegrityError, match="inventory lists.*new snapshot"):
-        acquire(operation, replace(source, modified=EPOCH + 86400), bam, Cache(cache.root, offline=True))
+        acquire("count" if operation == "legacy_count" else operation,
+                replace(source, modified=EPOCH + 86400), bam, Cache(cache.root, offline=True))
+
+
+def test_matching_inventory_count_is_reusable_offline_without_bams(remote_bam, tmp_path, monkeypatch):
+    import osteosarc.reads as reads
+
+    source, bam, state = remote_bam
+    cache = Cache(tmp_path / "cache")
+    count = acquire("count", source, bam, cache)
+    assert count.records == 6
+    assert count.receipt["inventory_modification"] == "matched"
+    assert not list((cache.workspace / "derived").rglob("*.bam*"))
+    monkeypatch.setattr(reads, "_remote_identity", lambda *a, **k: pytest.fail("offline HTTP access"))
+    assert acquire("count", source, bam, Cache(cache.root, offline=True)) == count
 
 
 def test_size_check_still_precedes_reading(remote_bam, tmp_path):

@@ -90,8 +90,12 @@ that should still be there, since a record disappearing doesn't prove a fix.
 
 ## The corrections
 
-Checked against the website on 2026-09-24: 30 fixes apply and 5 are already fixed on
-the site; a snapshot from 2026-09-18 uses all 35. Each fix's evidence is in
+Reviewed again against the website on 2026-10-05. Fifteen additional layouts accept
+verified upstream changes, including renamed TRMO, literal MAP2/DCHS2/GAPVD1
+alleles, the removed split MAP2 entries, the expanded FAM157A protein caveat,
+corrected specimen descriptions, T0 Tempus tumor labels and ReyaGel's explicit end
+year. Historical snapshots retain their original corrections and unexpected
+future values still warn. Each fix's evidence is in
 `data.corrections` and the
 [source](https://github.com/iskandr/osteosarc/blob/main/osteosarc/curation.py). None
 only rewrites a value in an equivalent form: each fixes a wrong value, fills in a
@@ -114,8 +118,8 @@ missing one, or flags something to be careful with.
 | muc3a-grch38-placement | note | The Tempus call is on GRCh37, in a repeat that differs between builds, so its GRCh38 position stays unresolved. |
 | ush2a-transposed-duplicate | note | USH2A-chr1-215560752 is a typo of USH2A-chr1-215650752. The site has merged them; the kept entry's location label and sequence context are fixed. |
 | fam157a-withdrawn-protein | flag | NCBI withdrew the protein model behind FAM157A's insertion; the site now says so too. |
-| natera-alleles-unavailable | flag | COL3A1 and OTUD4 come from a Natera report that isn't public; a Tempus call now gives COL3A1's allele. |
-| otud4-source-unavailable | note | No public call gives OTUD4's allele, so the entry has none. |
+| natera-alleles-unavailable | flag | The original Natera report is not public. Independent Tempus and CeGaT calls supply matching COL3A1 and OTUD4 alleles; they do not verify that report or establish somatic status. |
+| otud4-source-unavailable | note | Historical entries remain unresolved. The reviewed 2026-10-05 entry matches a public CeGaT normal-DNA deletion call, with transcript and assembly checks; this does not verify the original Natera call or somatic status. |
 | transcript-DCHS2 | edit | NM_1142552 is missing two zeros: NM_001142552, which the site now uses. |
 | transcript-COL4A2 | edit | NM_001846. has a stray dot. |
 | transcript-GTF3C5 | edit | NM_00112283 is missing a digit: NM_001122823. |
@@ -153,10 +157,10 @@ cleared rather than read as zero.
 | specimen-T3-site | edit | T3 was an MSKCC resection, not a UCSF biopsy. |
 | pbmc-capture-dates | flag | Four blood samples are dated by cell capture; the blood was drawn two to four days earlier. |
 | events-duplicate-rows | flag | SQ3370 and Trabectedin each appear twice. |
-| tempus-timepoint | flag | The timeline dates the Tempus tests to T0 (2022), which the data supports, but the files are labeled T1 (2024-06). |
-| tempus-file-labels | flag | The Tempus files are labeled T1, but carry all three variants seen only at T0 and none of the 35 seen only at T1. The labels are left as published. |
+| tempus-timepoint | flag | The timeline dates the Tempus tests to T0 (2022), consistent with the data and the reviewed 2026-10-05 tumor-file labels. Historical file labels say T1 (2024-06). |
+| tempus-file-labels | flag | Historical Tempus files are labeled T1, but carry T0 evidence. The reviewed 2026-10-05 metadata labels tumor products T0 and leaves the later normal draw without a tumor timepoint. Published labels are retained; overlapping RNA products remain dependent evidence. |
 | apheresis-date | flag | The apheresis is 2024-05-14 on the timeline and 2024-05-15 in the ELISPOT records. |
-| reyagel-end-date | flag | ReyaGel's end date is 7/14, with no year, so it shows as one day; the only broken date of the sheet's 371. |
+| reyagel-end-date | flag | Historical ReyaGel's end date is 7/14 without a year. The reviewed 2026-10-05 sheet and event explicitly give 2026-07-14. |
 
 ## Other things to know
 

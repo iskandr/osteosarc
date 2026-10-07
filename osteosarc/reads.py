@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from threading import Event, Timer
@@ -152,6 +153,14 @@ class ReadSubset:
 
 
 @dataclass(frozen=True)
+class ReadCount:
+    """Regional record count and its acquisition receipt; no read BAM is stored."""
+
+    records: int
+    receipt: dict
+
+
+@dataclass(frozen=True)
 class AlignmentInfo:
     """Original header and acquisition evidence; assembly can be unresolved."""
 
@@ -242,7 +251,7 @@ def _add_mates(regional, mates, inside, output):
 
 
 def _run_bounded(command, output, max_records, timeout):
-    """Stop indexed acquisition on overflow; never publish a partial BAM."""
+    """Stop on overflow; with output=None count records without storing a BAM."""
     import pysam
     command = list(command)
     command[command.index("-o") + 1] = "-"
@@ -261,10 +270,15 @@ def _run_bounded(command, output, max_records, timeout):
             # AlignmentFile can raise an unraisable seek error when a timeout
             # interrupts its constructor on a pipe. Read BAM framing forwards
             # only and copy stored blocks, preserving all original record bytes.
-            with gzip.GzipFile(fileobj=process.stdout, mode="rb") as bam, pysam.BGZFile(output, "wb") as out:
+            with gzip.GzipFile(fileobj=process.stdout, mode="rb") as bam, \
+                    (pysam.BGZFile(output, "wb") if output is not None else nullcontext()) as out:
+                def write(value):
+                    if out is not None:
+                        out.write(value)
+
                 def copy_integer():
                     value = _read(bam, 4)
-                    out.write(value)
+                    write(value)
                     number, = struct.unpack("<i", value)
                     if number < 0:
                         raise IntegrityError("Negative BAM header length")
@@ -273,10 +287,10 @@ def _run_bounded(command, output, max_records, timeout):
                 magic = _read(bam, 4)
                 if magic != b"BAM\x01":
                     raise IntegrityError("Expected BAM output from samtools")
-                out.write(magic)
-                out.write(_read(bam, copy_integer()))
+                write(magic)
+                write(_read(bam, copy_integer()))
                 for _ in range(copy_integer()):
-                    out.write(_read(bam, copy_integer()))
+                    write(_read(bam, copy_integer()))
                     copy_integer()
                 count = 0
                 while size := bam.read(4):
@@ -287,10 +301,10 @@ def _run_bounded(command, output, max_records, timeout):
                         raise IntegrityError("Invalid BAM core length")
                     block = _read(bam, length)
                     count += 1
-                    if count > max_records:
+                    if max_records is not None and count > max_records:
                         raise RecordLimitError("Acquisition exceeds record limit")
-                    out.write(size)
-                    out.write(block)
+                    write(size)
+                    write(block)
             returncode = process.wait()
             if returncode:
                 stderr.seek(0)
@@ -318,7 +332,7 @@ def _run_bounded(command, output, max_records, timeout):
         if expired.is_set():
             stderr.seek(0)
             raise subprocess.TimeoutExpired(command, timeout, stderr=stderr.read())
-    return command
+    return (command, count) if output is None else command
 
 
 def _samtools_version():
@@ -378,6 +392,40 @@ def _cached_subset(directory, request):
     if receipt is None:
         return None
     return ReadSubset(directory / "reads.bam", directory / "reads.bam.bai", receipt)
+
+
+def _cached_count(directory, request):
+    receipt = _verified_receipt(directory, request)
+    if receipt is None:
+        return None
+    if "count.json" not in receipt["files"]:
+        raise IntegrityError("Cached regional count is missing from its receipt")
+    try:
+        count = json.loads((directory / "count.json").read_text())["records"]
+    except (ValueError, KeyError, TypeError) as error:
+        raise IntegrityError("Invalid cached regional count") from error
+    if (type(count) is not int or count < 0
+            or type(receipt.get("records")) is not int or count != receipt["records"]
+            or (request.get("max_records") is not None and count > request["max_records"])):
+        raise IntegrityError("Cached regional count differs from its receipt or limit")
+    return ReadCount(count, receipt)
+
+
+def _count_cached_subset(subset, request):
+    """Verify legacy count metadata against the checksummed BAM's records."""
+    import pysam
+    receipt = subset.receipt
+    if not {"reads.bam", "reads.bam.bai"} <= receipt["files"].keys():
+        raise IntegrityError("Cached regional BAM or index is missing from its receipt")
+    count = receipt.get("records")
+    if (type(count) is not int or count < 0
+            or (request.get("max_records") is not None and count > request["max_records"])):
+        raise IntegrityError("Cached regional BAM count differs from its receipt or limit")
+    with pysam.AlignmentFile(str(subset.path), "rb") as bam:
+        actual = sum(1 for _ in bam)
+    if actual != count:
+        raise IntegrityError("Cached regional BAM count differs from its receipt or limit")
+    return ReadCount(actual, receipt)
 
 
 def _alignment_source(source):
@@ -466,6 +514,29 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
     max_records stops acquisition on overflow, discards the partial output and
     raises RecordLimitError; asking again, even offline, raises it without reading.
     """
+    return _read_regions(source, regions, cache=cache, index=index, filters=filters, reference=reference,
+                         fetch_pairs=fetch_pairs, unplaced_mates=unplaced_mates, snapshot_id=snapshot_id,
+                         timeout=timeout, recovery=recovery, max_records=max_records)
+
+
+def count_reads(source, regions, *, cache=None, index=None, filters=None, reference=None,
+                snapshot_id=None, timeout=600, max_records=None):
+    """Count indexed regional records without retaining a BAM or fetching mates.
+
+    Return a ReadCount with an acquisition receipt. Overlapping regions form a
+    union; original duplicate records still count separately. The same reference,
+    source-identity, filter, timeout and overflow checks as extract_reads apply.
+    Successful counts and over-limit results are reusable offline. A matching
+    verified extraction already in the cache can supply the count without I/O
+    against the original alignment.
+    """
+    return _read_regions(source, regions, cache=cache, index=index, filters=filters, reference=reference,
+                         snapshot_id=snapshot_id, timeout=timeout, max_records=max_records, count_only=True)
+
+
+def _read_regions(source, regions, *, cache=None, index=None, filters=None, reference=None,
+                  fetch_pairs=False, unplaced_mates=True, snapshot_id=None, timeout=600, recovery=None,
+                  max_records=None, count_only=False):
     if max_records is not None and (type(max_records) is not int or max_records < 1):
         raise ValueError("max_records must be a positive integer")
     if recovery is not None:
@@ -505,7 +576,7 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
         raise CoordinateError("Reference FASTA must already have a .fai index")
     local_identities = [file_identity(p) for p in ([] if remote else [location])
                         + ([] if remote_index else [index])]
-    request = dict(schema_version=1, operation="extract_reads",
+    request = dict(schema_version=1, operation="count_reads" if count_only else "extract_reads",
                    source=location if remote else _recorded(location, cache),
                    source_sha256=None if remote else cache.file_digest(location),
                    source_size=file.size if file else None,
@@ -523,16 +594,29 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
     if max_records is not None:
         request["max_records"] = max_records
     request = json.loads(json.dumps(request))
+    cached_result = _cached_count if count_only else _cached_subset
     directory = cache.workspace / "derived" / stable_id(request)
     # Reads past max_records aren't kept, but that they were too many is, so asking
     # again (even offline) gets the same answer without reading them again.
     over_limit = directory.with_name(directory.name + ".over-limit.json")
     with file_lock(cache.workspace / "locks" / (directory.name + ".lock")):
-        cached = _cached_subset(directory, request)
+        cached = cached_result(directory, request)
         if cached is not None:
             return cached
         if over_limit.exists() and read_read_receipt(over_limit, cache.workspace).get("request") == request:
             raise RecordLimitError("Acquisition exceeds record limit")
+        if count_only:
+            # Reuse completed depth probes made by older builders. Do not delete
+            # or mutate their BAMs: they may serve other callers too.
+            old_request = dict(request, operation="extract_reads")
+            old_directory = directory.with_name(stable_id(old_request))
+            with file_lock(cache.workspace / "locks" / (old_directory.name + ".lock")):
+                old = _cached_subset(old_directory, old_request)
+                if old is not None:
+                    return _count_cached_subset(old, old_request)
+                old_limit = old_directory.with_name(old_directory.name + ".over-limit.json")
+                if old_limit.exists() and read_read_receipt(old_limit, cache.workspace).get("request") == old_request:
+                    raise RecordLimitError("Acquisition exceeds record limit")
         if remote and cache.offline:
             raise OfflineError("Regional reads are not cached")
         require_samtools(fetch_pairs=fetch_pairs, unplaced_mates=unplaced_mates, filters=filters)
@@ -576,7 +660,7 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
 
             def view(regions_bed, destination, *, name_list=None, pairs=False):
                 """samtools view over these regions, with every filter; checks its output."""
-                command = ["samtools", "view", "--no-PG", "-b", "-M", "-X", "-L", str(regions_bed),
+                command = ["samtools", "view", "--no-PG", "-u" if count_only else "-b", "-M", "-X", "-L", str(regions_bed),
                            "-q", str(filters.min_mapq), "-F", str(filters.exclude_flags),
                            "-f", str(filters.require_flags), "-o", str(destination)]
                 if reference:
@@ -588,6 +672,8 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
                 if name_list:
                     command += ["-N", str(name_list)]
                 command += [location, str(local_index)]
+                if count_only:
+                    return _run_bounded(command, None, max_records, left())
                 if max_records is None:
                     _run(command, left())
                 else:
@@ -598,6 +684,9 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
             def acquire():
                 """Read the records. Returns the receipt's commands, and the number of
                 records if it's known."""
+                if count_only:
+                    command, count = view(bed, output, name_list=names)
+                    return dict(command=command), count
                 if not fetch_pairs or unplaced_mates:
                     return dict(command=view(bed, output, name_list=names, pairs=fetch_pairs)), None
                 # samtools --fetch-pairs reads the regions a second time, with the positions of
@@ -653,7 +742,10 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
             if count is None:
                 with pysam.AlignmentFile(output) as bam:
                     count = sum(1 for _ in bam)
-            pysam.index(str(output))
+            if count_only:
+                write_json(work / "count.json", dict(records=count))
+            else:
+                pysam.index(str(output))
             after = _remote_identity(location, min(timeout, 60)) if remote else None
             if before != after:
                 raise IntegrityError("Remote alignment changed during extraction")
@@ -661,13 +753,15 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
                     + ([] if remote_index else [index])] != local_identities:
                 raise IntegrityError("Local alignment or index changed during extraction")
             (work / "header.sam").write_text(header_text)
-            if not fetch_pairs:
+            if count_only:
+                scope = "regional_record_count"
+            elif not fetch_pairs:
                 scope = "regional_records"
             elif unplaced_mates:
                 scope = "regional_records_and_paired_mates"
             else:
                 scope = "regional_records_and_placed_mates"
-            files = {name: digest(work / name) for name in ("reads.bam", "reads.bam.bai", "header.sam", "regions.bed",
+            files = {name: digest(work / name) for name in ("count.json", "reads.bam", "reads.bam.bai", "header.sam", "regions.bed",
                                                             "mates.bed", "templates.txt") if (work / name).exists()}
             receipt = dict(request=request, files=files, records=count,
                            inventory_modification=inventory_modification,
@@ -686,4 +780,4 @@ def extract_reads(source, regions, *, cache=None, index=None, filters=None, refe
             # Only a complete directory becomes visible. No receipt means no cache hit.
             share(work)
             os.replace(work, directory)
-        return _cached_subset(directory, request)
+        return cached_result(directory, request)

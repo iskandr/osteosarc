@@ -1,0 +1,31 @@
+{
+  "receipt": {
+    "etag": "\"b288e082de0413ca220ef852e48c382d\"",
+    "filename": "bam-metadata-consolidated.tsv",
+    "last_modified": null,
+    "md5": null,
+    "retrieved_at": "2026-10-05T14:27:34.206463+00:00",
+    "sha256": "cb620face7a055283818eea668a18695d12dc280e0ca7666cb637d37938da2ef",
+    "size": 30927,
+    "url": "https://gitlab.com/slowkow/osteosarc.com/-/raw/main/scripts/data/bam-metadata-consolidated.tsv"
+  },
+  "row": {
+    "display_name": "T0 CeGaT Blood WES 2022-12 (P116686_1 vendor)",
+    "tissue": "Blood",
+    "assay": "WES",
+    "timepoint": "T0",
+    "sample_date": "2022-12",
+    "provider": "CeGaT",
+    "analyst": "CeGaT",
+    "b2_path": "",
+    "s3_path": "vendor/cegat/P116686_1_S000048/P116686_1.bam",
+    "b2_size_bytes": "",
+    "b2_size_human": "",
+    "s3_size_bytes": "10108589764",
+    "s3_size_human": "9.41 GiB",
+    "md5sum": "eeb686e3c605213be6c0c8ac7348f2d0",
+    "is_primary": "",
+    "is_superseded_by": "",
+    "notes": "CeGaT normal DNA (exome kit S000048, hg19, chrY PAR masked). Sequenced 2023-03-22 on the T0 material collected 2022-12-16. Source data for the CeGaT peptide neoantigen vaccine."
+  }
+}
