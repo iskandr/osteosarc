@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "osteosarc"
-version = "0.15.5"
+dynamic = ["version"]
 description = "Reproducible access to the public osteosarc.com dataset"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -35,7 +35,7 @@ Issues = "https://github.com/iskandr/osteosarc/issues"
 Dataset = "https://osteosarc.com/data/"
 
 [project.optional-dependencies]
-test = ["pytest>=8", "ruff>=0.9", "build>=1"]
+test = ["pytest>=8", "ruff>=0.9", "build>=1", "setuptools>=77"]
 docs = ["mkdocs>=1.6,<2"]
 
 [project.scripts]
@@ -43,6 +43,9 @@ osteosarc = "osteosarc.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["osteosarc*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "osteosarc._version.__version__"}
 
 [tool.setuptools.package-data]
 osteosarc = ["data/*.json", "data/bundles/*.json"]
