@@ -432,7 +432,7 @@ class Variants(Collection):
             if normalize_assembly(item.assembly) != declared:
                 raise ValueError("Genome assembly must match variant assembly")
             chrom, pos, ref, alt = item.allele
-            variant = NativeVariant(chrom, pos, ref, alt, ensembl=genome,
+            variant = NativeVariant(chrom, pos, ref, alt, genome=genome,
                                     convert_ucsc_contig_names=convert_ucsc_contig_names,
                                     normalize_contig_names=normalize_contig_names)
             result.append(variant)
