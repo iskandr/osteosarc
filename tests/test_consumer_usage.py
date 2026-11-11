@@ -47,8 +47,8 @@ def test_varcode_custom_reference_preserves_identity_and_metadata(dataset, tmp_p
     native = selected.to_varcode(genome=genome, assembly="GRCh38")
     assert len(native) == 1
     variant = native[0]
-    assert variant.ensembl is genome
-    assert variant.ensembl.reference_name == "GRCh38-osteosarc-six-transcript-subset"
+    assert variant.genome is genome
+    assert variant.genome.reference_name == "GRCh38-osteosarc-six-transcript-subset"
     metadata = native.metadata[variant]
     assert [entry["id"] for entry in metadata["entries"]] == [original.id, "second-entry"]
     assert metadata["source"]["snapshot_id"] == dataset.id
@@ -100,7 +100,11 @@ def contig_genome(tmp_path):
 ])
 def test_varcode_contig_conversion_retains_source_name(contig, expected):
     pyensembl = pytest.importorskip("pyensembl")
-    pytest.importorskip("varcode")
+    varcode = pytest.importorskip("varcode")
+    if contig == "chrUn_KI270442v1" and tuple(map(int, varcode.__version__.split(".")[:3])) >= (10, 15, 1):
+        # Varcode 10.15.1 converts UCSC's accession-bearing scaffold names to
+        # Ensembl's (openvax/varcode#435).
+        expected = "KI270442.1"
     selected = Variants([Variant("entry", "GENE", "GRCh38", ((contig, 12994, "G", "A"),), "ready")])
     native = selected.to_varcode(genome=pyensembl.EnsemblRelease(95))
     assert native[0].contig == expected
@@ -143,7 +147,7 @@ def test_varcode_literal_custom_contig_annotation(contig_genome):
     native = selected.to_varcode(genome=genome, assembly="GRCh38",
                                 convert_ucsc_contig_names=False, normalize_contig_names=False)
     assert native[0].contig == native[0].original_contig == contig
-    assert native[0].ensembl is genome
+    assert native[0].genome is genome
     effects = native[0].effects(raise_on_error=True)
     assert len(effects) == 1
     assert effects[0].gene_name == "GENE"

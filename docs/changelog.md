@@ -7,6 +7,9 @@ snapshot (by name or download date) for reproducible analyses. Full release note
 
 ## Unreleased
 
+- `Variants.to_varcode` passes varcode's `genome=` instead of its deprecated
+  `ensembl=`, which varcode will remove in 12.0 (#122). `genome=` works with
+  every varcode since 6.0, so the supported varcode range is unchanged.
 - Link FASTQs from published filename prefixes and the Tempus tumor/normal row
   aliases, count only raw-read files, and generate working download commands.
   FASTQ library metadata supplies assay/provider filters even for shared folders
