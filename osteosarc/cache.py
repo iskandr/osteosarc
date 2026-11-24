@@ -38,6 +38,226 @@ from .errors import IntegrityError, OfflineError, OsteosarcError
 #: Tries at an identity check (an HTTP HEAD) that meets a passing failure (_transient).
 ATTEMPTS = 5
 
+#: Shared prefixes for temporary staging files and directories left behind by killed runs (#119).
+STAGING_PREFIXES = (
+    ".reads-",
+    ".header-",
+    ".object-",
+    ".json-",
+    ".recovery-",
+    ".osteosarc-",
+    ".export-",
+    ".bundle-",
+    ".cohort-",
+    ".compact-",
+    ".names-",
+    ".own-",
+)
+
+#: Default age threshold (days) for pruning unused derived read subsets, matching saved.UNUSED_DAYS.
+DERIVED_UNUSED_DAYS = 30
+
+#: Interrupted staging files/directories older than this (seconds) are safe to sweep.
+STAGING_LEFTOVER_SECONDS = 24 * 3600
+
+
+def is_offline_env():
+    """Return True when OPENVAX_OFFLINE or DATACACHE_OFFLINE requests offline mode."""
+    fn = getattr(datacache, "is_offline", None)
+    if callable(fn):
+        return bool(fn())
+    for key in ("OPENVAX_OFFLINE", "DATACACHE_OFFLINE"):
+        val = os.environ.get(key, "").strip().lower()
+        if val in ("1", "true", "yes", "on"):
+            return True
+    return False
+
+
+def offline_env_source():
+    """Return a human-readable env-var label if offline mode is active via env, else None."""
+    fn = getattr(datacache, "offline_source", None)
+    if callable(fn):
+        return fn()
+    for key in ("OPENVAX_OFFLINE", "DATACACHE_OFFLINE"):
+        val = os.environ.get(key, "").strip().lower()
+        if val in ("1", "true", "yes", "on"):
+            return f"{key}={os.environ.get(key, '').strip()}"
+    return None
+
+
+def _entry_size_bytes(path):
+    """Total regular-file bytes under path without following symlinks (read-only)."""
+    target = Path(path)
+    try:
+        st = os.lstat(target)
+    except OSError:
+        return 0
+    if stat.S_ISLNK(st.st_mode):
+        return 0
+    if stat.S_ISREG(st.st_mode):
+        return st.st_size
+    if not stat.S_ISDIR(st.st_mode):
+        return 0
+    total = 0
+    for dirpath, _dirnames, filenames in os.walk(target, followlinks=False):
+        for name in filenames:
+            try:
+                fst = os.lstat(os.path.join(dirpath, name))
+            except OSError:
+                continue
+            if stat.S_ISREG(fst.st_mode):
+                total += fst.st_size
+    return total
+
+
+def _is_staging_name(name):
+    return any(name.startswith(prefix) for prefix in STAGING_PREFIXES)
+
+
+def sweep_staging_leftovers(folder, *, older_than_seconds=STAGING_LEFTOVER_SECONDS, dry_run=False, now=None):
+    """Find (and unless dry_run, remove) interrupted staging files/dirs under folder."""
+    root = Path(folder)
+    if not root.is_dir():
+        return []
+    cutoff = (time.time() if now is None else now) - older_than_seconds
+    found = []
+    try:
+        entries = sorted(root.iterdir(), key=lambda p: p.name)
+    except OSError:
+        return []
+    for entry in entries:
+        if not _is_staging_name(entry.name):
+            continue
+        try:
+            st = os.lstat(entry)
+        except OSError:
+            continue
+        if stat.S_ISLNK(st.st_mode):
+            continue
+        if older_than_seconds > 0 and st.st_mtime >= cutoff:
+            continue
+        size = _entry_size_bytes(entry)
+        record = {
+            "name": entry.name,
+            "path": str(entry),
+            "kind": "leftover",
+            "mtime": st.st_mtime,
+            "size_bytes": size,
+        }
+        if not dry_run:
+            try:
+                if stat.S_ISDIR(st.st_mode):
+                    shutil.rmtree(entry)
+                else:
+                    entry.unlink()
+            except OSError:
+                continue
+        found.append(record)
+    return found
+
+
+def prune_derived(
+    workspace,
+    *,
+    days=DERIVED_UNUSED_DAYS,
+    max_bytes=None,
+    leftover_seconds=STAGING_LEFTOVER_SECONDS,
+    dry_run=True,
+    now=None,
+):
+    """Plan or apply eviction for derived/ read subsets and interrupted staging leftovers (#119).
+
+    Defaults to ``dry_run=True`` so callers inspect candidates before deleting.
+    """
+    if days is not None and (isinstance(days, bool) or days < 0):
+        raise ValueError("days must be a nonnegative number or None")
+    if max_bytes is not None and (isinstance(max_bytes, bool) or max_bytes < 0):
+        raise ValueError("max_bytes must be a nonnegative integer or None")
+    ws = Path(workspace)
+    derived = ws / "derived"
+    ts = time.time() if now is None else now
+
+    leftovers = sweep_staging_leftovers(
+        derived, older_than_seconds=leftover_seconds, dry_run=True, now=ts,
+    )
+    entries = []
+    if derived.is_dir():
+        try:
+            children = sorted(derived.iterdir(), key=lambda p: p.name)
+        except OSError:
+            children = []
+        for child in children:
+            if child.name.startswith("."):
+                continue
+            try:
+                st = os.lstat(child)
+            except OSError:
+                continue
+            if stat.S_ISLNK(st.st_mode):
+                continue
+            if stat.S_ISDIR(st.st_mode) or child.name.endswith(".over-limit.json"):
+                entries.append({
+                    "name": child.name,
+                    "path": str(child),
+                    "kind": "derived",
+                    "mtime": st.st_mtime,
+                    "size_bytes": _entry_size_bytes(child),
+                })
+
+    age_cutoff = None if days is None else ts - days * 86400
+    selected = []
+    kept = []
+    for entry in entries:
+        if age_cutoff is not None and entry["mtime"] <= age_cutoff:
+            selected.append(entry)
+        else:
+            kept.append(entry)
+
+    if max_bytes is not None:
+        # Evict oldest kept entries first until remaining derived bytes fit within max_bytes.
+        kept.sort(key=lambda e: (e["mtime"], e["name"]))
+        total_kept = sum(e["size_bytes"] for e in kept)
+        still_kept = []
+        for entry in kept:
+            if total_kept > max_bytes:
+                selected.append(entry)
+                total_kept -= entry["size_bytes"]
+            else:
+                still_kept.append(entry)
+        kept = still_kept
+
+    candidates = leftovers + sorted(selected, key=lambda e: (e["mtime"], e["name"]))
+    reclaimable_bytes = sum(c["size_bytes"] for c in candidates)
+    deleted = []
+    if not dry_run:
+        for item in candidates:
+            target = Path(item["path"])
+            try:
+                st = os.lstat(target)
+                if stat.S_ISLNK(st.st_mode):
+                    continue
+                if stat.S_ISDIR(st.st_mode):
+                    shutil.rmtree(target)
+                else:
+                    target.unlink()
+                deleted.append(item)
+            except OSError:
+                continue
+
+    return {
+        "workspace": str(ws),
+        "derived_dir": str(derived),
+        "dry_run": bool(dry_run),
+        "days": days,
+        "max_bytes": max_bytes,
+        "kept_count": len(kept),
+        "kept_bytes": sum(e["size_bytes"] for e in kept),
+        "candidates": candidates,
+        "deleted": deleted,
+        "reclaimable_bytes": reclaimable_bytes,
+        "freed_bytes": sum(d["size_bytes"] for d in deleted),
+    }
+
 
 def _check_inventory_time(modified, last_modified, *, source):
     """Compare available inventory/HTTP dates and explicitly identify missing evidence."""
@@ -340,12 +560,12 @@ class Cache:
     removes old snapshot objects.
     """
 
-    def __init__(self, root=None, *, offline=False, timeout=600):
+    def __init__(self, root=None, *, offline=None, timeout=600):
         self.root = Path(root or datacache.get_cache_root("openvax", "OSTEOSARC_CACHE", "OPENVAX_DATA_CACHE")
                          ).expanduser().resolve()
         self.objects = self.root / "objects" / "sha256"
         self.workspace = self.root / "osteosarc"
-        self.offline = offline
+        self.offline = is_offline_env() if offline is None else bool(offline)
         self.timeout = timeout
         self._verified, self._pruned = {}, False
 

@@ -621,6 +621,9 @@ def _read_regions(source, regions, *, cache=None, index=None, filters=None, refe
             raise OfflineError("Regional reads are not cached")
         require_samtools(fetch_pairs=fetch_pairs, unplaced_mates=unplaced_mates, filters=filters)
         directory.parent.mkdir(parents=True, exist_ok=True)
+        # Opportunistically collect stale (>24h) interrupted staging dirs (#119).
+        from .cache import sweep_staging_leftovers
+        sweep_staging_leftovers(directory.parent)
         with tempfile.TemporaryDirectory(dir=directory.parent, prefix=".reads-") as temporary, \
                 ThreadPoolExecutor(max_workers=1) as background:
             work = Path(temporary)
