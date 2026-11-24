@@ -8,7 +8,14 @@ import sys
 from dataclasses import asdict
 
 from . import __version__
-from .cache import Cache
+from .cache import (
+    DERIVED_UNUSED_DAYS,
+    Cache,
+    _entry_size_bytes,
+    is_offline_env,
+    offline_env_source,
+    prune_derived,
+)
 from .dataset import DATE_SELECTOR, Dataset
 from .errors import NoSnapshotsError, OsteosarcError
 from .models import Region
@@ -26,7 +33,8 @@ COMMANDS = (
     ("Get data", (
         ("reads FILE|SAMPLE", "The reads around variants or in regions, as a small BAM: test data in seconds"),
         ("download FILE", "A whole file (--to DIR puts it, and its index, in DIR)"),
-        ("downloads", "What's already on this computer, and where"))),
+        ("downloads", "What's already on this computer, and where"),
+        ("cache ...", "Inspect cache directories or prune derived/ read subsets and leftovers"))),
     ("Test data for libraries", (
         ("test-data ...", "Bundles of test reads: make your own, or use the shared openvax-v2"),)),
     ("Snapshots of the website's metadata", (
@@ -182,6 +190,29 @@ def parser():
     reads.add_argument("--json", action="store_true", help="The extract's paths and receipt as JSON")
     downloads = command("downloads")
     downloads.add_argument("--json", action="store_true")
+    cache_cmd = command("cache", data=False, epilog="examples:\n"
+                        "  osteosarc cache dirs\n"
+                        "  osteosarc cache prune --days 30\n"
+                        "  osteosarc cache prune --max-gb 2 --yes")
+    cache_actions = cache_cmd.add_subparsers(dest="cache_command", metavar="ACTION")
+    cache_dirs = cache_actions.add_parser(
+        "dirs", help="Show cache directories, disk usage, and offline state (read-only)")
+    cache_dirs.add_argument("--json", action="store_true", help="Machine-readable JSON")
+    cache_prune = cache_actions.add_parser(
+        "prune", help="Prune unused derived/ read subsets and interrupted staging leftovers (dry-run by default)")
+    cache_prune.add_argument(
+        "--days", type=float, default=None,
+        help=f"Remove derived entries older than this many days (default: {DERIVED_UNUSED_DAYS} unless --max-gb/--all)")
+    cache_prune.add_argument(
+        "--max-gb", type=float, default=None,
+        help="Cap remaining derived/ cache size at this many GB (evicts oldest first)")
+    cache_prune.add_argument(
+        "--all", action="store_true",
+        help="Prune all derived/ read subsets and leftovers regardless of age")
+    cache_prune.add_argument(
+        "--yes", action="store_true",
+        help="Actually delete candidates (default is dry-run)")
+    cache_prune.add_argument("--json", action="store_true", help="Machine-readable JSON")
     sync = command("sync", data=False)
     sync.add_argument("name", nargs="?", help="Optional name (default: today's UTC date)")
     sync.add_argument("--refresh", action="store_true", help="Download again even if today's snapshot exists")
@@ -561,6 +592,8 @@ def main(argv=None):
     args, extra = root.parse_known_args(arguments)
     if args.command == "test-data" and args.test_data_command is None:
         root.parse_args([*arguments, "--help"])  # its actions, and examples (exits)
+    if args.command == "cache" and args.cache_command is None:
+        root.parse_args([*arguments, "--help"])
     # Before Python 3.13, argparse binds an optional list positional (reads' regions,
     # test-data make's BAMs) before any option, so items written after an option
     # arrive here as extra arguments.
@@ -570,8 +603,11 @@ def main(argv=None):
         root.error(f"unrecognized arguments: {' '.join(extra)}")
     if extra:
         setattr(args, trailing, [*getattr(args, trailing), *extra])
-    cache = Cache(args.cache, offline=args.offline)
+    offline_enabled = bool(args.offline or is_offline_env())
+    cache = Cache(args.cache, offline=offline_enabled)
     try:
+        if args.command == "cache":
+            return cache_action(args, cache)
         if args.command == "test-data":
             return test_data(args, cache)
         if args.command == "sync":
@@ -588,7 +624,7 @@ def main(argv=None):
             print_json(rows) if args.json else print(snapshots_view(rows))
             return 0
         # Browsing stays offline; commands that fetch bytes may use the network unless --offline.
-        online = args.command in ("download", "reads", "repl") and not args.offline
+        online = args.command in ("download", "reads", "repl") and not offline_enabled
         dataset = open_snapshot(args, cache, online)
         if args.command == "repl":
             repl(dataset)
@@ -608,6 +644,90 @@ def main(argv=None):
             print(error.stderr.decode(errors="replace") if isinstance(error.stderr, bytes) else error.stderr,
                   file=sys.stderr)
         return 1
+
+
+def cache_action(args, cache):
+    """cache dirs and cache prune."""
+    from .views import size_text
+
+    if args.cache_command == "dirs":
+        derived = cache.workspace / "derived"
+        snapshots_dir = cache.workspace / "snapshots"
+        derived_bytes = _entry_size_bytes(derived)
+        objects_bytes = _entry_size_bytes(cache.objects)
+        workspace_bytes = _entry_size_bytes(cache.workspace)
+        offline_src = offline_env_source()
+        payload = {
+            "package": "osteosarc",
+            "version": __version__,
+            "root": str(cache.root),
+            "objects_dir": str(cache.objects),
+            "workspace_dir": str(cache.workspace),
+            "derived_dir": str(derived),
+            "snapshots_dir": str(snapshots_dir),
+            "exists": cache.root.exists(),
+            "objects_bytes": objects_bytes,
+            "workspace_bytes": workspace_bytes,
+            "derived_bytes": derived_bytes,
+            "offline": cache.offline,
+            "offline_source": offline_src or ("--offline" if args.offline else None),
+        }
+        if args.json:
+            print_json(payload)
+            return 0
+        print(f"osteosarc cache locations (v{__version__})")
+        print(f"  root      : {cache.root}")
+        print(f"  objects   : {cache.objects} [{size_text(objects_bytes) if cache.objects.exists() else 'not created'}]")
+        print(f"  workspace : {cache.workspace} [{size_text(workspace_bytes) if cache.workspace.exists() else 'not created'}]")
+        print(f"  derived   : {derived} [{size_text(derived_bytes) if derived.exists() else 'not created'}]")
+        if cache.offline:
+            detail = f" ({payload['offline_source']})" if payload["offline_source"] else ""
+            print(f"  offline   : enabled{detail}")
+        else:
+            print("  offline   : disabled")
+        return 0
+
+    if args.all:
+        days = 0
+        max_bytes = None
+        leftover_seconds = 0
+    else:
+        if args.max_gb is not None and args.max_gb < 0:
+            raise ValueError("--max-gb must be nonnegative")
+        max_bytes = None if args.max_gb is None else int(args.max_gb * 1_000_000_000)
+        days = DERIVED_UNUSED_DAYS if (args.days is None and max_bytes is None) else args.days
+        leftover_seconds = 24 * 3600
+
+    report = prune_derived(
+        cache.workspace,
+        days=days,
+        max_bytes=max_bytes,
+        leftover_seconds=leftover_seconds,
+        dry_run=not args.yes,
+    )
+    if args.json:
+        print_json(report)
+        return 0
+
+    print(f"osteosarc derived cache: {report['derived_dir']}")
+    if not report["candidates"]:
+        print(f"Nothing to prune ({report['kept_count']} kept, {size_text(report['kept_bytes'])}).")
+        return 0
+    for item in report["candidates"]:
+        tag = "LEFTOVER" if item["kind"] == "leftover" else "DERIVED "
+        print(f"  DELETE  {tag}  {size_text(item['size_bytes']):>10}  {item['name']}")
+    if report["dry_run"]:
+        print(
+            f"\nDry run — would remove {len(report['candidates'])} item(s) "
+            f"({size_text(report['reclaimable_bytes'])}), keeping {report['kept_count']}. "
+            "Re-run with --yes to delete."
+        )
+    else:
+        print(
+            f"\nDeleted {len(report['deleted'])} item(s), freed {size_text(report['freed_bytes'])}; "
+            f"{report['kept_count']} kept."
+        )
+    return 0
 
 
 def test_data(args, cache):
