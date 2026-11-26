@@ -3,6 +3,7 @@ site_description: Python library and CLI for the osteosarc.com dataset. Find fil
 site_url: https://iskandr.github.io/osteosarc/
 repo_url: https://github.com/iskandr/osteosarc
 edit_uri: edit/main/docs/
+strict: true
 theme:
   name: mkdocs
   color_mode: light

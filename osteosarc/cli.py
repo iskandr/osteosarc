@@ -1,3 +1,4 @@
+# PYTHON_ARGCOMPLETE_OK
 """Command-line access using exactly the same Dataset API as Python callers."""
 
 import argparse
@@ -7,19 +8,11 @@ import subprocess
 import sys
 from dataclasses import asdict
 
-from . import __version__
-from .cache import (
-    DERIVED_UNUSED_DAYS,
-    Cache,
-    _entry_size_bytes,
-    is_offline_env,
-    offline_env_source,
-    prune_derived,
-)
-from .dataset import DATE_SELECTOR, Dataset
-from .errors import NoSnapshotsError, OsteosarcError
-from .models import Region
-from .reads import ReadFilter
+from datacache.cli_help import HelpArgumentParser, HelpFormatter, enable_argcomplete
+
+from ._version import __version__
+
+_DEFAULT_DERIVED_UNUSED_DAYS = 30
 
 #: Every command, grouped as `osteosarc` and `osteosarc --help` show them.
 COMMANDS = (
@@ -56,8 +49,8 @@ def command_guide():
 
 
 def parser():
-    root = argparse.ArgumentParser(
-        prog="osteosarc", formatter_class=argparse.RawDescriptionHelpFormatter,
+    root = HelpArgumentParser(
+        prog="osteosarc",
         description="Browse and download the public osteosarc.com dataset.\n\n" + command_guide())
     root.add_argument("--version", action="version", version=f"osteosarc {__version__}")
     root.add_argument("--cache", help="Cache root (default: OSTEOSARC_CACHE, else the shared OpenVax "
@@ -75,7 +68,7 @@ def parser():
 
     def command(name, *, data=True, epilog=None):
         return commands.add_parser(name, parents=[snapshot] if data else [], description=described[name],
-                                   epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter)
+                                   epilog=epilog, formatter_class=HelpFormatter)
 
     samples = command("samples", epilog="examples:\n  osteosarc samples\n  osteosarc samples T1_tumor\n"
                                         "  osteosarc samples --tissue blood --assay cite-seq\n"
@@ -202,7 +195,7 @@ def parser():
         "prune", help="Prune unused derived/ read subsets and interrupted staging leftovers (dry-run by default)")
     cache_prune.add_argument(
         "--days", type=float, default=None,
-        help=f"Remove derived entries older than this many days (default: {DERIVED_UNUSED_DAYS} unless --max-gb/--all)")
+        help=f"Remove derived entries older than this many days (default: {_DEFAULT_DERIVED_UNUSED_DAYS} unless --max-gb/--all)")
     cache_prune.add_argument(
         "--max-gb", type=float, default=None,
         help="Cap remaining derived/ cache size at this many GB (evicts oldest first)")
@@ -230,7 +223,7 @@ def parser():
                         "  osteosarc test-data check openvax-v2 fixtures.json")
     actions = test_data.add_subparsers(dest="test_data_command", metavar="ACTION")
     make = actions.add_parser(
-        "make", parents=[snapshot], formatter_class=argparse.RawDescriptionHelpFormatter,
+        "make", parents=[snapshot], formatter_class=HelpFormatter,
         help="Make a bundle of test reads for variants and SVs in some BAMs (or from a recipe)",
         description="Make a bundle of test reads in a new folder. For each variant, each BAM gives a\n"
                     "balanced set of templates (up to 20 alt, 10 ref, 5 other and 2 not spanning it); for\n"
@@ -315,12 +308,14 @@ def read_targets(dataset, args):
     if args.regions and args.assembly is None and is_sample(dataset, args.file):
         raise ValueError("Give --assembly with regions and a sample: its BAMs may use different genome builds")
     # Without --assembly, a BAM's regions are in its own genome build (Region's None).
+    from .models import Region
     return dict(regions=[Region.from_samtools(r, assembly=args.assembly, reference_length=args.reference_length)
                          for r in args.regions], padding=args.padding)
 
 
 def snapshot_selector(args):
     """Dataset.open's arguments for --snapshot: a download date, or a name or ID prefix."""
+    from .dataset import DATE_SELECTOR
     if args.snapshot is not None and DATE_SELECTOR.fullmatch(args.snapshot):
         return dict(date=args.snapshot)
     return dict(name=args.snapshot)
@@ -338,6 +333,7 @@ def snapshots_view(rows):
 
 def start(cache):
     """What `osteosarc` alone prints: the snapshot in use, and every command."""
+    from .dataset import Dataset
     rows = list(Dataset.snapshots(cache=cache))
     if rows:
         when = (rows[0]["downloaded"] or "")[:16].replace("T", " ")
@@ -350,6 +346,8 @@ def start(cache):
 
 def open_snapshot(args, cache, online):
     """Open the chosen snapshot; without any, say what to run, or offer to sync for the REPL."""
+    from .dataset import Dataset
+    from .errors import NoSnapshotsError
     try:
         return Dataset.open(**snapshot_selector(args), cache=cache, offline=not online,
                             corrections=not args.no_corrections)
@@ -372,6 +370,8 @@ def open_snapshot(args, cache, online):
 def repl(dataset):
     """Python with the snapshot as `data`: IPython when it's installed, else the standard console."""
     import osteosarc
+
+    from .dataset import Dataset
     namespace = {"data": dataset, "osteosarc": osteosarc, "Dataset": Dataset}
     banner = f"{dataset!r}\n\n`data` is this snapshot, and help(data) documents it. Leave with Ctrl-D."
     try:
@@ -531,6 +531,8 @@ def get_data(args, dataset):
             print(dataset.download(file.index_urls[0], to=args.to))  # already placed; this names it
     elif args.command == "reads":
         from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        from .reads import ReadFilter
         sources = read_sources(dataset, args)
         targets = read_targets(dataset, args)
 
@@ -585,8 +587,10 @@ def get_data(args, dataset):
 
 def main(argv=None):
     root = parser()
+    enable_argcomplete(root)
     arguments = sys.argv[1:] if argv is None else argv
     if not arguments:
+        from .cache import Cache
         print(start(Cache(offline=True)))
         return 0
     args, extra = root.parse_known_args(arguments)
@@ -603,6 +607,8 @@ def main(argv=None):
         root.error(f"unrecognized arguments: {' '.join(extra)}")
     if extra:
         setattr(args, trailing, [*getattr(args, trailing), *extra])
+    from .cache import Cache, is_offline_env
+    from .errors import OsteosarcError
     offline_enabled = bool(args.offline or is_offline_env())
     cache = Cache(args.cache, offline=offline_enabled)
     try:
@@ -611,6 +617,7 @@ def main(argv=None):
         if args.command == "test-data":
             return test_data(args, cache)
         if args.command == "sync":
+            from .dataset import Dataset
             sources = pinned_sources(args.source_revision) if args.source_revision else None
             dataset = Dataset.sync(args.name, cache=cache, refresh=args.refresh, sources=sources,
                                    corrections=not args.no_corrections)
@@ -620,6 +627,7 @@ def main(argv=None):
                 print(f"Saved snapshot {dataset.name} ({dataset.id[:12]}). Try `osteosarc samples`.")
             return 0
         if args.command == "snapshots":
+            from .dataset import Dataset
             rows = list(Dataset.snapshots(cache=cache))
             print_json(rows) if args.json else print(snapshots_view(rows))
             return 0
@@ -648,6 +656,12 @@ def main(argv=None):
 
 def cache_action(args, cache):
     """cache dirs and cache prune."""
+    from .cache import (
+        DERIVED_UNUSED_DAYS,
+        _entry_size_bytes,
+        offline_env_source,
+        prune_derived,
+    )
     from .views import size_text
 
     if args.cache_command == "dirs":
@@ -771,6 +785,7 @@ def test_data(args, cache):
             given = dict(item.split("=", 1) for item in args.source)
             dataset = None
             if set(sources_to_read(recipe)) - set(given):
+                from .dataset import Dataset
                 # Its BAMs are found through a snapshot: --snapshot, else the recipe's own if
                 # it's here, else the newest. Any will do in which each BAM is unchanged.
                 named = recipe["snapshot"] if isinstance(recipe.get("snapshot"), dict) else {}
