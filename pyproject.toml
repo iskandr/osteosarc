@@ -27,7 +27,7 @@ classifiers = [
 dependencies = [
     "argcomplete>=3",
     "beautifulsoup4>=4.12",
-    "datacache>=1.38.0,<2.0.0",
+    "datacache>=1.12.0,<2.0.0",
     "pysam>=0.22",
     "requests>=2.28",
 ]

@@ -8,7 +8,18 @@ import subprocess
 import sys
 from dataclasses import asdict
 
-from datacache.cli_help import HelpArgumentParser, HelpFormatter, enable_argcomplete
+try:
+    from datacache.cli_help import HelpArgumentParser, HelpFormatter, enable_argcomplete
+except ImportError:
+    HelpArgumentParser = argparse.ArgumentParser
+    HelpFormatter = argparse.RawDescriptionHelpFormatter
+
+    def enable_argcomplete(parser):
+        try:
+            import argcomplete
+        except ImportError:
+            return
+        argcomplete.autocomplete(parser)
 
 from ._version import __version__
 
