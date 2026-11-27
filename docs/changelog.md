@@ -7,6 +7,10 @@ snapshot (by name or download date) for reproducible analyses. Full release note
 
 ## Unreleased
 
+- Move five unnavigated internal design/spec notes (`alignment-inventory-time-spec.md`,
+  `bounded-pipe-spec.md`, `compact-read-receipts.md`, `dense-recovery-spec.md`,
+  and `partner-recovery-spec.md`) out of `docs/` into `notes/` so `docs/` holds
+  only published documentation pages (#128).
 - Verify unplaced UCSC scaffold contig normalization (`chrUn_KI270442v1`) through
   Varcode's owning annotation/genome API instead of hardcoding an obsolete UCSC
   alias or parsing `varcode.__version__`, while checking that the original source
