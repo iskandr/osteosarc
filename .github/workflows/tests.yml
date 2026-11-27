@@ -24,13 +24,19 @@ jobs:
     runs-on: ubuntu-26.04
     strategy:
       matrix:
-        varcode-version: ['7.0.0', '9.3.7']
+        include:
+          - label: legacy-varcode-7
+            packages: typechecks varcode==7.0.0 isovar==1.17.0 topiary==5.55.1
+          - label: legacy-varcode-9
+            packages: typechecks varcode==9.3.7 isovar==1.17.0 topiary==5.55.1
+          - label: current
+            packages: "'varcode>=10.21.1' isovar topiary"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - run: sudo apt-get update && sudo apt-get install -y samtools
-      - run: python -m pip install -e '.[test]' typechecks varcode==${{ matrix.varcode-version }} isovar==1.17.0 topiary==5.55.1
+      - run: python -m pip install -e '.[test]' ${{ matrix.packages }}
       - run: python -c 'import varcode, isovar, topiary'
       - run: python -m pytest tests/test_consumer_usage.py -q

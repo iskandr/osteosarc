@@ -7,6 +7,11 @@ snapshot (by name or download date) for reproducible analyses. Full release note
 
 ## Unreleased
 
+- Verify unplaced UCSC scaffold contig normalization (`chrUn_KI270442v1`) through
+  Varcode's owning annotation/genome API instead of hardcoding an obsolete UCSC
+  alias or parsing `varcode.__version__`, while checking that the original source
+  contig is preserved in both `original_contig` and collection metadata (#116).
+  Add a current-Varcode consumer CI leg alongside the legacy `7.0.0`/`9.3.7` legs.
 - `Variants.to_varcode` passes varcode's `genome=` instead of its deprecated
   `ensembl=`, which varcode will remove in 12.0 (#122). `genome=` works with
   every varcode since 6.0, so the supported varcode range is unchanged.
