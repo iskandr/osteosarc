@@ -55,8 +55,11 @@ custom = selected.to_varcode(
 )
 ```
 
-Renaming never converts between genome builds, and names such as chrUn_KI270442v1 are
-left as they are, so your reference must use them too.
+Renaming never converts between genome builds. Current Varcode converts UCSC
+accession-bearing scaffold names such as `chrUn_KI270442v1` to Ensembl's `KI270442.1`
+(while older Varcode releases leave them unchanged, and RefSeq accessions such as
+`NC_012920.1` stay as given); the original contig spelling is always retained in
+`variant.original_contig` and collection metadata.
 
 ## Isovar
 

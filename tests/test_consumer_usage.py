@@ -95,21 +95,65 @@ def contig_genome(tmp_path):
 
 @pytest.mark.parametrize("contig, expected", [
     ("chrM", "MT"), ("M", "MT"), ("MT", "MT"), ("chrMT", "MT"),
-    ("chr1", "1"), ("chrX", "X"),
-    ("chrUn_KI270442v1", "chrUn_KI270442v1"), ("NC_012920.1", "NC_012920.1"),
+    ("chr1", "1"), ("chrX", "X"), ("NC_012920.1", "NC_012920.1"),
 ])
 def test_varcode_contig_conversion_retains_source_name(contig, expected):
     pyensembl = pytest.importorskip("pyensembl")
-    varcode = pytest.importorskip("varcode")
-    if contig == "chrUn_KI270442v1" and tuple(map(int, varcode.__version__.split(".")[:3])) >= (10, 15, 1):
-        # Varcode 10.15.1 converts UCSC's accession-bearing scaffold names to
-        # Ensembl's (openvax/varcode#435).
-        expected = "KI270442.1"
+    pytest.importorskip("varcode")
     selected = Variants([Variant("entry", "GENE", "GRCh38", ((contig, 12994, "G", "A"),), "ready")])
     native = selected.to_varcode(genome=pyensembl.EnsemblRelease(95))
     assert native[0].contig == expected
     assert native[0].original_contig == contig
     assert native.metadata[native[0]]["entries"][0]["alleles"] == selected[0].alleles
+
+
+def test_varcode_unplaced_ucsc_contig_retains_source_provenance(contig_genome):
+    pyensembl = pytest.importorskip("pyensembl")
+    varcode = pytest.importorskip("varcode")
+    contig = "chrUn_KI270442v1"
+    release = pyensembl.EnsemblRelease(95)
+    # Ask the owning Varcode/PyEnsembl API for the normalized contig rather than
+    # hardcoding an obsolete alias or parsing varcode.__version__ (#116).
+    direct = varcode.Variant(
+        contig, 12994, "G", "A", genome=release,
+        convert_ucsc_contig_names=True, normalize_contig_names=True,
+    )
+    if hasattr(varcode, "normalize_contig_name"):
+        expected = varcode.normalize_contig_name(contig, reference_name=release.reference_name)
+        assert expected == "KI270442.1"
+        assert direct.contig == expected
+    else:
+        expected = direct.contig
+        assert expected in {"chrUn_KI270442v1", "KI270442.1"}
+
+    selected = Variants(
+        [Variant("entry", "GENE", "GRCh38", ((contig, 12994, "G", "A"),), "ready")],
+        source={"snapshot_id": "unplaced-fixture"},
+    )
+    native = selected.to_varcode(genome=release)
+    assert native[0].contig == expected
+    assert native[0].original_contig == contig
+    assert native.metadata[native[0]]["entries"][0]["alleles"] == selected[0].alleles
+
+    # End-to-end annotation on the owning genome's normalized contig keeps the
+    # original UCSC alias intact in source provenance metadata.
+    genome = contig_genome(expected)
+    annotated = selected.to_varcode(genome=genome, assembly="GRCh38")
+    variant = annotated[0]
+    effects = variant.effects(raise_on_error=True)
+    assert variant.contig == expected
+    assert variant.original_contig == contig
+    assert len(effects) == 1
+    assert effects[0].gene_name == "GENE"
+    assert effects[0].transcript_id == "T1"
+    metadata = annotated.metadata[variant]
+    assert metadata["entries"][0]["alleles"] == ((contig, 12994, "G", "A"),)
+    assert metadata["source"]["snapshot_id"] == "unplaced-fixture"
+
+    literal = selected.to_varcode(
+        genome=release, convert_ucsc_contig_names=False, normalize_contig_names=False
+    )
+    assert literal[0].contig == literal[0].original_contig == contig
 
 
 def test_varcode_mitochondrial_annotation_and_alias_provenance(contig_genome):
